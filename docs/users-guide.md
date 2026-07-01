@@ -27,6 +27,114 @@ examples below sit at opposite ends of that scale.
 
 ---
 
+## How HSDD works
+
+### Plain OpenSpec vs HSDD
+
+Plain OpenSpec drives the whole system from one spec through one cycle, so every
+session carries the entire spec as context. HSDD decomposes the system into a tree
+of nodes coupled by versioned contracts, then runs one isolated OpenSpec cycle per
+leaf phase. Each cycle sees only its phase plus the contract interfaces it
+consumes.
+
+```mermaid
+%%{init:{'theme':'base','themeVariables':{'primaryTextColor':'#1e293b','lineColor':'#475569','edgeLabelBackground':'#ffffff','tertiaryTextColor':'#1e293b'}}}%%
+flowchart TB
+    subgraph os ["Plain OpenSpec: one spec, one cycle"]
+        direction TB
+        os_spec["Whole-system spec"]
+        os_cycle["One OpenSpec cycle<br/>context: the entire spec"]
+        os_sys["Whole system"]
+        os_spec --> os_cycle --> os_sys
+    end
+
+    subgraph hs ["HSDD: tree of nodes, one cycle per leaf phase"]
+        direction TB
+        h_root["Root spec"]
+        h_nodes["Recursive nodes<br/>+ versioned contracts"]
+        h_leaves["Leaf phases"]
+        h_cyc["One isolated OpenSpec cycle per phase<br/>context: one phase + consumed contracts"]
+        h_sys["Integrated system"]
+        h_root --> h_nodes --> h_leaves --> h_cyc --> h_sys
+    end
+
+    style os fill:none,stroke:#d97706,stroke-dasharray: 5 5,stroke-width:2px,color:#d97706
+    style hs fill:none,stroke:#059669,stroke-dasharray: 5 5,stroke-width:2px,color:#059669
+    style os_spec fill:#e0e7ff,stroke:#4f46e5,color:#1e293b
+    style os_cycle fill:#dbeafe,stroke:#2563eb,color:#1e293b
+    style os_sys fill:#d1fae5,stroke:#059669,color:#1e293b
+    style h_root fill:#e0e7ff,stroke:#4f46e5,color:#1e293b
+    style h_nodes fill:#f3e8ff,stroke:#7c3aed,color:#1e293b
+    style h_leaves fill:#d1fae5,stroke:#059669,color:#1e293b
+    style h_cyc fill:#dbeafe,stroke:#2563eb,color:#1e293b
+    style h_sys fill:#d1fae5,stroke:#059669,color:#1e293b
+```
+
+The OpenSpec cycle itself is unchanged. HSDD only decides what each cycle sees and
+in what order cycles run.
+
+### The HSDD workflow
+
+The one-line loop above, drawn out. Planning is done once per node and rarely
+rewritten. Execution repeats once per phase: switch the context, run the cycle,
+generate the verification doc, and pass a human review gate before moving on.
+
+```mermaid
+%%{init:{'theme':'base','themeVariables':{'primaryTextColor':'#1e293b','lineColor':'#475569','edgeLabelBackground':'#ffffff','tertiaryTextColor':'#1e293b'}}}%%
+flowchart TD
+    bd["Brain-dump / product idea"]
+
+    subgraph plan ["Plan (intent): once per node"]
+        direction TB
+        decompose["hsdd-spec<br/>decompose into nodes (recursive)"]
+        contracts["hsdd-contract<br/>versioned contracts + registry"]
+        leaf{"Node small<br/>enough to phase?"}
+        phaseplan["hsdd-phase-plan<br/>ordered phases, gates, review tiers"]
+        decompose --> contracts --> leaf
+        leaf -- "no: decompose further" --> decompose
+        leaf -- yes --> phaseplan
+    end
+
+    subgraph exec ["Execute (mechanism): one loop per phase"]
+        direction TB
+        config["hsdd-config<br/>inject phase + consumed contracts only"]
+        cycle["OpenSpec cycle<br/>new -> design -> tasks -> apply -> archive"]
+        verify["Verification doc<br/>docs/verify/{phase-id}.verification.md"]
+        gate{"Human review<br/>+ manual verify"}
+        config --> cycle --> verify --> gate
+        gate -- changes --> cycle
+    end
+
+    more{"More phases<br/>or nodes?"}
+    done["Integrated system"]
+
+    bd --> decompose
+    phaseplan --> config
+    gate -- approved --> more
+    more -- "yes: next phase" --> config
+    more -- all done --> done
+
+    style plan fill:none,stroke:#7c3aed,stroke-dasharray: 5 5,stroke-width:2px,color:#7c3aed
+    style exec fill:none,stroke:#2563eb,stroke-dasharray: 5 5,stroke-width:2px,color:#2563eb
+
+    style bd fill:#e0e7ff,stroke:#4f46e5,color:#1e293b
+    style decompose fill:#f3e8ff,stroke:#7c3aed,color:#1e293b
+    style contracts fill:#f3e8ff,stroke:#7c3aed,color:#1e293b
+    style leaf fill:#e0e7ff,stroke:#4f46e5,color:#1e293b
+    style phaseplan fill:#f3e8ff,stroke:#7c3aed,color:#1e293b
+    style config fill:#f3e8ff,stroke:#7c3aed,color:#1e293b
+    style cycle fill:#dbeafe,stroke:#2563eb,color:#1e293b
+    style verify fill:#dbeafe,stroke:#2563eb,color:#1e293b
+    style gate fill:#fef3c7,stroke:#d97706,color:#1e293b
+    style more fill:#e0e7ff,stroke:#4f46e5,color:#1e293b
+    style done fill:#d1fae5,stroke:#059669,color:#1e293b
+```
+
+The single amber node is the human review gate. Every leaf phase ends there, at a
+depth set by its review tier (`gate-only`, `spot-check`, or `full-review`).
+
+---
+
 ## Example 1: A simple project (single level)
 
 Sometimes the whole system is small enough that there is nothing to decompose:
