@@ -4,10 +4,10 @@
 > Recursive decomposition, first-class contracts, and one human-reviewed phase at
 > a time.
 
-Single-spec workflows (like [OpenSpec](https://github.com/fission-ai/openspec)) are
-excellent for small systems and fall apart on large ones: the spec becomes a
-100-page monolith, every session re-reads everything, tokens explode, and the
-model loses focus.
+Single-spec workflows (like [OpenSpec](https://github.com/fission-ai/openspec)) work
+well for small systems but are not ideal for large ones. As the system grows, the
+spec becomes too large, every session re-reads all of it, token usage climbs, and
+model focus degrades.
 
 HSDD keeps OpenSpec as the execution engine and changes the **unit of work**:
 
@@ -15,8 +15,7 @@ HSDD keeps OpenSpec as the execution engine and changes the **unit of work**:
 > independently verifiable phase with explicit contracts.
 
 Everything above that unit is decomposition. Everything inside it is one ordinary
-OpenSpec cycle. You get loose coupling, parallel development across teams, a small
-focused context per session, and a human review gate on every phase.
+OpenSpec cycle.
 
 ```mermaid
 %%{init:{'theme':'base','themeVariables':{'primaryTextColor':'#1e293b','lineColor':'#475569','edgeLabelBackground':'#ffffff','tertiaryTextColor':'#1e293b'}}}%%
@@ -50,6 +49,32 @@ flowchart TD
 
 Only the green leaf phases drive OpenSpec cycles. Each one consumes contract
 interfaces by id, never another node's internals, so its session stays small.
+
+## Why HSDD
+
+HSDD applies established software engineering practice to the specification itself,
+and to how an AI agent works against it.
+
+- **Modularity and loose coupling in the spec.** Principles that are routine for
+  code (single responsibility, information hiding, explicit interfaces) rarely reach
+  the spec. HSDD structures the spec as a tree of nodes coupled only through named,
+  versioned contracts, with a typed dependency graph in place of implicit
+  whole-spec coupling.
+- **Bounded context per session.** Each phase's session receives its own spec plus
+  only the interfaces of the contracts it consumes. Context stays proportional to
+  the phase, not the whole system, so token cost does not scale with total system
+  size.
+- **Less drift and hallucination.** The same bound limits what the model can
+  conflate or invent. A session cannot wander into a sibling's concern or fabricate
+  an interface it was never given, because neither is in context.
+- **Human review by construction.** Every leaf phase ends at a human review gate,
+  sized so review and manual verification fit one working window (target ~5h).
+  Review depth scales to risk through tiers. The human owns correctness; the agent
+  owns throughput.
+- **A functional model underneath.** Each node is a function with typed inputs and
+  outputs (its consumed and produced contracts), the dependency DAG is the
+  composition, and internals are private. Nodes are built against contract values,
+  not live implementations.
 
 ## Install
 
