@@ -5,8 +5,8 @@ A practical, example-driven walkthrough. For the full model and rationale, see t
 
 ## Before you start
 
-Install the skills (see the [README](../README.md)) and, ideally, Obra's
-superpowers plugin. The HSDD loop, in one line:
+Install the skills (see the [README](../README.md)) and, ideally, [Obra's
+superpowers](https://github.com/obra/superpowers) plugin. The HSDD loop, in one line:
 
 > decompose -> contract -> phase-plan -> configure -> one OpenSpec cycle per phase
 > -> human review -> repeat.
