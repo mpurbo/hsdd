@@ -1,0 +1,14 @@
+# Claude Code local dev config (personal permissions, not distributable)
+.claude/
+
+# macOS
+.DS_Store
+
+# Node (skills/*/scripts use .mjs)
+node_modules/
+npm-debug.log*
+*.log
+
+# Editors
+.vscode/
+.idea/

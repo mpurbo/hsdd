@@ -1,0 +1,5 @@
+Some comments:
+
+1. Should we mention Obra's superpowers as a recommendation plugin/skills to have (like what I have in my previous set of SDD skills). 
+2. I want a section where we describe some example prompts when using each of the skill and some explanation on what they do. For example, `I'd like to write a high level spec for blah blah` (this will load up `hsdd-spec` skill), then `I'd like to breakdown my spec @spec/blah.md into backend and frontend` (this will load up `hsdd-spec` skill again but for internal node). 
+3. I wonder if the skills should be installed as something usable by Claude Code as a slash command, e.g. `/hsdd-spec blah blah` (not sure if this is a good idea or not, what do you think?)

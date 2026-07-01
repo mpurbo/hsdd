@@ -1,0 +1,14 @@
+I moved the spec to @review/
+
+Some comments:
+1. On 2.2, the textual visualization is a bit hard to read, understand, and compare. Make it better.
+2. Let's not mention ChatGPT anywhere in the spec.
+3. Let's have a default/recommendation on the directory layout as part of the skill (that can be overidden by the user should they want it). I think the repository layout in section 8 is already good, except let's also have a convention for manual verifying documents as well. Let's put all the verifying document under `docs/verify` (not under `changes` like you proposed in the layout) and call it the same as the phase id with suffix `verify`. For example, for phase `acme.backend.auth.3` the verification document would be `acme.backend.auth.3.verification.md`.
+4. Is ADR created manually? Or using one of the skills? How to connect the ADR to other specs? How does ADR injected into the context for the relevant OpenSpec flow?
+5. Answering the open questions:
+    1. A (`hsdd-spec` etc as you recommended).
+    2. Keep separate `hsdd-spec` and `hsdd-phase-plan`.
+    3. Just `v{n}` as current proposal.
+    4. Already answered in point (3) above. 
+    5. dotted slug path is ok. 
+    6. would maintenance by skill be more non-deterministic? also considering token consumption, which one is better?
