@@ -133,12 +133,21 @@ is the forward reference until it does.
 
 ## The Registry (generated, never hand-edited)
 
-`adr/INDEX.md` is derived data: a pure projection over each ADR's frontmatter. Run
-the same generator `hsdd-contract` uses; it scans `adr/` too:
+`adr/INDEX.md` is derived data: a pure projection over each ADR's frontmatter. It is
+produced by the one generator that `hsdd-contract` bundles; that single script
+projects both `adr/INDEX.md` and `contracts/INDEX.md`:
 
 ```bash
 node scripts/gen-registry.mjs        # writes adr/INDEX.md (and contracts/INDEX.md)
 ```
+
+The generator ships **only** with `hsdd-contract`, and ADRs are frequently
+materialized before the first contract, so `scripts/gen-registry.mjs` may not be in
+the project yet. If it is absent, copy it **verbatim** from the `hsdd-contract`
+skill's `scripts/gen-registry.mjs` (that skill's base directory is printed when it
+loads; on a standard install it is typically
+`~/.claude/skills/hsdd-contract/scripts/gen-registry.mjs`). Do NOT reimplement it
+from any description: a retyped copy silently mis-projects the registry.
 
 The generator reads `id`, `status`, and `affects` from frontmatter. An ADR written
 without frontmatter is silently skipped, so the frontmatter is mandatory.
@@ -163,4 +172,5 @@ without frontmatter is silently skipped, so the frontmatter is mandatory.
 | "It's minor, no need to bump status when replaced" | A stale `accepted` ADR gets injected as binding. Supersede it and link both ways. |
 | "Every design choice deserves an ADR" | ADRs are for cross-cutting decisions. Node-local choices are `D{n}`. Keep ADRs few. |
 | "I'll fill in a reasonable decision so the phase can start" | An invented `accepted` ADR is injected as binding. If the decision is unknown, `status: proposed` + TODO; let the human decide. |
+| "The generator isn't here yet, I'll write one from this description" | It ships with `hsdd-contract`. Copy that file verbatim; never retype or reimplement it. A rewritten generator drifts and mis-projects the registry. |
 | "I'll edit adr/INDEX.md by hand" | It is derived. Hand edits drift. Run the generator. |

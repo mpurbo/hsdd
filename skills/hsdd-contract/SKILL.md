@@ -96,9 +96,15 @@ frontmatter. Do not hand-maintain it. Run the bundled generator after any change
 node scripts/gen-registry.mjs        # writes contracts/INDEX.md (and adr/INDEX.md)
 ```
 
-On first use, copy `scripts/gen-registry.mjs` from this skill into the project's
-`scripts/` directory and, ideally, wire it into a pre-commit or CI hook. A script
-is deterministic and costs zero model tokens; agent-maintained indexes drift.
+On first use, copy the bundled `scripts/gen-registry.mjs` **verbatim** from this
+skill into the project's `scripts/` directory (this skill's base directory is
+printed when the skill loads). Do NOT reimplement it from the description in this
+file: a retyped copy silently mis-projects the registry. For example, a hand-written
+version tends to reuse the ADR `affects` column for contracts, which do not have
+`affects` (they have `owner` / `consumers`), producing an empty, wrong column that
+still passes a naive freshness check. Copy the real file; then, ideally, wire it
+into a pre-commit or CI hook. A script is deterministic and costs zero model tokens;
+agent-maintained (or agent-rewritten) generators drift.
 
 The same generator also projects `adr/INDEX.md` from ADR frontmatter. ADR files
 are authored by `hsdd-adr`, not here; this skill owns `contracts/` only.
@@ -117,6 +123,7 @@ are authored by `hsdd-adr`, not here; this skill owns `contracts/` only.
 | Thought | Reality |
 |---------|---------|
 | "The contract is obvious, skip the file" | Explicit contracts enable mock testing and node isolation. Write it. |
+| "I'll write the generator from this description" | The bundled `scripts/gen-registry.mjs` is the source of truth. Copy it verbatim; never retype or reimplement it. A rewritten copy drifts and mis-projects the registry (a naive freshness check will not catch it). |
 | "I'll just edit INDEX.md by hand" | The registry is derived. Hand edits drift from the contracts. Run the generator. |
 | "Small change, no version bump" | If a consumer's code could break, it is a new version. Bump and note the migration. |
 | "Put the schema in the node spec" | Then consumers must read the producer's spec. Contracts exist so they do not. |

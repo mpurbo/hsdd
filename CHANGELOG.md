@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.1] - 2026-07-02
+
+### Fixed
+
+- `hsdd-contract` and `hsdd-adr` now require copying the bundled
+  `scripts/gen-registry.mjs` verbatim and explicitly forbid reimplementing it from
+  the skill description. A retyped generator silently mis-projects the registry (for
+  example emitting the ADR `affects` column for contracts, which use
+  `owner`/`consumers`), and a regenerate-and-diff check does not catch it.
+- `hsdd-adr` closes a bootstrap gap: the registry generator ships only with
+  `hsdd-contract`, but ADRs are frequently materialized before the first contract.
+  The skill now says so and points to the `hsdd-contract` skill's bundled copy
+  instead of implying the generator is already present.
+
 ## [0.4.0] - 2026-07-02
 
 ### Added
@@ -41,6 +55,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Slash commands under `commands/`.
 - Docs (`docs/`), specs (`spec/`), and review assets (`review/`).
 
-[Unreleased]: https://github.com/OWNER/REPO/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/OWNER/REPO/compare/v0.4.1...HEAD
+[0.4.1]: https://github.com/OWNER/REPO/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/OWNER/REPO/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/OWNER/REPO/releases/tag/v0.3.0
