@@ -119,8 +119,11 @@ other id makes OpenSpec reject the config. Quote any rule containing `: `.
    Guarantees of each consumed contract id.
 4. Replace `## Governing Decisions` with only the Decision + Consequences of each
    referenced ADR. If a referenced `ADR-NNN` has no file under `adr/`, it was
-   never materialized: stop and author it with `hsdd-adr` first. Do not fabricate
-   a Decision from the referencing text, and do not silently drop the reference.
+   never materialized: stop and author it with `hsdd-adr` first. You must not
+   invent the decision; the human supplies it. If the decision content is not
+   available, author the ADR as `status: proposed` with the Decision left as an
+   explicit TODO, and do not inject it as binding until it is `accepted`. Do not
+   silently drop the reference.
 5. Do not touch the project-wide context or the rules.
 
 This gives the session ~20 lines of phase context instead of a full spec. The
@@ -134,4 +137,4 @@ This gives the session ~20 lines of phase context instead of a full spec. The
 | "CLAUDE.md already has my conventions" | CLAUDE.md is not injected into OpenSpec instructions. config.yaml is. |
 | "I'll remember to invoke TDD manually" | Sessions do not share memory. config.yaml does. |
 | "Inject the whole node spec to be safe" | That defeats context isolation. Inject only the phase plus consumed contract interfaces and governing ADR decisions. |
-| "The ADR is referenced but has no file; I'll paraphrase it" | A referenced ADR with no file was never materialized. Author it with hsdd-adr; never fabricate a Decision. |
+| "The ADR is referenced but has no file; I'll paraphrase it" | A referenced ADR with no file was never materialized. Author it with hsdd-adr. If the decision is unknown, author it `proposed` with a TODO; never invent an `accepted` decision. |

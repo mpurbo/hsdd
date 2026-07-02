@@ -149,8 +149,10 @@ When `hsdd-config` builds a phase context it resolves the ADRs referenced by the
 phase's node and by its consumed contracts, then injects each one's Decision and
 Consequences. 0.4 adds a fallback: if a referenced `ADR-NNN` has no file under
 `adr/`, it was never materialized. Stop and author it with `hsdd-adr` before
-injecting. Do not fabricate a Decision from the referencing text, and do not
-silently drop the reference.
+injecting. The human supplies the decision; do not invent one. If the decision
+content is not available, author the ADR as `status: proposed` with the Decision
+as an explicit TODO and do not inject it as binding until it is `accepted`. Never
+write an invented decision as `accepted`, and do not silently drop the reference.
 
 ### 4.3 ADR authoring and consumption
 
@@ -271,7 +273,7 @@ The command stays a one-line delegator; the skill remains the source of truth.
 | Generator change needed? | None. The skill emits the frontmatter `gen-registry` already reads. |
 | ADR numbering | Global across the tree, `ADR-{nnn}`; filename `adr/{nnn}-{title}.md`. |
 | `openspec init` location | Once, at the repo root. One OpenSpec project per HSDD tree. |
-| Missing ADR at config time | `hsdd-config` stops and hands off to `hsdd-adr`; never fabricates a Decision. |
+| Missing ADR at config time | `hsdd-config` stops and hands off to `hsdd-adr`. The human supplies the decision; if unknown, the ADR is authored `proposed` with a TODO, never an invented `accepted` decision. |
 
 ---
 

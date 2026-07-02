@@ -101,7 +101,12 @@ injects only those two sections into a phase context. Deliberation belongs in
 
 Create the ADR in the state that matches reality: `accepted` when the decision is
 already made (a human said "we've decided"), `proposed` only when it is still open
-for sign-off (typically an `hsdd-spec` seed awaiting the human).
+for sign-off (typically an `hsdd-spec` seed awaiting the human). If you are
+materializing an ADR whose decision the human has not actually stated (for
+example, resolving a dangling `Governed by` reference), do NOT invent one: create
+it `proposed` with the Decision as an explicit `TODO`. Never write invented
+content as `accepted`, because an `accepted` ADR is injected into phase contexts
+as binding.
 
 | Transition | What to do |
 |------------|-----------|
@@ -145,6 +150,7 @@ without frontmatter is silently skipped, so the frontmatter is mandatory.
 - [ ] `## Decision` and `## Consequences` are self-contained (no reliance on Context).
 - [ ] Every id in `affects` carries a matching `Governed by: [ADR-NNN]`.
 - [ ] A superseding ADR set both `supersedes` and the old ADR's `superseded_by`.
+- [ ] No invented decision was written as `accepted`; an unknown decision is `proposed` with a TODO.
 - [ ] The registry was regenerated.
 
 ## Anti-Rationalization
@@ -156,4 +162,5 @@ without frontmatter is silently skipped, so the frontmatter is mandatory.
 | "This decision is obvious, skip the ADR" | If it spans nodes or must outlive one, later phases need its Decision injected. Write it. |
 | "It's minor, no need to bump status when replaced" | A stale `accepted` ADR gets injected as binding. Supersede it and link both ways. |
 | "Every design choice deserves an ADR" | ADRs are for cross-cutting decisions. Node-local choices are `D{n}`. Keep ADRs few. |
+| "I'll fill in a reasonable decision so the phase can start" | An invented `accepted` ADR is injected as binding. If the decision is unknown, `status: proposed` + TODO; let the human decide. |
 | "I'll edit adr/INDEX.md by hand" | It is derived. Hand edits drift. Run the generator. |
