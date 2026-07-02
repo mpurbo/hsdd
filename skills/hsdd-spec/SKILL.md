@@ -39,6 +39,7 @@ alternatives; use this skill to produce the node spec.
 **Do NOT use for:**
 - Breaking a leaf-parent into implementation phases. Use `hsdd-phase-plan`.
 - Authoring the contract files themselves. Use `hsdd-contract`.
+- Writing ADR files. Propose them here; materialize them with `hsdd-adr`.
 - OpenSpec artifacts. Those come later, one cycle per phase.
 
 **Ambiguous request ("break X into pieces/parts")?** Decide by node kind: if X
@@ -87,7 +88,11 @@ intermediate internal node (a "feature") rather than forcing a fixed tier.
    `leaf-parent` (ready for `hsdd-phase-plan`).
 6. **Record cross-cutting decisions as ADRs.** When a decision spans more than one
    node or must outlive its node, propose an `ADR-{nnn}` and let the human accept
-   or edit it. Keep ADRs few; node-local choices stay as `D{n}` in the node spec.
+   or edit it. Once accepted, hand off to `hsdd-adr` to materialize it as
+   `adr/{nnn}-{title}.md` (frontmatter + Decision + Consequences) and set
+   `Governed by: [ADR-NNN]` on each affected node and contract. Do NOT leave an
+   ADR as inline prose in the node spec: the registry and `hsdd-config` resolve
+   ADRs by file. Keep ADRs few; node-local choices stay as `D{n}` in the node spec.
 7. **Write the node spec** to `docs/spec/{node-id}.md` using the shape below.
    Include a Mermaid dependency DAG. If `mermaid-pastel-style` is installed,
    follow it.
@@ -143,3 +148,4 @@ dependency DAG (Mermaid), dev-flow sequencing, and a contract matrix.
 | "All edges are just dependencies" | Untyped edges hide parallelism. Type every edge. |
 | "This node is obviously a leaf" | Decide it explicitly. A wrong leaf-parent produces phases that overflow the review window. |
 | "I'll add the dependency graph later" | Without the graph, phases are assumed sequential and parallel teams stall. |
+| "I'll write the ADR as a section here" | Inline ADRs are invisible to the registry and hsdd-config. Materialize them as files via hsdd-adr. |

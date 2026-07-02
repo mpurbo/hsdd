@@ -17,9 +17,16 @@ The default layout the skills emit (override it in `docs/conventions.md`):
 docs/spec/{node-id}.md                    node specs and phase plans
 docs/verify/{phase-id}.verification.md    per-phase verification docs
 contracts/{slug}.md + contracts/INDEX.md  first-class contracts (registry generated)
-adr/{nnn}-{title}.md                       cross-cutting decisions
+adr/{nnn}-{title}.md + adr/INDEX.md        cross-cutting decisions (hsdd-adr, registry generated)
 openspec/                                  config.yaml + one change per phase
 ```
+
+**Where to run `openspec init`:** once, at the repo root (the directory that holds
+`docs/`, `contracts/`, and `adr/`). One HSDD tree has one OpenSpec project. Every
+phase, across every node, is a change under that single `openspec/changes/`;
+phases are kept apart by the per-phase context switch (`hsdd-config`), not by
+separate projects. If your system is split across repos, run `openspec init` at
+each repo root and share `contracts/` and `adr/` via a package or submodule.
 
 A key principle worth internalizing early: **depth and ceremony are costs.** Use
 exactly as many levels and artifacts as the system needs, and no more. The two
@@ -278,20 +285,39 @@ You: "Define the auth-token contract: auth produces it, billing and mobile consu
 
 `hsdd-contract` writes `contracts/auth-token.md` (frontmatter + interface +
 guarantees + `v1`). The choice of auth provider affects more than one node and
-must outlive the auth subsystem, so `hsdd-spec` proposes an ADR:
+must outlive the auth subsystem, so `hsdd-spec` proposes an ADR and hands it to
+`hsdd-adr` to materialize:
+
+```text
+You: "Write the ADR for the auth provider decision."
+```
+
+`hsdd-adr` writes `adr/001-auth-provider.md`. The frontmatter mirrors a contract,
+so the same generator projects it into `adr/INDEX.md`:
 
 ```markdown
+---
+id: ADR-001
+status: accepted
+affects: [acme.backend.auth, auth-token@v1]
+date: 2026-07-02
+---
+
 # ADR-001: Auth provider
 
-**Status:** accepted
-**Affects:** acme.backend.auth, auth-token@v1
-
+## Context
+Login must work across mobile and web, and key material must rotate.
 ## Decision
 Use provider X with rotating asymmetric keys.
 ## Consequences
 - token verification needs the public JWKS endpoint
 - key rotation is a hard dependency for auth.2
 ```
+
+It also sets `Governed by: [ADR-001]` on `acme.backend.auth` and `auth-token@v1`,
+then regenerates the registry (`node scripts/gen-registry.mjs`). The ADR is a
+file, not a section in the node spec, so `hsdd-config` can later inject only its
+Decision and Consequences into the `auth.2` phase context.
 
 ### Step 4: Phase-plan the leaf-parent
 
@@ -371,7 +397,11 @@ openspec/
   phases, insert an internal node ("feature") instead of piling on phases.
 - **Keep `hard` edges rare.** They are the critical path. Prefer `contract`,
   `event`, and `shared-model` edges so teams parallelize.
-- **Regenerate the registry** after any contract change:
+- **Regenerate the registry** after any contract or ADR change:
   `node scripts/gen-registry.mjs`. Never hand-edit `INDEX.md`.
+- **Materialize ADRs as files, not prose.** A cross-cutting decision belongs in
+  `adr/{nnn}-{title}.md` with frontmatter (via `hsdd-adr`), so the registry and
+  the phase context can find it. A decision internal to one node stays a `D{n}` in
+  that node's spec.
 - **Match review depth to risk.** Reserve `full-review` for orchestration,
   business logic, integrations, and security. Let scaffolding be `gate-only`.

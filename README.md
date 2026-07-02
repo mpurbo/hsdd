@@ -82,7 +82,7 @@ HSDD ships as agent skills, installable with the [`skills`](https://github.com/v
 CLI (works with Claude Code, Cursor, Codex, and 70+ agents):
 
 ```bash
-# All four HSDD skills (replace with your repo path)
+# All five HSDD skills (replace with your repo path)
 npx skills add mpurbo/hsdd
 
 # Or a single skill
@@ -105,13 +105,15 @@ re-implementing them; `hsdd-config` wires them into each OpenSpec cycle.
 |-------|-----------|
 | `hsdd-spec` | Turn a brain-dump into a high-level spec, or decompose any node into child nodes. Recursive: runs at the root and every internal level. |
 | `hsdd-contract` | Define and version the first-class contracts between nodes. |
+| `hsdd-adr` | Author and maintain cross-cutting Architecture Decision Records as first-class files, with registry-compatible frontmatter and a status lifecycle. |
 | `hsdd-phase-plan` | Break a small-enough node into ordered, independently implementable phases, each sized for one OpenSpec change and one review window. |
 | `hsdd-config` | Configure OpenSpec and switch the phase context so each cycle sees only the current phase plus its consumed contracts. |
 
 ## How it works
 
 1. **Decompose** the system into a tree of nodes (`hsdd-spec`), recursing until a
-   node is small enough to phase.
+   node is small enough to phase. Cross-cutting decisions become ADRs
+   (`hsdd-adr`), first-class files the registry and phase context resolve by id.
 2. **Contract** every boundary as a versioned file (`hsdd-contract`); a generated
    registry keeps the index honest.
 3. **Phase-plan** each leaf node into ordered phases with gates and review tiers
@@ -120,6 +122,10 @@ re-implementing them; `hsdd-config` wires them into each OpenSpec cycle.
    cycle per phase. Each `apply` produces a verification doc.
 5. **Review** every phase: a human reads the diff and runs the verification, at a
    depth set by the phase's review tier. Then move to the next phase.
+
+Run `openspec init` once, at the repo root (the directory that holds `docs/`,
+`contracts/`, and `adr/`). One HSDD tree has one OpenSpec project; phases are
+isolated by the per-phase context switch, not by separate projects.
 
 Each phase is sized so the AI run plus the human review fit one Claude Code
 rolling window (target ~5h). Phase sizing is the control knob for context,
@@ -131,6 +137,7 @@ tokens, time, and quality.
 "Write a high-level spec for a merchant onboarding platform."   -> hsdd-spec (root)
 "Break down @spec/acme.md into backend, mobile, and web."       -> hsdd-spec (internal node)
 "Define the auth-token contract: auth produces, billing consumes." -> hsdd-contract
+"Write the ADR for the auth provider decision."                 -> hsdd-adr
 "acme.backend.auth is small enough. Write its phase plan."      -> hsdd-phase-plan
 "Set up OpenSpec config for this project."                      -> hsdd-config
 "/hsdd-phase acme.backend.auth.2"   (switch context, then opsx:new)
@@ -140,5 +147,7 @@ tokens, time, and quality.
 
 - [Methodology specification](spec/hsdd-spec-v0_3.md): the full model, diagrams,
   and design decisions.
+- [v0.4 delta](spec/hsdd-spec-v0_4.md): ADR authoring as a first-class skill and
+  where to run `openspec init`. Read against v0.3.
 - [User's guide](docs/users-guide.md): worked examples for a simple single-level
   project and a multi-level system.

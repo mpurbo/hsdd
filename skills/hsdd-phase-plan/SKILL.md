@@ -39,7 +39,9 @@ pure functions -> effects -> composition.
 1. **Load conventions.** Read `docs/conventions.md` (single source of truth for
    naming, layout, established contracts). Do not re-scan every prior spec.
 2. **Reference the node spec.** Load `docs/spec/{node-id}.md`: purpose,
-   consumed/produced contract ids, governing ADRs, isolation strategy.
+   consumed/produced contract ids, governing ADRs, isolation strategy. Reference
+   ADRs by id (`Governed by: [ADR-NNN]`); they are authored as files by
+   `hsdd-adr`, never inline here.
 3. **Define phases** using the template below, applying FP ordering and the
    sizing rule. Reference contracts by id (`hsdd-contract` owns the bodies).
 4. **Draw the phase dependency graph** showing parallel lanes.

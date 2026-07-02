@@ -100,6 +100,9 @@ On first use, copy `scripts/gen-registry.mjs` from this skill into the project's
 `scripts/` directory and, ideally, wire it into a pre-commit or CI hook. A script
 is deterministic and costs zero model tokens; agent-maintained indexes drift.
 
+The same generator also projects `adr/INDEX.md` from ADR frontmatter. ADR files
+are authored by `hsdd-adr`, not here; this skill owns `contracts/` only.
+
 ## Quality Gates
 
 - [ ] Frontmatter has id, version, status, kind, owner, produced_by, consumers.

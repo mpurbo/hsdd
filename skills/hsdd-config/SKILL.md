@@ -27,7 +27,9 @@ OpenSpec change.
 
 ## When to Use
 
-- **New project:** after `openspec init`, or when `config.yaml` is empty/default.
+- **New project:** after `openspec init` (run once, at the repo root: the same
+  directory that holds `docs/`, `contracts/`, and `adr/`. One HSDD tree has one
+  OpenSpec project), or when `config.yaml` is empty/default.
 - **Starting a phase (critical):** switch the phase context BEFORE `opsx:new`. If
   config still references the previous phase, every artifact inherits stale
   context (wrong contracts, wrong gate, wrong verification).
@@ -116,7 +118,9 @@ other id makes OpenSpec reject the config. Quote any rule containing `: `.
 3. Replace `## Contracts from Prior Phases / Nodes` with only the Interface +
    Guarantees of each consumed contract id.
 4. Replace `## Governing Decisions` with only the Decision + Consequences of each
-   referenced ADR.
+   referenced ADR. If a referenced `ADR-NNN` has no file under `adr/`, it was
+   never materialized: stop and author it with `hsdd-adr` first. Do not fabricate
+   a Decision from the referencing text, and do not silently drop the reference.
 5. Do not touch the project-wide context or the rules.
 
 This gives the session ~20 lines of phase context instead of a full spec. The
@@ -130,3 +134,4 @@ This gives the session ~20 lines of phase context instead of a full spec. The
 | "CLAUDE.md already has my conventions" | CLAUDE.md is not injected into OpenSpec instructions. config.yaml is. |
 | "I'll remember to invoke TDD manually" | Sessions do not share memory. config.yaml does. |
 | "Inject the whole node spec to be safe" | That defeats context isolation. Inject only the phase plus consumed contract interfaces and governing ADR decisions. |
+| "The ADR is referenced but has no file; I'll paraphrase it" | A referenced ADR with no file was never materialized. Author it with hsdd-adr; never fabricate a Decision. |

@@ -8,8 +8,14 @@
 - `docs/spec/{node-id}.md`                    node specs and leaf-parent phase plans
 - `docs/verify/{phase-id}.verification.md`    per-phase verification docs
 - `contracts/{slug}.md` + `contracts/INDEX.md`  first-class contracts (registry generated)
-- `adr/{nnn}-{title}.md`                       cross-cutting decisions
+- `adr/{nnn}-{title}.md` + `adr/INDEX.md`      cross-cutting decisions (authored by hsdd-adr, registry generated)
 - `openspec/config.yaml` + `openspec/changes/` config and one change per phase
+
+## OpenSpec init
+Run `openspec init` once, at the repo root (the directory holding this file's
+`docs/`, `contracts/`, and `adr/`). One HSDD tree has one OpenSpec project; phases
+are isolated by the per-phase context switch (hsdd-config), not by separate
+projects. Polyrepo: init per repo root and share `contracts/` + `adr/`.
 
 ## Naming
 - Node id: dotted slug path from root (`acme.backend.auth`)
