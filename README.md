@@ -4,18 +4,37 @@
 > Recursive decomposition, first-class contracts, and one human-reviewed phase at
 > a time.
 
-Single-spec workflows (like [OpenSpec](https://github.com/fission-ai/openspec)) work
-well for small systems but are not ideal for large ones. As the system grows, the
-spec becomes too large, every session re-reads all of it, token usage climbs, and
-model focus degrades.
+**The spec is the program.** You don't write a large program as one file; you
+decompose it into loosely-coupled subsystems and modules that talk only through
+interfaces. A large spec should be built the same way.
 
-HSDD keeps OpenSpec as the execution engine and changes the **unit of work**:
+Single-spec workflows (like [OpenSpec](https://github.com/fission-ai/openspec)) work
+well for small systems but not for large ones. As the system grows, the one spec
+becomes too large, every session re-reads all of it, token usage climbs, and model
+focus degrades.
+
+HSDD applies that decomposition to the spec itself:
+
+- A large spec breaks into independent, loosely-coupled sub-specs.
+- Sub-specs are isolated. They connect only through **contracts**: an API endpoint,
+  a schema, a shared data structure, or any other named interface.
+- Decomposition recurses to as many levels as the system's complexity needs.
+- At the lowest level, a spec is a **phase**: the smallest piece executable on its
+  own.
+
+HSDD keeps OpenSpec as the per-phase execution engine and makes the phase its
+**unit of work**:
 
 > The unit of spec-driven development is not the product. It is the smallest
 > independently verifiable phase with explicit contracts.
 
-Everything above that unit is decomposition. Everything inside it is one ordinary
-OpenSpec cycle.
+We size that unit as one **Phase Equivalent (PE)**: roughly five hours of agentic
+build plus human review and testing for one person, about one JIRA ticket.
+Everything above a PE is decomposition; everything inside one is a single ordinary
+OpenSpec (SDD) cycle.
+
+The inputs are whatever you already have for the project: PRD, RFC, architecture
+docs, designs, and any other available context.
 
 ```mermaid
 %%{init:{'theme':'base','themeVariables':{'primaryTextColor':'#1e293b','lineColor':'#475569','edgeLabelBackground':'#ffffff','tertiaryTextColor':'#1e293b'}}}%%
@@ -68,9 +87,9 @@ and to how an AI agent works against it.
   conflate or invent. A session cannot wander into a sibling's concern or fabricate
   an interface it was never given, because neither is in context.
 - **Human review by construction.** Every leaf phase ends at a human review gate,
-  sized so review and manual verification fit one working window (target ~5h).
-  Review depth scales to risk through tiers. The human owns correctness; the agent
-  owns throughput.
+  sized so review and manual verification fit one working window (one PE). Review
+  depth scales to risk through tiers. The human owns correctness; the agent owns
+  throughput.
 - **A functional model underneath.** Each node is a function with typed inputs and
   outputs (its consumed and produced contracts), the dependency DAG is the
   composition, and internals are private. Nodes are built against contract values,
@@ -127,8 +146,8 @@ Run `openspec init` once, at the repo root (the directory that holds `docs/`,
 `contracts/`, and `adr/`). One HSDD tree has one OpenSpec project; phases are
 isolated by the per-phase context switch, not by separate projects.
 
-Each phase is sized so the AI run plus the human review fit one Claude Code
-rolling window (target ~5h). Phase sizing is the control knob for context,
+Each phase is one PE (defined above), sized so the AI run plus the human review fit
+one Claude Code rolling window. Phase sizing is the control knob for context,
 tokens, time, and quality.
 
 ## Quickstart
@@ -151,3 +170,7 @@ tokens, time, and quality.
   where to run `openspec init`. Read against v0.3.
 - [User's guide](docs/users-guide.md): worked examples for a simple single-level
   project and a multi-level system.
+
+## References
+
+- This methodology supersedes the set of SDD-related skills in [pubo-skills](https://github.com/mpurbo/purbo-skills#spec-driven-development).
