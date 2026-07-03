@@ -32,7 +32,7 @@ openspec/                                  config.yaml + one change per phase
 **Where to run `openspec init`:** once, at the repo root (the directory that holds
 `docs/`, `contracts/`, and `adr/`). One HSDD tree has one OpenSpec project. Every
 phase, across every node, is a change under that single `openspec/changes/`;
-phases are kept apart by the per-phase context switch (`hsdd-config`), not by
+phases are kept apart by the per-phase context switch (`hsdd context`), not by
 separate projects. If your system is split across repos, run `openspec init` at
 each repo root and share `contracts/` and `adr/` via a package or submodule.
 
@@ -112,7 +112,7 @@ flowchart TD
 
     subgraph exec ["Execute (mechanism): one loop per phase"]
         direction TB
-        config["hsdd-config<br/>inject phase + consumed contracts only"]
+        config["/hsdd-new: hsdd context (CLI)<br/>inject phase + consumed contracts only"]
         cycle["OpenSpec cycle<br/>new -> design -> tasks -> apply -> archive"]
         verify["Verification doc<br/>docs/verify/{phase-id}.verification.md"]
         gate{"Human review<br/>+ manual verify"}
