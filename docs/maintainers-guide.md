@@ -1,0 +1,164 @@
+# HSDD Maintainer's Guide
+
+Chores, releases, and conventions for maintaining this repository. The
+[user's guide](users-guide.md) covers using HSDD; this covers shipping it.
+
+## Repository map
+
+```text
+cli/                 the `hsdd` npm package (zero-dependency, Node >= 20)
+  bin/hsdd.mjs       entry point: dispatch, exit codes, git access (imperative shell)
+  src/*.mjs          pure core: parsers, projections, lint checks, splice, globs
+  test/*.test.mjs    node:test suites (unit + end-to-end via spawned bin)
+skills/              agent skills, one directory per skill (SKILL.md)
+commands/            slash-command wrappers (thin delegators, no logic)
+spec/                methodology specs; v0.3 base plus v0.4/v0.5 deltas
+docs/                user's guide, this guide, source material
+review/              review artifacts that drove each spec revision
+CHANGELOG.md         Keep a Changelog format, semver
+```
+
+Two release surfaces, versioned together but shipped differently:
+
+| Surface | Distributed via | Version source |
+|---------|-----------------|----------------|
+| Skills + commands | git (users run `npx skills add mpurbo/hsdd`) | git tag `vX.Y.Z` |
+| `hsdd` CLI | npm (`npm i -D hsdd`) | `cli/package.json` |
+
+Keep `cli/package.json` version aligned with the repo tag. The CLI is the
+mechanical half of the methodology; a skill that tells users to run a command
+must ship no later than the CLI version introducing it.
+
+## Running the tests
+
+```bash
+cd cli
+npm test          # = node --test; discovers cli/test/*.test.mjs
+```
+
+No dependencies, no install step needed for the tests themselves. Node >= 20
+required (the package's `engines` floor); anything the CLI supports must pass on
+that floor, so CI should run at least Node 20 and current.
+
+The suites:
+
+- Unit: every pure module (`frontmatter`, `phase-block`, `registry`, `context`,
+  `lint`, `status`, `scope`, `rename`) against in-memory or temp fixtures.
+- End-to-end (`cli.test.mjs`): spawns `bin/hsdd.mjs` against a temp project,
+  including a real `git init` for `check-scope`.
+
+Fixtures come from `test/helpers.mjs` (`BASE_PROJECT`): a minimal consistent
+HSDD project. Extending it? Keep it lint-clean; the "clean base project lints
+clean" test pins that.
+
+## Publishing the CLI to npm
+
+One-time setup: an npm account with publish rights to the `hsdd` package and
+2FA enabled (`npm login`).
+
+Release procedure:
+
+1. **Green tests on the release commit:**
+   ```bash
+   cd cli && npm test
+   ```
+2. **Bump the version** in `cli/package.json` (semver: breaking CLI behavior or
+   artifact-shape change = major once past 1.0; new command/flag = minor; fix =
+   patch. Pre-1.0, minor plays the major role, matching the spec versions).
+3. **Update `CHANGELOG.md`**: move Unreleased into a new `[X.Y.Z] - date`
+   section; update the link references at the bottom.
+4. **Sanity-check the tarball** (what npm will actually ship):
+   ```bash
+   cd cli
+   npm pack --dry-run     # expect: bin/, src/, package.json, README.md only
+   ```
+   If files are missing or extra, fix the `files` allowlist in `package.json`.
+5. **Publish:**
+   ```bash
+   cd cli
+   npm publish            # add --tag next for a pre-release
+   ```
+   The first publish of a new major can use `--access public` explicitly
+   (unscoped packages default to public anyway).
+6. **Tag and push:**
+   ```bash
+   git commit -am "release: hsdd X.Y.Z"
+   git tag vX.Y.Z
+   git push && git push --tags
+   ```
+7. **Verify from a clean directory:**
+   ```bash
+   cd "$(mktemp -d)" && npx hsdd@latest --version
+   ```
+
+Yanking a bad release: `npm deprecate hsdd@X.Y.Z "reason; use X.Y.Z+1"`.
+Prefer deprecate + patch over `npm unpublish` (unpublish is heavily restricted
+and breaks downstream lockfiles).
+
+## Releasing skills
+
+Skills ship from git; there is no build. A release is: merge to `main`, tag.
+Users installing via `npx skills add mpurbo/hsdd` get the tagged/default state.
+
+Checklist when a skill changes:
+
+- [ ] Trigger phrases in the frontmatter `description` still match the behavior.
+- [ ] Any CLI commands the skill quotes exist in the shipped CLI version
+      (grep for `npx hsdd` and cross-check against `cli/bin/hsdd.mjs` USAGE).
+- [ ] Slash commands in `commands/` stay thin delegators; logic lives in the
+      skill or the CLI, never in the command file.
+- [ ] `CHANGELOG.md` entry.
+
+## Spec revisions
+
+- v0.3 is the base document; v0.4 and v0.5 are deltas. **v0.5 is the last
+  delta:** the next major revision consolidates v0.3 + v0.4 + v0.5 into a single
+  `hsdd-spec-v1_0.md` and retires deltas as the format.
+- A spec change that alters an artifact shape (frontmatter fields, phase-block
+  grammar, marker strings) must land in the same release as the CLI change that
+  reads it, plus a lint migration warning for the old shape.
+- Review artifacts that motivated a revision belong in `review/`.
+
+## Conventions the code enforces (do not break casually)
+
+- **Registry/status headers:** generated files start with
+  `<!-- generated by hsdd registry - do not edit by hand -->` (or `hsdd
+  status`). Lint check 11 does regenerate-and-diff; changing the header format
+  makes every existing project's INDEX "stale" until regenerated.
+- **Splice markers:** `<!-- hsdd:phase-context:begin -->` /
+  `<!-- hsdd:phase-context:end -->` are literal API. Changing them breaks every
+  configured project.
+- **Phase-block grammar:** `cli/src/phase-block.mjs` is the normative grammar of
+  spec §2.2. Grammar changes are spec changes first, code second.
+- **Verification-doc reading rules** (status/lint derive state from these):
+  gate evidence = non-empty `## Test evidence`; sign-off = `reviewed by` line
+  with a real value or a `PR:` line containing "merged"; learnings are top-level
+  `- ` bullets in `## Learnings`, dispositioned when they contain
+  `disposition:` (`- none` counts as dispositioned).
+- **Determinism:** no timestamps or environment-dependent output in any
+  projection. `hsdd registry` twice must produce identical bytes.
+- **Zero dependencies** in the CLI. A PR adding a dependency needs a very good
+  story; the spec sells "zero-dependency Node package" as a feature.
+
+## Adding a lint check
+
+1. Write the failing test in `cli/test/lint.test.mjs` (positive and negative).
+2. Implement in `cli/src/lint.mjs`; pick the next check number and keep the
+   `{ check, msg }` shape. Errors unless the spec says warning; migration-style
+   findings use the `migration()` helper so `--strict` promotes them.
+3. Document the check in the spec delta (or v1.0 consolidation) before release.
+4. If the check needs new filesystem facts, surface them through
+   `cli/src/model.mjs` so `lint()` stays a pure function of the model.
+
+## CI suggestions (not yet wired)
+
+A minimal GitHub Actions workflow would run on push/PR:
+
+```yaml
+- uses: actions/setup-node@v4
+  with: { node-version: 20 }
+- run: cd cli && npm test
+```
+
+and, on tag, `npm publish` with an `NPM_TOKEN` secret (or npm trusted
+publishing via OIDC, which avoids long-lived tokens).
