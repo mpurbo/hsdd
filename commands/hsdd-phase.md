@@ -1,9 +1,13 @@
 ---
 description: Switch the HSDD OpenSpec phase context before starting a change
 ---
-Use the hsdd-config skill to switch the OpenSpec phase context to: $ARGUMENTS
+Switch the OpenSpec phase context to: $ARGUMENTS
 
-Update `openspec/config.yaml` so the Current Phase block, the consumed contract
-interfaces, and the governing ADR decisions all match this phase. Do not modify
-the project-wide context or the rules. Then confirm config.yaml reflects the new
-phase before I run `opsx:new`.
+Run `npx hsdd context $ARGUMENTS --write` and verify it exits 0. On a nonzero
+exit, stop and fix what the error names (a missing contract belongs to
+hsdd-contract, a missing ADR to hsdd-adr, missing markers to hsdd-config); never
+hand-edit the phase context around the tool. Report any warnings, then show me
+the spliced `## Current Phase` section from openspec/config.yaml so I can
+inspect it before I run `opsx:new`.
+
+(To derive the context AND start the cycle in one step, use /hsdd-new instead.)
