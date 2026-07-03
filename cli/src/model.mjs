@@ -79,15 +79,19 @@ function loadContracts(root, conventions) {
     const text = readFileSync(join(dir, file), "utf8");
     const fm = parseFrontmatter(text);
     if (!fm || !fm.data.id) { legacyContracts.push(rel); continue; }
+    const schema = fm.data.schema || null;
+    const fixtures = fm.data.fixtures || null;
     contracts.push({
+      schemaExists: schema ? existsSync(join(root, schema)) : null,
+      fixturesExists: fixtures ? existsSync(join(root, fixtures)) : null,
       id: fm.data.id,
       version: fm.data.version || "",
       status: fm.data.status || "",
       kind: fm.data.kind || "",
       owner: fm.data.owner || "",
       governed_by: asList(fm.data.governed_by),
-      schema: fm.data.schema || null,
-      fixtures: fm.data.fixtures || null,
+      schema,
+      fixtures,
       // legacy v0.3/v0.4 fields, detected for migration warnings only
       legacyFields: ["produced_by", "consumers"].filter((k) => fm.data[k] !== undefined),
       file: rel,
