@@ -133,24 +133,29 @@ is the forward reference until it does.
 
 ## The Registry (generated, never hand-edited)
 
-`adr/INDEX.md` is derived data: a pure projection over each ADR's frontmatter. It is
-produced by the one generator that `hsdd-contract` bundles; that single script
-projects both `adr/INDEX.md` and `contracts/INDEX.md`:
+`adr/INDEX.md` is derived data: a pure projection over each ADR's frontmatter,
+produced by the `hsdd` CLI (installed once per project: `npm i -D hsdd`, or run
+ad hoc with `npx`):
 
 ```bash
-node scripts/gen-registry.mjs        # writes adr/INDEX.md (and contracts/INDEX.md)
+npx hsdd registry        # writes adr/INDEX.md (and contracts/INDEX.md)
+npx hsdd lint            # id uniqueness, zero-padding, affects/governed_by match
 ```
 
-The generator ships **only** with `hsdd-contract`, and ADRs are frequently
-materialized before the first contract, so `scripts/gen-registry.mjs` may not be in
-the project yet. If it is absent, copy it **verbatim** from the `hsdd-contract`
-skill's `scripts/gen-registry.mjs` (that skill's base directory is printed when it
-loads; on a standard install it is typically
-`~/.claude/skills/hsdd-contract/scripts/gen-registry.mjs`). Do NOT reimplement it
-from any description: a retyped copy silently mis-projects the registry.
+Every command is available the moment the package is installed, so there is no
+bootstrap gap: ADRs materialized before the first contract project fine. The
+CLI reads `id`, `status`, and `affects` from frontmatter; an ADR without
+frontmatter is a lint finding, so the frontmatter is mandatory.
 
-The generator reads `id`, `status`, and `affects` from frontmatter. An ADR written
-without frontmatter is silently skipped, so the frontmatter is mandatory.
+Consistency is machine-checked: `hsdd lint` enforces unique zero-padded ids,
+filename/id match, and the bidirectional `affects`/`Governed by` link for
+artifacts that exist (unmatched forward references are warnings until the
+artifact lands). You author judgment; the tool checks shape.
+
+Under the multi-team profile, an ADR whose `affects` spans more than one team's
+nodes lists the approving teams in an `## Approvals` section and may not be
+flipped to `accepted` until each team is present (`hsdd lint --profile
+multi-team` blocks it).
 
 ## Quality Gates
 
@@ -171,6 +176,6 @@ without frontmatter is silently skipped, so the frontmatter is mandatory.
 | "This decision is obvious, skip the ADR" | If it spans nodes or must outlive one, later phases need its Decision injected. Write it. |
 | "It's minor, no need to bump status when replaced" | A stale `accepted` ADR gets injected as binding. Supersede it and link both ways. |
 | "Every design choice deserves an ADR" | ADRs are for cross-cutting decisions. Node-local choices are `D{n}`. Keep ADRs few. |
-| "I'll fill in a reasonable decision so the phase can start" | An invented `accepted` ADR is injected as binding. If the decision is unknown, `status: proposed` + TODO; let the human decide. |
-| "The generator isn't here yet, I'll write one from this description" | It ships with `hsdd-contract`. Copy that file verbatim; never retype or reimplement it. A rewritten generator drifts and mis-projects the registry. |
-| "I'll edit adr/INDEX.md by hand" | It is derived. Hand edits drift. Run the generator. |
+| "I'll fill in a reasonable decision so the phase can start" | An invented `accepted` ADR is injected as binding. If the decision is unknown, `status: proposed` + TODO; let the human decide. `hsdd context` refuses to inject non-accepted ADRs, so this cannot leak. |
+| "I'll write a quick registry script" | The `hsdd` CLI owns every deterministic operation. Install it (`npm i -D hsdd`); never reimplement its commands. |
+| "I'll edit adr/INDEX.md by hand" | It is derived. Hand edits drift and `hsdd lint` flags the stale index. Run `npx hsdd registry`. |

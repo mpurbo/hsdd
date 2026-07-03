@@ -16,19 +16,33 @@ A contract is the **only** thing one HSDD node may know about another. It is a
 standalone, versioned file, not prose buried in a spec.
 
 **Core principle:** A contract has two parts with two jobs. The YAML frontmatter
-is machine-readable metadata projected into the registry. The body is the
-human-facing interface injected into a consuming phase's context. A consumer
-reads exactly one of those, never the producing node's internals.
+is machine-readable, authored intent. The body is the human-facing interface
+injected into a consuming phase's context (`hsdd context`). Anything derivable
+from other artifacts (who consumes it, who produces it) is never authored at
+all; `hsdd registry` projects it.
 
 ## When to Use
 
 - A node spec (`hsdd-spec`) named a contract id under `Consumes`/`Produces` and
   the body needs writing.
 - A contract must change: bump the version, add a guarantee, deprecate.
-- The registry (`contracts/INDEX.md`) needs regenerating after a change.
+- A phase discovered mid-apply that a consumed contract is wrong or incomplete
+  (renegotiation, below).
 
 **Do NOT use for** node decomposition (`hsdd-spec`) or phase planning
 (`hsdd-phase-plan`).
+
+## Prerequisite: the `hsdd` CLI
+
+All deterministic operations (registry projection, lint, phase context) belong
+to the `hsdd` CLI, installed once per project:
+
+```bash
+npm i -D hsdd        # or run ad hoc: npx hsdd <command>
+```
+
+Never write, retype, or hand-maintain a registry generator; that failure mode
+is retired. The CLI owns it.
 
 ## Contract Artifact
 
@@ -41,8 +55,9 @@ version: v1
 status: stable          # stable | draft | deprecated
 kind: api               # api | event | schema | shared-model | file | cli
 owner: acme.backend.auth
-produced_by: [acme.backend.auth.2]
-consumers: [acme.backend.billing.2, acme.mobile.session.1]
+governed_by: [ADR-001]                    # optional
+schema: schemas/auth-token.schema.json    # required for stable (one of schema/fixtures)
+fixtures: fixtures/auth-token/            # required for stable (one of schema/fixtures)
 ---
 
 # Contract: auth-token
@@ -57,14 +72,32 @@ consumers: [acme.backend.billing.2, acme.mobile.session.1]
 ## Versioning
 - v1 current. Breaking changes require v2 + a migration note. v1 stays until all
   consumers migrate.
-
-## Validation
-- fixture: fixtures/auth-token.json
-- schema: schemas/auth-token.schema.json
 ```
 
-Keep the frontmatter complete and accurate: it is the source of truth for the
-registry and for the context `hsdd-config` injects into each phase.
+Do NOT author `produced_by` or `consumers`: they were removed in v0.5. The
+registry derives both by scanning node frontmatter and phase blocks; a field
+lives in exactly one place.
+
+## Stable Means Machine-Checkable
+
+A contract may not be `stable` unless it carries at least one executable
+validation artifact, enforced by `hsdd lint` (paths must exist):
+
+| kind | expected validation |
+|------|---------------------|
+| api, event | schema plus example payloads |
+| schema, shared-model | schema plus edge-case fixtures |
+| file | a sample tree under fixtures/ |
+| cli | recorded invocations (args, stdout, exit code) |
+
+Both sides of the contract run it:
+
+- **Producer:** the producing phase's `Gate:` includes a contract-verification
+  command (e.g. `npm run contract:verify auth-token`) proving real output
+  validates against the schema and reproduces the fixtures.
+- **Consumer:** consuming phases build and test against the fixtures, not
+  hand-rolled mocks. The mocks ARE the fixtures. A contract bump changes the
+  fixtures and consumer tests fail loudly instead of drifting silently.
 
 ## Dependency Types
 
@@ -86,44 +119,52 @@ Classify how consumers couple to this contract so `hsdd-spec` can sequence work:
 - A breaking change creates `v{n+1}` and a migration note in `## Versioning`. The
   old version remains `stable` until every consumer migrates, then `deprecated`.
 - Consumers always reference a specific version: `auth-token@v1`.
+- Under the multi-team profile, a bump with cross-team consumers starts `draft`
+  and may not go `stable` until every consuming team has an
+  `Acked-by: <team> (date)` line in `## Versioning` (`hsdd lint` enforces it;
+  consumers are derived, so the list is never stale).
 
-## The Registry (generated, never hand-edited)
+## Mid-Phase Renegotiation
 
-`contracts/INDEX.md` is derived data: a pure projection over every contract's
-frontmatter. Do not hand-maintain it. Run the bundled generator after any change:
+When a phase discovers mid-apply that a consumed contract is wrong:
+
+1. **Pause** the apply at a task boundary; never improvise around the contract.
+2. **Record** the gap as a learning in the in-progress verification notes.
+3. **Renegotiate** here: a backward-compatible addition amends the current
+   version; a breaking change drafts `v{n+1}` with a migration note.
+4. **Re-derive** the context: `npx hsdd context {phase-id} --write`.
+5. **Resume** the change. Producer-side changes ship through the producing
+   node's next phase; the consumer never edits another node's internals.
+
+## The Registry (generated, never authored)
+
+`contracts/INDEX.md` is a pure projection. After any contract change:
 
 ```bash
-node scripts/gen-registry.mjs        # writes contracts/INDEX.md (and adr/INDEX.md)
+npx hsdd registry     # writes contracts/INDEX.md and adr/INDEX.md
+npx hsdd lint         # verify referential integrity
 ```
 
-On first use, copy the bundled `scripts/gen-registry.mjs` **verbatim** from this
-skill into the project's `scripts/` directory (this skill's base directory is
-printed when the skill loads). Do NOT reimplement it from the description in this
-file: a retyped copy silently mis-projects the registry. For example, a hand-written
-version tends to reuse the ADR `affects` column for contracts, which do not have
-`affects` (they have `owner` / `consumers`), producing an empty, wrong column that
-still passes a naive freshness check. Copy the real file; then, ideally, wire it
-into a pre-commit or CI hook. A script is deterministic and costs zero model tokens;
-agent-maintained (or agent-rewritten) generators drift.
-
-The same generator also projects `adr/INDEX.md` from ADR frontmatter. ADR files
-are authored by `hsdd-adr`, not here; this skill owns `contracts/` only.
+Wire both into pre-commit or CI. The `owner` and `consumers` columns are derived
+from the tree, so the index cannot rot.
 
 ## Quality Gates
 
-- [ ] Frontmatter has id, version, status, kind, owner, produced_by, consumers.
-- [ ] `consumers` lists phase ids that actually consume this contract.
-- [ ] The Interface section is concrete enough to mock against.
+- [ ] Frontmatter has id, version, status, kind, owner (and NO produced_by/consumers).
+- [ ] A `stable` contract declares schema and/or fixtures, and the paths exist.
+- [ ] The Interface section is concrete enough to build against the fixtures.
 - [ ] At least one guarantee/invariant is stated.
 - [ ] A breaking change bumped the version and added a migration note.
-- [ ] The registry was regenerated.
+- [ ] `npx hsdd registry` was run; `npx hsdd lint` is clean.
 
 ## Anti-Rationalization
 
 | Thought | Reality |
 |---------|---------|
-| "The contract is obvious, skip the file" | Explicit contracts enable mock testing and node isolation. Write it. |
-| "I'll write the generator from this description" | The bundled `scripts/gen-registry.mjs` is the source of truth. Copy it verbatim; never retype or reimplement it. A rewritten copy drifts and mis-projects the registry (a naive freshness check will not catch it). |
-| "I'll just edit INDEX.md by hand" | The registry is derived. Hand edits drift from the contracts. Run the generator. |
+| "The contract is obvious, skip the file" | Explicit contracts enable fixture testing and node isolation. Write it. |
+| "I'll add consumers to the frontmatter for clarity" | Derived data is never authored. `hsdd registry` projects consumers; a hand-written list rots. |
+| "It's basically stable, fixtures can come later" | `stable` without executable validation is a promise nothing checks. Lint will reject it. Keep it `draft` until the schema or fixtures exist. |
+| "I'll mock the consumer side by hand" | Hand-rolled mocks drift from the contract silently. The fixtures are the mocks. |
+| "I'll just edit INDEX.md by hand" | The registry is derived. Run `npx hsdd registry`. |
 | "Small change, no version bump" | If a consumer's code could break, it is a new version. Bump and note the migration. |
 | "Put the schema in the node spec" | Then consumers must read the producer's spec. Contracts exist so they do not. |

@@ -6,7 +6,7 @@ description: >
   Triggers: "write the phase plan for X", "break X into phases", "implementation
   phases", "phase breakdown", "this node is small enough to phase", "phase
   dependency graph", "review tiers", "gate command", "size estimate per phase".
-  Each phase becomes one OpenSpec change and fits one review window. If the node
+  Each phase becomes one OpenSpec change and fits one review sitting. If the node
   still contains subsystems, decompose it with hsdd-spec FIRST. Do NOT use for
   OpenSpec artifacts (use openspec directly).
 ---
@@ -15,12 +15,19 @@ description: >
 
 Take one leaf-parent node and produce an implementation-ready set of phases. Each
 phase is the atomic unit of HSDD: it drives exactly one OpenSpec cycle and is
-sized so the AI run plus human review and manual verification fit one Claude Code
-rolling window (target ~5h).
+sized to one Phase Equivalent (PE).
+
+**One PE is the largest unit of change one reviewer can genuinely review and
+manually verify in a single sitting**, plus the agent run that produces it.
+Working guidelines: a reviewable diff of roughly <= 400 changed lines of
+non-generated code, <= 8 OpenSpec tasks, about half a working day end to end.
+(Calibration note, non-normative: as of mid-2026 one PE happens to fit one
+Claude Code rolling window. The review sitting is the invariant, not the
+window.)
 
 **Core principle:** Define contracts and phases before any code. Each phase is
-independently testable, contract-bounded, and follows FP progression: types ->
-pure functions -> effects -> composition.
+independently testable and contract-bounded; ordering follows the project's
+named ordering policy.
 
 ## When to Use
 
@@ -28,7 +35,7 @@ pure functions -> effects -> composition.
 - You are ready to deep-dive one node before starting OpenSpec.
 
 **Do NOT use for** decomposing into sub-nodes (`hsdd-spec`) or OpenSpec artifacts
-(proposal/design/tasks belong to the OpenSpec cycle, configured by `hsdd-config`).
+(proposal/design/tasks belong to the OpenSpec cycle).
 
 **Precondition:** the node must already be a leaf-parent. If a request like
 "break X into pieces" is ambiguous and X still contains subsystems, hand back to
@@ -36,68 +43,79 @@ pure functions -> effects -> composition.
 
 ## Process
 
-1. **Load conventions.** Read `docs/conventions.md` (single source of truth for
-   naming, layout, established contracts). Do not re-scan every prior spec.
+1. **Load conventions.** Read `docs/conventions.md`: naming, layout, established
+   contracts, and the frontmatter fields `ordering_policy` and `profile`.
 2. **Reference the node spec.** Load `docs/spec/{node-id}.md`: purpose,
    consumed/produced contract ids, governing ADRs, isolation strategy. Reference
-   ADRs by id (`Governed by: [ADR-NNN]`); they are authored as files by
-   `hsdd-adr`, never inline here.
-3. **Define phases** using the template below, applying FP ordering and the
-   sizing rule. Reference contracts by id (`hsdd-contract` owns the bodies).
-4. **Draw the phase dependency graph** showing parallel lanes.
-5. **Assign a review tier** per phase.
-6. **Update `conventions.md`** with any newly established cross-node contracts.
+   ADRs by id; they are files authored by `hsdd-adr`, never inline here.
+3. **Define phases** using the normative template below, applying the ordering
+   policy and the PE sizing rule. Reference contracts by id (`hsdd-contract`
+   owns the bodies).
+4. **Wire contract verification into gates.** Any phase that `produces` a
+   contract gets a gate that runs the contract's executable validation (e.g.
+   `npm run contract:verify auth-token`): real output must validate against the
+   schema and reproduce the fixtures. Consuming phases test against the
+   fixtures, not hand-rolled mocks.
+5. **Declare `Touches` where scoping matters.** For phases in trees with
+   parallel lanes, security-sensitive seams, or multi-team ownership, list the
+   file-scope globs and add `npx hsdd check-scope {phase-id}` to the gate. This
+   is opt-in per phase; honest defaults over theatrical ones.
+6. **Draw the phase dependency graph** showing parallel lanes.
+7. **Assign a review tier** per phase using the leverage rule below.
+8. **Update `conventions.md`** with any newly established cross-node contracts.
+9. **Check the plan:** `npx hsdd lint` (phase blocks must parse against the
+   normative grammar; numbering must be sequential).
 
-## Phase Ordering (FP Progression)
+## Ordering Policy
 
-1. **Phase 1 (always):** domain types, core traits/interfaces, scaffolding. No
-   business logic, only the type-level skeleton.
-2. **Early phases (parallel-safe):** config, state, IO utilities, independent
-   modules consuming Phase 1 types.
-3. **Middle phases:** pure-core logic, then effects/IO at boundaries; concrete
-   implementations of the traits.
-4. **Final phase:** integration wiring, entry point, dependency assembly. The
-   imperative shell.
+The ordering discipline is a named policy selected in `docs/conventions.md`
+frontmatter (`ordering_policy`), not a hard-baked rule:
 
-## Phase Template
+| Policy | Ordering |
+|--------|----------|
+| `interfaces-first` (default) | stable interfaces and shared types first, effects behind interfaces, composition and wiring last |
+| `fp-progression` | types -> pure functions -> effects -> composition; the reference policy for FP stacks (Rust, Kafka Streams). This is interfaces-first sharpened. |
+| project-defined | e.g. `walking-skeleton`: one thin end-to-end slice first, then widen; documented in the conventions body |
+
+Sizing rules, tiers, and gates are policy-independent.
+
+## Phase Template (normative grammar)
+
+`hsdd context` parses this block and `hsdd lint` rejects blocks that do not
+parse. Field order and bold labels are the grammar:
 
 ```markdown
 ### {phase-id}: {Phase Name}
 
-**Consumes:** [contract-id@version, ...]   # prior-phase or cross-node contracts
+**Consumes:** [contract-id@version, ...]
 **Produces:** [contract-id@version, ...]
 **Governed by:** [ADR-NNN, ...]            # optional
 **Scope:** concrete, verifiable deliverable
 **Size estimate:** ~N files, ~N lines, <= 8 OpenSpec tasks
-**Gate:** exact command (e.g. `cargo build && cargo test`)
-**Verification:** how a human manually confirms it works beyond the gate; this
-  becomes the verification doc at docs/verify/{phase-id}.verification.md
+**Gate:** exact command (include contract:verify for produced contracts)
+**Verification:** how a human manually confirms it works
 **Review tier:** gate-only | spot-check | full-review
+**Touches:** [src/auth/**, tests/auth/**]  # optional file-scope globs
 **Dependencies:** which prior phases, and what specifically (contracts only)
 ```
 
-## Review Tiers
+## Review Tiers: Leverage, Not Only Risk
 
 | Tier | For | At the gate |
 |------|-----|-------------|
-| gate-only | scaffolding, types, boilerplate | gate passes, auto-proceed, human notified |
-| spot-check | well-constrained phases with clear contracts | glance at diff, confirm gate, proceed |
-| full-review | orchestration, business logic, integrations, security | read diff, run verification, consider edge cases |
+| gate-only | artifacts with NO downstream consumers: build scaffolding, CI config, codegen output, vendored boilerplate | gate passes, auto-proceed, human notified |
+| spot-check | well-constrained phases with clear contracts; ANY phase whose produced types/interfaces feed 2+ later phases | read the diff summary and produced contract surface, confirm gate |
+| full-review | orchestration, business logic, integrations, security | read diff, run verification, probe edge cases |
 
-Phase 1 (types/scaffolding) is gate-only. Pure utilities are spot-check. External
-integrations and orchestration are full-review.
-
-## Sizing to the Review Window
-
-Each phase must fit one window: `[AI: new -> design -> tasks -> apply -> verify]`
-plus `[human: review specs + read diff + run manual verification]` within ~5h. The
-review tier modulates the human half. If a phase cannot fit, it is too big: split
-it. Phase sizing is the control knob for context, tokens, time, and quality.
+**The leverage rule:** a phase whose produced types or interfaces are consumed
+by two or more later phases gets `spot-check` at minimum. The type skeleton has
+the highest downstream fan-out in the plan, is cheap to read (all signal), and
+is expensive to get wrong. `gate-only` is reserved for consumer-less artifacts.
 
 ## Phase Dependency Graph
 
 ```text
-{node}.1 (Types & Contracts)
+{node}.1 (Interfaces & Contracts)   spot-check (feeds everything below)
  |-- {node}.2 (Component A)
  |-- {node}.3 (Component B)      <- parallel with .2
  |-- {node}.4 (Component C)      <- parallel with .2, .3
@@ -106,16 +124,23 @@ it. Phase sizing is the control knob for context, tokens, time, and quality.
       |-- {node}.7 (Wiring)      <- depends on all
 ```
 
+Parallel phases run in separate git worktrees (branch `hsdd/{phase-id}`), one
+per active phase; that is required for concurrency, not suggested, because one
+checkout has one `config.yaml`.
+
 ## Phase Design Checklist
 
-- [ ] Phase 1 defines all shared types and contract-bounded interfaces.
+- [ ] Phase 1 defines the shared types and contract-bounded interfaces.
 - [ ] Phases 2..N-1 are maximally independent (parallelizable where possible).
 - [ ] Each phase has <= 8 OpenSpec tasks (split if more).
 - [ ] Contract ids are defined before the phase that implements them.
-- [ ] Phase N is testable with mocks even if Phase N-1 is not implemented.
+- [ ] Each producing phase's gate runs the contract verification.
+- [ ] Phase N is testable with fixtures even if a producer is not implemented.
 - [ ] No phase couples to another phase's internals.
-- [ ] Each phase has a concrete gate, a verification description, and a review tier.
+- [ ] Tiers follow the leverage rule (fan-out >= 2 means spot-check minimum).
+- [ ] `Touches` declared where isolation matters; check-scope wired into those gates.
 - [ ] The phase dependency graph is included.
+- [ ] `npx hsdd lint` accepts every phase block.
 
 ## Anti-Rationalization
 
@@ -123,6 +148,8 @@ it. Phase sizing is the control knob for context, tokens, time, and quality.
 |---------|---------|
 | "I'll figure out phases during implementation" | Phases defined after coding starts are retrofitted, not designed. Contracts leak. |
 | "These two phases are too small, combine them" | Small phases are a feature: focused review and parallel work. |
-| "This phase is a bit big but fine" | If it overflows the review window, the human becomes the bottleneck. Split it. |
-| "The contract is obvious" | Explicit contracts enable mock testing and phase isolation. Reference the id. |
+| "This phase is a bit big but fine" | If it overflows one review sitting, the human becomes the bottleneck. Split it. |
+| "Types are boilerplate, gate-only is fine" | The type skeleton feeds every later phase. Highest leverage, cheapest to read. Spot-check minimum. |
+| "The gate is 'tests pass'" | A producing phase's gate must also run the contract verification, or mocks pass while live integration fails. |
+| "Touches on every phase, to be safe" | Scope enforcement is opt-in where it matters. Ceremony everywhere is theater. |
 | "Skip the dependency graph" | Without it, phases are assumed sequential and parallel teams stall. |
