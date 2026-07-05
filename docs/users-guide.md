@@ -348,6 +348,9 @@ acme.backend.auth.3  Session store                  spot-check
 acme.backend.auth.4  Auth API + wiring              full-review
 ```
 
+The plan ends with a pending-governance section; drain it with a quick
+reconcile before configuring, as in Example 1.
+
 ### Step 5: Configure and switch phase context
 
 ```text
@@ -420,7 +423,7 @@ You: "Reconcile the worktrees."
 
 `hsdd-reconcile` drains both sections: applies the `confirm` ids, resolves the
 fixture `request` with you, flips `auth-token@v1` to `phase_ids: final`, and
-regenerates the registry. Only then do the per-phase OpenSpec cycles start.
+regenerates the registry. Only then do billing's per-phase OpenSpec cycles start.
 
 ### The resulting tree
 

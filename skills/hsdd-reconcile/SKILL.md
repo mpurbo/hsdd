@@ -39,28 +39,33 @@ files); this skill performs the semantic merge.
 
 ## Process
 
-1. **Scan.** Find every `## Governance updates (pending reconcile)` section in
+1. **Load conventions.** Read `docs/conventions.md` first; it may override
+   the default layout (plan files under `docs/spec/`) and states the parallel
+   development protocol this skill completes.
+2. **Scan.** Find every `## Governance updates (pending reconcile)` section in
    `docs/spec/*.md`. If none exist, say so and stop.
-2. **Detect collisions before applying anything.** Group entries by contract
+3. **Detect collisions before applying anything.** Group entries by contract
    id. A collision is: two nodes claiming the same artifact or package,
    contradictory `confirm` entries, or a `request` assumption that conflicts
    with another node's entry. Present each collision with both sides quoted;
    never auto-pick a winner. After the human decides, update the losing node's
    plan (its entry and any phase scope that assumed otherwise) to match.
-3. **Apply `confirm` entries** to contract frontmatter (`produced_by`,
+4. **Apply `confirm` entries** to contract frontmatter (`produced_by`,
    `consumers`). When both producer and consumer ids are confirmed, flip
-   `phase_ids: provisional` to `phase_ids: final`. Status transitions
-   (`draft` to `stable`) follow the hsdd-contract versioning policy.
-4. **Resolve `request` entries with the human.** Apply contract-shaped answers
+   `phase_ids: provisional` to `phase_ids: final`. A side with no planned
+   phase consumers (external or human consumers only) counts as confirmed.
+   Status transitions (`draft` to `stable`) follow the hsdd-contract
+   versioning policy.
+5. **Resolve `request` entries with the human.** Apply contract-shaped answers
    to the contract file under hsdd-contract rules (a breaking change bumps the
    version and adds a migration note). Hand cross-cutting answers to hsdd-adr.
    State which assumption held so contingent phases can start.
-5. **Apply `note` entries** to `docs/conventions.md` only when they change a
+6. **Apply `note` entries** to `docs/conventions.md` only when they change a
    convention. Drop notes that duplicate derived data; the registry already
    projects contract facts.
-6. **Stamp each drained section**, replacing its entries with one line:
+7. **Stamp each drained section**, replacing its entries with one line:
    `> Reconciled {YYYY-MM-DD} by hsdd-reconcile. Drained entries are in git history.`
-7. **Regenerate the registries:** `node scripts/gen-registry.mjs`.
+8. **Regenerate the registries:** `node scripts/gen-registry.mjs`.
 
 ## Entry Handling
 

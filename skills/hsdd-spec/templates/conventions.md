@@ -1,6 +1,6 @@
 # Project Conventions
 
-> Single source of truth for HSDD naming, layout, and established contracts.
+> Single source of truth for HSDD naming, layout, and process conventions.
 > Seeded by hsdd-spec at the root; updated only at the root (hsdd-spec or
 > hsdd-reconcile). Phase planning treats this file as read-only.
 > Override any default below and every skill honors it.

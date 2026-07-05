@@ -163,7 +163,7 @@ tokens, time, and quality.
 "Define the auth-token contract: auth produces, billing consumes." -> hsdd-contract
 "Write the ADR for the auth provider decision."                 -> hsdd-adr
 "acme.backend.auth is small enough. Write its phase plan."      -> hsdd-phase-plan
-"Reconcile the worktrees."                                       -> hsdd-reconcile
+"Reconcile the worktrees."                                      -> hsdd-reconcile
 "Set up OpenSpec config for this project."                      -> hsdd-config
 "/hsdd-phase acme.backend.auth.2"   (switch context, then opsx:new)
 ```

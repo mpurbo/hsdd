@@ -37,7 +37,8 @@ pure functions -> effects -> composition.
 ## Process
 
 1. **Load conventions.** Read `docs/conventions.md` (single source of truth for
-   naming, layout, established contracts). Do not re-scan every prior spec.
+   naming, layout, and the parallel development protocol). Do not re-scan every
+   prior spec.
 2. **Reference the node spec.** Load `docs/spec/{node-id}.md`: purpose,
    consumed/produced contract ids, governing ADRs, isolation strategy. Reference
    ADRs by id (`Governed by: [ADR-NNN]`); they are authored as files by

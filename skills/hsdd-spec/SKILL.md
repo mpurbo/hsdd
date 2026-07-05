@@ -98,8 +98,9 @@ intermediate internal node (a "feature") rather than forcing a fixed tier.
    follow it.
 8. **Seed conventions.** At the root, create `docs/conventions.md` from the
    bundled template (`templates/conventions.md`): default layout, id scheme,
-   companion-skill recommendation. At deeper levels, refresh it if new
-   cross-node contracts appeared.
+   companion-skill recommendation. At deeper levels, refresh it only for
+   genuinely new conventions (layout, naming, protocol); contracts are indexed
+   by the generated `contracts/INDEX.md`, never listed here.
 
 ## Dependency Types
 
