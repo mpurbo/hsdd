@@ -46,7 +46,45 @@ pure functions -> effects -> composition.
    sizing rule. Reference contracts by id (`hsdd-contract` owns the bodies).
 4. **Draw the phase dependency graph** showing parallel lanes.
 5. **Assign a review tier** per phase.
-6. **Update `conventions.md`** with any newly established cross-node contracts.
+6. **Emit governance updates.** Append the
+   `## Governance updates (pending reconcile)` section (template below) to this
+   node's plan file. Never edit `contracts/`, `adr/`, `docs/conventions.md`, or
+   any `INDEX.md`: they are frozen inputs, applied later by `hsdd-reconcile` at
+   the root.
+
+## Governance Freeze (Read-Only Inputs)
+
+Phase planning reads governance files; it never writes them. `contracts/*`,
+`adr/*`, `docs/conventions.md`, and both `INDEX.md` registries are a frozen
+snapshot, whether you run at the repo root or in a worktree, serial or
+parallel. Every intended change is emitted as data in the node's own plan file
+and applied once, at the root, by `hsdd-reconcile`.
+
+Append this section to `docs/spec/{node-id}.md`:
+
+```markdown
+## Governance updates (pending reconcile)
+
+> Emitted by hsdd-phase-plan on {YYYY-MM-DD}. Drained by hsdd-reconcile;
+> do not apply by hand.
+
+- confirm `{contract-id}@v{n}` {produced_by|consumers}: [{phase-ids}]
+- note: {conventions-worthy fact: a new package, a shared artifact created
+  by an owned phase}
+- request `{contract-id}@v{n}`: {the gap, phrased as a question}
+  - assumption: {what this plan assumes while the gap is open}
+  - contingent phases: {phase ids that must not start until resolved}
+```
+
+**Contract gaps (two-tier rule).** If a gap in a consumed contract changes the
+shape of the plan (which phases exist, what they produce), stop and ask the
+human now; a wrong structural assumption poisons every downstream phase.
+Otherwise proceed conservatively and record a `request` entry with the
+assumption stated and the contingent phases listed.
+
+**Sibling isolation.** Do not read sibling worktree folders or other nodes'
+phase plans. Contracts are the only inter-node knowledge; a sibling's
+half-written plan on the same disk is not a contract.
 
 ## Phase Ordering (FP Progression)
 
@@ -126,3 +164,6 @@ it. Phase sizing is the control knob for context, tokens, time, and quality.
 | "This phase is a bit big but fine" | If it overflows the review window, the human becomes the bottleneck. Split it. |
 | "The contract is obvious" | Explicit contracts enable mock testing and phase isolation. Reference the id. |
 | "Skip the dependency graph" | Without it, phases are assumed sequential and parallel teams stall. |
+| "The contract gap is obvious, I'll just fix the contract file" | Governance files are frozen during planning. Emit a `request`; `hsdd-reconcile` applies the answer at the root. |
+| "I'll create the shared artifact locally; the merge will be trivial" | Two agents generating from the same prose are never byte-identical. Record a `request`; the contract must name one canonical owner. |
+| "I'll peek at the sibling worktree's plan to coordinate" | Contracts are the only inter-node knowledge. Peeking couples plans invisibly and races the sibling's edits. |
