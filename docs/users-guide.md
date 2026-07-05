@@ -8,8 +8,9 @@ A practical, example-driven walkthrough. For the full model and rationale, see t
 Install the skills (see the [README](../README.md)) and, ideally, [Obra's
 superpowers](https://github.com/obra/superpowers) plugin. The HSDD loop, in one line:
 
-> decompose -> contract -> phase-plan -> configure -> one OpenSpec cycle per phase
-> -> human review -> repeat.
+> decompose -> contract -> phase-plan (parallel across leaf-parents) ->
+> reconcile -> configure -> one OpenSpec cycle per phase -> human review ->
+> repeat.
 
 The default layout the skills emit (override it in `docs/conventions.md`):
 
@@ -97,9 +98,11 @@ flowchart TD
         contracts["hsdd-contract<br/>versioned contracts + registry"]
         leaf{"Node small<br/>enough to phase?"}
         phaseplan["hsdd-phase-plan<br/>ordered phases, gates, review tiers"]
+        reconcile["hsdd-reconcile<br/>drain pending governance updates"]
         decompose --> contracts --> leaf
         leaf -- "no: decompose further" --> decompose
         leaf -- yes --> phaseplan
+        phaseplan --> reconcile
     end
 
     subgraph exec ["Execute (mechanism): one loop per phase"]
@@ -116,7 +119,7 @@ flowchart TD
     done["Integrated system"]
 
     bd --> decompose
-    phaseplan --> config
+    reconcile --> config
     gate -- approved --> more
     more -- "yes: next phase" --> config
     more -- all done --> done
@@ -129,6 +132,7 @@ flowchart TD
     style contracts fill:#f3e8ff,stroke:#7c3aed,color:#1e293b
     style leaf fill:#e0e7ff,stroke:#4f46e5,color:#1e293b
     style phaseplan fill:#f3e8ff,stroke:#7c3aed,color:#1e293b
+    style reconcile fill:#f3e8ff,stroke:#7c3aed,color:#1e293b
     style config fill:#f3e8ff,stroke:#7c3aed,color:#1e293b
     style cycle fill:#dbeafe,stroke:#2563eb,color:#1e293b
     style verify fill:#dbeafe,stroke:#2563eb,color:#1e293b
@@ -210,6 +214,18 @@ linkcheck.1
  |-- linkcheck.3   <- parallel with .2
       |-- linkcheck.4  <- depends on .2 and .3
 ```
+
+The plan ends with a `## Governance updates (pending reconcile)` section
+(confirming the `linkcheck-report@v1` phase ids). Even serial, finish planning
+with a quick reconcile:
+
+```text
+You: "Drain the pending governance updates."
+```
+
+`hsdd-reconcile` applies the confirms, flips the contract to
+`phase_ids: final`, and regenerates the registry. With one node this takes a
+minute; the same step is what makes parallel planning safe in Example 2.
 
 ### Step 4: Configure, run, review
 
@@ -368,6 +384,44 @@ team starts `acme.web.dashboard` against the `auth-token@v1` mock, and billing
 starts against the same contract. Three teams, three small contexts, one shared
 contract.
 
+### Step 7: Parallel leaf-parents, worktrees, reconcile
+
+When two leaf-parents are independent (their only edges are contracts), plan
+them concurrently, one git worktree per node:
+
+```bash
+git worktree add ../acme-auth plan-auth
+git worktree add ../acme-billing plan-billing
+```
+
+Run `hsdd-phase-plan` in each worktree. Under the governance freeze, neither
+run edits `contracts/`, `adr/`, or `docs/conventions.md`; each emits its
+intended changes into its own plan file, so the branches touch disjoint files.
+Billing's section might read:
+
+```markdown
+## Governance updates (pending reconcile)
+
+> Emitted by hsdd-phase-plan on 2026-07-05. Drained by hsdd-reconcile;
+> do not apply by hand.
+
+- confirm `auth-token@v1` consumers: [acme.backend.billing.2]
+- request `auth-token@v1`: which fixture do consumers mock against?
+  - assumption: `contracts/fixtures/auth-token.json`, owned by
+    acme.backend.auth.1
+  - contingent phases: acme.backend.billing.2
+```
+
+Merge both branches (clean by construction), then at the root:
+
+```text
+You: "Reconcile the worktrees."
+```
+
+`hsdd-reconcile` drains both sections: applies the `confirm` ids, resolves the
+fixture `request` with you, flips `auth-token@v1` to `phase_ids: final`, and
+regenerates the registry. Only then do the per-phase OpenSpec cycles start.
+
 ### The resulting tree
 
 ```text
@@ -397,6 +451,10 @@ openspec/
   phases, insert an internal node ("feature") instead of piling on phases.
 - **Keep `hard` edges rare.** They are the critical path. Prefer `contract`,
   `event`, and `shared-model` edges so teams parallelize.
+- **Plan against frozen governance.** `contracts/`, `adr/`, and
+  `docs/conventions.md` are read-only during phase planning, even at the root.
+  Changes ride the plan's pending-governance section until `hsdd-reconcile`
+  applies them; never resolve a contract gap by editing the contract mid-plan.
 - **Regenerate the registry** after any contract or ADR change:
   `node scripts/gen-registry.mjs`. Never hand-edit `INDEX.md`.
 - **Materialize ADRs as files, not prose.** A cross-cutting decision belongs in
