@@ -1,7 +1,8 @@
 # Project Conventions
 
 > Single source of truth for HSDD naming, layout, and established contracts.
-> Seeded by hsdd-spec at the root; refined by hsdd-phase-plan per leaf-parent.
+> Seeded by hsdd-spec at the root; updated only at the root (hsdd-spec or
+> hsdd-reconcile). Phase planning treats this file as read-only.
 > Override any default below and every skill honors it.
 
 ## Layout (default)
@@ -38,6 +39,19 @@ Stack skills (optional): `mermaid-pastel-style`, `fp-rust`, `fp-kstream-*`.
 - <= 8 OpenSpec tasks per phase; each phase fits one ~5h review window
 - Review tiers: gate-only | spot-check | full-review
 
-## Established contracts
-<!-- append cross-node contracts as they are defined -->
-- (none yet)
+## Contracts
+`contracts/INDEX.md` (generated) is the single index of established contracts.
+Do not list contracts here; run `node scripts/gen-registry.mjs` after any
+contract change.
+
+## Parallel development protocol
+- Governance files (`contracts/`, `adr/`, this file, both `INDEX.md`) are
+  read-only during phase planning, at the root and in every worktree.
+- `hsdd-phase-plan` emits intended changes as a
+  `## Governance updates (pending reconcile)` section in its own node's plan
+  file (`confirm` / `note` / `request` entries).
+- After phase-plan branches merge, run `hsdd-reconcile` at the root: it drains
+  pending sections, resolves `request` entries with the human, finalizes
+  contract `phase_ids`, and regenerates the registries.
+- Planners never read sibling worktrees or other nodes' phase plans; contracts
+  are the only inter-node knowledge.
