@@ -101,7 +101,7 @@ HSDD ships as agent skills, installable with the [`skills`](https://github.com/v
 CLI (works with Claude Code, Cursor, Codex, and 70+ agents):
 
 ```bash
-# All five HSDD skills (replace with your repo path)
+# All six HSDD skills (replace with your repo path)
 npx skills add mpurbo/hsdd
 
 # Or a single skill
@@ -126,6 +126,7 @@ re-implementing them; `hsdd-config` wires them into each OpenSpec cycle.
 | `hsdd-contract` | Define and version the first-class contracts between nodes. |
 | `hsdd-adr` | Author and maintain cross-cutting Architecture Decision Records as first-class files, with registry-compatible frontmatter and a status lifecycle. |
 | `hsdd-phase-plan` | Break a small-enough node into ordered, independently implementable phases, each sized for one OpenSpec change and one review window. |
+| `hsdd-reconcile` | Drain the pending governance updates emitted by phase planning: finalize contract phase ids, resolve contract-gap requests with you, and regenerate the registries. Runs at the root, after parallel plan branches merge. |
 | `hsdd-config` | Configure OpenSpec and switch the phase context so each cycle sees only the current phase plus its consumed contracts. |
 
 ## How it works
@@ -137,9 +138,13 @@ re-implementing them; `hsdd-config` wires them into each OpenSpec cycle.
    registry keeps the index honest.
 3. **Phase-plan** each leaf node into ordered phases with gates and review tiers
    (`hsdd-phase-plan`).
-4. **Configure** the per-phase context (`hsdd-config`), then run one OpenSpec
+4. **Reconcile** at the root after phase planning (`hsdd-reconcile`): drain the
+   pending governance sections, finalize contract phase ids, and regenerate the
+   registry. With parallel worktrees, merge the plan branches first; the merge
+   is clean by construction because planning never edits shared files.
+5. **Configure** the per-phase context (`hsdd-config`), then run one OpenSpec
    cycle per phase. Each `apply` produces a verification doc.
-5. **Review** every phase: a human reads the diff and runs the verification, at a
+6. **Review** every phase: a human reads the diff and runs the verification, at a
    depth set by the phase's review tier. Then move to the next phase.
 
 Run `openspec init` once, at the repo root (the directory that holds `docs/`,
@@ -158,6 +163,7 @@ tokens, time, and quality.
 "Define the auth-token contract: auth produces, billing consumes." -> hsdd-contract
 "Write the ADR for the auth provider decision."                 -> hsdd-adr
 "acme.backend.auth is small enough. Write its phase plan."      -> hsdd-phase-plan
+"Reconcile the worktrees."                                       -> hsdd-reconcile
 "Set up OpenSpec config for this project."                      -> hsdd-config
 "/hsdd-phase acme.backend.auth.2"   (switch context, then opsx:new)
 ```
@@ -168,6 +174,8 @@ tokens, time, and quality.
   and design decisions.
 - [v0.4 delta](spec/hsdd-spec-v0_4.md): ADR authoring as a first-class skill and
   where to run `openspec init`. Read against v0.3.
+- [v0.4.2 delta](spec/hsdd-spec-v0_4_2.md): the governance freeze protocol and
+  `hsdd-reconcile` for parallel leaf-parent development. Read against v0.4.
 - [User's guide](docs/users-guide.md): worked examples for a simple single-level
   project and a multi-level system.
 
