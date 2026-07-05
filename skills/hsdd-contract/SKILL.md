@@ -43,6 +43,7 @@ kind: api               # api | event | schema | shared-model | file | cli
 owner: acme.backend.auth
 produced_by: [acme.backend.auth.2]
 consumers: [acme.backend.billing.2, acme.mobile.session.1]
+phase_ids: provisional  # provisional | final; flipped only by hsdd-reconcile
 ---
 
 # Contract: auth-token
@@ -65,6 +66,21 @@ consumers: [acme.backend.billing.2, acme.mobile.session.1]
 
 Keep the frontmatter complete and accurate: it is the source of truth for the
 registry and for the context `hsdd-config` injects into each phase.
+
+## Provisional Phase Ids and the Writer Rule
+
+`produced_by` and `consumers` usually start as guesses (the first phase of
+each leaf-parent) because contracts are authored before phase plans exist.
+Mark that state in frontmatter: `phase_ids: provisional`. Do not write prose
+notes like "update these ids later" in the body; prose addressed to "whoever
+runs next" invites concurrent edits from both sides. The field carries the
+state, and only `hsdd-reconcile` flips it to `final`, after the phase plans on
+both sides have confirmed their ids.
+
+Contract files are written at the repo root only, in `hsdd-contract` or
+`hsdd-reconcile` sessions. Phase planning (`hsdd-phase-plan`) never edits a
+contract: it emits `confirm` and `request` entries in its node's
+`## Governance updates (pending reconcile)` section instead.
 
 ## Dependency Types
 
@@ -117,6 +133,8 @@ are authored by `hsdd-adr`, not here; this skill owns `contracts/` only.
 - [ ] At least one guarantee/invariant is stated.
 - [ ] A breaking change bumped the version and added a migration note.
 - [ ] The registry was regenerated.
+- [ ] `phase_ids` is present (`provisional` until `hsdd-reconcile` finalizes it).
+- [ ] Every code-level artifact both sides consume (types file, fixtures, shared package) names its canonical path and owning phase in the Interface or Validation section.
 
 ## Anti-Rationalization
 
@@ -127,3 +145,5 @@ are authored by `hsdd-adr`, not here; this skill owns `contracts/` only.
 | "I'll just edit INDEX.md by hand" | The registry is derived. Hand edits drift from the contracts. Run the generator. |
 | "Small change, no version bump" | If a consumer's code could break, it is a new version. Bump and note the migration. |
 | "Put the schema in the node spec" | Then consumers must read the producer's spec. Contracts exist so they do not. |
+| "Both sides can regenerate the shared types; they'll match" | Two generations from the same prose diverge. Name one canonical artifact path and one owning phase in the contract. |
+| "I'll note 'update phase ids later' in the body" | Prose notes invite concurrent edits from both sides. `phase_ids: provisional` carries that state; `hsdd-reconcile` flips it. |
