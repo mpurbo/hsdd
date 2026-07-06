@@ -72,10 +72,14 @@ Append this section to `docs/spec/{node-id}.md`:
 - confirm `{contract-id}@v{n}` {produced_by|consumers}: [{phase-ids}]
 - note: {conventions-worthy fact: a new package, a shared artifact created
   by an owned phase}
+- amend `{contract-id}@v{n}`: {a guarantee or semantic this plan settled for
+  a contract this node owns, that consumers may rely on}
 - request `{contract-id}@v{n}`: {the gap, phrased as a question}
   - assumption: {what this plan assumes while the gap is open}
-  - contingent phases: {phase ids that must not start until resolved}
+  - contingent phases: {phase ids that must not start until resolved, or none}
 ```
+
+Any entry may carry short rationale sub-bullets; `hsdd-reconcile` reads them.
 
 **Contract gaps (two-tier rule).** If a gap in a consumed contract changes the
 shape of the plan (which phases exist, what they produce), stop and ask the
@@ -83,9 +87,19 @@ human now; a wrong structural assumption poisons every downstream phase.
 Otherwise proceed conservatively and record a `request` entry with the
 assumption stated and the contingent phases listed.
 
+**Producer-side discoveries (`amend`).** Planning often settles semantics of a
+contract this node owns (an error mapping, an ordering guarantee) that would
+otherwise hide as a node-local decision consumers never see. If a consumer
+could reasonably depend on it, emit an `amend` entry so `hsdd-reconcile` folds
+it into the contract body; keep it node-local only when it is invisible across
+the boundary.
+
 **Sibling isolation.** Do not read sibling worktree folders or other nodes'
 phase plans. Contracts are the only inter-node knowledge; a sibling's
-half-written plan on the same disk is not a contract.
+half-written plan on the same disk is not a contract. Sibling node specs as
+written by `hsdd-spec` (purpose, contracts, DAG) are shared decomposition
+artifacts and fine to read; a sibling's phase-plan sections and its worktree
+are not.
 
 ## Phase Ordering (FP Progression)
 

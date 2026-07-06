@@ -49,9 +49,10 @@ contract change.
   read-only during phase planning, at the root and in every worktree.
 - `hsdd-phase-plan` emits intended changes as a
   `## Governance updates (pending reconcile)` section in its own node's plan
-  file (`confirm` / `note` / `request` entries).
+  file (`confirm` / `note` / `amend` / `request` entries).
 - After phase-plan branches merge, run `hsdd-reconcile` at the root: it drains
   pending sections, resolves `request` entries with the human, finalizes
   contract `phase_ids`, and regenerates the registries.
-- Planners never read sibling worktrees or other nodes' phase plans; contracts
-  are the only inter-node knowledge.
+- Planners never read sibling worktrees or other nodes' phase plans (sibling
+  node specs from hsdd-spec are shared and fine to read); contracts are the
+  only inter-node knowledge.

@@ -79,7 +79,7 @@ both sides have confirmed their ids.
 
 Contract files are written at the repo root only, in `hsdd-contract` or
 `hsdd-reconcile` sessions. Phase planning (`hsdd-phase-plan`) never edits a
-contract: it emits `confirm` and `request` entries in its node's
+contract: it emits `confirm`, `amend`, and `request` entries in its node's
 `## Governance updates (pending reconcile)` section instead.
 
 ## Dependency Types

@@ -43,13 +43,16 @@ files); this skill performs the semantic merge.
    the default layout (plan files under `docs/spec/`) and states the parallel
    development protocol this skill completes.
 2. **Scan.** Find every `## Governance updates (pending reconcile)` section in
-   `docs/spec/*.md`. If none exist, say so and stop.
+   `docs/spec/*.md`. If none exist, say so and stop. Entries may carry
+   rationale sub-bullets, and `contingent phases: none` means nothing blocks;
+   read both accordingly.
 3. **Detect collisions before applying anything.** Group entries by contract
    id. A collision is: two nodes claiming the same artifact or package,
-   contradictory `confirm` entries, or a `request` assumption that conflicts
-   with another node's entry. Present each collision with both sides quoted;
-   never auto-pick a winner. After the human decides, update the losing node's
-   plan (its entry and any phase scope that assumed otherwise) to match.
+   contradictory `confirm` entries, an `amend` conflicting with another node's
+   assumption, or a `request` assumption that conflicts with another node's
+   entry. Present each collision with both sides quoted; never auto-pick a
+   winner. After the human decides, update the losing node's plan (its entry
+   and any phase scope that assumed otherwise) to match.
 4. **Apply `confirm` entries** to contract frontmatter (`produced_by`,
    `consumers`). When both producer and consumer ids are confirmed, flip
    `phase_ids: provisional` to `phase_ids: final`. A side with no planned
@@ -60,12 +63,16 @@ files); this skill performs the semantic merge.
    to the contract file under hsdd-contract rules (a breaking change bumps the
    version and adds a migration note). Hand cross-cutting answers to hsdd-adr.
    State which assumption held so contingent phases can start.
-6. **Apply `note` entries** to `docs/conventions.md` only when they change a
+6. **Apply `amend` entries** to the owned contract's body (guarantees or
+   semantics the producer's plan settled). A backward-compatible addition
+   keeps the version; anything that could break a consumer goes to the human
+   and bumps the version.
+7. **Apply `note` entries** to `docs/conventions.md` only when they change a
    convention. Drop notes that duplicate derived data; the registry already
    projects contract facts.
-7. **Stamp each drained section**, replacing its entries with one line:
+8. **Stamp each drained section**, replacing its entries with one line:
    `> Reconciled {YYYY-MM-DD} by hsdd-reconcile. Drained entries are in git history.`
-8. **Regenerate the registries:** `node scripts/gen-registry.mjs`.
+9. **Regenerate the registries:** `node scripts/gen-registry.mjs`.
 
 ## Entry Handling
 
@@ -73,6 +80,7 @@ files); this skill performs the semantic merge.
 |-------|--------|------|
 | `confirm` | contract frontmatter | apply; flip `phase_ids` to `final` when both sides are confirmed |
 | `request` | contract body (or a new ADR) | human resolves; skill applies; contingent phases unblock |
+| `amend` | contract body | producer-side enrichment; backward-compatible keeps the version, breaking goes to the human and bumps it |
 | `note` | `docs/conventions.md` | apply only if it changes a convention; drop derived facts |
 
 ## Quality Gates

@@ -156,18 +156,25 @@ flowchart TD
 
 - confirm `{contract-id}@v{n}` {produced_by|consumers}: [{phase-ids}]
 - note: {conventions-worthy fact}
+- amend `{contract-id}@v{n}`: {a guarantee or semantic this plan settled for
+  a contract this node owns, that consumers may rely on}
 - request `{contract-id}@v{n}`: {the gap, phrased as a question}
   - assumption: {what this plan assumes while the gap is open}
-  - contingent phases: {phase ids that must not start until resolved}
+  - contingent phases: {phase ids that must not start until resolved, or none}
 ```
 
-Three entry kinds:
+Four entry kinds (any entry may carry short rationale sub-bullets):
 
 - `confirm`: finalize provisional `produced_by` / `consumers` phase ids for a
   contract this node produces or consumes.
 - `note`: a conventions-worthy fact (a new package, a shared artifact created
   by an owned phase). Notes that duplicate derived data are dropped at
   reconcile time; the registry already projects contract facts.
+- `amend`: a producer-side enrichment of a contract this node owns, settled
+  during planning (an error mapping, an ordering guarantee) that consumers may
+  rely on. Without it, such semantics hide as node-local decisions consumers
+  never see. Reconcile applies it to the contract body; a backward-compatible
+  addition keeps the version, a breaking one goes to the human and bumps it.
 - `request`: a gap or ambiguity in a consumed contract, with the assumption
   taken and the phases contingent on it. Contingent phases must not start
   until the request is resolved.
@@ -187,7 +194,9 @@ proceeds conservatively and records a `request` entry.
 A planner must not read sibling worktree folders or other nodes' phase plans.
 Contracts are the only inter-node knowledge; a sibling's half-written plan on
 the same disk is not a contract. (This is v0.3's isolation principle restated
-for the filesystem reality of worktrees.)
+for the filesystem reality of worktrees.) Sibling node specs as written by
+`hsdd-spec` (purpose, contracts, DAG) are shared decomposition artifacts and
+fine to read; a sibling's phase-plan sections and its worktree are not.
 
 ---
 
@@ -258,6 +267,7 @@ Use the hsdd-reconcile skill to reconcile: $ARGUMENTS
 | Who writes `docs/conventions.md` | Root only (`hsdd-spec` seeds it, `hsdd-reconcile` updates it). Phases and phase planning never touch it. |
 | Sibling worktree reads | Forbidden. Contracts are the only inter-node knowledge. |
 | Generator change | None. `phase_ids` is parsed and ignored by the projection (verified). |
+| Producer-side contract discoveries | The `amend` entry kind: reconcile applies producer-settled semantics to the owned contract's body; a breaking amendment goes to the human and bumps the version. |
 
 ---
 
