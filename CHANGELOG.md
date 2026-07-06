@@ -19,14 +19,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Governance freeze protocol (`spec/hsdd-spec-v0_4_2.md`): `contracts/`,
   `adr/`, `docs/conventions.md`, and the INDEX registries are read-only during
   phase planning; intended changes ride the node's own plan file as
-  `confirm`/`note`/`amend`/`request` entries. Parallel phase planning in git
-  worktrees
-  becomes conflict-free by construction.
+  `confirm`/`note`/`amend`/`request` entries. Parallel phase planning in
+  git worktrees becomes conflict-free by construction.
 - Contract frontmatter field `phase_ids: provisional | final`, flipped only by
   `hsdd-reconcile`. No generator change: unknown fields are ignored by the
-  projection. `status` flips `draft` to `stable` in the same step
-  (interface-frozen semantics), unless an unresolved `request` names the
-  contract.
+  projection. `status` flips `draft` to `stable` at the end of the same
+  reconcile pass, once no unresolved `request` names the contract
+  (interface-frozen semantics).
 
 ### Changed
 

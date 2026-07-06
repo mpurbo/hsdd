@@ -92,7 +92,8 @@ contract this node owns (an error mapping, an ordering guarantee) that would
 otherwise hide as a node-local decision consumers never see. If a consumer
 could reasonably depend on it, emit an `amend` entry so `hsdd-reconcile` folds
 it into the contract body; keep it node-local only when it is invisible across
-the boundary.
+the boundary. If the amendment could break an existing consumer, say so in the
+entry; reconcile takes breaking amends to the human.
 
 **Sibling isolation.** Do not read sibling worktree folders or other nodes'
 phase plans. Contracts are the only inter-node knowledge; a sibling's

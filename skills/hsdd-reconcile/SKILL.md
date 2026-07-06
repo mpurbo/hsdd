@@ -57,9 +57,6 @@ files); this skill performs the semantic merge.
    `consumers`). When both producer and consumer ids are confirmed, flip
    `phase_ids: provisional` to `phase_ids: final`. A side with no planned
    phase consumers (external or human consumers only) counts as confirmed.
-   In the same step, flip `status: draft` to `stable` unless an unresolved
-   `request` names the contract: stable means interface-frozen, safe to build
-   against (the hsdd-contract lifecycle rule), not producer-shipped.
 5. **Resolve `request` entries with the human.** Apply contract-shaped answers
    to the contract file under hsdd-contract rules (a breaking change bumps the
    version and adds a migration note). Hand cross-cutting answers to hsdd-adr.
@@ -68,12 +65,19 @@ files); this skill performs the semantic merge.
    semantics the producer's plan settled). A backward-compatible addition
    keeps the version; anything that could break a consumer goes to the human
    and bumps the version.
-7. **Apply `note` entries** to `docs/conventions.md` only when they change a
+7. **Finalize contract status.** Now that requests and amends are settled:
+   for every contract with `phase_ids: final` and no `request` left
+   unresolved, flip `status: draft` to `stable`. Stable means
+   interface-frozen, safe to build against (the hsdd-contract lifecycle
+   rule), not producer-shipped. This step runs after steps 5-6 on purpose:
+   the no-open-request condition is only decidable once requests are
+   resolved.
+8. **Apply `note` entries** to `docs/conventions.md` only when they change a
    convention. Drop notes that duplicate derived data; the registry already
    projects contract facts.
-8. **Stamp each drained section**, replacing its entries with one line:
+9. **Stamp each drained section**, replacing its entries with one line:
    `> Reconciled {YYYY-MM-DD} by hsdd-reconcile. Drained entries are in git history.`
-9. **Regenerate the registries:** `node scripts/gen-registry.mjs`.
+10. **Regenerate the registries:** `node scripts/gen-registry.mjs`.
 
 ## Entry Handling
 

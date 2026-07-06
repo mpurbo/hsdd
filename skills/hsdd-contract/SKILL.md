@@ -103,8 +103,9 @@ Classify how consumers couple to this contract so `hsdd-spec` can sequence work:
   old version remains `stable` until every consumer migrates, then `deprecated`.
 - Consumers always reference a specific version: `auth-token@v1`.
 - `status` lifecycle: new contracts start `draft`. `hsdd-reconcile` flips
-  `draft` to `stable` in the same step that flips `phase_ids` to `final`
-  (both sides confirmed, no unresolved `request` naming the contract).
+  `draft` to `stable` at the end of a reconcile pass, once both sides have
+  confirmed their phase ids (`phase_ids: final`) and no `request` naming the
+  contract remains unresolved.
   `stable` means the interface is frozen and safe to build against, not that
   the producer has shipped; implementation confidence is what phase gates and
   review tiers certify. `deprecated` follows the version rules above.
