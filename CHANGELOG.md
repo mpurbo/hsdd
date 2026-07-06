@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.1] - 2026-07-06
+
+- `hsdd-phase-plan` no longer implies it should create verification documents.
+  The phase template's Verification field said the description "becomes the
+  verification doc at hsdd/verify/{phase-id}.verification.md", which agents
+  read as an instruction to write that file during planning. The field is now
+  explicitly a 1-3 line statement of intent, with a rule that the plan's only
+  output is the node's plan file: the verification doc is written at apply by
+  the documentation task `hsdd-config` injects, once implementation details
+  exist, for the human to verify the completed change before archive. Added a
+  matching anti-rationalization entry.
+
 ## [0.5.0] - 2026-07-06
 
 ### Changed

@@ -125,11 +125,20 @@ are not.
 **Scope:** concrete, verifiable deliverable
 **Size estimate:** ~N files, ~N lines, <= 8 OpenSpec tasks
 **Gate:** exact command (e.g. `cargo build && cargo test`)
-**Verification:** how a human manually confirms it works beyond the gate; this
-  becomes the verification doc at hsdd/verify/{phase-id}.verification.md
+**Verification:** 1-3 lines of intent: what a human should confirm works beyond
+  the gate (observable behavior, not commands)
 **Review tier:** gate-only | spot-check | full-review
 **Dependencies:** which prior phases, and what specifically (contracts only)
 ```
+
+**Verification is a description, not a document.** The plan's only output is
+the phase sections in `hsdd/spec/{node-id}.md`. Never create files under
+`hsdd/verify/` during planning: the verification doc
+(`hsdd/verify/{phase-id}.verification.md`, with exact commands, expected
+output, what to inspect) is written during the OpenSpec cycle at apply, by the
+documentation task that `hsdd-config` injects, once the implementation details
+exist. The human uses that doc to manually verify the completed change before
+archive. The plan's Verification line is the intent that task expands on.
 
 ## Review Tiers
 
@@ -184,3 +193,4 @@ it. Phase sizing is the control knob for context, tokens, time, and quality.
 | "The contract gap is obvious, I'll just fix the contract file" | Governance files are frozen during planning. Emit a `request`; `hsdd-reconcile` applies the answer at the root. |
 | "I'll create the shared artifact locally; the merge will be trivial" | Two agents generating from the same prose are never byte-identical. Record a `request`; the contract must name one canonical owner. |
 | "I'll peek at the sibling worktree's plan to coordinate" | Contracts are the only inter-node knowledge. Peeking couples plans invisibly and races the sibling's edits. |
+| "I'll write the verification doc now while the phase is fresh" | Planning cannot know the implementation. The doc is written at apply by an OpenSpec task; the plan carries only the one-line intent. |
