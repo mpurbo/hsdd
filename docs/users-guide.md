@@ -12,22 +12,26 @@ superpowers](https://github.com/obra/superpowers) plugin. The HSDD loop, in one 
 > reconcile -> configure -> one OpenSpec cycle per phase -> human review ->
 > repeat.
 
-The default layout the skills emit (override it in `docs/conventions.md`):
+The default layout the skills emit (override it in `hsdd/conventions.md`). Every
+HSDD artifact lives under one root directory, `hsdd/`, with singular directory
+names; only OpenSpec's own files stay where OpenSpec expects them:
 
 ```text
-docs/spec/{node-id}.md                    node specs and phase plans
-docs/verify/{phase-id}.verification.md    per-phase verification docs
-contracts/{slug}.md + contracts/INDEX.md  first-class contracts (registry generated)
-adr/{nnn}-{title}.md + adr/INDEX.md        cross-cutting decisions (hsdd-adr, registry generated)
+hsdd/conventions.md                        naming, layout, and process conventions
+hsdd/spec/{node-id}.md                     node specs and phase plans
+hsdd/verify/{phase-id}.verification.md     per-phase verification docs
+hsdd/contract/{slug}.md + INDEX.md         first-class contracts (registry generated)
+hsdd/adr/{nnn}-{title}.md + INDEX.md       cross-cutting decisions (hsdd-adr, registry generated)
+hsdd/scripts/gen-registry.mjs              registry generator (copied from hsdd-contract)
 openspec/                                  config.yaml + one change per phase
 ```
 
 **Where to run `openspec init`:** once, at the repo root (the directory that holds
-`docs/`, `contracts/`, and `adr/`). One HSDD tree has one OpenSpec project. Every
+`hsdd/`). One HSDD tree has one OpenSpec project. Every
 phase, across every node, is a change under that single `openspec/changes/`;
 phases are kept apart by the per-phase context switch (`hsdd-config`), not by
 separate projects. If your system is split across repos, run `openspec init` at
-each repo root and share `contracts/` and `adr/` via a package or submodule.
+each repo root and share `hsdd/contract/` and `hsdd/adr/` via a package or submodule.
 
 A key principle worth internalizing early: **depth and ceremony are costs.** Use
 exactly as many levels and artifacts as the system needs, and no more. The two
@@ -109,7 +113,7 @@ flowchart TD
         direction TB
         config["hsdd-config<br/>inject phase + consumed contracts only"]
         cycle["OpenSpec cycle<br/>new -> design -> tasks -> apply -> archive"]
-        verify["Verification doc<br/>docs/verify/{phase-id}.verification.md"]
+        verify["Verification doc<br/>hsdd/verify/{phase-id}.verification.md"]
         gate{"Human review<br/>+ manual verify"}
         config --> cycle --> verify --> gate
         gate -- changes --> cycle
@@ -163,7 +167,7 @@ You: "Write a high-level spec for linkcheck, a CLI that crawls a site and
 
 `hsdd-spec` runs at the root. It recognizes the project is one coherent
 responsibility that fits a handful of phases, so it marks the root a
-**leaf-parent** rather than inventing sub-nodes. `docs/spec/linkcheck.md`:
+**leaf-parent** rather than inventing sub-nodes. `hsdd/spec/linkcheck.md`:
 
 ```markdown
 ### linkcheck: Broken Link Checker CLI
@@ -186,11 +190,11 @@ The "contracts" between phases are simply the domain types defined in phase 1.
 You: "Define the linkcheck-report contract."
 ```
 
-`hsdd-contract` writes `contracts/linkcheck-report.md` with frontmatter plus the
+`hsdd-contract` writes `hsdd/contract/linkcheck-report.md` with frontmatter plus the
 report schema (JSON shape and exit codes). Then it regenerates the registry:
 
 ```bash
-node scripts/gen-registry.mjs
+node hsdd/scripts/gen-registry.mjs
 ```
 
 ### Step 3: Phase-plan
@@ -236,7 +240,7 @@ You: "/hsdd-phase linkcheck.1"      (switch context, then run the cycle)
 You: "opsx: new ..."                 (proposal -> design -> tasks -> apply -> archive)
 ```
 
-At `apply`, the agent writes `docs/verify/linkcheck.1.verification.md`. Because
+At `apply`, the agent writes `hsdd/verify/linkcheck.1.verification.md`. Because
 phase 1 is `gate-only`, you confirm the gate passed and move on. Phase 3 (the HTTP
 checker) is `full-review`: you read the diff and run the manual verification
 before approving. Repeat for `.2`, `.3`, `.4`.
@@ -259,7 +263,7 @@ You: "Write a high-level spec for acme, a merchant onboarding platform with a
 ```
 
 `hsdd-spec` splits the root into three internal nodes and names the contracts
-between them. `docs/spec/acme.md` includes this typed dependency DAG:
+between them. `hsdd/spec/acme.md` includes this typed dependency DAG:
 
 ```mermaid
 %%{init:{'theme':'base','themeVariables':{'primaryTextColor':'#1e293b','lineColor':'#475569','edgeLabelBackground':'#ffffff','tertiaryTextColor':'#1e293b'}}}%%
@@ -285,7 +289,7 @@ mobile and web teams can build against mocks as soon as the contracts are
 ### Step 2: Recurse into the backend
 
 ```text
-You: "Break down @spec/acme.backend.md into auth, billing, and catalog subsystems."
+You: "Break down @hsdd/spec/acme.backend.md into auth, billing, and catalog subsystems."
 ```
 
 `hsdd-spec` runs again, now for an internal node, producing
@@ -300,7 +304,7 @@ forcing a flat phase split.
 You: "Define the auth-token contract: auth produces it, billing and mobile consume it."
 ```
 
-`hsdd-contract` writes `contracts/auth-token.md` (frontmatter + interface +
+`hsdd-contract` writes `hsdd/contract/auth-token.md` (frontmatter + interface +
 guarantees + `v1`). The choice of auth provider affects more than one node and
 must outlive the auth subsystem, so `hsdd-spec` proposes an ADR and hands it to
 `hsdd-adr` to materialize:
@@ -309,8 +313,8 @@ must outlive the auth subsystem, so `hsdd-spec` proposes an ADR and hands it to
 You: "Write the ADR for the auth provider decision."
 ```
 
-`hsdd-adr` writes `adr/001-auth-provider.md`. The frontmatter mirrors a contract,
-so the same generator projects it into `adr/INDEX.md`:
+`hsdd-adr` writes `hsdd/adr/001-auth-provider.md`. The frontmatter mirrors a contract,
+so the same generator projects it into `hsdd/adr/INDEX.md`:
 
 ```markdown
 ---
@@ -332,7 +336,7 @@ Use provider X with rotating asymmetric keys.
 ```
 
 It also sets `Governed by: [ADR-001]` on `acme.backend.auth` and `auth-token@v1`,
-then regenerates the registry (`node scripts/gen-registry.mjs`). The ADR is a
+then regenerates the registry (`node hsdd/scripts/gen-registry.mjs`). The ADR is a
 file, not a section in the node spec, so `hsdd-config` can later inject only its
 Decision and Consequences into the `auth.2` phase context.
 
@@ -382,7 +386,7 @@ The phase switch injects only what `auth.2` needs. The OpenSpec session for
 You: "opsx: new ..."   (proposal -> design -> tasks -> apply -> archive)
 ```
 
-`apply` writes `docs/verify/acme.backend.auth.2.verification.md`. You give it a
+`apply` writes `hsdd/verify/acme.backend.auth.2.verification.md`. You give it a
 `full-review`. Meanwhile, in a separate session or by another teammate, the web
 team starts `acme.web.dashboard` against the `auth-token@v1` mock, and billing
 starts against the same contract. Three teams, three small contexts, one shared
@@ -399,7 +403,7 @@ git worktree add ../acme-billing plan-billing
 ```
 
 Run `hsdd-phase-plan` in each worktree. Under the governance freeze, neither
-run edits `contracts/`, `adr/`, or `docs/conventions.md`; each emits its
+run edits `hsdd/contract/`, `hsdd/adr/`, or `hsdd/conventions.md`; each emits its
 intended changes into its own plan file, so the branches touch disjoint files.
 Billing's section might read:
 
@@ -411,7 +415,7 @@ Billing's section might read:
 
 - confirm `auth-token@v1` consumers: [acme.backend.billing.2]
 - request `auth-token@v1`: which fixture do consumers mock against?
-  - assumption: `contracts/fixtures/auth-token.json`, owned by
+  - assumption: `hsdd/contract/fixtures/auth-token.json`, owned by
     acme.backend.auth.1
   - contingent phases: acme.backend.billing.2
 ```
@@ -430,15 +434,19 @@ regenerates the registry. Only then do billing's per-phase OpenSpec cycles start
 ### The resulting tree
 
 ```text
-docs/spec/
-  acme.md  acme.backend.md  acme.mobile.md  acme.web.md
-  acme.backend.auth.md  acme.backend.billing.md  acme.backend.catalog.md
-contracts/
-  INDEX.md  auth-token.md  merchant-model.md  onboarding-events.md
-adr/
-  INDEX.md  001-auth-provider.md
-docs/verify/
-  acme.backend.auth.1.verification.md  ...  acme.backend.auth.4.verification.md
+hsdd/
+  conventions.md
+  spec/
+    acme.md  acme.backend.md  acme.mobile.md  acme.web.md
+    acme.backend.auth.md  acme.backend.billing.md  acme.backend.catalog.md
+  contract/
+    INDEX.md  auth-token.md  merchant-model.md  onboarding-events.md
+  adr/
+    INDEX.md  001-auth-provider.md
+  verify/
+    acme.backend.auth.1.verification.md  ...  acme.backend.auth.4.verification.md
+  scripts/
+    gen-registry.mjs
 openspec/
   config.yaml  changes/...
 ```
@@ -456,14 +464,14 @@ openspec/
   phases, insert an internal node ("feature") instead of piling on phases.
 - **Keep `hard` edges rare.** They are the critical path. Prefer `contract`,
   `event`, and `shared-model` edges so teams parallelize.
-- **Plan against frozen governance.** `contracts/`, `adr/`, and
-  `docs/conventions.md` are read-only during phase planning, even at the root.
+- **Plan against frozen governance.** `hsdd/contract/`, `hsdd/adr/`, and
+  `hsdd/conventions.md` are read-only during phase planning, even at the root.
   Changes ride the plan's pending-governance section until `hsdd-reconcile`
   applies them; never resolve a contract gap by editing the contract mid-plan.
 - **Regenerate the registry** after any contract or ADR change:
-  `node scripts/gen-registry.mjs`. Never hand-edit `INDEX.md`.
+  `node hsdd/scripts/gen-registry.mjs`. Never hand-edit `INDEX.md`.
 - **Materialize ADRs as files, not prose.** A cross-cutting decision belongs in
-  `adr/{nnn}-{title}.md` with frontmatter (via `hsdd-adr`), so the registry and
+  `hsdd/adr/{nnn}-{title}.md` with frontmatter (via `hsdd-adr`), so the registry and
   the phase context can find it. A decision internal to one node stays a `D{n}` in
   that node's spec.
 - **Match review depth to risk.** Reserve `full-review` for orchestration,

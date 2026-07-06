@@ -147,8 +147,8 @@ re-implementing them; `hsdd-config` wires them into each OpenSpec cycle.
 6. **Review** every phase: a human reads the diff and runs the verification, at a
    depth set by the phase's review tier. Then move to the next phase.
 
-Run `openspec init` once, at the repo root (the directory that holds `docs/`,
-`contracts/`, and `adr/`). One HSDD tree has one OpenSpec project; phases are
+Run `openspec init` once, at the repo root (the directory that holds `hsdd/`,
+where every HSDD artifact lives). One HSDD tree has one OpenSpec project; phases are
 isolated by the per-phase context switch, not by separate projects.
 
 Each phase is one PE (defined above), sized so the AI run plus the human review fit
@@ -159,7 +159,7 @@ tokens, time, and quality.
 
 ```text
 "Write a high-level spec for a merchant onboarding platform."   -> hsdd-spec (root)
-"Break down @spec/acme.md into backend, mobile, and web."       -> hsdd-spec (internal node)
+"Break down @hsdd/spec/acme.md into backend, mobile, and web."  -> hsdd-spec (internal node)
 "Define the auth-token contract: auth produces, billing consumes." -> hsdd-contract
 "Write the ADR for the auth provider decision."                 -> hsdd-adr
 "acme.backend.auth is small enough. Write its phase plan."      -> hsdd-phase-plan
@@ -176,6 +176,8 @@ tokens, time, and quality.
   where to run `openspec init`. Read against v0.3.
 - [v0.4.2 delta](spec/hsdd-spec-v0_4_2.md): the governance freeze protocol and
   `hsdd-reconcile` for parallel leaf-parent development. Read against v0.4.
+- [v0.5 delta](spec/hsdd-spec-v0_5.md): one `hsdd/` root directory for every
+  HSDD artifact, singular directory names. Read against v0.4.2.
 - [User's guide](docs/users-guide.md): worked examples for a simple single-level
   project and a multi-level system.
 

@@ -7,6 +7,47 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-07-06
+
+### Changed
+
+- **Breaking:** every HSDD artifact now lives under one root directory,
+  `hsdd/`, with singular directory names (`spec/hsdd-spec-v0_5.md`):
+  - `docs/conventions.md` -> `hsdd/conventions.md`
+  - `docs/spec/` -> `hsdd/spec/`
+  - `docs/verify/` -> `hsdd/verify/`
+  - `contracts/` -> `hsdd/contract/`
+  - `adr/` -> `hsdd/adr/`
+  - `scripts/gen-registry.mjs` -> `hsdd/scripts/gen-registry.mjs`
+
+  `openspec/` is unchanged; OpenSpec owns that location. The layout stays a
+  default: a project may override any path in its conventions file.
+- `gen-registry.mjs` defaults: root is `./hsdd` (was cwd), scanning
+  `contract/` and `adr/` under it. `--root <dir>` is unchanged. Standard
+  invocation is now `node hsdd/scripts/gen-registry.mjs`.
+- Skills that load conventions read `hsdd/conventions.md` first and fall back
+  to `docs/conventions.md` for pre-0.5 projects, honoring the layout that
+  file states and offering to migrate.
+- README, users guide, and all six skills updated to the new paths, including
+  trigger phrases (`hsdd/contract/INDEX.md`, `@hsdd/spec/foo.md`).
+
+### Migration (existing projects)
+
+```bash
+mkdir -p hsdd/scripts
+git mv docs/conventions.md hsdd/conventions.md
+git mv docs/spec hsdd/spec
+git mv docs/verify hsdd/verify        # if present
+git mv contracts hsdd/contract
+git mv adr hsdd/adr                   # if present
+git mv scripts/gen-registry.mjs hsdd/scripts/gen-registry.mjs
+```
+
+Then update the layout section of `hsdd/conventions.md` (or re-seed it from
+the template) and re-copy the bundled generator, since the old copy scans the
+old paths. Keeping the old layout is also fine: state it in the conventions
+file and the skills honor it.
+
 ## [0.4.2] - 2026-07-05
 
 ### Added

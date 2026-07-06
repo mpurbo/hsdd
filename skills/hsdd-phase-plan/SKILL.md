@@ -36,10 +36,11 @@ pure functions -> effects -> composition.
 
 ## Process
 
-1. **Load conventions.** Read `docs/conventions.md` (single source of truth for
-   naming, layout, and the parallel development protocol). Do not re-scan every
-   prior spec.
-2. **Reference the node spec.** Load `docs/spec/{node-id}.md`: purpose,
+1. **Load conventions.** Read `hsdd/conventions.md` (single source of truth for
+   naming, layout, and the parallel development protocol; a pre-0.5 project has
+   it at `docs/conventions.md`: honor its layout and offer to migrate). Do not
+   re-scan every prior spec.
+2. **Reference the node spec.** Load `hsdd/spec/{node-id}.md`: purpose,
    consumed/produced contract ids, governing ADRs, isolation strategy. Reference
    ADRs by id (`Governed by: [ADR-NNN]`); they are authored as files by
    `hsdd-adr`, never inline here.
@@ -49,19 +50,19 @@ pure functions -> effects -> composition.
 5. **Assign a review tier** per phase.
 6. **Emit governance updates.** Append the
    `## Governance updates (pending reconcile)` section (template below) to this
-   node's plan file. Never edit `contracts/`, `adr/`, `docs/conventions.md`, or
-   any `INDEX.md`: they are frozen inputs, applied later by `hsdd-reconcile` at
-   the root.
+   node's plan file. Never edit `hsdd/contract/`, `hsdd/adr/`,
+   `hsdd/conventions.md`, or any `INDEX.md`: they are frozen inputs, applied
+   later by `hsdd-reconcile` at the root.
 
 ## Governance Freeze (Read-Only Inputs)
 
-Phase planning reads governance files; it never writes them. `contracts/*`,
-`adr/*`, `docs/conventions.md`, and both `INDEX.md` registries are a frozen
+Phase planning reads governance files; it never writes them. `hsdd/contract/*`,
+`hsdd/adr/*`, `hsdd/conventions.md`, and both `INDEX.md` registries are a frozen
 snapshot, whether you run at the repo root or in a worktree, serial or
 parallel. Every intended change is emitted as data in the node's own plan file
 and applied once, at the root, by `hsdd-reconcile`.
 
-Append this section to `docs/spec/{node-id}.md`:
+Append this section to `hsdd/spec/{node-id}.md`:
 
 ```markdown
 ## Governance updates (pending reconcile)
@@ -125,7 +126,7 @@ are not.
 **Size estimate:** ~N files, ~N lines, <= 8 OpenSpec tasks
 **Gate:** exact command (e.g. `cargo build && cargo test`)
 **Verification:** how a human manually confirms it works beyond the gate; this
-  becomes the verification doc at docs/verify/{phase-id}.verification.md
+  becomes the verification doc at hsdd/verify/{phase-id}.verification.md
 **Review tier:** gate-only | spot-check | full-review
 **Dependencies:** which prior phases, and what specifically (contracts only)
 ```

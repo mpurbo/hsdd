@@ -4,7 +4,7 @@ description: >
   Use when turning a brain-dump or product idea into a high-level spec, or
   decomposing an existing spec node into child nodes (subsystems), NOT into
   implementation phases. Triggers: "write a high-level system spec", "break down
-  @spec/foo.md into backend and frontend", "decompose X into subsystems", "break
+  @hsdd/spec/foo.md into backend and frontend", "decompose X into subsystems", "break
   X into parts or pieces", "identify subsystems", "contract boundaries",
   "subsystem dependencies", "dependency map", "parallel development order",
   "multi-level spec". This is the recursive decomposition step of HSDD, at the
@@ -29,7 +29,7 @@ architecture level.
 ## When to Use
 
 - **Root:** a brain-dump, product idea, or "write a high-level spec" request.
-- **Internal node:** "break down @spec/{node}.md into ..." or "decompose {node}
+- **Internal node:** "break down @hsdd/spec/{node}.md into ..." or "decompose {node}
   into ...". Treat the named node as the parent and emit one child node spec each.
 - **Multi-level:** repeat at each level until a node is small enough to phase.
 
@@ -89,18 +89,18 @@ intermediate internal node (a "feature") rather than forcing a fixed tier.
 6. **Record cross-cutting decisions as ADRs.** When a decision spans more than one
    node or must outlive its node, propose an `ADR-{nnn}` and let the human accept
    or edit it. Once accepted, hand off to `hsdd-adr` to materialize it as
-   `adr/{nnn}-{title}.md` (frontmatter + Decision + Consequences) and set
+   `hsdd/adr/{nnn}-{title}.md` (frontmatter + Decision + Consequences) and set
    `Governed by: [ADR-NNN]` on each affected node and contract. Do NOT leave an
    ADR as inline prose in the node spec: the registry and `hsdd-config` resolve
    ADRs by file. Keep ADRs few; node-local choices stay as `D{n}` in the node spec.
-7. **Write the node spec** to `docs/spec/{node-id}.md` using the shape below.
+7. **Write the node spec** to `hsdd/spec/{node-id}.md` using the shape below.
    Include a Mermaid dependency DAG. If `mermaid-pastel-style` is installed,
    follow it.
-8. **Seed conventions.** At the root, create `docs/conventions.md` from the
+8. **Seed conventions.** At the root, create `hsdd/conventions.md` from the
    bundled template (`templates/conventions.md`): default layout, id scheme,
    companion-skill recommendation. At deeper levels, refresh it only for
    genuinely new conventions (layout, naming, protocol); contracts are indexed
-   by the generated `contracts/INDEX.md`, never listed here.
+   by the generated `hsdd/contract/INDEX.md`, never listed here.
 
 ## Dependency Types
 
