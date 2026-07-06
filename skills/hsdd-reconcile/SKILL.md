@@ -39,11 +39,12 @@ files); this skill performs the semantic merge.
 
 ## Process
 
-1. **Load conventions.** Read `docs/conventions.md` first; it may override
-   the default layout (plan files under `docs/spec/`) and states the parallel
-   development protocol this skill completes.
+1. **Load conventions.** Read `hsdd/conventions.md` first; it may override
+   the default layout (plan files under `hsdd/spec/`) and states the parallel
+   development protocol this skill completes. A pre-0.5 project has it at
+   `docs/conventions.md`: honor its layout and offer to migrate.
 2. **Scan.** Find every `## Governance updates (pending reconcile)` section in
-   `docs/spec/*.md`. If none exist, say so and stop. Entries may carry
+   `hsdd/spec/*.md`. If none exist, say so and stop. Entries may carry
    rationale sub-bullets, and `contingent phases: none` means nothing blocks;
    read both accordingly.
 3. **Detect collisions before applying anything.** Group entries by contract
@@ -72,12 +73,12 @@ files); this skill performs the semantic merge.
    rule), not producer-shipped. This step runs after steps 5-6 on purpose:
    the no-open-request condition is only decidable once requests are
    resolved.
-8. **Apply `note` entries** to `docs/conventions.md` only when they change a
+8. **Apply `note` entries** to `hsdd/conventions.md` only when they change a
    convention. Drop notes that duplicate derived data; the registry already
    projects contract facts.
 9. **Stamp each drained section**, replacing its entries with one line:
    `> Reconciled {YYYY-MM-DD} by hsdd-reconcile. Drained entries are in git history.`
-10. **Regenerate the registries:** `node scripts/gen-registry.mjs`.
+10. **Regenerate the registries:** `node hsdd/scripts/gen-registry.mjs`.
 
 ## Entry Handling
 
@@ -86,7 +87,7 @@ files); this skill performs the semantic merge.
 | `confirm` | contract frontmatter | apply; flip `phase_ids` to `final` when both sides are confirmed |
 | `request` | contract body (or a new ADR) | human resolves; skill applies; contingent phases unblock |
 | `amend` | contract body | producer-side enrichment; backward-compatible keeps the version, breaking goes to the human and bumps it |
-| `note` | `docs/conventions.md` | apply only if it changes a convention; drop derived facts |
+| `note` | `hsdd/conventions.md` | apply only if it changes a convention; drop derived facts |
 
 ## Quality Gates
 
@@ -94,7 +95,7 @@ files); this skill performs the semantic merge.
 - [ ] No contract with both sides fully planned remains `phase_ids: provisional`, and none with `phase_ids: final` and no open request remains `status: draft`.
 - [ ] Every collision was decided by the human, and the losing plan was updated to match.
 - [ ] Contract edits follow hsdd-contract versioning (breaking change = new version + migration note).
-- [ ] `node scripts/gen-registry.mjs` ran after the last contract edit.
+- [ ] `node hsdd/scripts/gen-registry.mjs` ran after the last contract edit.
 
 ## Anti-Rationalization
 

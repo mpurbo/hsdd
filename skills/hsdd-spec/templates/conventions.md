@@ -6,17 +6,22 @@
 > Override any default below and every skill honors it.
 
 ## Layout (default)
-- `docs/spec/{node-id}.md`                    node specs and leaf-parent phase plans
-- `docs/verify/{phase-id}.verification.md`    per-phase verification docs
-- `contracts/{slug}.md` + `contracts/INDEX.md`  first-class contracts (registry generated)
-- `adr/{nnn}-{title}.md` + `adr/INDEX.md`      cross-cutting decisions (authored by hsdd-adr, registry generated)
+Every HSDD artifact lives under one root directory, `hsdd/`. Directory names
+are singular. OpenSpec files stay where OpenSpec expects them (`openspec/`).
+
+- `hsdd/conventions.md`                       this file
+- `hsdd/spec/{node-id}.md`                    node specs and leaf-parent phase plans
+- `hsdd/verify/{phase-id}.verification.md`    per-phase verification docs
+- `hsdd/contract/{slug}.md` + `hsdd/contract/INDEX.md`  first-class contracts (registry generated)
+- `hsdd/adr/{nnn}-{title}.md` + `hsdd/adr/INDEX.md`     cross-cutting decisions (authored by hsdd-adr, registry generated)
+- `hsdd/scripts/gen-registry.mjs`             registry generator (copied verbatim from hsdd-contract)
 - `openspec/config.yaml` + `openspec/changes/` config and one change per phase
 
 ## OpenSpec init
-Run `openspec init` once, at the repo root (the directory holding this file's
-`docs/`, `contracts/`, and `adr/`). One HSDD tree has one OpenSpec project; phases
+Run `openspec init` once, at the repo root (the directory holding `hsdd/`,
+this file's parent). One HSDD tree has one OpenSpec project; phases
 are isolated by the per-phase context switch (hsdd-config), not by separate
-projects. Polyrepo: init per repo root and share `contracts/` + `adr/`.
+projects. Polyrepo: init per repo root and share `hsdd/contract/` + `hsdd/adr/`.
 
 ## Naming
 - Node id: dotted slug path from root (`acme.backend.auth`)
@@ -40,13 +45,13 @@ Stack skills (optional): `mermaid-pastel-style`, `fp-rust`, `fp-kstream-*`.
 - Review tiers: gate-only | spot-check | full-review
 
 ## Contracts
-`contracts/INDEX.md` (generated) is the single index of established contracts.
-Do not list contracts here; run `node scripts/gen-registry.mjs` after any
+`hsdd/contract/INDEX.md` (generated) is the single index of established contracts.
+Do not list contracts here; run `node hsdd/scripts/gen-registry.mjs` after any
 contract change.
 
 ## Parallel development protocol
-- Governance files (`contracts/`, `adr/`, this file, both `INDEX.md`) are
-  read-only during phase planning, at the root and in every worktree.
+- Governance files (`hsdd/contract/`, `hsdd/adr/`, this file, both `INDEX.md`)
+  are read-only during phase planning, at the root and in every worktree.
 - `hsdd-phase-plan` emits intended changes as a
   `## Governance updates (pending reconcile)` section in its own node's plan
   file (`confirm` / `note` / `amend` / `request` entries).

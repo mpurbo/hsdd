@@ -4,8 +4,8 @@
 // markdown files into deterministic INDEX.md tables. Zero dependencies.
 //
 // Usage:
-//   node gen-registry.mjs                 # scan ./contracts and ./adr under cwd
-//   node gen-registry.mjs --root <dir>    # scan <dir>/contracts and <dir>/adr
+//   node hsdd/scripts/gen-registry.mjs    # scan ./hsdd/contract and ./hsdd/adr under cwd
+//   node gen-registry.mjs --root <dir>    # scan <dir>/contract and <dir>/adr
 //
 // Output is deterministic (no timestamps), so re-running produces no spurious
 // diffs. Wire it into a pre-commit or CI hook after editing contracts.
@@ -14,7 +14,7 @@ import { readdirSync, readFileSync, writeFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
 
 function parseArgs(argv) {
-  const args = { root: process.cwd() };
+  const args = { root: join(process.cwd(), "hsdd") };
   for (let i = 0; i < argv.length; i++) {
     if (argv[i] === "--root") args.root = argv[++i];
   }
@@ -78,7 +78,7 @@ function writeTable(path, title, header, sep, rows) {
 }
 
 function genContracts(root) {
-  const dir = join(root, "contracts");
+  const dir = join(root, "contract");
   const entries = loadDir(dir);
   if (entries.length === 0) return null;
   const rows = entries.map(({ data: d }) =>
@@ -103,5 +103,5 @@ function genAdrs(root) {
 const { root } = parseArgs(process.argv.slice(2));
 const c = genContracts(root);
 const a = genAdrs(root);
-console.log(`contracts: ${c === null ? "none" : c + " -> contracts/INDEX.md"}`);
-console.log(`adr:       ${a === null ? "none" : a + " -> adr/INDEX.md"}`);
+console.log(`contract: ${c === null ? "none" : c + " -> contract/INDEX.md"}`);
+console.log(`adr:      ${a === null ? "none" : a + " -> adr/INDEX.md"}`);

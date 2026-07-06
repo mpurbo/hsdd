@@ -28,7 +28,7 @@ OpenSpec change.
 ## When to Use
 
 - **New project:** after `openspec init` (run once, at the repo root: the same
-  directory that holds `docs/`, `contracts/`, and `adr/`. One HSDD tree has one
+  directory that holds `hsdd/`. One HSDD tree has one
   OpenSpec project), or when `config.yaml` is empty/default.
 - **Starting a phase (critical):** switch the phase context BEFORE `opsx:new`. If
   config still references the previous phase, every artifact inherits stale
@@ -38,8 +38,10 @@ OpenSpec change.
 
 ## Process
 
-1. **Discover context.** Read `docs/conventions.md`, `docs/spec/*.md` (by path,
-   not in full), `CLAUDE.md`, and tech-stack files (`Cargo.toml`, `package.json`).
+1. **Discover context.** Read `hsdd/conventions.md` (a pre-0.5 project has it at
+   `docs/conventions.md`: honor its layout and offer to migrate), `hsdd/spec/*.md`
+   (by path, not in full), `CLAUDE.md`, and tech-stack files (`Cargo.toml`,
+   `package.json`).
 2. **Discover companion skills** actually installed (e.g. `superpowers:*`,
    `fp-rust`). Only reference ones present; missing ones degrade gracefully.
 3. **Map skills to workflow steps** (table below).
@@ -77,7 +79,7 @@ context: |
   ## Development Discipline
   - TDD (red-green-refactor): use superpowers:test-driven-development at apply.
   - <tech-specific>: use <skill> when writing <language>.
-  - Conventions: see docs/conventions.md
+  - Conventions: see hsdd/conventions.md
 
   ## Current Phase: {phase-id} - {Phase Name}
   <paste the phase section: scope, contracts consumed/produced, gate,
@@ -105,7 +107,7 @@ rules:
     - "Order tasks for TDD: test first, then implementation."
     - "Each task completable in one red-green-refactor cycle."
     - "Include a gate task that runs the phase gate command."
-    - "After the gate task, add a documentation task that writes the verification doc at docs/verify/{phase-id}.verification.md (commands to run, expected output, what to inspect). Never update docs/conventions.md or contracts/ from a phase; governance changes are made at the root (hsdd-contract / hsdd-reconcile), never from a phase."
+    - "After the gate task, add a documentation task that writes the verification doc at hsdd/verify/{phase-id}.verification.md (commands to run, expected output, what to inspect). Never update hsdd/conventions.md or hsdd/contract/ from a phase; governance changes are made at the root (hsdd-contract / hsdd-reconcile), never from a phase."
 ```
 
 Only valid artifact ids are `proposal`, `design`, `specs`, `tasks`. Adding any
@@ -118,7 +120,7 @@ other id makes OpenSpec reject the config. Quote any rule containing `: `.
 3. Replace `## Contracts from Prior Phases / Nodes` with only the Interface +
    Guarantees of each consumed contract id.
 4. Replace `## Governing Decisions` with only the Decision + Consequences of each
-   referenced ADR. If a referenced `ADR-NNN` has no file under `adr/`, it was
+   referenced ADR. If a referenced `ADR-NNN` has no file under `hsdd/adr/`, it was
    never materialized: stop and author it with `hsdd-adr` first. You must not
    invent the decision; the human supplies it. If the decision content is not
    available, author the ADR as `status: proposed` with the Decision left as an

@@ -5,8 +5,8 @@ description: >
   cross-cutting Architecture Decision Record (ADR) in an HSDD project. Triggers:
   "write an ADR", "record this decision", "why did we choose X", "ADR for the
   auth provider", "materialize the ADR hsdd-spec proposed", "accept the proposed
-  ADR", "supersede ADR-002", "ADR status", "adr/INDEX.md", "Governed by". ADRs
-  are first-class versioned files in adr/. Do NOT use for node-local design
+  ADR", "supersede ADR-002", "ADR status", "hsdd/adr/INDEX.md", "Governed by". ADRs
+  are first-class versioned files in hsdd/adr/. Do NOT use for node-local design
   choices (keep those as D{n} in the node spec), node decomposition (use
   hsdd-spec), or contract bodies (use hsdd-contract).
 ---
@@ -29,7 +29,7 @@ Consequences, never the Context or the alternatives behind them.
 - A cross-cutting decision surfaces (auth provider, event bus, cache strategy,
   error model, data-residency rule) that affects multiple nodes or contracts.
 - An ADR must change status: accept a proposal, or supersede/deprecate an old one.
-- `adr/INDEX.md` needs regenerating after a change.
+- `hsdd/adr/INDEX.md` needs regenerating after a change.
 
 **Do NOT use for** node decomposition (`hsdd-spec`), contract bodies
 (`hsdd-contract`), or phase planning (`hsdd-phase-plan`).
@@ -52,8 +52,8 @@ the contract says what.
 
 ## The ADR Artifact
 
-Write to `adr/{nnn}-{title}.md`. The frontmatter mirrors a contract so the same
-generator projects it into `adr/INDEX.md`:
+Write to `hsdd/adr/{nnn}-{title}.md`. The frontmatter mirrors a contract so the same
+generator projects it into `hsdd/adr/INDEX.md`:
 
 ```markdown
 ---
@@ -91,8 +91,8 @@ injects only those two sections into a phase context. Deliberation belongs in
 ## Numbering and Filename
 
 - Numbers are global across the whole tree, not per node: `ADR-001`, `ADR-002`.
-- Next number = highest existing `ADR-{nnn}` plus one. Scan `adr/` first.
-- Filename is `adr/{nnn}-{title-slug}.md`; frontmatter `id` is the display id
+- Next number = highest existing `ADR-{nnn}` plus one. Scan `hsdd/adr/` first.
+- Filename is `hsdd/adr/{nnn}-{title-slug}.md`; frontmatter `id` is the display id
   `ADR-{nnn}`. This mirrors contracts (`{slug}.md` with `id: {slug}`). The slug is
   a short kebab-case of the decision topic (2-4 words); include a vendor name only
   when the vendor is the decision. Zero-pad the number to three digits.
@@ -133,18 +133,19 @@ is the forward reference until it does.
 
 ## The Registry (generated, never hand-edited)
 
-`adr/INDEX.md` is derived data: a pure projection over each ADR's frontmatter. It is
+`hsdd/adr/INDEX.md` is derived data: a pure projection over each ADR's frontmatter. It is
 produced by the one generator that `hsdd-contract` bundles; that single script
-projects both `adr/INDEX.md` and `contracts/INDEX.md`:
+projects both `hsdd/adr/INDEX.md` and `hsdd/contract/INDEX.md`:
 
 ```bash
-node scripts/gen-registry.mjs        # writes adr/INDEX.md (and contracts/INDEX.md)
+node hsdd/scripts/gen-registry.mjs   # writes hsdd/adr/INDEX.md (and hsdd/contract/INDEX.md)
 ```
 
 The generator ships **only** with `hsdd-contract`, and ADRs are frequently
-materialized before the first contract, so `scripts/gen-registry.mjs` may not be in
-the project yet. If it is absent, copy it **verbatim** from the `hsdd-contract`
-skill's `scripts/gen-registry.mjs` (that skill's base directory is printed when it
+materialized before the first contract, so `hsdd/scripts/gen-registry.mjs` may not
+be in the project yet. If it is absent, copy it **verbatim** from the `hsdd-contract`
+skill's `scripts/gen-registry.mjs` into the project's `hsdd/scripts/` directory
+(that skill's base directory is printed when it
 loads; on a standard install it is typically
 `~/.claude/skills/hsdd-contract/scripts/gen-registry.mjs`). Do NOT reimplement it
 from any description: a retyped copy silently mis-projects the registry.
@@ -173,4 +174,4 @@ without frontmatter is silently skipped, so the frontmatter is mandatory.
 | "Every design choice deserves an ADR" | ADRs are for cross-cutting decisions. Node-local choices are `D{n}`. Keep ADRs few. |
 | "I'll fill in a reasonable decision so the phase can start" | An invented `accepted` ADR is injected as binding. If the decision is unknown, `status: proposed` + TODO; let the human decide. |
 | "The generator isn't here yet, I'll write one from this description" | It ships with `hsdd-contract`. Copy that file verbatim; never retype or reimplement it. A rewritten generator drifts and mis-projects the registry. |
-| "I'll edit adr/INDEX.md by hand" | It is derived. Hand edits drift. Run the generator. |
+| "I'll edit hsdd/adr/INDEX.md by hand" | It is derived. Hand edits drift. Run the generator. |

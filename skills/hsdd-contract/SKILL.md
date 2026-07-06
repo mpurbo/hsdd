@@ -5,8 +5,8 @@ description: >
   interface one node exposes to another). Triggers: "define the X contract",
   "what does auth produce or consume", "add a contract", "bump the contract to
   v2", "contract registry", "producer and consumer interface", "event schema
-  between subsystems", "shared model type", "contracts/INDEX.md". Contracts are
-  first-class versioned files in contracts/. Do NOT use for node decomposition
+  between subsystems", "shared model type", "hsdd/contract/INDEX.md". Contracts are
+  first-class versioned files in hsdd/contract/. Do NOT use for node decomposition
   (use hsdd-spec) or phase planning (use hsdd-phase-plan).
 ---
 
@@ -25,14 +25,14 @@ reads exactly one of those, never the producing node's internals.
 - A node spec (`hsdd-spec`) named a contract id under `Consumes`/`Produces` and
   the body needs writing.
 - A contract must change: bump the version, add a guarantee, deprecate.
-- The registry (`contracts/INDEX.md`) needs regenerating after a change.
+- The registry (`hsdd/contract/INDEX.md`) needs regenerating after a change.
 
 **Do NOT use for** node decomposition (`hsdd-spec`) or phase planning
 (`hsdd-phase-plan`).
 
 ## Contract Artifact
 
-Write to `contracts/{slug}.md`:
+Write to `hsdd/contract/{slug}.md`:
 
 ```markdown
 ---
@@ -112,15 +112,15 @@ Classify how consumers couple to this contract so `hsdd-spec` can sequence work:
 
 ## The Registry (generated, never hand-edited)
 
-`contracts/INDEX.md` is derived data: a pure projection over every contract's
+`hsdd/contract/INDEX.md` is derived data: a pure projection over every contract's
 frontmatter. Do not hand-maintain it. Run the bundled generator after any change:
 
 ```bash
-node scripts/gen-registry.mjs        # writes contracts/INDEX.md (and adr/INDEX.md)
+node hsdd/scripts/gen-registry.mjs   # writes hsdd/contract/INDEX.md (and hsdd/adr/INDEX.md)
 ```
 
 On first use, copy the bundled `scripts/gen-registry.mjs` **verbatim** from this
-skill into the project's `scripts/` directory (this skill's base directory is
+skill into the project's `hsdd/scripts/` directory (this skill's base directory is
 printed when the skill loads). Do NOT reimplement it from the description in this
 file: a retyped copy silently mis-projects the registry. For example, a hand-written
 version tends to reuse the ADR `affects` column for contracts, which do not have
@@ -129,8 +129,8 @@ still passes a naive freshness check. Copy the real file; then, ideally, wire it
 into a pre-commit or CI hook. A script is deterministic and costs zero model tokens;
 agent-maintained (or agent-rewritten) generators drift.
 
-The same generator also projects `adr/INDEX.md` from ADR frontmatter. ADR files
-are authored by `hsdd-adr`, not here; this skill owns `contracts/` only.
+The same generator also projects `hsdd/adr/INDEX.md` from ADR frontmatter. ADR files
+are authored by `hsdd-adr`, not here; this skill owns `hsdd/contract/` only.
 
 ## Quality Gates
 
