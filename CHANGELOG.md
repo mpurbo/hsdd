@@ -24,8 +24,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Contract frontmatter field `phase_ids: provisional | final`, flipped only by
   `hsdd-reconcile`. No generator change: unknown fields are ignored by the
   projection. `status` flips `draft` to `stable` at the end of the same
-  reconcile pass, once no unresolved `request` names the contract
-  (interface-frozen semantics).
+  reconcile pass, once `phase_ids` is `final` and no unresolved `request`
+  names the contract (interface-frozen semantics).
 
 ### Changed
 
