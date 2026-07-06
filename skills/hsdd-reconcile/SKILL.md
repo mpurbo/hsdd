@@ -57,8 +57,9 @@ files); this skill performs the semantic merge.
    `consumers`). When both producer and consumer ids are confirmed, flip
    `phase_ids: provisional` to `phase_ids: final`. A side with no planned
    phase consumers (external or human consumers only) counts as confirmed.
-   Status transitions (`draft` to `stable`) follow the hsdd-contract
-   versioning policy.
+   In the same step, flip `status: draft` to `stable` unless an unresolved
+   `request` names the contract: stable means interface-frozen, safe to build
+   against (the hsdd-contract lifecycle rule), not producer-shipped.
 5. **Resolve `request` entries with the human.** Apply contract-shaped answers
    to the contract file under hsdd-contract rules (a breaking change bumps the
    version and adds a migration note). Hand cross-cutting answers to hsdd-adr.
@@ -86,7 +87,7 @@ files); this skill performs the semantic merge.
 ## Quality Gates
 
 - [ ] Every pending section drained, or explicitly deferred with a reason.
-- [ ] No contract with both sides fully planned remains `phase_ids: provisional`.
+- [ ] No contract with both sides fully planned remains `phase_ids: provisional`, and none with `phase_ids: final` and no open request remains `status: draft`.
 - [ ] Every collision was decided by the human, and the losing plan was updated to match.
 - [ ] Contract edits follow hsdd-contract versioning (breaking change = new version + migration note).
 - [ ] `node scripts/gen-registry.mjs` ran after the last contract edit.

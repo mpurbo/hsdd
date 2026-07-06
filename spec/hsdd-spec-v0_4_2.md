@@ -268,6 +268,7 @@ Use the hsdd-reconcile skill to reconcile: $ARGUMENTS
 | Sibling worktree reads | Forbidden. Contracts are the only inter-node knowledge. |
 | Generator change | None. `phase_ids` is parsed and ignored by the projection (verified). |
 | Producer-side contract discoveries | The `amend` entry kind: reconcile applies producer-settled semantics to the owned contract's body; a breaking amendment goes to the human and bumps the version. |
+| `draft` to `stable` transition | Flipped by `hsdd-reconcile` in the same step as `phase_ids: final`, unless an unresolved `request` names the contract. Stable means interface-frozen (safe to build against), not producer-shipped. |
 
 ---
 

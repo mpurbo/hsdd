@@ -224,8 +224,9 @@ You: "Drain the pending governance updates."
 ```
 
 `hsdd-reconcile` applies the confirms, flips the contract to
-`phase_ids: final`, and regenerates the registry. With one node this takes a
-minute; the same step is what makes parallel planning safe in Example 2.
+`phase_ids: final` and `status: stable`, and regenerates the registry. With
+one node this takes a minute; the same step is what makes parallel planning
+safe in Example 2.
 
 ### Step 4: Configure, run, review
 
@@ -422,7 +423,8 @@ You: "Reconcile the worktrees."
 ```
 
 `hsdd-reconcile` drains both sections: applies the `confirm` ids, resolves the
-fixture `request` with you, flips `auth-token@v1` to `phase_ids: final`, and
+fixture `request` with you, flips `auth-token@v1` to `phase_ids: final` and
+`status: stable`, and
 regenerates the registry. Only then do billing's per-phase OpenSpec cycles start.
 
 ### The resulting tree
