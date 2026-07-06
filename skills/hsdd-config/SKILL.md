@@ -105,7 +105,7 @@ rules:
     - "Order tasks for TDD: test first, then implementation."
     - "Each task completable in one red-green-refactor cycle."
     - "Include a gate task that runs the phase gate command."
-    - "After the gate task, add a documentation task that (1) updates docs/conventions.md with newly established contracts, and (2) writes the verification doc at docs/verify/{phase-id}.verification.md (commands to run, expected output, what to inspect)."
+    - "After the gate task, add a documentation task that writes the verification doc at docs/verify/{phase-id}.verification.md (commands to run, expected output, what to inspect). Never update docs/conventions.md or contracts/ from a phase; governance changes are made at the root (hsdd-contract / hsdd-reconcile), never from a phase."
 ```
 
 Only valid artifact ids are `proposal`, `design`, `specs`, `tasks`. Adding any
@@ -124,7 +124,12 @@ other id makes OpenSpec reject the config. Quote any rule containing `: `.
    available, author the ADR as `status: proposed` with the Decision left as an
    explicit TODO, and do not inject it as binding until it is `accepted`. Do not
    silently drop the reference.
-5. Do not touch the project-wide context or the rules.
+5. **Reconcile check.** If any consumed contract has `phase_ids: provisional`,
+   or the node's plan has an unresolved `request` naming it, warn and recommend
+   running `hsdd-reconcile` first. If the phase being started is listed under a
+   request's `contingent phases`, stop and require explicit human confirmation
+   before proceeding.
+6. Do not touch the project-wide context or the rules.
 
 This gives the session ~20 lines of phase context instead of a full spec. The
 `/hsdd-phase {phase-id}` slash command, if installed, runs this step.
@@ -138,3 +143,4 @@ This gives the session ~20 lines of phase context instead of a full spec. The
 | "I'll remember to invoke TDD manually" | Sessions do not share memory. config.yaml does. |
 | "Inject the whole node spec to be safe" | That defeats context isolation. Inject only the phase plus consumed contract interfaces and governing ADR decisions. |
 | "The ADR is referenced but has no file; I'll paraphrase it" | A referenced ADR with no file was never materialized. Author it with hsdd-adr. If the decision is unknown, author it `proposed` with a TODO; never invent an `accepted` decision. |
+| "The contract is provisional but close enough, inject it" | Provisional means reconcile has not confirmed both sides; open `request` entries may still reshape what this phase consumes. Warn, and stop for phases contingent on an open request. |

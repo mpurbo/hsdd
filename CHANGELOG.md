@@ -7,6 +7,46 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.2] - 2026-07-05
+
+### Added
+
+- `hsdd-reconcile` skill: drain the `## Governance updates (pending reconcile)`
+  sections emitted by `hsdd-phase-plan`, resolve contract-gap requests with the
+  human, finalize contract phase ids, and regenerate the registries. Runs at
+  the repo root after (parallel) phase-plan branches merge.
+- `/hsdd-reconcile` slash command.
+- Governance freeze protocol (`spec/hsdd-spec-v0_4_2.md`): `contracts/`,
+  `adr/`, `docs/conventions.md`, and the INDEX registries are read-only during
+  phase planning; intended changes ride the node's own plan file as
+  `confirm`/`note`/`amend`/`request` entries. Parallel phase planning in
+  git worktrees becomes conflict-free by construction.
+- Contract frontmatter field `phase_ids: provisional | final`, flipped only by
+  `hsdd-reconcile`. No generator change: unknown fields are ignored by the
+  projection. `status` flips `draft` to `stable` at the end of the same
+  reconcile pass, once `phase_ids` is `final` and no unresolved `request`
+  names the contract (interface-frozen semantics).
+
+### Changed
+
+- `hsdd-phase-plan` no longer updates `docs/conventions.md` (old process step
+  6); it emits a pending-governance section, asks the human when a contract
+  gap changes the plan's shape, and never reads sibling worktrees.
+- `hsdd-contract`: contracts are written at the root only; prose "update the
+  phase ids later" notes are replaced by the `phase_ids` field; a new quality
+  gate requires naming the canonical path and owning phase of any code-level
+  artifact both sides consume.
+- `hsdd-config`: the tasks rule no longer instructs the apply step to update
+  `docs/conventions.md`; the phase context switch warns when a consumed
+  contract is still provisional and stops when the phase is contingent on an
+  unresolved request.
+- Conventions template: the hand-maintained `## Established contracts` list is
+  replaced by a pointer to the generated `contracts/INDEX.md`, plus a new
+  `## Parallel development protocol` section.
+- Users guide: reconcile in the loop and the workflow diagram; a serial
+  reconcile note in Example 1 and a parallel-worktrees walkthrough in
+  Example 2.
+
 ## [0.4.1] - 2026-07-02
 
 ### Fixed
@@ -55,7 +95,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Slash commands under `commands/`.
 - Docs (`docs/`), specs (`spec/`), and review assets (`review/`).
 
-[Unreleased]: https://github.com/OWNER/REPO/compare/v0.4.1...HEAD
+[Unreleased]: https://github.com/OWNER/REPO/compare/v0.4.2...HEAD
+[0.4.2]: https://github.com/OWNER/REPO/compare/v0.4.1...v0.4.2
 [0.4.1]: https://github.com/OWNER/REPO/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/OWNER/REPO/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/OWNER/REPO/releases/tag/v0.3.0
