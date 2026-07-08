@@ -148,6 +148,34 @@ flowchart TD
 The single amber node is the human review gate. Every leaf phase ends there, at a
 depth set by its review tier (`gate-only`, `spot-check`, or `full-review`).
 
+### Review tiers
+
+`hsdd-phase-plan` assigns one tier per phase, based on risk rather than size. The
+tier only changes how much attention the gate gets — every phase still runs the
+full OpenSpec cycle and still produces a verification doc; a `gate-only` phase
+just costs minutes of human time and a `full-review` phase costs the most.
+
+- **`gate-only`** — scaffolding, types, boilerplate. A wrong turn here is cheap
+  and mechanical to catch, so the automated gate (e.g. `cargo test`) passing is
+  enough: you're notified and move on without reading the diff. Example:
+  `linkcheck.1` and `acme.backend.auth.1`, both just "Types + contract" phases —
+  there's no logic yet to get wrong.
+- **`spot-check`** — well-constrained phases with a clear contract, where the
+  output's shape is easy to eyeball even without tracing every line. Glance at
+  the diff, confirm the gate passed, proceed. Example: `linkcheck.2`, a pure
+  `HTML -> [Url]` extractor, and `acme.backend.auth.3`, the session store —
+  narrow, single-purpose, easy to sanity-check at a glance.
+- **`full-review`** — orchestration, business logic, integrations, security,
+  where mistakes are expensive and not obviously visible in a diff. Read the
+  diff, run the manual verification steps from the phase's verification doc,
+  and think through edge cases before approving. Example: `linkcheck.3`, the
+  HTTP checker with retries and timeouts, and `acme.backend.auth.2`, token
+  issuance — see Step 6 in Example 2, where the manual verification runs
+  before sign-off.
+
+See the methodology spec, [§12](../spec/hsdd-spec-v0_3.md), for how tier
+interacts with the ~5h review window.
+
 ---
 
 ## Example 1: A simple project (single level)

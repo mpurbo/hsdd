@@ -183,4 +183,4 @@ tokens, time, and quality.
 
 ## References
 
-- This methodology supersedes the set of SDD-related skills in [pubo-skills](https://github.com/mpurbo/purbo-skills#spec-driven-development).
+- This methodology supersedes the set of SDD-related skills in [purbo-skills](https://github.com/mpurbo/purbo-skills#spec-driven-development).
