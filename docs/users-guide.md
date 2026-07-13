@@ -395,12 +395,12 @@ Decision and Consequences into the `auth.2` phase context.
 You: "acme.backend.auth is small enough to phase. Write its phase plan."
 ```
 
-| Phase | Name | Tier | Size | Depends on |
-|------:|------|------|------|------------|
-| acme.backend.auth.1 | Types + auth-token contract | gate-only | small | — |
-| acme.backend.auth.2 | Token issuance (provider X) | full-review | medium | 1 |
-| acme.backend.auth.3 | Session store | spot-check | small | 1 |
-| acme.backend.auth.4 | Auth API + wiring | full-review | medium | 2, 3 |
+| Phase | Name | Tier | Size | Depends on | Collides with |
+|------:|------|------|------|------------|---------------|
+| acme.backend.auth.1 | Types + auth-token contract | gate-only | small | — | — |
+| acme.backend.auth.2 | Token issuance (provider X) | full-review | medium | 1 | — |
+| acme.backend.auth.3 | Session store | spot-check | small | 1 | 4 |
+| acme.backend.auth.4 | Auth API + wiring | full-review | medium | 2, 3 | 3 |
 
 The plan ends with a pending-governance section; drain it with a quick
 reconcile before configuring, as in Example 1.
@@ -569,7 +569,7 @@ openspec/
   phases, insert an internal node ("feature") instead of piling on phases.
 - **Split where ownership splits.** Decompose along team, owner, or
   deploy-target boundaries first (backend vs. mobile vs. web); capability
-  slices over technology buckets applies only within one owner's territory.
+  slicing over technology buckets applies only within one owner's territory.
 - **Keep `hard` edges rare.** They are the critical path. Prefer `contract`,
   `event`, and `shared-model` edges so teams parallelize.
 - **Plan against frozen governance.** `hsdd/contract/`, `hsdd/adr/`, and
