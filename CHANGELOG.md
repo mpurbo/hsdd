@@ -7,6 +7,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.1] - 2026-07-13
+
+Driven by the v0.6.0 pressure-test campaign
+(`review/hsdd-skills-v0_6_0-pressure-test-fable-xhigh.md`) and a field
+observation on source-document provenance. Delta spec:
+`spec/hsdd-spec-v0_6_1.md`.
+
+### Added
+
+- Source provenance: the root spec carries a `## Sources` section and every
+  node a `Sources` field that trickles down at each decomposition level;
+  quality gates ensure no source is silently dropped and none is listed on
+  a node it does not govern. `hsdd-phase-plan` reads the node's sources and
+  lands binding details in phase lines or contract entries; phase contexts
+  are unchanged (sources are never injected).
+- Sizing-floor checklist item in `hsdd-phase-plan` (the ceiling always had
+  one), a one-line kept-split reason whenever a merge candidate stays
+  separate, and an anti-enumeration-anchoring row.
+
+### Changed
+
+- The "who builds what?" clarifying question is a mandatory stop when the
+  input does not state team structure and the system plausibly spans
+  stacks; proceeding on an assumed axis is no longer allowed.
+- `hsdd-spec` step 7 writes one spec file per node: every child gets its
+  own `hsdd/spec/{child-id}.md` at decomposition time.
+- Format clarifications in `hsdd-phase-plan`: the summary table opens the
+  `## Phase Plan` section; phase ids in tables and `Collides with` match
+  the section headers; `Collides with` may carry a one-line reason.
+
 ## [0.6.0] - 2026-07-13
 
 Driven by the second field test (GMP-911) and its review
@@ -197,7 +227,8 @@ file and the skills honor it.
 - Slash commands under `commands/`.
 - Docs (`docs/`), specs (`spec/`), and review assets (`review/`).
 
-[Unreleased]: https://github.com/OWNER/REPO/compare/v0.6.0...HEAD
+[Unreleased]: https://github.com/OWNER/REPO/compare/v0.6.1...HEAD
+[0.6.1]: https://github.com/OWNER/REPO/compare/v0.6.0...v0.6.1
 [0.6.0]: https://github.com/OWNER/REPO/compare/v0.5.1...v0.6.0
 [0.5.1]: https://github.com/OWNER/REPO/compare/v0.5.0...v0.5.1
 [0.5.0]: https://github.com/OWNER/REPO/compare/v0.4.2...v0.5.0
