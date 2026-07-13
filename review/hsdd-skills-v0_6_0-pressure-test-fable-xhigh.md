@@ -115,3 +115,20 @@ writing-skills TDD loop before landing.
 **Artifacts:** fixtures, per-test outputs, and the full E2E repo (git history included) are in
 the session scratchpad under `tests/` and `e2e/fieldkit`; per-test findings in
 `results/findings.md`.
+
+---
+
+## Addendum: v0.6.1 re-test (2026-07-13, same day)
+
+The loopholes above plus a validated source-provenance gap were specced as
+`spec/hsdd-spec-v0_6_1.md` and implemented (edits to `hsdd-spec`,
+`hsdd-phase-plan`, users guide, README/CHANGELOG). Re-tests per that spec's
+§9, same prompt shapes as the failing baselines, fresh fixtures, Sonnet agents:
+
+| Re-test | Baseline result | v0.6.1 result |
+|---------|-----------------|---------------|
+| Ask-and-stop axis (S2 shape: teams unstated + finished-spec-by-morning pressure) | PARTIAL — built an 11-node tree on a "defensible either way" default | **GREEN** — asked "who builds what?" and stopped; zero files written; pre-refuted the old rationalization by name |
+| Sizing floor (P1 shape: tiny-phase bait + deadline + contract-tweak bait) | PARTIAL — 8 phases, zero floor analysis in the plan | **GREEN** — plan records a sizing-floor note: the 5/6 merge candidate evaluated against all four conditions and kept split with two named reasons; no artifact-dominated phase; freeze and sibling isolation held again; first run to exercise an `amend` entry |
+| Source provenance (harder than the validation fixture: PRD does not cross-reference its RFCs) | unpinned — field runs cited nothing | **GREEN** — root `## Sources` maps all three docs; `Sources` fields trickled two levels with §section granularity, correct sides only; every RFC trap detail reachable in its owning leaf; one file per child (11 files) |
+
+No new rationalizations surfaced in any re-test. v0.6.1 verdict: **ship-ready.**
