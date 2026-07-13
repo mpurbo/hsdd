@@ -43,7 +43,13 @@ pure functions -> effects -> composition.
 2. **Reference the node spec.** Load `hsdd/spec/{node-id}.md`: purpose,
    consumed/produced contract ids, governing ADRs, isolation strategy. Reference
    ADRs by id (`Governed by: [ADR-NNN]`); they are authored as files by
-   `hsdd-adr`, never inline here.
+   `hsdd-adr`, never inline here. Read the node's **Sources** — the
+   referenced documents or sections, not just the node spec's summary of
+   them — before phasing. A binding detail found only in a source must land
+   where execution will see it: in a phase's Scope or Verification line, or
+   in a contract `request`/`amend` entry so the contract body carries it.
+   Phases do not carry a Sources field; the phase plan is written by
+   someone who read the sources.
 3. **Define phases** using the template below, applying FP ordering and the
    sizing rule. Reference contracts by id (`hsdd-contract` owns the bodies).
    Open the `## Phase Plan` section with the phase summary table (one row
@@ -134,6 +140,12 @@ detail (`hsdd-config` injects only the detailed phase section, so per-phase
 context cost is unchanged). Omit the *Collides with* column when no phase
 collides.
 
+`## Phase Plan` begins with the `**Default gate:**` line (when present)
+followed immediately by the summary table; prose commentary comes after the
+table, not before. The table's Phase column uses the same id form as the
+phase section headers — the short `{n}.{i}` form is fine if used
+consistently throughout the plan.
+
 ## Phase Template
 
 ```markdown
@@ -170,7 +182,9 @@ markdown renderer collapses those into one paragraph. Empty lists render
 **`Collides with` marks textual contention** — phases editing the same
 files. It never reshapes logical dependencies: colliding phases execute
 serially on the node's integration branch; spawn parallel worktrees only for
-phases with no collision between them.
+phases with no collision between them. Entries use the same id form as
+Dependencies; a one-line reason may follow an em dash:
+`- **Collides with:** [{ids}] — same file (src/channels/registry.ts)`.
 
 **Node-level default gate.** A phase plan may state one default gate above
 the summary table — ``**Default gate:** `<command>` `` — and a phase's
@@ -216,6 +230,10 @@ it. Phase sizing is the control knob for context, tokens, time, and quality.
 > design + spec deltas + tasks + verification doc) exceed its predicted
 > diff, it is a merge candidate by default.
 
+When a merge-candidate pair is kept split, record the reason in one line —
+in the kept phase's section or a short note under the summary table. A plan
+with no merge-candidate pairs records nothing.
+
 ## Phase Dependency Graph
 
 The graph is a Mermaid flowchart: one node per phase labeled
@@ -246,12 +264,15 @@ flowchart TD
 - [ ] Phase 1 defines all shared types and contract-bounded interfaces.
 - [ ] Phases 2..N-1 are maximally independent (parallelizable where possible).
 - [ ] Each phase has <= 8 OpenSpec tasks (split if more).
+- [ ] Adjacent same-tier phases were checked against the sizing floor; every
+      merge candidate kept separate names its reason (tier boundary,
+      parallel lane, isolated risk).
 - [ ] Contract ids are defined before the phase that implements them.
 - [ ] Phase N is testable with mocks even if Phase N-1 is not implemented.
 - [ ] No phase couples to another phase's internals.
 - [ ] Each phase has a concrete gate, a verification description, and a review tier.
 - [ ] The phase dependency graph is included as a Mermaid flowchart and matches the Dependencies fields.
-- [ ] Summary table present and matches the phase sections.
+- [ ] Summary table opens the section and matches the phase sections.
 - [ ] Field blocks are bullet lists; empty lists say "none".
 
 ## Anti-Rationalization
@@ -261,6 +282,7 @@ flowchart TD
 | "I'll figure out phases during implementation" | Phases defined after coding starts are retrofitted, not designed. Contracts leak. |
 | "Merge them so there's less to review" | Merging to dodge review defeats the tiers. Merge only under the sizing floor's conditions. |
 | "Small phases are always a feature" | Small phases are a feature when they buy parallelism or isolated review. A phase below the floor buys neither and still costs a full cycle. |
+| "The node spec already lists N pieces, so N phases" | A prose enumeration is not a phase plan. Run the floor over adjacent same-tier phases before accepting the count. |
 | "This phase is a bit big but fine" | If it overflows the review window, the human becomes the bottleneck. Split it. |
 | "The contract is obvious" | Explicit contracts enable mock testing and phase isolation. Reference the id. |
 | "Skip the dependency graph" | Without it, phases are assumed sequential and parallel teams stall. |
