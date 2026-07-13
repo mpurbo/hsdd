@@ -46,9 +46,12 @@ OpenSpec change.
    `fp-rust`). Only reference ones present; missing ones degrade gracefully.
 3. **Map skills to workflow steps** (table below).
 4. **Generate `config.yaml`** with a `context:` and a `rules:` section.
-5. **Present for review:** which docs were used, which skills mapped, which phase
+5. **Copy the bundled verification template** into the project (see
+   "Verification Doc Template" below) if `hsdd/templates/verification.md` does
+   not already exist.
+6. **Present for review:** which docs were used, which skills mapped, which phase
    is current.
-6. **Switch phase context** before each new change (see below).
+7. **Switch phase context** before each new change (see below).
 
 ## Skill-to-Step Mapping
 
@@ -97,21 +100,41 @@ rules:
     - "Scope this proposal to a single HSDD phase."
     - "Reference the phase scope, consumed/produced contracts, and gate."
     - "Include the review tier (gate-only, spot-check, full-review)."
+    - "Name the change's capability after a stable feature area of the node, not after the phase; use a per-phase capability name only when genuinely parallel phases would contend on the same capability spec."
   specs:
     - "Every requirement MUST have at least one WHEN/THEN scenario."
     - "Scenarios must be directly translatable to TDD test cases."
   design:
+    - "If the Current Phase review tier is gate-only, skip design.md entirely; if spot-check, write design.md only when the phase settles a real design decision. Only full-review phases always get a full design.md."
     - "Follow FP-first architecture: types -> pure functions -> effects -> composition."
     - "Justify decisions with rationale and alternatives; flag risks with mitigations."
   tasks:
     - "Order tasks for TDD: test first, then implementation."
     - "Each task completable in one red-green-refactor cycle."
     - "Include a gate task that runs the phase gate command."
-    - "After the gate task, add a documentation task that writes the verification doc at hsdd/verify/{phase-id}.verification.md (commands to run, expected output, what to inspect). Never update hsdd/conventions.md or hsdd/contract/ from a phase; governance changes are made at the root (hsdd-contract / hsdd-reconcile), never from a phase."
+    - "After the gate task, add a documentation task that writes the verification doc at hsdd/verify/{phase-id}.verification.md following hsdd/templates/verification.md, at the depth the phase's review tier requires (gate-only: slim; spot-check: short; full-review: full)."
+    - "Never update hsdd/conventions.md or hsdd/contract/ from a phase; governance changes are made at the root (hsdd-contract / hsdd-reconcile), never from a phase."
 ```
 
 Only valid artifact ids are `proposal`, `design`, `specs`, `tasks`. Adding any
 other id makes OpenSpec reject the config. Quote any rule containing `: `.
+
+## Verification Doc Template
+
+The documentation task's tasks-rule (above) writes each phase's verification
+doc from a fixed template, not from a description. On first setup, copy the
+bundled `templates/verification.md` **verbatim** from this skill into the
+project as `hsdd/templates/verification.md` (this skill's base directory is
+printed when the skill loads) — same precedent as `gen-registry.mjs` in
+`hsdd-contract`: copy the file, never retype it. A retyped template drifts
+(a paraphrased Outstanding section or a dropped Sign-off silently loses the
+gate condition below).
+
+The template's depth scales with the review tier (gate-only: slim; spot-check:
+short; full-review: full — see the tasks rule above), but every tier keeps the
+Sign-off section. **The review gate is not passed while an Outstanding item
+lacks a disposition** (`verified` | `waived (reason)` | `deferred to
+{phase-id}`).
 
 ## Phase Context Switch (do this BEFORE opsx:new)
 
@@ -126,15 +149,26 @@ other id makes OpenSpec reject the config. Quote any rule containing `: `.
    available, author the ADR as `status: proposed` with the Decision left as an
    explicit TODO, and do not inject it as binding until it is `accepted`. Do not
    silently drop the reference.
-5. **Reconcile check.** If any consumed contract has `phase_ids: provisional`,
+5. **Next-runnable check.** Warn if the requested phase is already archived
+   under `openspec/changes/archive/` (it already ran; switching to it again is
+   likely a mistake), or if a dependency phase's change is neither archived nor
+   merged (its contracts/decisions may not be what this phase expects to
+   consume).
+6. **Reconcile check.** If any consumed contract has `phase_ids: provisional`,
    or the node's plan has an unresolved `request` naming it, warn and recommend
    running `hsdd-reconcile` first. If the phase being started is listed under a
    request's `contingent phases`, stop and require explicit human confirmation
    before proceeding.
-6. Do not touch the project-wide context or the rules.
+7. Do not touch the project-wide context or the rules.
 
 This gives the session ~20 lines of phase context instead of a full spec. The
 `/hsdd-phase {phase-id}` slash command, if installed, runs this step.
+
+**`config.yaml` is ephemeral.** The `## Current Phase` block (and its
+companion contract/ADR blocks) is per-session working state, rewritten by
+every phase context switch. After any merge, conflicts in
+`openspec/config.yaml` carry no information: take either side and re-run this
+switch — see the conventions file's execution protocol.
 
 ## Anti-Rationalization
 
@@ -146,3 +180,5 @@ This gives the session ~20 lines of phase context instead of a full spec. The
 | "Inject the whole node spec to be safe" | That defeats context isolation. Inject only the phase plus consumed contract interfaces and governing ADR decisions. |
 | "The ADR is referenced but has no file; I'll paraphrase it" | A referenced ADR with no file was never materialized. Author it with hsdd-adr. If the decision is unknown, author it `proposed` with a TODO; never invent an `accepted` decision. |
 | "The contract is provisional but close enough, inject it" | Provisional means reconcile has not confirmed both sides; open `request` entries may still reshape what this phase consumes. Warn, and stop for phases contingent on an open request. |
+| "The config conflict looks meaningful, I'll hand-merge both phase blocks" | The Current Phase block is ephemeral working state. Take either side and re-run the phase switch. |
+| "A design.md can't hurt for this gate-only phase" | It costs a full artifact plus review attention for a phase with nothing to decide. The tier sets the artifact profile; follow it. |
