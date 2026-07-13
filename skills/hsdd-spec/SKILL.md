@@ -70,10 +70,32 @@ intermediate internal node (a "feature") rather than forcing a fixed tier.
 
 1. **Normalize the input.** Extract purpose, primary usage flows, hard
    constraints, success criteria, open questions. Ask at most one clarifying
-   question, and only if the answer changes the decomposition. Otherwise state
-   assumptions and proceed. When the input does not state the team structure
-   and the system plausibly spans stacks, "who builds what?" is that
-   question — the answer decides the decomposition axis.
+   question, and only if the answer changes the decomposition. Otherwise
+   state assumptions and proceed — with one exception: when the input does
+   not state the team structure and the system plausibly spans stacks, do
+   not choose an axis. Ask **"who builds what?"** and stop until it is
+   answered. That is the one clarifying question this step allows, and
+   there it is mandatory — an axis guessed wrong reworks every node beneath
+   it. Stating an assumption and proceeding covers details; it is not an
+   alternative for the decomposition's shape.
+
+   **Inventory the sources.** When the input includes or references
+   documents (PRD, RFC, design doc, ticket), list each in a `## Sources`
+   section of the root spec — path or URL, its authority (accepted RFC |
+   draft | braindump | ticket), and one line on what it governs:
+
+   ```markdown
+   ## Sources
+
+   - `docs/rfc-042-ingestion-api.md` — accepted RFC — ingestion API: batch
+     endpoint, idempotency, pagination, error envelope, rate limits, retention
+   - `docs/prd-fieldlog.md` — PRD — product scope, teams, v1 features
+   ```
+
+   Sources trickle down: when a node is split, each child's `Sources` field
+   lists the subset of the parent's sources (or named sections of them)
+   that govern that child. The summary indexes the source; it never
+   replaces it — restatement thins at each level, the pointer does not.
 2. **Identify child nodes by contract boundary.** A good node owns one coherent
    responsibility, has stable input/output contracts, and can be tested in
    isolation with fixtures, mocks, or schemas.
@@ -114,10 +136,16 @@ intermediate internal node (a "feature") rather than forcing a fixed tier.
    `Governed by: [ADR-NNN]` on each affected node and contract. Do NOT leave an
    ADR as inline prose in the node spec: the registry and `hsdd-config` resolve
    ADRs by file. Keep ADRs few; node-local choices stay as `D{n}` in the node spec.
-7. **Write the node spec** to `hsdd/spec/{node-id}.md` using the shape below,
-   following the standalone-file heading rule (one `#` title, `##` sections,
-   no repeated `###` title). Include a Mermaid dependency DAG. If
-   `mermaid-pastel-style` is installed, follow it.
+7. **Write one spec file per node.** The decomposed parent's spec goes to
+   `hsdd/spec/{node-id}.md`, and every child — internal or leaf-parent —
+   gets its own `hsdd/spec/{child-id}.md` at decomposition time. The parent
+   document embeds each child's header block (the `###` form) as a summary;
+   the child's file is the authoritative node spec: `hsdd-phase-plan`
+   appends the phase plan to it, and a later `hsdd-spec` run decomposes it
+   in place. Follow the standalone-file heading rule in every file (one `#`
+   title, `##` sections, no repeated `###` title). Include a Mermaid
+   dependency DAG in the parent. If `mermaid-pastel-style` is installed,
+   follow it.
 8. **Seed conventions.** At the root, create `hsdd/conventions.md` from the
    bundled template (`templates/conventions.md`): default layout, id scheme,
    companion-skill recommendation. At deeper levels, refresh it only for
@@ -145,9 +173,15 @@ intermediate internal node (a "feature") rather than forcing a fixed tier.
 - **Consumes:** [contract-id@version, ...], or "none"
 - **Produces:** [contract-id@version, ...], or "none"
 - **Governed by:** [ADR-NNN, ...]            (omit when empty)
+- **Sources:** [path-or-url (§section), ...], or "none"
 - **Decomposes into:** child node ids, OR "phases (see hsdd-phase-plan)"
 - **Isolation strategy:** how to build/test this node using only consumed contracts
 ```
+
+**Sources field.** Required whenever the root spec has a `## Sources`
+section; omit it entirely only in a project with no source documents. List
+only the sources (or named sections) that govern this node — the field is
+context the next skill will read, not a bibliography.
 
 A node spec document also carries: Overview, child-node table, the typed
 dependency DAG (Mermaid), dev-flow sequencing, and a contract matrix.
@@ -170,8 +204,13 @@ value` lines relying on soft line breaks; empty contract lists render
 - [ ] Each child is marked internal or leaf-parent.
 - [ ] Mermaid DAG matches the dependency table.
 - [ ] `conventions.md` exists/updated at the root.
-- [ ] The decomposition axis at each level matches the stated ownership — no
-      node is owned by two teams.
+- [ ] The decomposition axis at each level matches ownership stated by the
+      human, not assumed — no node is owned by two teams.
+- [ ] Every child node has its own `hsdd/spec/{child-id}.md` file.
+- [ ] Every input source appears in the Sources of at least one node, or is
+      marked in the root `## Sources` as "informative only — not
+      decomposed", with a reason.
+- [ ] No node's Sources lists a document that does not govern it.
 - [ ] Field blocks are bullet lists and empty lists say "none".
 
 ## Anti-Rationalization
@@ -185,3 +224,5 @@ value` lines relying on soft line breaks; empty contract lists render
 | "I'll add the dependency graph later" | Without the graph, phases are assumed sequential and parallel teams stall. |
 | "I'll write the ADR as a section here" | Inline ADRs are invisible to the registry and hsdd-config. Materialize them as files via hsdd-adr. |
 | "Auth end-to-end is one coherent capability" | Coherent for whom? If backend and frontend are different owners, the node has two owners and no isolation. Split at the ownership boundary; the capability comes back as a node pair joined by a contract. |
+| "The axis is defensible either way, I'll pick a safe default" | Defensible-either-way is the definition of a decomposition-changing unknown. A flag at the bottom of a finished-looking tree does not get read. Ask and stop. |
+| "The spec captures everything important from the RFC" | The spec is a summary; summaries thin at every level. Downstream skills read only the spec's closure — if the RFC is not in Sources, its details are unreachable, not just unmentioned. |
