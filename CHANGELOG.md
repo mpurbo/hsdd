@@ -7,6 +7,85 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.1] - 2026-07-13
+
+Driven by the v0.6.0 pressure-test campaign
+(`review/hsdd-skills-v0_6_0-pressure-test-fable-xhigh.md`) and a field
+observation on source-document provenance. Delta spec:
+`spec/hsdd-spec-v0_6_1.md`.
+
+### Added
+
+- Source provenance: the root spec carries a `## Sources` section and every
+  node a `Sources` field that trickles down at each decomposition level;
+  quality gates ensure no source is silently dropped and none is listed on
+  a node it does not govern. `hsdd-phase-plan` reads the node's sources and
+  lands binding details in phase lines or contract entries; phase contexts
+  are unchanged (sources are never injected).
+- Sizing-floor checklist item in `hsdd-phase-plan` (the ceiling always had
+  one), a one-line kept-split reason whenever a merge candidate stays
+  separate, and an anti-enumeration-anchoring row.
+
+### Changed
+
+- The "who builds what?" clarifying question is a mandatory stop when the
+  input does not state team structure and the system plausibly spans
+  stacks; proceeding on an assumed axis is no longer allowed.
+- `hsdd-spec` step 7 writes one spec file per node: every child gets its
+  own `hsdd/spec/{child-id}.md` at decomposition time.
+- Format clarifications in `hsdd-phase-plan`: the summary table opens the
+  `## Phase Plan` section; phase ids in tables and `Collides with` match
+  the section headers; `Collides with` may carry a one-line reason.
+
+## [0.6.0] - 2026-07-13
+
+Driven by the second field test (GMP-911) and its review
+(`review/hsdd-process-v0_5_1-review-fable-xhigh.md`). Delta spec:
+`spec/hsdd-spec-v0_6.md`.
+
+### Added
+
+- Phase summary table: every phase plan opens with a per-phase overview
+  (phase, name, tier, size, dependencies, collisions) for the human
+  reviewer; `hsdd-config` still injects only the detailed section.
+- Sizing floor in `hsdd-phase-plan`: adjacent phases with the same tier,
+  the same contracts, and a clean dependency shape merge instead of each
+  paying a full OpenSpec cycle; artifacts-exceed-diff is the default merge
+  smell. The anti-merge anti-rationalization row is replaced by two
+  motive-aware rows.
+- Tier-scaled artifact profile: gate-only phases skip `design.md` and get a
+  slim verification doc; spot-check skips design unless a real decision
+  exists; full-review keeps the full set. Tasks and spec deltas never
+  scale, and every phase still produces a verification doc.
+- Execution protocol (conventions template, `hsdd-config`, users guide):
+  `openspec/config.yaml`'s phase block is ephemeral (take either side on
+  merge, re-run `/hsdd-phase`); one integration branch per node; plans and
+  reconcile live on exactly one lineage; `Collides with:` marks textual
+  contention and serializes execution; capabilities are named after stable
+  feature areas, not phases.
+- Ownership-first decomposition axis in `hsdd-spec`: split stack-first when
+  different teams own different parts of the stack; capability slices apply
+  within one owner's territory. "Who builds what?" is the canonical
+  clarifying question.
+- Bundled verification-doc template (`hsdd-config`, copied to
+  `hsdd/templates/verification.md` at setup) with Outstanding and Sign-off
+  sections; the review gate is not passed while an Outstanding item lacks a
+  disposition.
+
+### Changed
+
+- Node and phase templates emit field blocks as bullet lists (bare
+  `**Field:** value` lines collapse into one paragraph in every compliant
+  renderer); empty contract lists render "none"; standalone node specs no
+  longer duplicate their title as an inner heading.
+- `hsdd-phase-plan`'s dependency graph is a Mermaid flowchart (pastel style
+  if installed; cross-node dependencies dashed); the ASCII example is
+  retired. A phase plan may declare a node-level default gate.
+- `hsdd-config`'s compound tasks rule is split into three rules; the phase
+  context switch warns when the requested phase is not next-runnable.
+- Users guide: examples reformatted to the new templates, review-tier
+  section updated, execution-stage walkthrough added (Step 8).
+
 ## [0.5.1] - 2026-07-06
 
 - `hsdd-phase-plan` no longer implies it should create verification documents.
@@ -148,7 +227,11 @@ file and the skills honor it.
 - Slash commands under `commands/`.
 - Docs (`docs/`), specs (`spec/`), and review assets (`review/`).
 
-[Unreleased]: https://github.com/OWNER/REPO/compare/v0.4.2...HEAD
+[Unreleased]: https://github.com/OWNER/REPO/compare/v0.6.1...HEAD
+[0.6.1]: https://github.com/OWNER/REPO/compare/v0.6.0...v0.6.1
+[0.6.0]: https://github.com/OWNER/REPO/compare/v0.5.1...v0.6.0
+[0.5.1]: https://github.com/OWNER/REPO/compare/v0.5.0...v0.5.1
+[0.5.0]: https://github.com/OWNER/REPO/compare/v0.4.2...v0.5.0
 [0.4.2]: https://github.com/OWNER/REPO/compare/v0.4.1...v0.4.2
 [0.4.1]: https://github.com/OWNER/REPO/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/OWNER/REPO/compare/v0.3.0...v0.4.0

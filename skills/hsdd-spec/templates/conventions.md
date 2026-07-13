@@ -15,6 +15,7 @@ are singular. OpenSpec files stay where OpenSpec expects them (`openspec/`).
 - `hsdd/contract/{slug}.md` + `hsdd/contract/INDEX.md`  first-class contracts (registry generated)
 - `hsdd/adr/{nnn}-{title}.md` + `hsdd/adr/INDEX.md`     cross-cutting decisions (authored by hsdd-adr, registry generated)
 - `hsdd/scripts/gen-registry.mjs`             registry generator (copied verbatim from hsdd-contract)
+- `hsdd/templates/verification.md`            verification-doc template, copied from hsdd-config
 - `openspec/config.yaml` + `openspec/changes/` config and one change per phase
 
 ## OpenSpec init
@@ -49,7 +50,7 @@ Stack skills (optional): `mermaid-pastel-style`, `fp-rust`, `fp-kstream-*`.
 Do not list contracts here; run `node hsdd/scripts/gen-registry.mjs` after any
 contract change.
 
-## Parallel development protocol
+## Parallel development protocol (planning and execution)
 - Governance files (`hsdd/contract/`, `hsdd/adr/`, this file, both `INDEX.md`)
   are read-only during phase planning, at the root and in every worktree.
 - `hsdd-phase-plan` emits intended changes as a
@@ -61,3 +62,27 @@ contract change.
 - Planners never read sibling worktrees or other nodes' phase plans (sibling
   node specs from hsdd-spec are shared and fine to read); contracts are the
   only inter-node knowledge.
+
+### Execution protocol (per-phase OpenSpec cycles)
+- **`openspec/config.yaml` is ephemeral working state.** The `## Current Phase`
+  block (and its companion contract/ADR blocks) is per-session working state,
+  rewritten by every phase context switch. A merge conflict on it carries no
+  information: resolve by taking either side, then re-run the phase context
+  switch (`/hsdd-phase {next-phase}`) before the next OpenSpec cycle.
+  Optionally set `openspec/config.yaml merge=ours` in `.gitattributes` on
+  integration branches.
+- **Branch discipline.** One integration branch per node; phase branches merge
+  into it; node integration branches merge into the root branch. A node's plan
+  file (`hsdd/spec/{node-id}.md`) is written on exactly one lineage — never
+  re-plan or copy a plan onto a diverged sibling lineage. `hsdd-reconcile`
+  runs once, at the root lineage, after the node plans are merged there; its
+  commit exists only on the root.
+- **Textual contention serializes.** Phases whose plan sections carry
+  `Collides with` entries naming each other execute serially on the node's
+  integration branch. Spawn parallel worktrees only for phases with no
+  collision between them.
+- **Capability naming.** Name OpenSpec capabilities after a stable feature
+  area within the node, not after the phase. Same-capability archives then
+  serialize — colliding phases serialize anyway. Fall back to per-phase
+  capability names only when genuinely parallel phases would contend on the
+  same capability spec.
