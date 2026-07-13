@@ -3,8 +3,9 @@
 A practical, example-driven walkthrough. For the full model and rationale, see the
 [methodology spec](../spec/hsdd-spec-v0_3.md) — v0.3 is the base; apply the
 [v0.4](../spec/hsdd-spec-v0_4.md), [v0.4.2](../spec/hsdd-spec-v0_4_2.md),
-[v0.5](../spec/hsdd-spec-v0_5.md), and [v0.6](../spec/hsdd-spec-v0_6.md) deltas
-in order, each read against its predecessor.
+[v0.5](../spec/hsdd-spec-v0_5.md), [v0.6](../spec/hsdd-spec-v0_6.md), and
+[v0.6.1](../spec/hsdd-spec-v0_6_1.md) deltas in order, each read against its
+predecessor.
 
 ## Before you start
 
@@ -308,12 +309,17 @@ slices spanning both stacks.
 ### Step 1: Decompose the root
 
 ```text
-You: "Write a high-level spec for acme, a merchant onboarding platform with a
-      backend, a mobile app, and a web console."
+You: "Write a high-level spec for acme from docs/onboarding-prd.md — a merchant
+      onboarding platform with a backend, a mobile app, and a web console."
 ```
 
 `hsdd-spec` splits the root into three internal nodes and names the contracts
-between them. `hsdd/spec/acme.md` includes this typed dependency DAG:
+between them. Because the input is a document, `hsdd/spec/acme.md` records it
+in a `## Sources` section, and each node it governs carries a
+`- **Sources:** docs/onboarding-prd.md (§...)` line — sources trickle down at
+every split, so a later phase-planner reads the original instead of trusting
+the summary (v0.6.1 [§2](../spec/hsdd-spec-v0_6_1.md)). The root spec also
+includes this typed dependency DAG:
 
 ```mermaid
 %%{init:{'theme':'base','themeVariables':{'primaryTextColor':'#1e293b','lineColor':'#475569','edgeLabelBackground':'#ffffff','tertiaryTextColor':'#1e293b'}}}%%
@@ -573,6 +579,10 @@ openspec/
 - **Split where ownership splits.** Decompose along team, owner, or
   deploy-target boundaries first (backend vs. mobile vs. web); capability
   slicing over technology buckets applies only within one owner's territory.
+- **Point at the doc, don't paste it.** When the spec is generated from PRDs
+  or RFCs, the root's `## Sources` section and each node's `Sources` field
+  keep them reachable. A summary thins at every level; the pointer does not.
+  Phase planning reads the node's sources, not just the node spec.
 - **Keep `hard` edges rare.** They are the critical path. Prefer `contract`,
   `event`, and `shared-model` edges so teams parallelize.
 - **Plan against frozen governance.** `hsdd/contract/`, `hsdd/adr/`, and
