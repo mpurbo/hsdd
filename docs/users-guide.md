@@ -1,7 +1,10 @@
 # HSDD User's Guide
 
 A practical, example-driven walkthrough. For the full model and rationale, see the
-[methodology spec](../spec/hsdd-spec-v0_3.md).
+[methodology spec](../spec/hsdd-spec-v0_3.md) — v0.3 is the base; read the
+[v0.4](../spec/hsdd-spec-v0_4.md), [v0.4.2](../spec/hsdd-spec-v0_4_2.md),
+[v0.5](../spec/hsdd-spec-v0_5.md), and [v0.6](../spec/hsdd-spec-v0_6.md) deltas
+against it.
 
 ## Before you start
 
@@ -151,9 +154,12 @@ depth set by its review tier (`gate-only`, `spot-check`, or `full-review`).
 ### Review tiers
 
 `hsdd-phase-plan` assigns one tier per phase, based on risk rather than size. The
-tier only changes how much attention the gate gets — every phase still runs the
-full OpenSpec cycle and still produces a verification doc; a `gate-only` phase
-just costs minutes of human time and a `full-review` phase costs the most.
+tier sets how much attention the gate gets **and** the artifact profile of the
+cycle: a `gate-only` phase skips `design.md` and gets a slim verification doc;
+a `spot-check` phase skips `design.md` unless the phase settles a real design
+decision, and gets a short verification doc; a `full-review` phase produces the
+full set. Every phase still ends at the gate and still produces a verification
+doc — only the depth scales with the tier.
 
 - **`gate-only`** — scaffolding, types, boilerplate. A wrong turn here is cheap
   and mechanical to catch, so the automated gate (e.g. `cargo test`) passing is
@@ -174,7 +180,9 @@ just costs minutes of human time and a `full-review` phase costs the most.
   before sign-off.
 
 See the methodology spec, [§12](../spec/hsdd-spec-v0_3.md), for how tier
-interacts with the ~5h review window.
+interacts with the ~5h review window, and the [v0.6 delta,
+§3](../spec/hsdd-spec-v0_6.md) for the sizing floor and the tier-scaled
+artifact profile.
 
 ---
 
@@ -200,12 +208,12 @@ responsibility that fits a handful of phases, so it marks the root a
 ```markdown
 ### linkcheck: Broken Link Checker CLI
 
-**Kind:** leaf-parent
-**Purpose:** crawl a site, check every link, report the broken ones
-**Consumes:** []
-**Produces:** [linkcheck-report@v1]
-**Decomposes into:** phases (see phase plan)
-**Isolation strategy:** pure HTML parsing and pure report formatting are testable
+- **Kind:** leaf-parent
+- **Purpose:** crawl a site, check every link, report the broken ones
+- **Consumes:** none
+- **Produces:** [linkcheck-report@v1]
+- **Decomposes into:** phases (see phase plan)
+- **Isolation strategy:** pure HTML parsing and pure report formatting are testable
   with fixtures; the HTTP checker is mocked in tests.
 ```
 
@@ -231,20 +239,29 @@ node hsdd/scripts/gen-registry.mjs
 You: "Write the phase plan for linkcheck."
 ```
 
-`hsdd-phase-plan` produces FP-ordered phases, each <= 8 OpenSpec tasks:
+`hsdd-phase-plan` produces FP-ordered phases, each <= 8 OpenSpec tasks, opening
+with the phase summary table:
 
-```text
-linkcheck.1  Types + report contract   gate-only    (Url, LinkStatus, Report; CLI args type)
-linkcheck.2  HTML link extractor        spot-check   (pure: HTML -> [Url])
-linkcheck.3  HTTP checker               full-review  (effects: Url -> LinkStatus, retries/timeouts)
-linkcheck.4  Crawl + report + CLI       full-review  (compose 2+3, emit linkcheck-report, wire main)
-```
+| Phase | Name | Tier | Size | Depends on |
+|------:|------|------|------|------------|
+| linkcheck.1 | Types + report contract | gate-only | small | — |
+| linkcheck.2 | HTML link extractor | spot-check | small | 1 |
+| linkcheck.3 | HTTP checker | full-review | medium | 1 |
+| linkcheck.4 | Crawl + report + CLI | full-review | medium | 2, 3 |
 
-```text
-linkcheck.1
- |-- linkcheck.2   <- parallel
- |-- linkcheck.3   <- parallel with .2
-      |-- linkcheck.4  <- depends on .2 and .3
+and the dependency graph as a Mermaid flowchart:
+
+```mermaid
+flowchart TD
+    l1["linkcheck.1<br/>Types + report contract"]
+    l2["linkcheck.2<br/>HTML link extractor"]
+    l3["linkcheck.3<br/>HTTP checker"]
+    l4["linkcheck.4<br/>Crawl + report + CLI"]
+
+    l1 --> l2
+    l1 --> l3
+    l2 --> l4
+    l3 --> l4
 ```
 
 The plan ends with a `## Governance updates (pending reconcile)` section
@@ -282,6 +299,10 @@ methodology stayed out of the way.
 
 Now a system big enough to need the tree: `acme`, a full-stack merchant
 onboarding platform with backend, mobile, and web, built by separate teams.
+This stack-first split is the decomposition-axis rule (v0.6
+[§6](../spec/hsdd-spec-v0_6.md)) — the axis follows ownership, which is why
+`acme` does not decompose into `auth-end-to-end` / `billing-end-to-end`
+slices spanning both stacks.
 
 ### Step 1: Decompose the root
 
@@ -374,12 +395,12 @@ Decision and Consequences into the `auth.2` phase context.
 You: "acme.backend.auth is small enough to phase. Write its phase plan."
 ```
 
-```text
-acme.backend.auth.1  Types + auth-token contract   gate-only
-acme.backend.auth.2  Token issuance (provider X)    full-review
-acme.backend.auth.3  Session store                  spot-check
-acme.backend.auth.4  Auth API + wiring              full-review
-```
+| Phase | Name | Tier | Size | Depends on |
+|------:|------|------|------|------------|
+| acme.backend.auth.1 | Types + auth-token contract | gate-only | small | — |
+| acme.backend.auth.2 | Token issuance (provider X) | full-review | medium | 1 |
+| acme.backend.auth.3 | Session store | spot-check | small | 1 |
+| acme.backend.auth.4 | Auth API + wiring | full-review | medium | 2, 3 |
 
 The plan ends with a pending-governance section; drain it with a quick
 reconcile before configuring, as in Example 1.
@@ -459,6 +480,55 @@ fixture `request` with you, flips `auth-token@v1` to `phase_ids: final` and
 `status: stable`, and
 regenerates the registry. Only then do billing's per-phase OpenSpec cycles start.
 
+### Step 8: Execute phases on branches
+
+Planning worktrees (Step 7) keep governance frozen while node specs are built.
+Execution has its own branch discipline, one level down. Each node gets one
+**integration branch**: `acme.backend.auth`'s phase branches —
+`acme.backend.auth.1` through `.4` — merge into `integration/acme.backend.auth`
+as each phase's OpenSpec cycle lands; `acme.backend.billing`'s phases merge
+into their own `integration/acme.backend.billing` the same way. Node
+integration branches then merge into the root branch. A node's plan file
+(`hsdd/spec/acme.backend.auth.md`) is written on exactly one lineage — never
+re-planned or copied onto a diverged sibling lineage — and `hsdd-reconcile`
+runs once, at the root, after the node's integration branch lands there, never
+per-worktree or per-phase.
+
+```bash
+git checkout -b integration/acme.backend.auth main
+git merge acme.backend.auth.1
+git merge acme.backend.auth.2
+# ... one merge per phase, in dependency order
+git checkout main
+git merge integration/acme.backend.auth
+```
+
+`openspec/config.yaml`'s `## Current Phase` block is rewritten by every
+`/hsdd-phase` switch, so a merge conflict on it carries no information: take
+either side and re-run `/hsdd-phase {next-phase}` before starting the next
+cycle. If `acme.backend.auth.2` and `acme.backend.auth.3` land on
+`integration/acme.backend.auth` in either order, do not hand-merge their two
+`Current Phase` blocks — pick either one, then switch. Set
+`openspec/config.yaml merge=ours` on integration branches in `.gitattributes`
+to skip the conflict prompt entirely.
+
+Not every pair of a node's phases parallelizes cleanly. If
+`acme.backend.auth.3` (session store) and `acme.backend.auth.4` (auth API +
+wiring) both touch the same router file, the phase plan says so —
+`- **Collides with:** [acme.backend.auth.4]` on `.3`'s section — and the
+summary table from Step 4 shows the column. Colliding phases execute serially
+on the node's integration branch; spawn a worktree per phase only where the
+table shows no collision between them, the same way Step 7 spawned one
+worktree per non-colliding leaf-parent.
+
+Finally, name the OpenSpec capability each phase's proposal targets after a
+stable feature area of the node — `auth-sessions`, `auth-token-issuance` — not
+after the phase (`acme-backend-auth-3`). A phase-named capability has nothing
+left to say once that phase archives; a feature-area name keeps accumulating
+requirements as later phases, or future changes, touch the same area. Accept
+that phases sharing a capability serialize their archive — the same phases
+that collide on files usually collide on capability too.
+
 ### The resulting tree
 
 ```text
@@ -485,11 +555,21 @@ openspec/
 
 - **Size to the window.** If a phase will not fit one ~5h review window (AI run
   plus your review and verification), it is too big. Ask `hsdd-phase-plan` to
-  split it.
+  split it. Too small is also a smell: merge adjacent phases under the sizing
+  floor's conditions (same tier, same consumed contracts, no third phase
+  depends on one without the other, still fits the window) rather than paying
+  a full cycle for a phase that will not earn it.
 - **Switch context before `opsx:new`, every time.** This is the one easy-to-forget
   step. `/hsdd-phase {phase-id}` exists for exactly this.
+- **Config conflicts are noise.** A merge conflict on `openspec/config.yaml`'s
+  `Current Phase` block carries no information — it is ephemeral per-session
+  working state. Take either side and re-run `/hsdd-phase {next-phase}` before
+  the next cycle.
 - **Add a level, do not widen.** When a leaf-parent grows past a handful of
   phases, insert an internal node ("feature") instead of piling on phases.
+- **Split where ownership splits.** Decompose along team, owner, or
+  deploy-target boundaries first (backend vs. mobile vs. web); capability
+  slices over technology buckets applies only within one owner's territory.
 - **Keep `hard` edges rare.** They are the critical path. Prefer `contract`,
   `event`, and `shared-model` edges so teams parallelize.
 - **Plan against frozen governance.** `hsdd/contract/`, `hsdd/adr/`, and
