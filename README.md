@@ -178,6 +178,10 @@ tokens, time, and quality.
   `hsdd-reconcile` for parallel leaf-parent development. Read against v0.4.
 - [v0.5 delta](spec/hsdd-spec-v0_5.md): one `hsdd/` root directory for every
   HSDD artifact, singular directory names. Read against v0.4.2.
+- [v0.6 delta](spec/hsdd-spec-v0_6.md): readable plan templates and a phase
+  summary table, tier-scaled ceremony with a phase sizing floor, the
+  execution protocol for parallel phase branches, and the ownership-first
+  decomposition axis. Read against v0.5.
 - [User's guide](docs/users-guide.md): worked examples for a simple single-level
   project and a multi-level system.
 
