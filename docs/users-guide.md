@@ -1,10 +1,10 @@
 # HSDD User's Guide
 
 A practical, example-driven walkthrough. For the full model and rationale, see the
-[methodology spec](../spec/hsdd-spec-v0_3.md) — v0.3 is the base; read the
+[methodology spec](../spec/hsdd-spec-v0_3.md) — v0.3 is the base; apply the
 [v0.4](../spec/hsdd-spec-v0_4.md), [v0.4.2](../spec/hsdd-spec-v0_4_2.md),
 [v0.5](../spec/hsdd-spec-v0_5.md), and [v0.6](../spec/hsdd-spec-v0_6.md) deltas
-against it.
+in order, each read against its predecessor.
 
 ## Before you start
 
@@ -26,6 +26,7 @@ hsdd/verify/{phase-id}.verification.md     per-phase verification docs
 hsdd/contract/{slug}.md + INDEX.md         first-class contracts (registry generated)
 hsdd/adr/{nnn}-{title}.md + INDEX.md       cross-cutting decisions (hsdd-adr, registry generated)
 hsdd/scripts/gen-registry.mjs              registry generator (copied from hsdd-contract)
+hsdd/templates/verification.md             verification-doc template, copied from hsdd-config
 openspec/                                  config.yaml + one change per phase
 ```
 
@@ -206,7 +207,7 @@ responsibility that fits a handful of phases, so it marks the root a
 **leaf-parent** rather than inventing sub-nodes. `hsdd/spec/linkcheck.md`:
 
 ```markdown
-### linkcheck: Broken Link Checker CLI
+# linkcheck: Broken Link Checker CLI
 
 - **Kind:** leaf-parent
 - **Purpose:** crawl a site, check every link, report the broken ones
@@ -545,6 +546,8 @@ hsdd/
     acme.backend.auth.1.verification.md  ...  acme.backend.auth.4.verification.md
   scripts/
     gen-registry.mjs
+  templates/
+    verification.md
 openspec/
   config.yaml  changes/...
 ```

@@ -15,6 +15,7 @@ are singular. OpenSpec files stay where OpenSpec expects them (`openspec/`).
 - `hsdd/contract/{slug}.md` + `hsdd/contract/INDEX.md`  first-class contracts (registry generated)
 - `hsdd/adr/{nnn}-{title}.md` + `hsdd/adr/INDEX.md`     cross-cutting decisions (authored by hsdd-adr, registry generated)
 - `hsdd/scripts/gen-registry.mjs`             registry generator (copied verbatim from hsdd-contract)
+- `hsdd/templates/verification.md`            verification-doc template, copied from hsdd-config
 - `openspec/config.yaml` + `openspec/changes/` config and one change per phase
 
 ## OpenSpec init

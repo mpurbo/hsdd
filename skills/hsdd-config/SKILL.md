@@ -97,6 +97,7 @@ context: |
 
 rules:
   proposal:
+    - "If the Current Phase review tier is gate-only or spot-check, keep the proposal brief: a few lines stating what and why."
     - "Scope this proposal to a single HSDD phase."
     - "Reference the phase scope, consumed/produced contracts, and gate."
     - "Include the review tier (gate-only, spot-check, full-review)."
@@ -113,7 +114,7 @@ rules:
     - "Each task completable in one red-green-refactor cycle."
     - "Include a gate task that runs the phase gate command."
     - "After the gate task, add a documentation task that writes the verification doc at hsdd/verify/{phase-id}.verification.md following hsdd/templates/verification.md, at the depth the phase's review tier requires (gate-only: slim; spot-check: short; full-review: full)."
-    - "Never update hsdd/conventions.md or hsdd/contract/ from a phase; governance changes are made at the root (hsdd-contract / hsdd-reconcile), never from a phase."
+    - "Never update hsdd/conventions.md or hsdd/contract/ from a phase; governance changes are made at the root (hsdd-contract / hsdd-reconcile)."
 ```
 
 Only valid artifact ids are `proposal`, `design`, `specs`, `tasks`. Adding any

@@ -188,9 +188,11 @@ the summary table — ``**Default gate:** `<command>` `` — and a phase's
 profile of the phase's OpenSpec cycle — gate-only: no `design.md`, slim
 verification doc; spot-check: `design.md` only if the phase settles a real
 design decision, short verification doc; full-review: the full set.
-`tasks.md` and the requirement/scenario deltas never scale (they drive TDD
-at every tier), and every phase still produces a verification doc.
-`hsdd-config`'s rules enforce this.
+gate-only and spot-check phases also keep the proposal brief (a few lines:
+what and why); only full-review phases get a full proposal. `tasks.md` and
+the requirement/scenario deltas never scale (they drive TDD at every tier),
+and every phase still produces a verification doc. `hsdd-config`'s rules
+enforce this.
 
 Phase 1 (types/scaffolding) is gate-only. Pure utilities are spot-check. External
 integrations and orchestration are full-review.
@@ -248,9 +250,8 @@ flowchart TD
 - [ ] Phase N is testable with mocks even if Phase N-1 is not implemented.
 - [ ] No phase couples to another phase's internals.
 - [ ] Each phase has a concrete gate, a verification description, and a review tier.
-- [ ] The phase dependency graph is included.
+- [ ] The phase dependency graph is included as a Mermaid flowchart and matches the Dependencies fields.
 - [ ] Summary table present and matches the phase sections.
-- [ ] Dependency graph is Mermaid and matches the Dependencies fields.
 - [ ] Field blocks are bullet lists; empty lists say "none".
 
 ## Anti-Rationalization
