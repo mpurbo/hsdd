@@ -49,7 +49,7 @@ Stack skills (optional): `mermaid-pastel-style`, `fp-rust`, `fp-kstream-*`.
 Do not list contracts here; run `node hsdd/scripts/gen-registry.mjs` after any
 contract change.
 
-## Parallel development protocol
+## Parallel development protocol (planning and execution)
 - Governance files (`hsdd/contract/`, `hsdd/adr/`, this file, both `INDEX.md`)
   are read-only during phase planning, at the root and in every worktree.
 - `hsdd-phase-plan` emits intended changes as a
