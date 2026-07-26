@@ -79,6 +79,13 @@ files); this skill performs the semantic merge.
 9. **Stamp each drained section**, replacing its entries with one line:
    `> Reconciled {YYYY-MM-DD} by hsdd-reconcile. Drained entries are in git history.`
 10. **Regenerate the registries:** `node hsdd/scripts/gen-registry.mjs`.
+11. **Sweep resolved questions.** When a drained entry (or a human
+    arbitration during this run) resolves an open question: update the row
+    and detail subsection in the owning spec (`RESOLVED (date)`, pointing at
+    the landing artifact), then grep the OQ id across the tree — specs,
+    contracts, ADRs, phase plans — and update every citation that still
+    treats it as open (contingency markers, "pending OQ-x" prose). Report
+    the swept locations.
 
 ## Entry Handling
 
@@ -96,6 +103,8 @@ files); this skill performs the semantic merge.
 - [ ] Every collision was decided by the human, and the losing plan was updated to match.
 - [ ] Contract edits follow hsdd-contract versioning (breaking change = new version + migration note).
 - [ ] `node hsdd/scripts/gen-registry.mjs` ran after the last contract edit.
+- [ ] No artifact still cites a resolved OQ as open; sweep locations
+      reported.
 
 ## Anti-Rationalization
 
@@ -106,3 +115,4 @@ files); this skill performs the semantic merge.
 | "The request is trivial, answer it myself" | A request is a gap the contract never specified. Inventing the answer re-creates the divergence this skill exists to remove. |
 | "Skip the registry regen, frontmatter barely changed" | The registry is derived data. Any frontmatter change without a regen makes INDEX.md lie. |
 | "Leave the drained entries in place for history" | Git history already keeps them. A stale pending section gets re-drained and double-applied. |
+| "The OQ row says RESOLVED — done" | Citations elsewhere still gate phases on it and justify contract prose with it. Grep the id; sweep every stale citation. |
