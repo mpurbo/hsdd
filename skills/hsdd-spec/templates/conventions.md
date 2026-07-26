@@ -45,7 +45,10 @@ the profile moves no paths.
 Run `openspec init` once, at the repo root (the directory holding `hsdd/`,
 this file's parent). One HSDD tree has one OpenSpec project; phases
 are isolated by the per-phase context switch (hsdd-config), not by separate
-projects. Polyrepo: init per repo root and share `hsdd/contract/` + `hsdd/adr/`.
+projects. Multi-repo: use the standalone-spec-repo profile above — one HSDD tree, mounted
+at `hsdd/` in each implementation repo — and run `openspec init` once per
+implementation repo. Never give a second repo its own `hsdd/spec/`; one project
+has one tree.
 
 ## Naming
 - Node id: dotted slug path from root (`acme.backend.auth`)

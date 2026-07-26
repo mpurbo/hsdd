@@ -59,9 +59,13 @@ Point-in-time documents are dated and chained; the atlas is living:
 Chain rules (enforced here, checked every pass):
 
 - Every dated doc carries `**Supersedes:**` linking the previous doc of its
-  kind **by exact filename**, `**Repo baselines:**` (spec repo SHA + every
-  implementation repo SHA + submodule pointers under the standalone-spec-repo
-  profile), `**Companion docs:**` (same-date siblings), and a `## Change log`.
+  kind **by exact filename**, `**Companion docs:**` (same-date siblings), and a
+  `## Change log`. Documents produced by an evidence pass — the progress report
+  and the execution plan — also carry `**Repo baselines:**` (spec repo SHA,
+  every implementation repo SHA, and each repo's submodule pointer under the
+  standalone-spec-repo profile). A milestone document instead names the progress
+  report it drew its numbers from in `**Basis:**`; it reviews no repo, so it
+  states no SHAs of its own.
 - After publication a dated doc accepts exactly two in-place edits: ticking
   its own checkboxes and appending to its change log. Anything more is a new
   superseding document. **Historical documents are never rewritten.**
@@ -96,12 +100,18 @@ be standing in produces a progress report that undercounts the project.
      `## Governance updates (pending reconcile)` sections; verification-doc
      audit (every claimed-done phase has its doc on main, sign-off fields
      filled, no template residue); management chain integrity (supersedes
-     links resolve by exact filename, baselines present).
+     links resolve by exact filename; baselines present on the progress
+     report and execution plan; a milestone document names its Basis).
    - *Code vs plan (each implementation repo):* which phases the code
      actually completes versus what plans and the prior progress report
      claim; contract-surface drift in both directions (code behavior the
      contract does not promise, contract promises the code abandoned);
-     scope creep (code with no phase).
+     scope creep (code with no phase). Also audit the profile's history
+     rules: a branch pair spanning this repo and the spec repo that landed
+     (or was deleted) on one side only, and any multi-phase epic
+     squash-merged into a single commit — the latter destroys the per-phase
+     history the velocity numbers are computed from, so flag it the week it
+     happens, when the branch may still exist.
 3. **Emit the progress report** (shape below). The only admissible "done"
    is: implemented, gate command green, verification doc merged to the spec
    repo's main branch. Claims without a verification doc are reported as
@@ -116,10 +126,19 @@ be standing in produces a progress report that undercounts the project.
 6. **Tick the milestone gates** in the current milestone document and
    evaluate the re-baseline trigger (a gate red across two consecutive
    checkpoints, or totals moved). If it fires, say so loudly and hand off
-   to `hsdd-milestone` — do not re-baseline here.
+   to `hsdd-milestone` — do not re-baseline here. Record the resulting gate
+   status in the progress report's Milestone gate status section, and
+   compare it against the previous report's — two consecutive reds fire the
+   trigger.
 7. **Report** with the same discipline the pass audits: what was written,
    what could not be verified, what needs a human decision. Never a silent
    green.
+8. **Land the output.** Commit the `hsdd/management/` changes. Under the
+   standalone-spec-repo profile, commit and push them **inside the submodule**
+   to spec-repo main, then bump every implementation repo's pointer to that
+   commit — including the repos you did not run from. Skipping the bump for the
+   other repos is precisely how step 1's finding gets manufactured; do it now,
+   not next week.
 
 ## The Findings→Plan Loop
 
@@ -158,6 +177,9 @@ we do"; a full run answers "what is true — and what do we do".
   applies from the next document forward.
 - **The first atlas is generated** whatever state the tree is in — an
   atlas of a messy tree is precisely the map the cleanup needs.
+- **A missing milestone document is normal at adoption**, not a finding: tick
+  nothing, note in the progress report that no milestone baseline exists, and
+  recommend `hsdd-milestone` once every leaf-parent is phase-planned.
 
 ## Document Shapes
 
@@ -165,12 +187,18 @@ we do"; a full run answers "what is true — and what do we do".
 
 Required sections, in order:
 
-- Header block: date, `**Repo baselines:**`, `**Companion docs:**`,
-  `**Method:**` (one line: which repos were reviewed, against what).
+- Header block: date, `**Supersedes:**` (previous progress report, exact
+  filename), `**Repo baselines:**`, `**Companion docs:**`, `**Method:**` (one
+  line: which repos were reviewed, against what).
 - **Bottom line** — one table: phases planned / code-complete / remaining
   (externally-contingent count broken out), implementation progress %,
   observed velocity per lane (PE/manday), calibrated remaining effort,
   calendar outlook.
+- **Milestone gate status** — one row per milestone: gate items met / total,
+  and each unmet item with the phase or external answer it waits on. This is
+  the persisted input for the re-baseline slip trigger: comparing this section
+  against the previous progress report is how "red across two consecutive
+  checkpoints" becomes checkable rather than remembered.
 - **What is done** — per node, with evidence (verification doc on main).
 - **Velocity** — observed rate per lane, then the calibrated rate with its
   caveats stated (early phases are light; review, not generation, is the
@@ -225,8 +253,13 @@ Three parts, regenerated whole every checkpoint:
    (from `Governed by`), as a table; a diagram only where an ADR's reach
    is genuinely cross-cutting.
 
-The atlas is **derived only**: every element must be reconstructible by
-grep from `spec/`, `contract/`, `adr/`. If it disagrees with the
+The atlas is **derived only**: every element must be reconstructible from the
+artifacts — `hsdd/spec/`, `hsdd/contract/`, `hsdd/adr/` for the tree, contracts,
+and ADR coverage; `hsdd/verify/` for `done` (the pinned definition: a
+verification doc merged to spec-repo main); each implementation repo's
+`openspec/changes/` for `in-progress`. Never derive `done` from spec prose —
+prose carries claims, and separating claims from evidence is what this pass
+exists to do. If it disagrees with the
 artifacts, the atlas is wrong by definition; the fix is regeneration. If
 `mermaid-pastel-style` is installed, follow it for all diagrams.
 
@@ -257,6 +290,10 @@ writes live under `hsdd/management/`.
       or asked for when absent; none silently skipped.
 - [ ] OQ health verified: every cited id defined exactly once, statuses
       coherent, no stale pending-prose on resolved questions.
+- [ ] Profile history rules audited: no one-sided branch pair, no
+      squash-merged multi-phase epic (or both reported as findings).
+- [ ] Output landed: management changes committed (and, under the profile,
+      pushed inside the submodule with every repo's pointer bumped).
 
 ## Anti-Rationalization
 

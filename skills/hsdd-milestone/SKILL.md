@@ -71,7 +71,10 @@ progress reporting, or phase planning.
    waits on, its entry criterion, its estimate — **excluded from the
    launch gate**, each with a pre-agreed degradation path stated in the
    document ("dashboard ships in 'coming soon' state; the tail ships
-   post-launch — this is the plan, not a slip"). An externally-gated phase
+   post-launch — this is the plan, not a slip").
+   *External* means the owning spec's OQ table marks the question `ext:` under
+   *Waits on* (conventions.md § Open questions) — that marker, not a judgment
+   call, decides what leaves the launch gate. An externally-gated phase
    inside the launch gate is a generation error.
 6. **Re-baseline (when triggered).** If the dates hold — the buffer
    absorbs the change — *absorb*: update gates, append to the change log,
@@ -87,9 +90,12 @@ progress reporting, or phase planning.
 
 Required sections, in order:
 
-- Header block: date, audience, `**Basis:**` (the progress report or
-  assumed-rate statement), `**Supersedes:**` on re-baselines,
-  `**Execution detail:**` link to the current plan.
+- Header block: date, audience, `**Basis:**` (the progress report these numbers
+  came from — it carries the repo baselines, which this document does not
+  restate — or an explicit statement that no progress report exists yet and the
+  phase plans' assumed rate was used), `**Companion docs:**` (same-date
+  siblings), `**Supersedes:**` on re-baselines (exact filename),
+  `**Execution detail:**` link to the current execution plan.
 - **How to read this** — demo/gate semantics, the slip tolerance (how many
   days a milestone may slip before it triggers anything), the launch
   window as a **base / optimistic / pessimistic** triple.
@@ -98,7 +104,8 @@ Required sections, in order:
   if `mermaid-pastel-style` is installed, follow it.
 - **Contingent tail** — the table from step 5 with degradation paths.
 - **Tracking** — who ticks (the weekly checkpoint), the re-baseline
-  trigger (a gate red across two consecutive checkpoints, or totals
+  trigger (a gate red across two consecutive checkpoints (read from the two
+  most recent progress reports' Milestone gate status sections), or totals
   moved), and the single source of truth for "done".
 - **Change log.**
 

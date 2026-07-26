@@ -138,16 +138,24 @@ management/YYYY-MM-DD-milestones.md
   field showed why "by exact filename" must be said: the 07-24 microsite
   plan's supersedes link points at `hsdd-execution-plan.md`, a file that no
   longer exists under that name.)
-- Each carries a `**Repo baselines:**` header pinning the commit SHA of the
-  spec repo and every implementation repo (including, under the §6 profile,
-  the submodule pointer each implementation repo carries) — the review is
-  meaningless without knowing what it reviewed.
+- Documents produced by an evidence pass (progress report, execution plan)
+  carry a `**Repo baselines:**` header pinning the commit SHA of the spec repo
+  and every implementation repo (including, under the §6 profile, each
+  implementation repo's submodule pointer) — the review is meaningless without
+  knowing what it reviewed. A milestone document does not review repos: it
+  inherits its baselines from the progress report named in its `**Basis:**`
+  header, and must not restate SHAs it did not verify.
 - Each carries a `**Companion docs:**` header linking its same-date
   siblings, and a `## Change log` section.
 - After publication, a dated document accepts exactly two kinds of in-place
-  edit: **ticking** its own checkboxes (step `Done` boxes, milestone gates)
-  and **appending** to its change log. Anything more is a new superseding
-  document. Historical documents are never rewritten.
+  edit: **ticking** its own checkboxes (step `Done` boxes, milestone gates) and
+  **appending** to its change log. Anything more is a new superseding document.
+  One named exception: a milestone document is a living checkpoint tracker, so
+  an *absorbed* scope change (§4.2 — totals moved, dates held) may also update
+  its gate contents in place, with a change-log entry saying what moved and why
+  the window still holds. A change that moves the dates is never absorbed; it
+  is a re-baseline, and re-baselines supersede. Progress reports and execution
+  plans have no such exception. Historical documents are never rewritten.
 
 The **atlas** is the exception: a single living file, `management/atlas.md`,
 regenerated in full on every checkpoint. It is pure derived state — its
@@ -159,13 +167,18 @@ The evidence view. Audience: the team, and the other two documents — the
 execution plan and the milestone document take their numbers from here, not
 from independent counting. Required sections:
 
-- **Header block:** date, baselines reviewed, companion docs, and
+- **Header block:** date, `**Supersedes:**` (the previous progress report, by
+  exact filename), `**Repo baselines:**`, `**Companion docs:**`, and
   `**Method:**` — one line naming what was actually reviewed (which repos,
   against what).
 - **Bottom line** — one table: phases planned / code-complete / remaining
   (with the externally-contingent count broken out), implementation
   progress %, observed velocity per lane, calibrated remaining effort,
   calendar outlook. A stakeholder who reads nothing else reads this.
+- **Milestone gate status** — one row per milestone (gate items met / total,
+  each unmet item's blocker); this is the persisted input the re-baseline
+  slip trigger reads to make "red across two consecutive checkpoints"
+  checkable.
 - **What is done** — per node, **with evidence**. The only admissible
   "done" is v0.6's definition made checkable: *the phase's verification
   document is merged to the spec repo's main branch.* Claims without a
@@ -266,8 +279,13 @@ Three parts:
    (from the `Governed by` links), as a table; a diagram only where the
    ADR's reach is genuinely cross-cutting.
 
-The atlas is **derived only**: every element in it must be reconstructible
-by grep from `spec/`, `contract/`, and `adr/`. It introduces no new
+The atlas is **derived only**: every element must be reconstructible from the
+artifacts — `hsdd/spec/`, `hsdd/contract/`, `hsdd/adr/` for the tree, contracts,
+and ADR coverage; `hsdd/verify/` for `done` (the pinned definition: a
+verification doc merged to spec-repo main); each implementation repo's
+`openspec/changes/` for `in-progress`. Never derive `done` from spec prose —
+prose carries claims, and separating claims from evidence is what this pass
+exists to do. It introduces no new
 information and therefore needs no reconcile, no ownership, and no review
 gate — if it disagrees with the artifacts, the atlas is wrong by
 definition, and the fix is regeneration.
@@ -597,6 +615,9 @@ layered on when work spans repos.
 - The profile (§6) is opt-in; single-repo projects change nothing.
 - No skill loses a capability; the six existing skills gain only the §5.2
   anchors.
+- The one new stop (§5.2's contingency rule in `hsdd-phase-plan`) binds
+  contingencies authored by the run that hits it; pre-existing unnamed
+  contingencies are reported for minting, never blocked.
 
 A v0.6.1 project can therefore upgrade its skills and keep working
 mid-flight — which is exactly what the reference project (§7.3) will do.

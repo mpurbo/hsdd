@@ -32,6 +32,11 @@
 
 - [ ] **Step 1: Write `skills/hsdd-checkpoint/SKILL.md`** with exactly this content:
 
+> **Note (post-459af7f):** this task's shipped result also includes the
+> corrections in commit 459af7f — see the live file for the authoritative
+> content. Do not regenerate this file from the fence below without reapplying
+> them.
+
 ````markdown
 ---
 name: hsdd-checkpoint
@@ -79,14 +84,14 @@ this skill only *ticks* existing gates), authoring fixes (route findings to
 
 ## The Management Layer
 
-`management/` sits beside `spec/`, `contract/`, `adr/` at the HSDD root.
+`hsdd/management/` sits beside `spec/`, `contract/`, `adr/` at the HSDD root.
 Point-in-time documents are dated and chained; the atlas is living:
 
-- `management/YYYY-MM-DD-progress.md` — this skill writes it
-- `management/YYYY-MM-DD-execution-plan.md` — this skill writes it
-- `management/YYYY-MM-DD-milestones.md` — `hsdd-milestone` writes it; this
+- `hsdd/management/YYYY-MM-DD-progress.md` — this skill writes it
+- `hsdd/management/YYYY-MM-DD-execution-plan.md` — this skill writes it
+- `hsdd/management/YYYY-MM-DD-milestones.md` — `hsdd-milestone` writes it; this
   skill ticks its gates
-- `management/atlas.md` — this skill regenerates it whole
+- `hsdd/management/atlas.md` — this skill regenerates it whole
 
 Chain rules (enforced here, checked every pass):
 
@@ -179,7 +184,7 @@ we do"; a full run answers "what is true — and what do we do".
 
 ## Document Shapes
 
-### Progress report (`management/YYYY-MM-DD-progress.md`)
+### Progress report (`hsdd/management/YYYY-MM-DD-progress.md`)
 
 Required sections, in order:
 
@@ -200,7 +205,7 @@ Required sections, in order:
 - **Verdict** — a short honest paragraph: is the method working, what is
   the real threat.
 
-### Execution plan (`management/YYYY-MM-DD-execution-plan.md`)
+### Execution plan (`hsdd/management/YYYY-MM-DD-execution-plan.md`)
 
 Required sections, in order:
 
@@ -227,7 +232,7 @@ Required sections, in order:
   the next number; never renumber or delete.
 - **Change log.**
 
-### Atlas (`management/atlas.md`)
+### Atlas (`hsdd/management/atlas.md`)
 
 Three parts, regenerated whole every checkpoint:
 
@@ -253,7 +258,7 @@ artifacts, the atlas is wrong by definition; the fix is regeneration. If
 Checkpoint *finds* the stale ADR note, the undrained reconcile section,
 the contract drift — it does not fix them. Fixes become plan steps routed
 to the owning skill and the owning human. The only files this skill
-writes live under `management/`.
+writes live under `hsdd/management/`.
 
 ## Quality Gates
 
@@ -270,7 +275,7 @@ writes live under `management/`.
 - [ ] Atlas regenerated whole; no diagram over ~20 nodes; every element
       greppable back to a source artifact.
 - [ ] Milestone gates ticked; re-baseline trigger evaluated and reported.
-- [ ] No file outside `management/` modified.
+- [ ] No file outside `hsdd/management/` modified.
 - [ ] OQ health verified: every cited id defined exactly once, statuses
       coherent, no stale pending-prose on resolved questions.
 
@@ -322,6 +327,11 @@ git commit -m "feat(skills): hsdd-checkpoint — one evidence pass, four views (
 - Produces: the milestone-document shape Task 6's guide section references.
 
 - [ ] **Step 1: Write `skills/hsdd-milestone/SKILL.md`** with exactly this content:
+
+> **Note (post-459af7f):** this task's shipped result also includes the
+> corrections in commit 459af7f — see the live file for the authoritative
+> content. Do not regenerate this file from the fence below without reapplying
+> them.
 
 ````markdown
 ---
@@ -405,7 +415,7 @@ progress reporting, or phase planning.
    window) — and that decision lands in its governance artifact, not
    here.
 
-## Document Shape (`management/YYYY-MM-DD-milestones.md`)
+## Document Shape (`hsdd/management/YYYY-MM-DD-milestones.md`)
 
 Required sections, in order:
 

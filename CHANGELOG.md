@@ -52,6 +52,15 @@ two developers, 89 phases under v0.6.1). Delta spec: `spec/hsdd-spec-v0_7.md`.
   v0.7 is additive over v0.6.1 by contract (spec §7.1), with microsite-hsdd as
   the acceptance fixture (§7.3).
 
+### Not yet done
+
+- **Acceptance gate open (spec §7.3).** v0.7 is not released until
+  `hsdd-checkpoint` and `hsdd-milestone` have been run against the
+  microsite-hsdd reference project (a live v0.6.1 project, mid-implementation)
+  and produced conforming documents without manual repair, with the adoption
+  run's findings register catching the known seeded findings. Until that run is
+  recorded in `review/`, this entry stays under Unreleased.
+
 ## [0.6.1] - 2026-07-13
 
 Driven by the v0.6.0 pressure-test campaign

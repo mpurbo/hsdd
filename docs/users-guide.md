@@ -28,6 +28,7 @@ hsdd/contract/{slug}.md + INDEX.md         first-class contracts (registry gener
 hsdd/adr/{nnn}-{title}.md + INDEX.md       cross-cutting decisions (hsdd-adr, registry generated)
 hsdd/scripts/gen-registry.mjs              registry generator (copied from hsdd-contract)
 hsdd/templates/verification.md             verification-doc template, copied from hsdd-config
+hsdd/management/                           management layer (progress reports, execution plans, milestones, atlas) — written only by hsdd-checkpoint / hsdd-milestone
 openspec/                                  config.yaml + one change per phase
 ```
 
@@ -35,8 +36,10 @@ openspec/                                  config.yaml + one change per phase
 `hsdd/`). One HSDD tree has one OpenSpec project. Every
 phase, across every node, is a change under that single `openspec/changes/`;
 phases are kept apart by the per-phase context switch (`hsdd-config`), not by
-separate projects. If your system is split across repos, run `openspec init` at
-each repo root and share `hsdd/contract/` and `hsdd/adr/` via a package or submodule.
+separate projects. Multi-repo: use the standalone-spec-repo profile — one HSDD
+tree, mounted at `hsdd/` in each implementation repo — and run `openspec init`
+once per implementation repo. Never give a second repo its own `hsdd/spec/`;
+one project has one tree (see "Multi-repo projects" below).
 
 A key principle worth internalizing early: **depth and ceremony are costs.** Use
 exactly as many levels and artifacts as the system needs, and no more. The two
@@ -597,12 +600,13 @@ flowchart TB
         gate -- "rework" --> spec
     end
 
-    subgraph exec ["2 · Execute — devs"]
+    subgraph exec ["2 · Execute — devs, lead reviews at tier"]
         direction TB
         cfg["/hsdd-phase<br/>switch phase context"]
         cyc["OpenSpec cycle<br/>TDD · gate command"]
+        rev{"Review at the phase's tier<br/>dev + lead"}
         ver["verification doc<br/>merged to spec-repo main"]
-        cfg --> cyc --> ver
+        cfg --> cyc --> rev --> ver
     end
 
     subgraph mgmt ["3 · Manage — leads"]
@@ -620,7 +624,8 @@ flowchart TB
     gate -- "phases ready" --> cfg
     ver -- "evidence" --> chk
     xplan -- "this week's steps" --> cfg
-    xplan -- "spec fixes · reconcile" --> spec
+    xplan -- "spec fixes" --> spec
+    xplan -- "reconcile" --> rec
     msdoc --> stake["stakeholders"]
 
     style plan fill:none,stroke:#7c3aed,stroke-dasharray: 5 5,stroke-width:2px,color:#7c3aed
@@ -635,6 +640,7 @@ flowchart TB
     style gate fill:#fef3c7,stroke:#d97706,color:#1e293b
     style cfg fill:#dbeafe,stroke:#2563eb,color:#1e293b
     style cyc fill:#dbeafe,stroke:#2563eb,color:#1e293b
+    style rev fill:#fef3c7,stroke:#d97706,color:#1e293b
     style ver fill:#d1fae5,stroke:#059669,color:#1e293b
     style chk fill:#f3e8ff,stroke:#7c3aed,color:#1e293b
     style ms fill:#f3e8ff,stroke:#7c3aed,color:#1e293b

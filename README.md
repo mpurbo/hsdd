@@ -126,7 +126,7 @@ re-implementing them; `hsdd-config` wires them into each OpenSpec cycle.
 | `hsdd-contract` | Define and version the first-class contracts between nodes. |
 | `hsdd-adr` | Author and maintain cross-cutting Architecture Decision Records as first-class files, with registry-compatible frontmatter and a status lifecycle. |
 | `hsdd-phase-plan` | Break a small-enough node into ordered, independently implementable phases, each sized for one OpenSpec change and one review window. |
-| `hsdd-reconcile` | Drain the pending governance updates emitted by phase planning: finalize contract phase ids, resolve contract-gap requests with you, and regenerate the registries. Runs at the root, after parallel plan branches merge. |
+| `hsdd-reconcile` | Drain the pending governance updates emitted by phase planning: finalize contract phase ids, resolve contract-gap requests with you, and regenerate the registries. Runs on the root lineage after parallel plan branches merge. |
 | `hsdd-config` | Configure OpenSpec and switch the phase context so each cycle sees only the current phase plus its consumed contracts. |
 | `hsdd-checkpoint` | Run the weekly (or context-triggered) evidence pass across the spec repo and every implementation repo, emitting a progress report, a revised execution plan, a regenerated atlas, and ticked milestone gates. One pass, four views; every finding becomes a plan step or an explicit waiver. |
 | `hsdd-milestone` | Generate the stakeholder milestone document once every leaf-parent is phase-planned — a demo and a gate per checkpoint, with externally-gated work in a contingent tail outside the launch gate — and re-baseline it when the dates move. |

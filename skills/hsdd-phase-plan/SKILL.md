@@ -114,6 +114,12 @@ owning spec mints it (`hsdd-spec` owns the format) before this plan builds
 on it. An unnamed contingency is invisible to the checkpoint's health pass
 and to the milestone document's contingent tail.
 
+> **Adopting on a v0.6.1 project.** The stop binds contingencies *this run*
+> authors. A pre-existing unnamed contingency inherited from an earlier plan is
+> reported, not blocked: list it with the question it implies so the owning spec
+> can mint an ID, and carry on. Upgrading the skills never blocks work already
+> in flight.
+
 **Sibling isolation.** Do not read sibling worktree folders or other nodes'
 phase plans. Contracts are the only inter-node knowledge; a sibling's
 half-written plan on the same disk is not a contract. Sibling node specs as
