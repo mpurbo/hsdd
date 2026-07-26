@@ -17,12 +17,38 @@ are singular. OpenSpec files stay where OpenSpec expects them (`openspec/`).
 - `hsdd/scripts/gen-registry.mjs`             registry generator (copied verbatim from hsdd-contract)
 - `hsdd/templates/verification.md`            verification-doc template, copied from hsdd-config
 - `openspec/config.yaml` + `openspec/changes/` config and one change per phase
+- `hsdd/management/`                          management layer (progress, execution plans, milestones, atlas) — written only by hsdd-checkpoint / hsdd-milestone
+
+**Standalone-spec-repo profile (opt-in, multi-repo projects):** declare it
+here with a line `Profile: standalone-spec-repo`. The HSDD tree is its own
+git repo (the *spec repo*), mounted as a git submodule **at `hsdd/`** in
+every implementation repo — so every path above stays exactly as written;
+the profile moves no paths.
+
+- **Run location.** Every `/hsdd-*` skill runs from an implementation repo,
+  never from a standalone clone of the spec repo — a standalone clone is a
+  third working copy whose edits leave every submodule pointer behind, and
+  a session without the code cannot verify what it asserts. Governance
+  edits are committed and pushed **inside the submodule**, then each
+  implementation repo's pointer is bumped.
+- Submodule pointers only ever reference spec-repo main commits.
+- A phase is done when its verification doc is on spec-repo main.
+- Branch pairs spanning an implementation repo and the spec repo land — or
+  are discarded — atomically.
+- Multi-phase epics are never squash-merged (per-phase history is the
+  velocity data and the audit trail).
+- List the implementation repos here (lane + repo name). Their filesystem
+  paths differ per machine, so cross-repo skills take those paths from the
+  invoking prompt, not from this file.
 
 ## OpenSpec init
 Run `openspec init` once, at the repo root (the directory holding `hsdd/`,
 this file's parent). One HSDD tree has one OpenSpec project; phases
 are isolated by the per-phase context switch (hsdd-config), not by separate
-projects. Polyrepo: init per repo root and share `hsdd/contract/` + `hsdd/adr/`.
+projects. Multi-repo: use the standalone-spec-repo profile above — one HSDD tree, mounted
+at `hsdd/` in each implementation repo — and run `openspec init` once per
+implementation repo. Never give a second repo its own `hsdd/spec/`; one project
+has one tree.
 
 ## Naming
 - Node id: dotted slug path from root (`acme.backend.auth`)
@@ -30,6 +56,25 @@ projects. Polyrepo: init per repo root and share `hsdd/contract/` + `hsdd/adr/`.
 - Contract: `{slug}@v{n}` (`auth-token@v1`)
 - ADR: `ADR-{nnn}`; node-local decision: `D{n}`
 - User story / acceptance: `US-{n}` / `AC-{n}.{y}`
+- Open question: root `OQ{n}`; node `OQ-{prefix}{n}` (declare prefixes here,
+  e.g. `B` = backend, `F` = frontend); child view of a parent question:
+  `[inherits OQ{n}]`
+
+## Open questions (OQ)
+- IDs are stable — never renumbered, never reused. Resolved entries keep
+  their row and detail subsection (audit trail); never delete them.
+- One definition home: defined exactly once, in the `## Open questions`
+  section of the spec that owns the decision. Every other artifact cites
+  the ID only.
+- Format (owning spec): summary table
+  `| ID | Question | Status | Waits on | Affects |` + one `### {ID}` detail
+  subsection per entry.
+- Status: `OPEN` · `PARTIAL` (residual under *Waits on*) · `RESOLVED (date)`
+  (row points at the landing artifact). `ext:` marks an external party;
+  link the execution plan's E-track where one exists.
+- Resolving = update row + detail, land the decision in its artifact
+  (ADR / contract / `D{n}`), and sweep citations that still treat it as
+  open (`hsdd-reconcile` does this).
 
 ## Companion skills (recommended)
 Obra's superpowers (github.com/obra/superpowers), wired into OpenSpec by hsdd-config:

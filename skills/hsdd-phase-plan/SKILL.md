@@ -86,7 +86,8 @@ Append this section to `hsdd/spec/{node-id}.md`:
   a contract this node owns, that consumers may rely on}
 - request `{contract-id}@v{n}`: {the gap, phrased as a question}
   - assumption: {what this plan assumes while the gap is open}
-  - contingent phases: {phase ids that must not start until resolved, or none}
+  - contingent phases: {phase ids that must not start until resolved, or
+    none} — each names the owning open question: `{phase-id} (OQ-…)`
 ```
 
 Any entry may carry short rationale sub-bullets; `hsdd-reconcile` reads them.
@@ -104,6 +105,20 @@ could reasonably depend on it, emit an `amend` entry so `hsdd-reconcile` folds
 it into the contract body; keep it node-local only when it is invisible across
 the boundary. If the amendment could break an existing consumer, say so in the
 entry; reconcile takes breaking amends to the human.
+
+**Contingency names its question (stop).** A phase whose start waits on an
+unresolved question cites the OQ id — in its phase section (Scope or
+Dependencies line, e.g. `contingent (OQ-B7)`) and in any `request` entry's
+contingent-phases list. If the question has no minted ID, **stop**: the
+owning spec mints it (`hsdd-spec` owns the format) before this plan builds
+on it. An unnamed contingency is invisible to the checkpoint's health pass
+and to the milestone document's contingent tail.
+
+> **Adopting on a v0.6.1 project.** The stop binds contingencies *this run*
+> authors. A pre-existing unnamed contingency inherited from an earlier plan is
+> reported, not blocked: list it with the question it implies so the owning spec
+> can mint an ID, and carry on. Upgrading the skills never blocks work already
+> in flight.
 
 **Sibling isolation.** Do not read sibling worktree folders or other nodes'
 phase plans. Contracts are the only inter-node knowledge; a sibling's
@@ -274,6 +289,8 @@ flowchart TD
 - [ ] The phase dependency graph is included as a Mermaid flowchart and matches the Dependencies fields.
 - [ ] Summary table opens the section and matches the phase sections.
 - [ ] Field blocks are bullet lists; empty lists say "none".
+- [ ] Every contingent phase names the OQ id it waits on; no contingency
+      without a minted OQ.
 
 ## Anti-Rationalization
 
@@ -290,3 +307,4 @@ flowchart TD
 | "I'll create the shared artifact locally; the merge will be trivial" | Two agents generating from the same prose are never byte-identical. Record a `request`; the contract must name one canonical owner. |
 | "I'll peek at the sibling worktree's plan to coordinate" | Contracts are the only inter-node knowledge. Peeking couples plans invisibly and races the sibling's edits. |
 | "I'll write the verification doc now while the phase is fresh" | Planning cannot know the implementation. The doc is written at apply by an OpenSpec task; the plan carries only the one-line intent. |
+| "The dependency is obvious, no need for an OQ id" | An unnamed contingency can't be tracked, tailed, or resolved. Name the OQ or stop and have the owning spec mint it. |

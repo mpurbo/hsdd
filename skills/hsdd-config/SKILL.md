@@ -42,6 +42,13 @@ OpenSpec change.
    `docs/conventions.md`: honor its layout and offer to migrate), `hsdd/spec/*.md`
    (by path, not in full), `CLAUDE.md`, and tech-stack files (`Cargo.toml`,
    `package.json`).
+   If `conventions.md` declares `Profile: standalone-spec-repo`, `hsdd/` is
+   a git submodule of this implementation repo rather than a plain
+   directory. **Paths are unchanged** — the submodule mounts at `hsdd/`, so
+   `hsdd/spec/…`, `hsdd/contract/…`, `hsdd/adr/…` all resolve as written.
+   What changes is that the tree is versioned elsewhere: run from the
+   implementation repo (never from a standalone clone of the spec repo),
+   and see the pointer check in the phase context switch below.
 2. **Discover companion skills** actually installed (e.g. `superpowers:*`,
    `fp-rust`). Only reference ones present; missing ones degrade gracefully.
 3. **Map skills to workflow steps** (table below).
@@ -139,28 +146,34 @@ lacks a disposition** (`verified` | `waived (reason)` | `deferred to
 
 ## Phase Context Switch (do this BEFORE opsx:new)
 
-1. Open the leaf-parent node spec, find the next phase section.
-2. Replace `## Current Phase` with that phase's block.
-3. Replace `## Contracts from Prior Phases / Nodes` with only the Interface +
+1. **Profile check first (standalone-spec-repo only).** Before reading
+   anything through `hsdd/`, verify the submodule pointer references a
+   spec-repo main commit. A pointer off main is stale or forked truth, and
+   every line injected below would be read from it: stop and re-point the
+   submodule to main, or get explicit human confirmation. Same reason
+   `hsdd-checkpoint` pins baselines before reviewing content.
+2. Open the leaf-parent node spec, find the next phase section.
+3. Replace `## Current Phase` with that phase's block.
+4. Replace `## Contracts from Prior Phases / Nodes` with only the Interface +
    Guarantees of each consumed contract id.
-4. Replace `## Governing Decisions` with only the Decision + Consequences of each
+5. Replace `## Governing Decisions` with only the Decision + Consequences of each
    referenced ADR. If a referenced `ADR-NNN` has no file under `hsdd/adr/`, it was
    never materialized: stop and author it with `hsdd-adr` first. You must not
    invent the decision; the human supplies it. If the decision content is not
    available, author the ADR as `status: proposed` with the Decision left as an
    explicit TODO, and do not inject it as binding until it is `accepted`. Do not
    silently drop the reference.
-5. **Next-runnable check.** Warn if the requested phase is already archived
+6. **Next-runnable check.** Warn if the requested phase is already archived
    under `openspec/changes/archive/` (it already ran; switching to it again is
    likely a mistake), or if a dependency phase's change is neither archived nor
    merged (its contracts/decisions may not be what this phase expects to
    consume).
-6. **Reconcile check.** If any consumed contract has `phase_ids: provisional`,
+7. **Reconcile check.** If any consumed contract has `phase_ids: provisional`,
    or the node's plan has an unresolved `request` naming it, warn and recommend
    running `hsdd-reconcile` first. If the phase being started is listed under a
    request's `contingent phases`, stop and require explicit human confirmation
    before proceeding.
-7. Do not touch the project-wide context or the rules.
+8. Do not touch the project-wide context or the rules.
 
 This gives the session ~20 lines of phase context instead of a full spec. The
 `/hsdd-phase {phase-id}` slash command, if installed, runs this step.
@@ -183,3 +196,4 @@ switch — see the conventions file's execution protocol.
 | "The contract is provisional but close enough, inject it" | Provisional means reconcile has not confirmed both sides; open `request` entries may still reshape what this phase consumes. Warn, and stop for phases contingent on an open request. |
 | "The config conflict looks meaningful, I'll hand-merge both phase blocks" | The Current Phase block is ephemeral working state. Take either side and re-run the phase switch. |
 | "A design.md can't hurt for this gate-only phase" | It costs a full artifact plus review attention for a phase with nothing to decide. The tier sets the artifact profile; follow it. |
+| "The submodule is a few commits behind; the context is probably fine" | A stale pointer injects governance that may have been amended or retracted on main. Bump the pointer first; it is one command. |

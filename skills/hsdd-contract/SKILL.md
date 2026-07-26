@@ -142,6 +142,9 @@ are authored by `hsdd-adr`, not here; this skill owns `hsdd/contract/` only.
 - [ ] The registry was regenerated.
 - [ ] `phase_ids` is present (`provisional` until `hsdd-reconcile` finalizes it).
 - [ ] Every code-level artifact both sides consume (types file, fixtures, shared package) names its canonical path and owning phase in the Interface or Validation section.
+- [ ] Open questions are cited by ID only — never defined here; prose
+      justifying behavior as "pending OQ-x" is swept when the OQ resolves
+      (hsdd-reconcile).
 
 ## Anti-Rationalization
 
@@ -154,3 +157,4 @@ are authored by `hsdd-adr`, not here; this skill owns `hsdd/contract/` only.
 | "Put the schema in the node spec" | Then consumers must read the producer's spec. Contracts exist so they do not. |
 | "Both sides can regenerate the shared types; they'll match" | Two generations from the same prose diverge. Name one canonical artifact path and one owning phase in the contract. |
 | "I'll note 'update phase ids later' in the body" | Prose notes invite concurrent edits from both sides. `phase_ids: provisional` carries that state; `hsdd-reconcile` flips it. |
+| "I'll explain the open question inline so the contract is self-contained" | A second definition forks the question. Cite the ID; the owning spec carries the question, status, and resolution trail. |

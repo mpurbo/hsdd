@@ -28,6 +28,7 @@ hsdd/contract/{slug}.md + INDEX.md         first-class contracts (registry gener
 hsdd/adr/{nnn}-{title}.md + INDEX.md       cross-cutting decisions (hsdd-adr, registry generated)
 hsdd/scripts/gen-registry.mjs              registry generator (copied from hsdd-contract)
 hsdd/templates/verification.md             verification-doc template, copied from hsdd-config
+hsdd/management/                           management layer (progress reports, execution plans, milestones, atlas) — written only by hsdd-checkpoint / hsdd-milestone
 openspec/                                  config.yaml + one change per phase
 ```
 
@@ -35,8 +36,10 @@ openspec/                                  config.yaml + one change per phase
 `hsdd/`). One HSDD tree has one OpenSpec project. Every
 phase, across every node, is a change under that single `openspec/changes/`;
 phases are kept apart by the per-phase context switch (`hsdd-config`), not by
-separate projects. If your system is split across repos, run `openspec init` at
-each repo root and share `hsdd/contract/` and `hsdd/adr/` via a package or submodule.
+separate projects. Multi-repo: use the standalone-spec-repo profile — one HSDD
+tree, mounted at `hsdd/` in each implementation repo — and run `openspec init`
+once per implementation repo. Never give a second repo its own `hsdd/spec/`;
+one project has one tree (see "Multi-repo projects" below).
 
 A key principle worth internalizing early: **depth and ceremony are costs.** Use
 exactly as many levels and artifacts as the system needs, and no more. The two
@@ -557,6 +560,187 @@ hsdd/
 openspec/
   config.yaml  changes/...
 ```
+
+---
+
+## Running the project (v0.7)
+
+Planning artifacts tell you what to build; the **management layer** tells you how
+it is going. Once implementation starts and more than one person is involved, add
+a weekly rhythm on top of the loop you already have.
+
+### Two roles
+
+HSDD work splits across two roles. The split is real but not clean — on a small
+team one person wears both hats, and the handoffs matter more than the labels:
+
+| | **Developer** | **Lead / manager** |
+|---|---|---|
+| **Plan** | drafts the decomposition, contracts, and phase plans (`hsdd-spec`, `hsdd-contract`, `hsdd-adr`, `hsdd-phase-plan`) — often sitting *with* a lead for the axis call | **verifies** the result: is the ownership axis right, are contracts frozen where they must be, are phases sized to the window? Arbitrates `hsdd-reconcile` |
+| **Execute** | owns it: phase context switch, OpenSpec cycle, TDD, gate, verification doc | reviews at the tier the phase declares; full-review phases get real attention |
+| **Manage** | supplies the evidence — verification docs merged to main are what "done" means | owns it: `hsdd-checkpoint` weekly, `hsdd-milestone` at generation and re-baseline; carries the stakeholder conversation |
+
+The one hard rule in that table: **the lead verifies the decomposition before
+phases open.** A wrong ownership axis reworks every node beneath it, and it is
+cheapest to fix on the day it is drawn.
+
+```mermaid
+%%{init:{'theme':'base','themeVariables':{'primaryTextColor':'#1e293b','lineColor':'#475569','edgeLabelBackground':'#ffffff','tertiaryTextColor':'#1e293b'}}}%%
+flowchart TB
+    bd["Brain-dump · PRD · RFCs"]
+
+    subgraph plan ["1 · Plan — devs draft (often with a lead), lead verifies"]
+        direction TB
+        spec["hsdd-spec<br/>decompose into nodes"]
+        contract["hsdd-contract · hsdd-adr<br/>freeze interfaces + decisions"]
+        pplan["hsdd-phase-plan<br/>ordered phases per leaf-parent"]
+        rec["hsdd-reconcile<br/>drain governance updates"]
+        gate{"Lead verifies:<br/>axis · contracts · sizing"}
+        spec --> contract --> pplan --> rec --> gate
+        gate -- "rework" --> spec
+    end
+
+    subgraph exec ["2 · Execute — devs, lead reviews at tier"]
+        direction TB
+        cfg["/hsdd-phase<br/>switch phase context"]
+        cyc["OpenSpec cycle<br/>TDD · gate command"]
+        rev{"Review at the phase's tier<br/>dev + lead"}
+        ver["verification doc<br/>merged to spec-repo main"]
+        cfg --> cyc --> rev --> ver
+    end
+
+    subgraph mgmt ["3 · Manage — leads"]
+        direction TB
+        chk["/hsdd-checkpoint<br/>one evidence pass"]
+        prog["progress report · atlas<br/>what is actually true"]
+        xplan["execution plan<br/>steps · prompts · guardrails"]
+        ms["/hsdd-milestone<br/>generate · re-baseline"]
+        msdoc["milestones<br/>demo + gate + window"]
+        chk --> prog --> xplan
+        prog --> ms --> msdoc
+    end
+
+    bd --> spec
+    gate -- "phases ready" --> cfg
+    ver -- "evidence" --> chk
+    xplan -- "this week's steps" --> cfg
+    xplan -- "spec fixes" --> spec
+    xplan -- "reconcile" --> rec
+    msdoc --> stake["stakeholders"]
+
+    style plan fill:none,stroke:#7c3aed,stroke-dasharray: 5 5,stroke-width:2px,color:#7c3aed
+    style exec fill:none,stroke:#2563eb,stroke-dasharray: 5 5,stroke-width:2px,color:#2563eb
+    style mgmt fill:none,stroke:#059669,stroke-dasharray: 5 5,stroke-width:2px,color:#059669
+
+    style bd fill:#e0e7ff,stroke:#4f46e5,color:#1e293b
+    style spec fill:#f3e8ff,stroke:#7c3aed,color:#1e293b
+    style contract fill:#f3e8ff,stroke:#7c3aed,color:#1e293b
+    style pplan fill:#f3e8ff,stroke:#7c3aed,color:#1e293b
+    style rec fill:#f3e8ff,stroke:#7c3aed,color:#1e293b
+    style gate fill:#fef3c7,stroke:#d97706,color:#1e293b
+    style cfg fill:#dbeafe,stroke:#2563eb,color:#1e293b
+    style cyc fill:#dbeafe,stroke:#2563eb,color:#1e293b
+    style rev fill:#fef3c7,stroke:#d97706,color:#1e293b
+    style ver fill:#d1fae5,stroke:#059669,color:#1e293b
+    style chk fill:#f3e8ff,stroke:#7c3aed,color:#1e293b
+    style ms fill:#f3e8ff,stroke:#7c3aed,color:#1e293b
+    style prog fill:#d1fae5,stroke:#059669,color:#1e293b
+    style xplan fill:#d1fae5,stroke:#059669,color:#1e293b
+    style msdoc fill:#d1fae5,stroke:#059669,color:#1e293b
+    style stake fill:#e0e7ff,stroke:#4f46e5,color:#1e293b
+```
+
+Read the two edges out of the management band as the loop that keeps the project
+honest: evidence flows **up** (a phase is done when its verification doc is on
+main — nothing else counts), and work flows **back down** as named steps, into
+execution *and* into the spec tree when the review found drift.
+
+### The weekly checkpoint
+
+Before the team sync, the lead runs:
+
+> `/hsdd-checkpoint` full checkpoint before Monday's sync. Repos:
+> `~/git/acme-be`, `~/git/acme-fe`.
+
+One evidence pass over the spec repo and every implementation repo, then four
+outputs: a dated **progress report** (what is actually done, velocity, ranked
+blockers, a findings register), a dated **execution plan** superseding last
+week's (step tables with copy-paste prompts and *Validate:* lines, external
+tracks, append-only guardrails), a regenerated **atlas** (`hsdd/management/atlas.md`:
+the tree with phase status, the contract graph, the ADR coverage map), and
+ticked **milestone gates**.
+
+Pass the repo paths in the prompt — they differ per machine, and the skill will
+ask if you leave them out. Every finding becomes a plan step or an explicit
+waiver: the review compiles into next week's work, it never just advises.
+
+**When new context lands mid-week** (a PRD revision, a design drop, a decision):
+
+> `/hsdd-checkpoint` scoped — new context in commits `abc1234` and `def5678`;
+> check spec integrity against it and revise the plan.
+
+The pass narrows to the touched artifacts plus their closure, and patches the
+plan the same day instead of letting drift pile up until Friday.
+
+### Milestones
+
+Once every leaf-parent is phase-planned — the first moment total scope is
+computable — generate the stakeholder document:
+
+> `/hsdd-milestone` generate the milestone document.
+
+Each milestone is a **demo** (something a stakeholder can watch work) plus a
+**gate** (yes/no checkboxes). Externally-gated phases go to the **contingent
+tail**: excluded from the launch gate, each with a pre-agreed degradation path,
+so an external team's silence is a plan rather than a slip. The weekly
+checkpoint ticks the gates; `hsdd-milestone` runs again only to re-baseline —
+a gate red two checkpoints running, or a scope change the dates cannot absorb —
+and then states the old window and the new one together, so slips stay visible.
+
+### Open questions
+
+Open questions get the same discipline as contracts: minted once in the owning
+spec (`OQ{n}` at the root, `OQ-B3`-style in nodes, prefixes declared in
+`conventions.md`) with a status table (`OPEN` / `PARTIAL` / `RESOLVED (date)`);
+every other artifact cites the ID. Phase plans mark contingent phases
+`contingent (OQ-…)`, and both the milestone tail and the checkpoint's health
+pass are built from those markers. An ID that is cited but never defined — the
+classic `OQ-B3` phantom — is a finding, not a typo.
+
+### Multi-repo projects
+
+When backend and frontend live in separate repos, keep the HSDD tree in its own
+**spec repo** and mount it as a git submodule **at `hsdd/`** in each
+implementation repo (`Profile: standalone-spec-repo` in `conventions.md`).
+Because the mount point is `hsdd/`, every path you already know stays literally
+correct — `hsdd/spec/…`, `hsdd/contract/…`, `hsdd/management/…` — and no skill
+needs a profile-specific path.
+
+What the profile does change is **where you run**: every `/hsdd-*` skill runs
+from an implementation repo, never from a standalone clone of the spec repo. A
+standalone clone is a third working copy whose edits leave every submodule
+pointer behind, and a session without the code cannot verify what it asserts.
+Governance edits are committed and pushed *inside* the submodule, then each
+implementation repo's pointer is bumped.
+
+Four rules keep the truth unforked, each one written after an incident:
+
+1. Submodule pointers only ever reference spec-repo main commits.
+2. A phase is done when its verification doc is on spec-repo main — same day as
+   sign-off, not parked on a branch.
+3. Branch pairs spanning an implementation repo and the spec repo land — or are
+   discarded — together, never one side alone.
+4. Never squash-merge a multi-phase epic: per-phase history is your velocity
+   data and your audit trail.
+
+### Adopting on a project already underway
+
+The first `/hsdd-checkpoint` is an **adoption run**. Existing management
+documents become the head of the supersedes chain, existing numbered guardrails
+keep their numbers, nonconformances become findings with migration steps rather
+than errors, and the first atlas is generated however messy the tree is.
+Historical documents are never rewritten — conformance starts from the next
+document forward.
 
 ---
 

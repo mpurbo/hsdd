@@ -5,10 +5,12 @@ description: >
   into node plan files, typically after parallel phase-plan branches merge.
   Triggers: "reconcile the worktrees", "drain pending governance updates",
   "merge the phase plans", "apply governance updates", "resolve contract
-  requests", "finalize phase ids", "the contract is still provisional". Runs at
-  the repo root, after branches are merged. Do NOT use for authoring contract
-  bodies (use hsdd-contract), recording cross-cutting decisions (use hsdd-adr),
-  or phase planning (use hsdd-phase-plan).
+  requests", "finalize phase ids", "the contract is still provisional", "sweep
+  the resolved open question". Runs at the root lineage after branches are
+  merged — from an implementation repo under the standalone-spec-repo profile,
+  never from a standalone clone of the spec repo. Do NOT use for authoring
+  contract bodies (use hsdd-contract), recording cross-cutting decisions (use
+  hsdd-adr), or phase planning (use hsdd-phase-plan).
 ---
 
 # HSDD Reconcile: Apply Pending Governance Updates
@@ -33,9 +35,13 @@ one place. Collisions are design decisions and belong to the human.
 **Do NOT use for** authoring or versioning contract bodies (`hsdd-contract`),
 recording decisions (`hsdd-adr`), or phase planning (`hsdd-phase-plan`).
 
-**Precondition:** run at the repo root with every phase-plan branch merged. The
-git merge is textually clean by construction (no branch edits governance
-files); this skill performs the semantic merge.
+**Precondition:** run with every phase-plan branch merged, on the root lineage
+(not in a phase worktree). Under the standalone-spec-repo profile that means
+**from an implementation repo**, editing governance through `hsdd/` — never
+from a standalone clone of the spec repo, whose edits strand every submodule
+pointer. Commit and push inside the submodule, then bump each implementation
+repo's pointer. The git merge is textually clean by construction (no branch
+edits governance files); this skill performs the semantic merge.
 
 ## Process
 
@@ -44,9 +50,11 @@ files); this skill performs the semantic merge.
    development protocol this skill completes. A pre-0.5 project has it at
    `docs/conventions.md`: honor its layout and offer to migrate.
 2. **Scan.** Find every `## Governance updates (pending reconcile)` section in
-   `hsdd/spec/*.md`. If none exist, say so and stop. Entries may carry
-   rationale sub-bullets, and `contingent phases: none` means nothing blocks;
-   read both accordingly.
+   `hsdd/spec/*.md`. If none exist, say so — then still run the
+   resolved-question sweep below if this run was asked to sweep a specific OQ
+   (an ADR or contract may have resolved one without any pending section),
+   and stop. Entries may carry rationale sub-bullets, and `contingent phases:
+   none` means nothing blocks; read both accordingly.
 3. **Detect collisions before applying anything.** Group entries by contract
    id. A collision is: two nodes claiming the same artifact or package,
    contradictory `confirm` entries, an `amend` conflicting with another node's
@@ -79,6 +87,15 @@ files); this skill performs the semantic merge.
 9. **Stamp each drained section**, replacing its entries with one line:
    `> Reconciled {YYYY-MM-DD} by hsdd-reconcile. Drained entries are in git history.`
 10. **Regenerate the registries:** `node hsdd/scripts/gen-registry.mjs`.
+11. **Sweep resolved questions.** This step also runs standalone: "sweep
+    OQ-B7, resolved by ADR-021" is a valid invocation with no pending
+    sections present. When a drained entry (or a human arbitration during
+    this run) resolves an open question: update the row
+    and detail subsection in the owning spec (`RESOLVED (date)`, pointing at
+    the landing artifact), then grep the OQ id across the tree — specs,
+    contracts, ADRs, phase plans — and update every citation that still
+    treats it as open (contingency markers, "pending OQ-x" prose). Report
+    the swept locations.
 
 ## Entry Handling
 
@@ -96,6 +113,8 @@ files); this skill performs the semantic merge.
 - [ ] Every collision was decided by the human, and the losing plan was updated to match.
 - [ ] Contract edits follow hsdd-contract versioning (breaking change = new version + migration note).
 - [ ] `node hsdd/scripts/gen-registry.mjs` ran after the last contract edit.
+- [ ] No artifact still cites a resolved OQ as open; sweep locations
+      reported.
 
 ## Anti-Rationalization
 
@@ -106,3 +125,4 @@ files); this skill performs the semantic merge.
 | "The request is trivial, answer it myself" | A request is a gap the contract never specified. Inventing the answer re-creates the divergence this skill exists to remove. |
 | "Skip the registry regen, frontmatter barely changed" | The registry is derived data. Any frontmatter change without a regen makes INDEX.md lie. |
 | "Leave the drained entries in place for history" | Git history already keeps them. A stale pending section gets re-drained and double-applied. |
+| "The OQ row says RESOLVED — done" | Citations elsewhere still gate phases on it and justify contract prose with it. Grep the id; sweep every stale citation. |

@@ -162,6 +162,9 @@ without frontmatter is silently skipped, so the frontmatter is mandatory.
 - [ ] A superseding ADR set both `supersedes` and the old ADR's `superseded_by`.
 - [ ] No invented decision was written as `accepted`; an unknown decision is `proposed` with a TODO.
 - [ ] The registry was regenerated.
+- [ ] Open questions are cited by ID only; an ADR that resolves one names
+      the ID in its Decision, and the owning spec's OQ row is updated to
+      point at this ADR (RESOLVED (date)).
 
 ## Anti-Rationalization
 
