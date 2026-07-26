@@ -43,8 +43,12 @@ progress reporting, or phase planning.
 
 ## Process
 
-1. **Verify the precondition.** Walk the spec tree; every leaf-parent must
-   have a `## Phase Plan` section. Missing plans: stop, list them, done.
+1. **Verify the precondition.** Walk the spec tree under `hsdd/spec/`; every
+   leaf-parent must have a `## Phase Plan` section. Missing plans: stop,
+   list them, done. (Run from an implementation repo — under the
+   standalone-spec-repo profile, never from a standalone clone of the spec
+   repo. This skill needs no other repo's code: it reads the tree and the
+   latest progress report, both under `hsdd/`.)
 2. **Take calibration.** Velocity comes from the latest progress report's
    calibrated rates. If no progress report exists yet (planning finished
    before implementation started), use the phase plans' assumed rate and a
@@ -79,7 +83,7 @@ progress reporting, or phase planning.
    window) — and that decision lands in its governance artifact, not
    here.
 
-## Document Shape (`management/YYYY-MM-DD-milestones.md`)
+## Document Shape (`hsdd/management/YYYY-MM-DD-milestones.md`)
 
 Required sections, in order:
 

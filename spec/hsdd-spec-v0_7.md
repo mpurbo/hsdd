@@ -487,21 +487,62 @@ Opt-in, declared in conventions.md. The trigger condition: **more than one
 implementation repository.** The single-repo `hsdd/` layout of v0.5
 remains the default and is untouched.
 
-Under the profile:
+Under the profile the HSDD tree is its own git repository — the **spec
+repo** — and each implementation repo mounts it as a **git submodule at
+`hsdd/`**. The mount point is the whole trick:
 
-- The spec repo's **root is the HSDD tree**: `spec/`, `contract/`, `adr/`,
-  `management/`, `conventions.md`, `verify/` at top level. There is no
-  `hsdd/` prefix, and no path example anywhere in the project may carry
-  one — the field found six stale `hsdd/` prefixes in its conventions.md,
-  each one a copy-paste trap. Quoted commands must run as written from the
-  spec repo root.
-- Each implementation repo mounts the spec repo as a **git submodule**;
-  the phase context switch (`hsdd-config`) reads governance through the
-  submodule path.
-- `management/` lives in the spec repo — the layer describes the project,
-  not one subsystem.
+> **Every path is unchanged.** From an implementation repo the tree is
+> `hsdd/spec/…`, `hsdd/contract/…`, `hsdd/adr/…`, `hsdd/management/…` —
+> byte-identical to the v0.5 single-repo layout. The profile costs **zero**
+> path changes; no skill needs conditional path resolution, and no document
+> needs a profile-specific path example.
 
-### 6.2 The four rules
+The spec repo's own root holds `spec/`, `contract/`, `adr/`, `management/`,
+`conventions.md`, `verify/` directly — but that view belongs to the
+repository, not to any HSDD session, because of §6.2. `management/` lives
+in the spec repo (as `hsdd/management/` from every implementation repo):
+the layer describes the project, not one subsystem, and both lanes must see
+the same copy.
+
+### 6.2 The run-location rule
+
+> **Skills run only from an implementation repo — never from a standalone
+> clone of the spec repo.** Every `/hsdd-*` invocation, governance-only
+> ones included (`hsdd-contract`, `hsdd-adr`, `hsdd-reconcile`,
+> `hsdd-checkpoint`), runs with an implementation repo as the working
+> directory and reaches governance through `hsdd/`.
+
+Three reasons, each a failure the field produced:
+
+1. **A standalone clone is a third working copy.** Edits made there leave
+   every implementation repo's pointer behind, and the pointer bump is a
+   separate act someone must remember — precisely the guardrail-11 incident
+   (a pointer stranded on a lineage that never merged). Editing through the
+   submodule makes the pointer bump local and obvious.
+2. **Assertions need the code.** A skill run from the spec repo cannot see
+   `openspec/`, cannot run a gate command, and cannot compare code against a
+   phase plan. `hsdd-checkpoint`'s evidence pass would be reduced to reading
+   the documents that are already suspect.
+3. **One run location is one set of paths.** The alternative — sometimes
+   `hsdd/spec/…`, sometimes `spec/…` — is the stale-prefix trap the field
+   hit six times in one conventions.md.
+
+**Writing through the submodule.** Governance edits land in the submodule
+working tree; they are committed and pushed **inside the submodule** to
+spec-repo main, and each implementation repo's pointer is then bumped to
+that commit. The pointer bump for repos *other than* the one you ran from
+is a separate step and is the standard way pointers go stale —
+`hsdd-checkpoint` audits every repo's pointer on every pass (§3.1 step 1).
+
+**Cross-repo runs.** A skill whose scope spans repos — `hsdd-checkpoint`
+above all, whose code-vs-plan pass must review every implementation repo —
+takes the sibling repos' paths **from the invoking prompt**, and asks for
+them when they are absent. Repo locations differ per machine and the
+management skills are typically run by a lead, so the paths are session
+input, not a checked-in registry that goes stale in someone else's
+checkout.
+
+### 6.3 The four rules
 
 Generalized from the field's guardrails 9–12, which were each written in
 the blood of an actual incident:
@@ -529,14 +570,15 @@ the blood of an actual incident:
 the verification-doc audit covers rule 2; the evidence pass surfaces 3 and
 4 as findings when it can see them).
 
-### 6.3 What does not change
+### 6.4 What does not change
 
 The governance freeze, sibling isolation, single-writer contracts,
-reconcile ordering — all v0.4.2–v0.6 rules apply unchanged; the profile
-only relocates the tree. Parallel phase planning still uses worktrees *of
-the spec repo*; the execution branch protocol of v0.6 applies per
-implementation repo, with the branch-pair rule (§6.2 rule 3) layered on
-when work spans repos.
+reconcile ordering — all v0.4.2–v0.6 rules apply unchanged, and so does
+every path they name. The profile changes *where the tree is versioned*
+and *where sessions run*, nothing about the tree's shape. Parallel phase
+planning still uses worktrees; the execution branch protocol of v0.6
+applies per implementation repo, with the branch-pair rule (§6.3 rule 3)
+layered on when work spans repos.
 
 ---
 
@@ -607,7 +649,7 @@ the more important direction.
 | `hsdd-adr` | + OQ cite-only rule (§5.2) |
 | `hsdd-phase-plan` | + contingent-phase-names-OQ stop (§5.2) |
 | `hsdd-reconcile` | + resolution citation sweep (§5.2) |
-| `hsdd-config` | + submodule-path context under the §6 profile |
+| `hsdd-config` | + submodule-pointer check under the §6 profile (paths unchanged) |
 | **`hsdd-checkpoint`** | **new** (§3) |
 | **`hsdd-milestone`** | **new** (§4) |
 
@@ -668,8 +710,11 @@ into code.
 6. **Open questions are a convention plus anchors, not a skill.** The
    behavior lives in the skills that already own the artifacts where OQs
    appear.
-7. **The profile is normative and opt-in.** Two weeks of multi-repo field
-   use, four incident-backed rules; single-repo remains the default.
+7. **The profile is normative and opt-in, and it moves no paths.** The
+   submodule mounts at `hsdd/`, so `hsdd/spec/…` and friends stay literally
+   correct in both layouts — the profile's content is the run-location rule
+   (§6.2) plus four incident-backed rules, not a path scheme. Single-repo
+   remains the default.
 8. **Additive compatibility is a contract, not an aspiration** (§7.1),
    with the reference project as the acceptance fixture (§7.3).
 9. **Rejected document classes** (derivable or duplicative — YAGNI): a
@@ -703,7 +748,9 @@ into code.
 3. §5.2 anchor edits: `hsdd-spec` (templates + minting), `hsdd-phase-plan`
    (contingent stop), `hsdd-contract`/`hsdd-adr` (cite-only line),
    `hsdd-reconcile` (sweep step), conventions template (OQ section).
-4. `hsdd-config`: submodule-path context resolution under the profile.
+4. `hsdd-config`: submodule-pointer check before the phase context switch
+   (§6.2) — no path resolution changes, because the profile does not move
+   any path.
 5. Users guide: a "Running the project" chapter (management layer, weekly
    rhythm, adoption walkthrough on an existing project).
 6. Acceptance: adoption run + full checkpoint + milestone re-baseline

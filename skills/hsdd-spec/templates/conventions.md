@@ -20,14 +20,26 @@ are singular. OpenSpec files stay where OpenSpec expects them (`openspec/`).
 - `hsdd/management/`                          management layer (progress, execution plans, milestones, atlas) — written only by hsdd-checkpoint / hsdd-milestone
 
 **Standalone-spec-repo profile (opt-in, multi-repo projects):** declare it
-here with a line `Profile: standalone-spec-repo`. The spec repo's root then
-IS the HSDD tree (`spec/`, `contract/`, `adr/`, `management/`, this file —
-no `hsdd/` prefix anywhere, including in path examples and quoted commands),
-and each implementation repo mounts the spec repo as a git submodule.
-Submodule pointers only ever reference spec-repo main commits; a phase is
-done when its verification doc is on spec-repo main; branch pairs spanning
-an implementation repo and the spec repo land or are discarded atomically;
-multi-phase epics are never squash-merged.
+here with a line `Profile: standalone-spec-repo`. The HSDD tree is its own
+git repo (the *spec repo*), mounted as a git submodule **at `hsdd/`** in
+every implementation repo — so every path above stays exactly as written;
+the profile moves no paths.
+
+- **Run location.** Every `/hsdd-*` skill runs from an implementation repo,
+  never from a standalone clone of the spec repo — a standalone clone is a
+  third working copy whose edits leave every submodule pointer behind, and
+  a session without the code cannot verify what it asserts. Governance
+  edits are committed and pushed **inside the submodule**, then each
+  implementation repo's pointer is bumped.
+- Submodule pointers only ever reference spec-repo main commits.
+- A phase is done when its verification doc is on spec-repo main.
+- Branch pairs spanning an implementation repo and the spec repo land — or
+  are discarded — atomically.
+- Multi-phase epics are never squash-merged (per-phase history is the
+  velocity data and the audit trail).
+- List the implementation repos here (lane + repo name). Their filesystem
+  paths differ per machine, so cross-repo skills take those paths from the
+  invoking prompt, not from this file.
 
 ## OpenSpec init
 Run `openspec init` once, at the repo root (the directory holding `hsdd/`,

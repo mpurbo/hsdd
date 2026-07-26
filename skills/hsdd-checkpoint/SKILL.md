@@ -44,14 +44,17 @@ this skill only *ticks* existing gates), authoring fixes (route findings to
 
 ## The Management Layer
 
-`management/` sits beside `spec/`, `contract/`, `adr/` at the HSDD root.
+`management/` sits beside `spec/`, `contract/`, `adr/` at the HSDD root, so
+from a session's working directory it is `hsdd/management/` — in a
+single-repo project and under the standalone-spec-repo profile alike (there
+the submodule mounts at `hsdd/`, which is why no path changes).
 Point-in-time documents are dated and chained; the atlas is living:
 
-- `management/YYYY-MM-DD-progress.md` — this skill writes it
-- `management/YYYY-MM-DD-execution-plan.md` — this skill writes it
-- `management/YYYY-MM-DD-milestones.md` — `hsdd-milestone` writes it; this
+- `hsdd/management/YYYY-MM-DD-progress.md` — this skill writes it
+- `hsdd/management/YYYY-MM-DD-execution-plan.md` — this skill writes it
+- `hsdd/management/YYYY-MM-DD-milestones.md` — `hsdd-milestone` writes it; this
   skill ticks its gates
-- `management/atlas.md` — this skill regenerates it whole
+- `hsdd/management/atlas.md` — this skill regenerates it whole
 
 Chain rules (enforced here, checked every pass):
 
@@ -62,6 +65,20 @@ Chain rules (enforced here, checked every pass):
 - After publication a dated doc accepts exactly two in-place edits: ticking
   its own checkboxes and appending to its change log. Anything more is a new
   superseding document. **Historical documents are never rewritten.**
+
+## Where This Runs, and What It Needs
+
+Run from an **implementation repo** — governance is at `hsdd/`, and the
+code-vs-plan pass needs the code, `openspec/`, and the gates. Under the
+standalone-spec-repo profile this is a rule, not a preference: never run
+from a standalone clone of the spec repo (see conventions.md).
+
+The evidence pass spans **every** implementation repo, and only one of them
+is your working directory. **Take the sibling repos' paths from the
+invoking prompt; if they are absent, ask for them and stop** — repo
+locations differ per machine, so they are session input, never a
+checked-in list. A pass that silently reviews only the repo it happens to
+be standing in produces a progress report that undercounts the project.
 
 ## Process
 
@@ -144,7 +161,7 @@ we do"; a full run answers "what is true — and what do we do".
 
 ## Document Shapes
 
-### Progress report (`management/YYYY-MM-DD-progress.md`)
+### Progress report (`hsdd/management/YYYY-MM-DD-progress.md`)
 
 Required sections, in order:
 
@@ -165,7 +182,7 @@ Required sections, in order:
 - **Verdict** — a short honest paragraph: is the method working, what is
   the real threat.
 
-### Execution plan (`management/YYYY-MM-DD-execution-plan.md`)
+### Execution plan (`hsdd/management/YYYY-MM-DD-execution-plan.md`)
 
 Required sections, in order:
 
@@ -192,7 +209,7 @@ Required sections, in order:
   the next number; never renumber or delete.
 - **Change log.**
 
-### Atlas (`management/atlas.md`)
+### Atlas (`hsdd/management/atlas.md`)
 
 Three parts, regenerated whole every checkpoint:
 
@@ -218,7 +235,7 @@ artifacts, the atlas is wrong by definition; the fix is regeneration. If
 Checkpoint *finds* the stale ADR note, the undrained reconcile section,
 the contract drift — it does not fix them. Fixes become plan steps routed
 to the owning skill and the owning human. The only files this skill
-writes live under `management/`.
+writes live under `hsdd/management/`.
 
 ## Quality Gates
 
@@ -235,7 +252,9 @@ writes live under `management/`.
 - [ ] Atlas regenerated whole; no diagram over ~20 nodes; every element
       greppable back to a source artifact.
 - [ ] Milestone gates ticked; re-baseline trigger evaluated and reported.
-- [ ] No file outside `management/` modified.
+- [ ] No file outside `hsdd/management/` modified.
+- [ ] Every implementation repo was reviewed — paths taken from the prompt,
+      or asked for when absent; none silently skipped.
 - [ ] OQ health verified: every cited id defined exactly once, statuses
       coherent, no stale pending-prose on resolved questions.
 
@@ -250,4 +269,6 @@ writes live under `management/`.
 | "The old plan's link is broken — I'll fix the old file" | Historical docs are never rewritten. Record the finding; conformance applies from the next document forward. |
 | "The atlas from last week mostly holds, patch it" | The atlas is derived state, regenerated whole. A patched atlas is a hand-maintained cache — the failure mode it exists to replace. |
 | "Little changed; copy last week's numbers" | Carrying numbers forward is a scoped-mode privilege and must be stated in the doc. In full mode, count. |
+| "The other repo's path wasn't given; I'll review what I can see" | A report that counts one lane of a two-lane project is wrong, not partial. Ask for the paths and stop until you have them. |
+| "I'll run this in the spec repo — that's where the documents go" | The spec repo has no code, no openspec, no gates, and editing a standalone clone strands every submodule pointer. Run from an implementation repo; the tree is at `hsdd/`. |
 | "The milestone gate is red again — I'll adjust the dates" | Two consecutive reds fire the re-baseline trigger, which belongs to hsdd-milestone and the stakeholders. Tick, report, hand off. |

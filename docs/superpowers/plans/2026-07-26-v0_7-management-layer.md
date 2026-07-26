@@ -583,14 +583,26 @@ any exist — the `## Open questions` section (format below).
 - `hsdd/management/`                          management layer (progress, execution plans, milestones, atlas) — written only by hsdd-checkpoint / hsdd-milestone
 
 **Standalone-spec-repo profile (opt-in, multi-repo projects):** declare it
-here with a line `Profile: standalone-spec-repo`. The spec repo's root then
-IS the HSDD tree (`spec/`, `contract/`, `adr/`, `management/`, this file —
-no `hsdd/` prefix anywhere, including in path examples and quoted commands),
-and each implementation repo mounts the spec repo as a git submodule.
-Submodule pointers only ever reference spec-repo main commits; a phase is
-done when its verification doc is on spec-repo main; branch pairs spanning
-an implementation repo and the spec repo land or are discarded atomically;
-multi-phase epics are never squash-merged.
+here with a line `Profile: standalone-spec-repo`. The HSDD tree is its own
+git repo (the *spec repo*), mounted as a git submodule **at `hsdd/`** in
+every implementation repo — so every path above stays exactly as written;
+the profile moves no paths.
+
+- **Run location.** Every `/hsdd-*` skill runs from an implementation repo,
+  never from a standalone clone of the spec repo — a standalone clone is a
+  third working copy whose edits leave every submodule pointer behind, and
+  a session without the code cannot verify what it asserts. Governance
+  edits are committed and pushed **inside the submodule**, then each
+  implementation repo's pointer is bumped.
+- Submodule pointers only ever reference spec-repo main commits.
+- A phase is done when its verification doc is on spec-repo main.
+- Branch pairs spanning an implementation repo and the spec repo land — or
+  are discarded — atomically.
+- Multi-phase epics are never squash-merged (per-phase history is the
+  velocity data and the audit trail).
+- List the implementation repos here (lane + repo name). Their filesystem
+  paths differ per machine, so cross-repo skills take those paths from the
+  invoking prompt, not from this file.
 ```
 
 - [ ] **Step 4: Verify**
@@ -736,21 +748,24 @@ git commit -m "feat(skills): OQ anchors — contingency stop, cite-only, resolut
 - [ ] **Step 1: Extend discovery.** In `## Process` step 1, after the sentence ending "(`Cargo.toml`, `package.json`).", append:
 
 ```markdown
-   If `conventions.md` declares `Profile: standalone-spec-repo`, the HSDD
-   tree is a separate spec repo mounted as a git submodule of this
-   implementation repo: resolve every governance path through the submodule
-   mount point (`{submodule}/spec/…`, `{submodule}/contract/…` — the spec
-   repo root is the tree; there is no `hsdd/` prefix), and read
-   `conventions.md` from the submodule.
+   If `conventions.md` declares `Profile: standalone-spec-repo`, `hsdd/` is
+   a git submodule of this implementation repo rather than a plain
+   directory. **Paths are unchanged** — the submodule mounts at `hsdd/`, so
+   `hsdd/spec/…`, `hsdd/contract/…`, `hsdd/adr/…` all resolve as written.
+   What changes is that the tree is versioned elsewhere: run from the
+   implementation repo (never from a standalone clone of the spec repo),
+   and see the pointer check in the phase context switch below.
 ```
 
-- [ ] **Step 2: Add the pointer check to the phase switch.** In `## Phase Context Switch`, insert a new numbered step after the "Reconcile check" step (renumber the final "Do not touch…" step accordingly):
+- [ ] **Step 2: Add the pointer check as the FIRST step of the phase switch.** In `## Phase Context Switch`, insert this as step 1 and renumber every existing step (the list becomes 1–8). It must precede the steps that read the node spec, contracts, and ADRs — those all read *through* the submodule, so a forked pointer poisons them:
 
 ```markdown
-7. **Profile check (standalone-spec-repo only).** Verify the submodule
-   pointer references a spec-repo main commit. A pointer off main is stale
-   or forked truth: stop and re-point the submodule to main (or get
-   explicit human confirmation) before injecting any context through it.
+1. **Profile check first (standalone-spec-repo only).** Before reading
+   anything through `hsdd/`, verify the submodule pointer references a
+   spec-repo main commit. A pointer off main is stale or forked truth, and
+   every line injected below would be read from it: stop and re-point the
+   submodule to main, or get explicit human confirmation. Same reason
+   `hsdd-checkpoint` pins baselines before reviewing content.
 ```
 
 - [ ] **Step 3: Append to the Anti-Rationalization table:**
@@ -761,14 +776,14 @@ git commit -m "feat(skills): OQ anchors — contingency stop, cite-only, resolut
 
 - [ ] **Step 4: Verify**
 
-Run: `grep -c "standalone-spec-repo" skills/hsdd-config/SKILL.md`
-Expected: ≥ 3.
+Run: `grep -c "standalone-spec-repo" skills/hsdd-config/SKILL.md` and `grep -n "^[0-9]\." skills/hsdd-config/SKILL.md`
+Expected: ≥ 2 occurrences; the Phase Context Switch list numbered 1–8 with the profile check at 1.
 
 - [ ] **Step 5: Commit**
 
 ```bash
 git add skills/hsdd-config
-git commit -m "feat(skills): hsdd-config resolves governance through the spec-repo submodule (v0.7 §6)"
+git commit -m "feat(skills): hsdd-config checks the spec-repo submodule pointer before the phase switch (v0.7 §6)"
 ```
 
 ---
@@ -835,12 +850,25 @@ everything else cites the ID. Phase plans mark contingent phases
 are built from those markers.
 
 **Multi-repo projects** (backend and frontend in separate repos): keep the
-HSDD tree in its own spec repo and mount it as a git submodule of each
-implementation repo (`Profile: standalone-spec-repo` in conventions.md).
-Four rules keep the truth unforked: submodule pointers only ever reference
-spec-repo main; a phase is done when its verification doc is on spec-repo
-main; branch pairs spanning two repos land or are discarded together; never
-squash-merge a multi-phase epic (per-phase history is your velocity data).
+HSDD tree in its own spec repo and mount it as a git submodule **at
+`hsdd/`** in each implementation repo (`Profile: standalone-spec-repo` in
+conventions.md). Because the mount point is `hsdd/`, every path you already
+know stays literally correct — `hsdd/spec/…`, `hsdd/contract/…`,
+`hsdd/management/…` — and no skill needs a profile-specific path.
+
+What the profile does change is **where you run**: every `/hsdd-*` skill
+runs from an implementation repo, never from a standalone clone of the spec
+repo. A standalone clone is a third working copy whose edits leave every
+submodule pointer behind, and a session without the code can't verify what
+it asserts. Governance edits are committed and pushed inside the submodule,
+then each repo's pointer is bumped. Cross-repo skills (`hsdd-checkpoint`)
+take the sibling repos' paths from your prompt and ask when you omit them.
+
+Four more rules keep the truth unforked: submodule pointers only ever
+reference spec-repo main; a phase is done when its verification doc is on
+spec-repo main; branch pairs spanning two repos land or are discarded
+together; never squash-merge a multi-phase epic (per-phase history is your
+velocity data).
 
 **Adopting on an existing project:** the first `/hsdd-checkpoint` run is an
 adoption run — existing management docs become the head of the chain,
@@ -916,10 +944,12 @@ repos, two developers, 89 phases under v0.6.1). Delta spec:
   (templates + minting), hsdd-phase-plan (contingency-names-its-question
   stop), hsdd-contract / hsdd-adr (cite-only), hsdd-reconcile (resolution
   sweep).
-- Standalone-spec-repo profile: HSDD tree as its own repo, submoduled into
-  each implementation repo; four incident-backed rules (pointers to main
-  only, verify-doc-on-main = done, atomic branch pairs, no squash-merged
-  epics).
+- Standalone-spec-repo profile: HSDD tree as its own repo, submoduled at
+  `hsdd/` in each implementation repo — so no path moves. Adds the
+  run-location rule (skills run from an implementation repo, never from a
+  standalone clone of the spec repo; cross-repo skills take repo paths from
+  the prompt) plus four incident-backed rules (pointers to main only,
+  verify-doc-on-main = done, atomic branch pairs, no squash-merged epics).
 
 ### Changed
 
