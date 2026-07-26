@@ -101,7 +101,11 @@ be standing in produces a progress report that undercounts the project.
      audit (every claimed-done phase has its doc on main, sign-off fields
      filled, no template residue); management chain integrity (supersedes
      links resolve by exact filename; baselines present on the progress
-     report and execution plan; a milestone document names its Basis).
+     report and execution plan; a milestone document names its Basis); and
+     any unresolved conformance finding parked in the milestone document's
+     change log since the last checkpoint — `hsdd-milestone` has no plan of
+     its own to write into, so it leaves findings there for this pass to
+     fold into the register.
    - *Code vs plan (each implementation repo):* which phases the code
      actually completes versus what plans and the prior progress report
      claim; contract-surface drift in both directions (code behavior the

@@ -197,7 +197,61 @@ recoverable without restarting.
 
 ---
 
-## Result — `hsdd-milestone`
+## Result — `hsdd-milestone`: **PASS** (run 2026-07-26)
 
-*(pending: run second, so it can adopt the checkpoint's output — must
-recognize `2026-07-24-milestones.md` as the baseline and mint no duplicate)*
+Invoked neutrally ("check the milestone document") — the skill claimed the
+task itself, then **declined to generate**, which is the behavior under test.
+Committed locally as `f540d27`: one file, 15 insertions, **zero deletions**,
+no gate text altered, no duplicate document minted.
+
+- **Adopted, not duplicated.** `2026-07-24-milestones.md` recognized as the
+  current baseline; `management/` still holds exactly one milestone document.
+- **Both triggers evaluated and correctly not fired.** Scope: totals 89 → 89.
+  Slip: reported as *un-evaluable* rather than *not fired*, because only one
+  checkpoint gate record exists — the sharper and more honest reading.
+- **Restraint on the conformance problems it found.** Three real defects in
+  the existing document, recorded in the change log and deferred to the next
+  legitimate milestone event (R7's integration node, which will move totals
+  and force an absorb-vs-re-baseline evaluation) rather than fixed out of
+  band. The in-place edit rules were respected exactly.
+
+### Three gaps this run exposed (fixed in the skills)
+
+Each was a place where the run had to invent a correct answer the skill did
+not supply. It reached the right one each time — which is luck to depend on:
+
+1. **Slip-trigger bootstrap.** Neither skill said what to report when fewer
+   than two gate records exist. `hsdd-milestone` now requires the words
+   *un-evaluable*, because reporting an un-evaluable trigger as "not fired"
+   reads as evidence of health nobody gathered.
+2. **Internally-blocked work had no home.** The run found tail entries whose
+   OQs are not `ext:`-marked (Google adapters — product/legal; insights rules
+   — a product call) and reasoned they belong inside the gate with decision
+   deadlines. The skill said what goes *in* the tail but not where
+   internally-blocked phases go. Now stated: they stay in the launch gate with
+   a named decision owner and deadline — tailing them converts a decision
+   someone can make into weather nobody controls.
+3. **Findings produced here were stranded.** `hsdd-milestone` has no plan to
+   write into, so its three findings sat in a change log reaching nobody —
+   the one place in v0.7 where a finding escaped the §2.7 loop. Now the
+   milestone skill routes them onward explicitly, and `hsdd-checkpoint`'s
+   governance pass reads the milestone change log for unresolved findings and
+   folds them into its register.
+
+None required repairing an artifact this run produced, so §7.3's **"without
+manual repair"** condition holds for both skills.
+
+---
+
+## Verdict
+
+**§7.3 acceptance: PASS.** Both skills ran against the live v0.6.1 reference
+project and produced conforming documents without manual repair; the adoption
+run's findings register caught 7/7 seeded findings plus several the
+expectations missed; the inverted criterion held (26 findings, not a clean
+bill). Four skill defects surfaced and were fixed — one in `hsdd-checkpoint`
+(decisions asked instead of written) and three in `hsdd-milestone` — none of
+which invalidated the output.
+
+The gate is discharged. The remaining pre-release step is landing the
+CHANGELOG entry out of `[Unreleased]`.

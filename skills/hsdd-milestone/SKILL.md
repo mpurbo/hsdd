@@ -33,6 +33,12 @@ the latest progress report.
   checkpoints) or the scope trigger (a change moved the phase totals and
   the dates cannot absorb it).
 
+> **Fewer than two gate records?** The slip trigger is **un-evaluable**, not
+> "not fired" — say so in those words. It needs two consecutive Milestone gate
+> status sections to compare, so it cannot fire until the second checkpoint
+> after this rhythm starts. Reporting an un-evaluable trigger as "not fired"
+> reads as evidence of health that nobody gathered.
+
 **Do NOT use for** weekly gate ticking (that is `hsdd-checkpoint`'s step),
 progress reporting, or phase planning.
 
@@ -76,6 +82,14 @@ progress reporting, or phase planning.
    *Waits on* (conventions.md § Open questions) — that marker, not a judgment
    call, decides what leaves the launch gate. An externally-gated phase
    inside the launch gate is a generation error.
+
+   **Internally-blocked work stays in the gate.** A phase waiting on a
+   decision *your* organization owns — a product call, a legal sign-off — is
+   not tail material however long it has been pending: its timing is yours.
+   Keep it inside the launch gate and give it a named decision owner and a
+   decision deadline. Tailing it converts a decision someone can make into
+   weather nobody controls, and quietly removes it from the schedule the
+   stakeholders agreed to.
 6. **Re-baseline (when triggered).** If the dates hold — the buffer
    absorbs the change — *absorb*: update gates, append to the change log,
    same file. If the dates move — *re-baseline*: a new dated document
@@ -85,6 +99,20 @@ progress reporting, or phase planning.
    changed, why, and what was decided (add people, cut scope, move the
    window) — and that decision lands in its governance artifact, not
    here.
+
+## Findings This Skill Produces
+
+A check run that changes nothing may still notice conformance problems in the
+existing document — a tail entry that should sit inside the gate, a phase
+double-booked in both, a gate depending on something that is not a phase.
+Record each in the milestone document's change log, dated, and say plainly
+that it is deferred rather than fixed.
+
+Then hand it on: **the next `hsdd-checkpoint` reads this change log and folds
+anything unresolved into its findings register**, where the loop turns it into
+a plan step with an owner. Without that hop a finding recorded here is
+stranded — real, written down, and reaching nobody. This skill has no plan of
+its own to write into; the checkpoint does.
 
 ## Document Shape (`hsdd/management/YYYY-MM-DD-milestones.md`)
 

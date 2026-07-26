@@ -52,14 +52,21 @@ two developers, 89 phases under v0.6.1). Delta spec: `spec/hsdd-spec-v0_7.md`.
   v0.7 is additive over v0.6.1 by contract (spec §7.1), with microsite-hsdd as
   the acceptance fixture (§7.3).
 
-### Not yet done
+### Acceptance
 
-- **Acceptance gate open (spec §7.3).** v0.7 is not released until
-  `hsdd-checkpoint` and `hsdd-milestone` have been run against the
-  microsite-hsdd reference project (a live v0.6.1 project, mid-implementation)
-  and produced conforming documents without manual repair, with the adoption
-  run's findings register catching the known seeded findings. Until that run is
-  recorded in `review/`, this entry stays under Unreleased.
+- **Gate discharged (spec §7.3), 2026-07-26.** Both skills ran against the
+  microsite reference project — a live v0.6.1 project mid-implementation — from
+  an implementation repo in a cold-context session, and produced conforming
+  documents without manual repair. The adoption run caught 7/7 seeded findings
+  plus a High finding the expectations missed (a signed verification doc whose
+  implementation exists nowhere in the repo), and all 26 register entries trace
+  to a plan step or an explicit waiver. `hsdd-milestone` adopted the existing
+  baseline and declined to generate. Four skill defects surfaced and were
+  fixed: `hsdd-checkpoint` ended by asking the operator to adjudicate findings
+  instead of pointing at the plan steps that already recorded them; and
+  `hsdd-milestone` lacked a slip-trigger bootstrap rule, a home for
+  internally-blocked work, and a route for its own findings into the
+  findings→plan loop. Full record: `review/hsdd-v0_7-acceptance-microsite.md`.
 
 ## [0.6.1] - 2026-07-13
 
