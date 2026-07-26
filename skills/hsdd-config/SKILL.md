@@ -42,6 +42,12 @@ OpenSpec change.
    `docs/conventions.md`: honor its layout and offer to migrate), `hsdd/spec/*.md`
    (by path, not in full), `CLAUDE.md`, and tech-stack files (`Cargo.toml`,
    `package.json`).
+   If `conventions.md` declares `Profile: standalone-spec-repo`, the HSDD
+   tree is a separate spec repo mounted as a git submodule of this
+   implementation repo: resolve every governance path through the submodule
+   mount point (`{submodule}/spec/…`, `{submodule}/contract/…` — the spec
+   repo root is the tree; there is no `hsdd/` prefix), and read
+   `conventions.md` from the submodule.
 2. **Discover companion skills** actually installed (e.g. `superpowers:*`,
    `fp-rust`). Only reference ones present; missing ones degrade gracefully.
 3. **Map skills to workflow steps** (table below).
@@ -160,7 +166,11 @@ lacks a disposition** (`verified` | `waived (reason)` | `deferred to
    running `hsdd-reconcile` first. If the phase being started is listed under a
    request's `contingent phases`, stop and require explicit human confirmation
    before proceeding.
-7. Do not touch the project-wide context or the rules.
+7. **Profile check (standalone-spec-repo only).** Verify the submodule
+   pointer references a spec-repo main commit. A pointer off main is stale
+   or forked truth: stop and re-point the submodule to main (or get
+   explicit human confirmation) before injecting any context through it.
+8. Do not touch the project-wide context or the rules.
 
 This gives the session ~20 lines of phase context instead of a full spec. The
 `/hsdd-phase {phase-id}` slash command, if installed, runs this step.
@@ -183,3 +193,4 @@ switch — see the conventions file's execution protocol.
 | "The contract is provisional but close enough, inject it" | Provisional means reconcile has not confirmed both sides; open `request` entries may still reshape what this phase consumes. Warn, and stop for phases contingent on an open request. |
 | "The config conflict looks meaningful, I'll hand-merge both phase blocks" | The Current Phase block is ephemeral working state. Take either side and re-run the phase switch. |
 | "A design.md can't hurt for this gate-only phase" | It costs a full artifact plus review attention for a phase with nothing to decide. The tier sets the artifact profile; follow it. |
+| "The submodule is a few commits behind; the context is probably fine" | A stale pointer injects governance that may have been amended or retracted on main. Bump the pointer first; it is one command. |
