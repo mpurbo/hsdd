@@ -254,6 +254,28 @@ Required sections, in order:
 
 ### Atlas (`hsdd/management/atlas.md`)
 
+**Undated on purpose, and therefore stamped.** The atlas is the one living
+management file: every checkpoint overwrites it whole. It carries no date in
+its filename because it is derived state, like a generated `INDEX.md` — a
+dated series would leave a shelf of stale views with no way to tell which one
+is true, and would invite hand-patching the newest instead of regenerating it.
+Its history is git's: `git log -p -- hsdd/management/atlas.md` for the
+progression, `git show <sha>:hsdd/management/atlas.md` for any past state.
+
+Because the filename carries no date, the **header must**, and it is required,
+not decorative — an atlas with no stamp cannot be told apart from one three
+weeks stale:
+
+```markdown
+**Generated:** {YYYY-MM-DD} by `hsdd-checkpoint`. Regenerated whole at every
+checkpoint; never hand-patched.
+**Derived from:** `hsdd/spec/` + `hsdd/contract/` + `hsdd/adr/` at spec-repo
+{sha} · `hsdd/verify/` for **done** · each implementation repo's
+`openspec/changes/` for **in-progress** · {repo}@{sha} for every
+implementation repo.
+If this file disagrees with those artifacts, this file is wrong — regenerate it.
+```
+
 Three parts, regenerated whole every checkpoint:
 
 1. **The tree** — root to phases. Node status: `specified |
@@ -299,6 +321,8 @@ writes live under `hsdd/management/`.
       proposals.
 - [ ] Atlas regenerated whole; no diagram over ~20 nodes; every element
       greppable back to a source artifact.
+- [ ] Atlas carries its `Generated:` date and `Derived from:` baselines —
+      the filename has no date, so the header must.
 - [ ] Milestone gates ticked; re-baseline trigger evaluated and reported.
 - [ ] No file outside `hsdd/management/` modified.
 - [ ] Every implementation repo was reviewed — paths taken from the prompt,
