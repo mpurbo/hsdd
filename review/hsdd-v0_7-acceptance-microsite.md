@@ -15,12 +15,37 @@ adoption run's findings register catching the seeded findings below.
 |---|---|
 | `microsite-hsdd` (spec repo) | main `04ca8f8` |
 | `microsite-be` | main; hsdd submodule **uninitialized**, pointer `6f8b6b8` |
-| `microsite-fe` | main; hsdd submodule initialized at `f6887af` (on main, behind `04ca8f8`) |
+| `microsite-fe` | `epic/fe-shell` (the branch carrying the FE code); hsdd submodule **checked out at `04ca8f8`** on branch `acceptance/v0_7-adoption-run`, while the branch's *recorded* pointer is `e2abf99` |
 
-The run happens from **`microsite-fe`** — it is the implementation repo whose
-submodule is actually checked out. `microsite-be`'s path is supplied in the
-prompt so the pass can audit it; that BE cannot even read `hsdd/` is itself
-finding 5.
+The run happens from **`microsite-fe`** on `epic/fe-shell` — the branch that
+actually holds the FE application code, so the code-vs-plan half of the
+evidence pass has something to compare against. `microsite-be`'s path is
+supplied in the prompt so the pass can audit it; that BE cannot even read
+`hsdd/` is finding 5.
+
+**Pre-run adjustment, recorded for honesty.** `epic/fe-shell` records
+submodule commit `e2abf99`, which is **31 commits behind** spec-repo main:
+its `management/` holds only `2026-07-17-pe-estimation.md` and an
+undated `hsdd-execution-plan.md`, and it predates ADR-018, the open-question
+normalization (`699410e`), and the common.2–.5 verification docs. Running
+there would have tested a July-17 project against expectations written from
+July-26 content. The submodule working tree was therefore bumped to
+`04ca8f8` before the run, and all four content findings (1–4) were verified
+present in that checkout.
+
+The recorded pointer was deliberately left at `e2abf99` — that drift is real
+and is part of finding 5. A correct pass should notice both that BE's pointer
+is unreachable and that FE's *recorded* pointer trails main, even though the
+working tree it is reading is current.
+
+**Scoped out of this dry run:** `hsdd-checkpoint` step 8 ("Land the output")
+instructs a real run to commit and **push inside the submodule to spec-repo
+main** and bump every implementation repo's pointer. Pushing to the team's
+live repository is not acceptable for an acceptance rehearsal, so the prompt
+forbids the push and the pointer bumps; commits stay local on
+`acceptance/v0_7-adoption-run`. This exempts only the landing half of step 8
+— document generation, the findings register, and every pass criterion below
+are unaffected.
 
 ## Expected findings (written before the run — each re-verified present today)
 
