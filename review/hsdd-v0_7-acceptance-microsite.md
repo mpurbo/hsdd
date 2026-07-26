@@ -112,7 +112,92 @@ under test.
 
 ---
 
-## Result
+## Result — `hsdd-checkpoint`: **PASS** (run 2026-07-26)
 
-*(to be filled after the run: per-finding caught/missed table, deviations from
-the pass criteria, and the verdict)*
+Run from `microsite-fe` on `epic/fe-shell` in a cold-context session
+(`claude-work`), invoked in natural language — the skill's description
+triggered discovery on its own, without the slash command. Output committed
+locally as `39ef0b9` in the submodule on `acceptance/v0_7-adoption-run`;
+nothing pushed, no pointers bumped.
+
+Wrote `2026-07-26-progress.md` (152 lines, 26-row findings register CP-01…26),
+`2026-07-26-execution-plan.md` (200 lines), `atlas.md` (329 lines), plus
+change-log appends to four existing documents. 704 insertions, zero deletions.
+
+### Expected findings
+
+| # | Expectation | Caught as | Verdict |
+|---|---|---|---|
+| 1 | Dangling supersedes link (07-24 plan) | CP-18, CP-12 | **caught, sharper** — identified the link as *born broken* (the file was renamed in the same commit that wrote the link), which the expectation did not know |
+| 2 | No atlas | first `atlas.md` generated | **caught** — treated as adoption work, not an error |
+| 3 | Blank sign-offs common.2/.3 | CP-09, CP-22 | **caught, wider** — common.**4/.5** reviewer fields are also blank; the expectation named only two |
+| 4 | Stale "pending OQ-F6" prose | CP-11 | **caught, wider** — the analytics *spec* echoes it too, not just the two contracts |
+| 5 | Submodule pointer drift | CP-03, CP-19 | **caught, precisely** — located `6f8b6b8` as existing only on `origin/feature/MOK-1778-common-5`, and FE's record 31 commits behind |
+| 6 | Guardrails 1–12 imported | plan § Guardrails | **caught** — 1–8 and 9–12 carried by reference under their numbers; 13–15 added and explicitly marked *proposed*, to be accepted or rejected at Sync R |
+| 7 | Supersedes chain adopted by exact filename | both headers | **caught** — progress → `2026-07-24-progress.md`, plan → `2026-07-24-hsdd-execution-plan.md` |
+
+7/7. No expectation missed.
+
+### Pass criteria
+
+All met. Traceability is exact: **all 26** register ids appear in the plan as
+steps or under the explicit *Waivers* section (§2.7 loop, verified by set
+comparison). `atlas.md` has all three parts, four diagrams, largest 15 nodes
+(cap ~20). Changes confined to `management/`; the four edits to historical
+documents are pure change-log appends, the permitted operation. Emitted
+documents carry the §2.2 headers, including `Repo baselines` on both
+evidence-derived documents and a `Method` line that honestly discloses gate
+commands were **not** re-run (trees byte-identical to the 07-24 review).
+
+**Inverted criterion: satisfied.** 26 findings, not a clean bill.
+
+### Findings the run produced that the expectations did not anticipate
+
+Evidence the pass does real work rather than confirming a checklist:
+
+- **CP-01 (High) — a verification doc with no code.** `host-data.1` has a
+  signed verification document on an unmerged branch, but the implementation
+  it describes exists nowhere in the BE repo: no branch, no historical tree,
+  no stash, no dangling objects. This is the audit chain's first real hole,
+  and it is exactly the class of defect the pinned done-definition exists to
+  expose.
+- **CP-07 — every BE phase on main arrived squashed**, not just the known
+  four-phase `a54f5bb`: `common.1` was also merged as a re-created single
+  commit whose real branch tip was never merged.
+- **Renderer `pr.1` correctly counted as a claim, not done** — genuinely
+  implemented with verification numbers that check out exactly, but both
+  halves sit on unmerged branches, so the done-definition excludes it.
+- **FE main movement is clean** — `epic/fe-shell` merged via a true merge
+  commit preserving all 40 per-phase commits. A negative result, reported.
+- The run also self-corrected: a subagent called BE's pointer consistent; the
+  controller re-verified and kept it as a High finding.
+
+### Skill defect found by this run (fixed)
+
+The run's closing chat message asked the operator to adjudicate three items
+("R9 — find/push the host-data.1 code or retract the doc", the proposed
+guardrails, the carried Sync R decisions). The *artifacts* were correct — all
+three were already written into the plan as owned steps — but step 7's wording
+("report … what needs a human decision") invited an interactive decision queue
+at the end of the run. That defeats the point of running a checkpoint days
+before the sync: the plan is the agenda a lead takes to the team, and a
+decision extracted from whoever ran the checkpoint is one the team never saw.
+
+Fixed in `hsdd-checkpoint` step 7 (**"Decisions are written, not asked"**),
+with a matching quality gate and an anti-rationalization row. No artifact from
+this run needed repair — the defect was in the reporting register only, so the
+**"without manual repair"** condition of §7.3 still holds.
+
+### Operational note (not a skill defect)
+
+A permission prompt for a read-only grep was declined mid-run, apparently by
+mis-click, and the run paused for direction. It resumed cleanly when told the
+rejection was accidental. Worth knowing that a stray denial mid-pass is
+recoverable without restarting.
+
+---
+
+## Result — `hsdd-milestone`
+
+*(pending: run second, so it can adopt the checkpoint's output — must
+recognize `2026-07-24-milestones.md` as the baseline and mint no duplicate)*

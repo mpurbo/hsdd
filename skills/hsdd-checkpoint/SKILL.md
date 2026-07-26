@@ -131,8 +131,19 @@ be standing in produces a progress report that undercounts the project.
    compare it against the previous report's — two consecutive reds fire the
    trigger.
 7. **Report** with the same discipline the pass audits: what was written,
-   what could not be verified, what needs a human decision. Never a silent
-   green.
+   what could not be verified, and where the decisions are recorded. Never a
+   silent green.
+
+   **Decisions are written, not asked.** Every choice this pass surfaced
+   belongs in the execution plan as a step with an owner and the sync that
+   will settle it (proposed guardrails marked *proposed*, contested findings
+   marked as decisions). The closing report *points at* those steps — it does
+   not open a decision queue in the session. A checkpoint is run days before
+   the sync precisely so a human can take the plan to the team and decide
+   there, with the people affected. Ending the run by asking the operator to
+   adjudicate findings converts a written agenda back into an interactive
+   interrogation, and whatever they answer alone is a decision the team never
+   saw.
 8. **Land the output.** Commit the `hsdd/management/` changes. Under the
    standalone-spec-repo profile, commit and push them **inside the submodule**
    to spec-repo main, then bump every implementation repo's pointer to that
@@ -288,6 +299,8 @@ writes live under `hsdd/management/`.
 - [ ] No file outside `hsdd/management/` modified.
 - [ ] Every implementation repo was reviewed — paths taken from the prompt,
       or asked for when absent; none silently skipped.
+- [ ] Every decision this pass surfaced is a plan step with an owner and a
+      sync — not a question put to the operator at the end of the run.
 - [ ] OQ health verified: every cited id defined exactly once, statuses
       coherent, no stale pending-prose on resolved questions.
 - [ ] Profile history rules audited: no one-sided branch pair, no
@@ -306,6 +319,7 @@ writes live under `hsdd/management/`.
 | "The old plan's link is broken — I'll fix the old file" | Historical docs are never rewritten. Record the finding; conformance applies from the next document forward. |
 | "The atlas from last week mostly holds, patch it" | The atlas is derived state, regenerated whole. A patched atlas is a hand-maintained cache — the failure mode it exists to replace. |
 | "Little changed; copy last week's numbers" | Carrying numbers forward is a scoped-mode privilege and must be stated in the doc. In full mode, count. |
+| "I found something contested — I'll ask the operator to decide before I finish" | The plan is the decision's home and the sync is its venue. Write the step, name the owner, and point at it. A decision extracted from whoever happened to run the checkpoint is one the team never saw. |
 | "The other repo's path wasn't given; I'll review what I can see" | A report that counts one lane of a two-lane project is wrong, not partial. Ask for the paths and stop until you have them. |
 | "I'll run this in the spec repo — that's where the documents go" | The spec repo has no code, no openspec, no gates, and editing a standalone clone strands every submodule pointer. Run from an implementation repo; the tree is at `hsdd/`. |
 | "The milestone gate is red again — I'll adjust the dates" | Two consecutive reds fire the re-baseline trigger, which belongs to hsdd-milestone and the stakeholders. Tick, report, hand off. |
