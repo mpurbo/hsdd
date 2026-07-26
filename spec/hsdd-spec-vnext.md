@@ -8,7 +8,9 @@
 > and multi-team paths. Read it against v0.3 through v0.6.1; only the changes
 > are stated here. Everything not touched below still stands.
 
-**Version:** vNext (undecided; 0.7.0 candidate)
+**Version:** vNext (undecided; 0.8.0 candidate — renumbered by v0.7, which
+took the 0.7.0 slot for the management layer; see `spec/hsdd-spec-v0_7.md`
+§8.3 for how the two compose)
 **Status:** Draft — exploration rebase, for review
 **Date:** 2026-07-15
 **Owner:** Purbo Mohamad

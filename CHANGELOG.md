@@ -7,6 +7,51 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+Driven by the moka-microsite field deployment (2026-07-10 → 07-24: three repos,
+two developers, 89 phases under v0.6.1). Delta spec: `spec/hsdd-spec-v0_7.md`.
+
+### Added
+
+- The management layer: `management/` as a fourth artifact class (cite, never
+  define) — dated progress reports, execution plans, and milestone documents
+  chained by exact-filename supersedes links, plus a living, regenerated
+  `atlas.md` (spec tree with phase status, contract graph, ADR coverage map).
+- `hsdd-checkpoint` (+ `/hsdd-checkpoint`): one evidence pass across the spec
+  repo and every implementation repo emitting all four views, in full or scoped
+  mode; the findings→plan loop (every finding becomes a plan step or an explicit
+  waiver); the first run on an existing project is an adoption run. Sibling repo
+  paths come from the invoking prompt; the skill asks when they are absent.
+- `hsdd-milestone` (+ `/hsdd-milestone`): the stakeholder milestone document — a
+  demo and a gate per milestone, with a computed contingent tail excluded from
+  the launch gate — generated once every leaf-parent is phase-planned, and
+  re-baselined on the slip or scope trigger with both windows stated.
+- Open-question convention: stable IDs (`OQ{n}` / `OQ-{prefix}{n}`), one
+  definition home, the `| ID | Question | Status | Waits on | Affects |` table
+  with `OPEN` / `PARTIAL` / `RESOLVED (date)`, anchored structurally in
+  `hsdd-spec` (templates + minting), `hsdd-phase-plan` (a contingency must name
+  its question — a stop), `hsdd-contract` / `hsdd-adr` (cite-only), and
+  `hsdd-reconcile` (resolution citation sweep).
+- Standalone-spec-repo profile for multi-repo projects: the HSDD tree is its own
+  repo, mounted as a submodule **at `hsdd/`** — so every path is unchanged and no
+  skill needs profile-specific resolution. Adds the run-location rule (skills run
+  from an implementation repo, never from a standalone clone of the spec repo)
+  and four incident-backed rules: pointers reference spec-repo main only, a phase
+  is done when its verification doc is on spec-repo main, cross-repo branch pairs
+  land or are discarded atomically, and multi-phase epics are never
+  squash-merged.
+- Users guide: a "Running the project" chapter covering the developer/lead role
+  split, the weekly rhythm, milestones, open questions, the multi-repo profile,
+  and adoption on a project already underway.
+
+### Changed
+
+- `hsdd-config` checks the submodule pointer as the **first** step of the phase
+  context switch under the profile — it gates every later step, all of which read
+  through `hsdd/`.
+- The vNext mechanization draft renumbers from 0.7.0 candidate to 0.8 candidate.
+  v0.7 is additive over v0.6.1 by contract (spec §7.1), with microsite-hsdd as
+  the acceptance fixture (§7.3).
+
 ## [0.6.1] - 2026-07-13
 
 Driven by the v0.6.0 pressure-test campaign

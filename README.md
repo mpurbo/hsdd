@@ -101,7 +101,7 @@ HSDD ships as agent skills, installable with the [`skills`](https://github.com/v
 CLI (works with Claude Code, Cursor, Codex, and 70+ agents):
 
 ```bash
-# All six HSDD skills (replace with your repo path)
+# All eight HSDD skills (replace with your repo path)
 npx skills add mpurbo/hsdd
 
 # Or a single skill
@@ -128,6 +128,8 @@ re-implementing them; `hsdd-config` wires them into each OpenSpec cycle.
 | `hsdd-phase-plan` | Break a small-enough node into ordered, independently implementable phases, each sized for one OpenSpec change and one review window. |
 | `hsdd-reconcile` | Drain the pending governance updates emitted by phase planning: finalize contract phase ids, resolve contract-gap requests with you, and regenerate the registries. Runs at the root, after parallel plan branches merge. |
 | `hsdd-config` | Configure OpenSpec and switch the phase context so each cycle sees only the current phase plus its consumed contracts. |
+| `hsdd-checkpoint` | Run the weekly (or context-triggered) evidence pass across the spec repo and every implementation repo, emitting a progress report, a revised execution plan, a regenerated atlas, and ticked milestone gates. One pass, four views; every finding becomes a plan step or an explicit waiver. |
+| `hsdd-milestone` | Generate the stakeholder milestone document once every leaf-parent is phase-planned — a demo and a gate per checkpoint, with externally-gated work in a contingent tail outside the launch gate — and re-baseline it when the dates move. |
 
 ## How it works
 
@@ -186,8 +188,12 @@ tokens, time, and quality.
   trickles down the spec tree, a checklist anchor for the sizing floor, the
   mandatory "who builds what?" stop, and one spec file per child node. Read
   against v0.6.
+- [v0.7 delta](spec/hsdd-spec-v0_7.md): the management layer — `hsdd-checkpoint`
+  and `hsdd-milestone`, the open-question convention, and the
+  standalone-spec-repo profile for projects with more than one implementation
+  repo. Read against v0.6.1.
 - [User's guide](docs/users-guide.md): worked examples for a simple single-level
-  project and a multi-level system.
+  project and a multi-level system, plus running the project week to week.
 
 ## References
 
