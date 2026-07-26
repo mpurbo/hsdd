@@ -103,10 +103,10 @@ Required sections, in order:
   An overview diagram (Mermaid) of the milestone sequence is recommended;
   if `mermaid-pastel-style` is installed, follow it.
 - **Contingent tail** — the table from step 5 with degradation paths.
-- **Tracking** — who ticks (the weekly checkpoint), the re-baseline
-  trigger (a gate red across two consecutive checkpoints (read from the two
-  most recent progress reports' Milestone gate status sections), or totals
-  moved), and the single source of truth for "done".
+- **Tracking** — who ticks (the weekly checkpoint); the re-baseline trigger,
+  which is a gate red across two consecutive checkpoints — read from the two
+  most recent progress reports' Milestone gate status sections — or totals
+  moved; and the single source of truth for "done".
 - **Change log.**
 
 ## Quality Gates
