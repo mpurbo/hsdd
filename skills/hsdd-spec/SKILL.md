@@ -184,7 +184,8 @@ only the sources (or named sections) that govern this node — the field is
 context the next skill will read, not a bibliography.
 
 A node spec document also carries: Overview, child-node table, the typed
-dependency DAG (Mermaid), dev-flow sequencing, and a contract matrix.
+dependency DAG (Mermaid), dev-flow sequencing, a contract matrix, and — when
+any exist — the `## Open questions` section (format below).
 
 **Headings in a standalone node spec file:** one `#` title (`# {node-id}:
 {Node Name}`), `##` for document sections; do not repeat the title as an
@@ -194,6 +195,30 @@ inside a parent document.
 **Rendering rule.** Field blocks are bullet lists, never bare `**Field:**
 value` lines relying on soft line breaks; empty contract lists render
 "none", not `[]`.
+
+## Open Questions (OQ)
+
+Decomposition surfaces questions nobody can answer yet. They are governance,
+not margin notes — every spec carries a `## Open questions` section when any
+exist (omit the section only when there are none):
+
+- **Minting.** The root spec mints `OQ{n}`; node specs mint
+  `OQ-{prefix}{n}`, prefixes declared in `conventions.md`. IDs are stable —
+  never renumbered, never reused. Resolved entries keep their table row and
+  detail subsection as audit trail; never delete them.
+- **One definition home.** An OQ is defined exactly once, in the spec that
+  owns the decision — the root for cross-cutting questions, the closest
+  owning node otherwise. A child needing a local view mints its own ID
+  marked `[inherits OQ{n}]`. Every other artifact — contracts, ADRs, phase
+  plans, management documents — cites the ID only.
+- **Format,** in the owning spec: a summary table
+  `| ID | Question | Status | Waits on | Affects |`, then one
+  `### {ID} — {title}` detail subsection per entry, so `grep {ID}` lands on
+  the definition.
+- **Status vocabulary:** `OPEN` · `PARTIAL` (residual named under *Waits
+  on*) · `RESOLVED (date)` (row points at where the decision landed — an
+  ADR, a contract, a spec `D{n}`). `ext:` under *Waits on* marks an
+  external party.
 
 ## Quality Gates
 
@@ -212,6 +237,10 @@ value` lines relying on soft line breaks; empty contract lists render
       decomposed", with a reason.
 - [ ] No node's Sources lists a document that does not govern it.
 - [ ] Field blocks are bullet lists and empty lists say "none".
+- [ ] Every open question is defined once, in its owning spec, with a table
+      row and a `### {ID}` detail subsection; child views carry
+      `[inherits …]`; no cited ID lacks a definition.
+- [ ] OQ prefixes used by node specs are declared in `conventions.md`.
 
 ## Anti-Rationalization
 
@@ -226,3 +255,4 @@ value` lines relying on soft line breaks; empty contract lists render
 | "Auth end-to-end is one coherent capability" | Coherent for whom? If backend and frontend are different owners, the node has two owners and no isolation. Split at the ownership boundary; the capability comes back as a node pair joined by a contract. |
 | "The axis is defensible either way, I'll pick a safe default" | Defensible-either-way is the definition of a decomposition-changing unknown. A flag at the bottom of a finished-looking tree does not get read. Ask and stop. |
 | "The spec captures everything important from the RFC" | The spec is a summary; summaries thin at every level. Downstream skills read only the spec's closure — if the RFC is not in Sources, its details are unreachable, not just unmentioned. |
+| "I'll reference OQ-B3; the reader will know what I mean" | An ID with no definition home is a phantom — ungreppable, unresolvable, unbudgetable. Mint it in the owning spec first, then cite it. |

@@ -17,6 +17,17 @@ are singular. OpenSpec files stay where OpenSpec expects them (`openspec/`).
 - `hsdd/scripts/gen-registry.mjs`             registry generator (copied verbatim from hsdd-contract)
 - `hsdd/templates/verification.md`            verification-doc template, copied from hsdd-config
 - `openspec/config.yaml` + `openspec/changes/` config and one change per phase
+- `hsdd/management/`                          management layer (progress, execution plans, milestones, atlas) — written only by hsdd-checkpoint / hsdd-milestone
+
+**Standalone-spec-repo profile (opt-in, multi-repo projects):** declare it
+here with a line `Profile: standalone-spec-repo`. The spec repo's root then
+IS the HSDD tree (`spec/`, `contract/`, `adr/`, `management/`, this file —
+no `hsdd/` prefix anywhere, including in path examples and quoted commands),
+and each implementation repo mounts the spec repo as a git submodule.
+Submodule pointers only ever reference spec-repo main commits; a phase is
+done when its verification doc is on spec-repo main; branch pairs spanning
+an implementation repo and the spec repo land or are discarded atomically;
+multi-phase epics are never squash-merged.
 
 ## OpenSpec init
 Run `openspec init` once, at the repo root (the directory holding `hsdd/`,
@@ -30,6 +41,25 @@ projects. Polyrepo: init per repo root and share `hsdd/contract/` + `hsdd/adr/`.
 - Contract: `{slug}@v{n}` (`auth-token@v1`)
 - ADR: `ADR-{nnn}`; node-local decision: `D{n}`
 - User story / acceptance: `US-{n}` / `AC-{n}.{y}`
+- Open question: root `OQ{n}`; node `OQ-{prefix}{n}` (declare prefixes here,
+  e.g. `B` = backend, `F` = frontend); child view of a parent question:
+  `[inherits OQ{n}]`
+
+## Open questions (OQ)
+- IDs are stable — never renumbered, never reused. Resolved entries keep
+  their row and detail subsection (audit trail); never delete them.
+- One definition home: defined exactly once, in the `## Open questions`
+  section of the spec that owns the decision. Every other artifact cites
+  the ID only.
+- Format (owning spec): summary table
+  `| ID | Question | Status | Waits on | Affects |` + one `### {ID}` detail
+  subsection per entry.
+- Status: `OPEN` · `PARTIAL` (residual under *Waits on*) · `RESOLVED (date)`
+  (row points at the landing artifact). `ext:` marks an external party;
+  link the execution plan's E-track where one exists.
+- Resolving = update row + detail, land the decision in its artifact
+  (ADR / contract / `D{n}`), and sweep citations that still treat it as
+  open (`hsdd-reconcile` does this).
 
 ## Companion skills (recommended)
 Obra's superpowers (github.com/obra/superpowers), wired into OpenSpec by hsdd-config:
