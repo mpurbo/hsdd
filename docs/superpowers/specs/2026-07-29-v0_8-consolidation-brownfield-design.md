@@ -58,6 +58,8 @@ state. v0.8.0 makes that structural rather than rhetorical.
 | Where does an incoming PRD's spec live? | **Nowhere — a PRD is never a root.** There is one tree and it is the system's. See §6.1. |
 | OQ-1: milestones after launch? | **Resolved — per-campaign milestone documents, sealed when green.** See §6.8. |
 | OQ-2: adopted contracts and compatibility? | **Resolved — a declared `compatibility:` policy, fixture-enforced.** See §6.9. |
+| Does `additive-only` strand adopted contracts at `v0` forever? | Yes, and correctly. `v0` is a permanent property, not a waypoint; `v0 → v1` is the contract-level adoption exit, taken only on redesign. See §5.4. |
+| When does the fixture grandfather clause end? | On touch, not on a date. The set closes at upgrade, discharges per contract when a phase touches it, and its count is reported and can only fall. See §7.1. |
 
 ---
 
@@ -242,7 +244,25 @@ analogue of the node's mandatory `unknown:` lines:
 ```
 
 An adopted contract's guarantees are *inferred*. Recording what the fixtures do
-not reach is what keeps `stable` honest.
+not reach is what keeps `stable` honest. The caveat is **maintained, not
+write-once**: when a phase closes a gap by adding a fixture, it updates the
+block. A stale caveat is a checkpoint drift finding like any other.
+
+**`v0` is a permanent property, not a waypoint.** §6.9's `additive-only` policy
+means a well-behaved contract can absorb additions indefinitely without a bump,
+so many adopted contracts will sit at `v0` for years. That is correct, not a
+failure to progress: fields accreting onto an inherited shape do not make the
+shape designed. The bump therefore carries a sharper meaning than "second
+version":
+
+> **`v0 → v1` is the contract-level adoption exit.** It happens when the
+> interface is genuinely redesigned rather than extended — the contract-level
+> analogue of a node going `as-built → promoted` (§5.5).
+
+`additive-only` constrains what may happen *without* a bump; it never forbids
+one. A redesign bumps and re-declares its policy. A contract at `v1` or above is
+fully governed; a contract at `v0` is still inherited, however much it has
+grown.
 
 ### 5.5 Promotion — the recurring operation
 
@@ -447,6 +467,10 @@ This also settles the adopted-contract worry directly: a contract at `@v0` with
 consumers that depend on its warts, because a wart is never removed — the field
 is deprecated and a new one added beside it.
 
+`compatibility` is declared **per version**, not per contract, so `foo@v0` may
+be `additive-only` while a later redesigned `foo@v1` is `versioned`. Per §5.4,
+extension under `additive-only` never exits `v0`; only a redesign does.
+
 Full status lifecycle after this chapter:
 `draft → stable → deprecated → retired`, with a sunset date and migration note
 on the deprecating version. `external_consumers` (vNext) covers consumers
@@ -499,7 +523,7 @@ migration steps in the emitted execution plan.
 | `Team` node field | Optional; absent is conformant. |
 | Ordering policy in conventions frontmatter | Absent = `interfaces-first`. No edit needed. |
 | Unified PE definition (vNext §10) | Applies to future sizing only. Existing phase plans stand. |
-| `stable` requires executable validation (vNext §5.1) | **Grandfathered.** Applies to new versions and new `draft → stable` flips. Existing stable contracts without fixtures become a findings-register row with a migration step, never an error. |
+| `stable` requires executable validation (vNext §5.1) | **Grandfathered, discharged on touch.** See §7.1. |
 | `compatibility:` field (§6.9) | Absent = `versioned`, which is today's behavior. |
 | `retired` status; deprecation lifecycle | Additive to the existing `stable \| draft \| deprecated` lifecycle. |
 | Per-campaign milestones; sealing (§6.8) | The existing milestone document becomes the current campaign's. Seal it when green, or leave it open. |
@@ -515,6 +539,36 @@ direction, and it is the normal end state rather than a transitional one.
 Projects below 0.6.1 are out of scope: upgrade to 0.6.1 first, per the existing
 delta reading path, which remains in `spec/` as history.
 
+### 7.1 The grandfather clause, and how it ends
+
+Requiring fixtures before `stable` (vNext §5.1) is the one upgrade rule that
+would otherwise invalidate existing artifacts wholesale. It is grandfathered —
+but a grandfather clause with no end state is how a two-tier system becomes
+permanent. Three properties give it one, without a deadline:
+
+1. **The set is closed at upgrade time.** The upgrade checkpoint enumerates
+   every contract already `stable` without executable validation and marks each
+   `validation: grandfathered` in frontmatter. Nothing may join the set
+   afterward. A *new* contract flipped `draft → stable` without fixtures is an
+   error, not a grandfather case — the clause covers history, never new work.
+2. **It discharges on touch, not on a date.** The moment any phase produces,
+   amends, or bumps a grandfathered contract, that contract must gain fixtures
+   before the phase's gate passes. Obligations attach to work, not to calendars
+   — the same grain as the lazy tree and depth-on-demand. A contract nobody
+   touches needs no fixtures, because nobody is depending on new behavior from
+   it.
+3. **The count is reported and can only fall.** Each checkpoint reports the
+   remaining grandfathered count in the progress report. A closed, finite,
+   monotonically-decreasing set needs no sunset: it either drains as the system
+   is worked on, or the untouched remainder is precisely the surface that
+   carries no active risk. **A count that rises is a finding** — it means
+   property 1 was violated.
+
+State this in the chapter rather than leaving "grandfathered" open-ended.
+Deliberately rejected: a fixed sunset date (HSDD does not control anyone's
+calendar, and a cliff invites blanket waivers) and permanent unmarked
+grandfathering (invisible, uncountable, never drains).
+
 ---
 
 ## 8. Skill surface
@@ -523,7 +577,7 @@ delta reading path, which remains in `spec/` as history.
 deliverable of the implementation plan that follows this design is
 `spec/hsdd-spec-v0_8.md` plus the README and users-guide updates. Skill files
 are edited in a separate cycle, after the spec is approved (acceptance
-criterion 12).
+criterion 13).
 
 | Skill | Change |
 |-------|--------|
@@ -593,16 +647,22 @@ Recorded before the run, per the practice established at v0.7 §7.3.
 5. **The PRD rule is stated as a rule** (§6.1), with the failure it prevents
    named alongside it.
 6. **`@v0` is consistent** across chapter 6, chapter 3, the id-scheme table, and
-   the conventions template; nothing assumes versions start at 1.
+   the conventions template; nothing assumes versions start at 1. `v0` is
+   described as a permanent property, with `v0 → v1` defined as the
+   contract-level adoption exit, and the compatibility chapter does not
+   contradict it.
 7. **Scripting boundary** (§3.1) is normative in the document, and the as-built
    drift check is explicitly gated on adopted nodes existing.
 8. **Upgrade chapter** carries the full compatibility table and states that
    conformance applies forward only.
-9. **Provenance column** present and populated in the settled-decisions table.
-10. **Both former OQs appear as settled decisions, not open questions** —
+9. **The grandfather clause has a stated end state** — all three closure
+   properties (set closed at upgrade, discharge on touch, count reported and
+   monotonically decreasing), plus the named rejected alternatives.
+10. **Provenance column** present and populated in the settled-decisions table.
+11. **Both former OQs appear as settled decisions, not open questions** —
     §6.8 and §6.9 resolve them.
-11. **README and users guide updated:** reading path collapses to one spec; the
+12. **README and users guide updated:** reading path collapses to one spec; the
     claims rewrite (vNext §8.1) lands in the README's isolation and token claims;
     the skill table gains `hsdd-adopt` and `hsdd-intake`.
-12. **Skills follow the spec, not the reverse.** No skill file is edited until
+13. **Skills follow the spec, not the reverse.** No skill file is edited until
     v0.8.0 is approved.
