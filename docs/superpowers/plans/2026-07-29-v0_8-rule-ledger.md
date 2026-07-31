@@ -239,3 +239,121 @@ ch12,13→T9 · ch14→T10 · ch15,16→T11 · ch17,18→T12.
 | 209 | v0.5 §5 | The governance freeze protocol and `hsdd-reconcile` semantics are layout-independent | carry | ch13 | [ ] |
 | 210 | v0.5 §5 | The conventions-override mechanism is layout-independent: the layout is a default, not a requirement | carry | ch13 | [ ] |
 | 211 | v0.5 §5 | The `openspec/` location, the per-phase context switch, and the OpenSpec cycle are unchanged by any layout choice | carry | ch13 | [ ] |
+| 212 | v0.6 §1 | "What 0.6 Changes and Why" — the four classes of field friction | scaffold (delta framing; §1's closing paragraph carries row 213) | — | [ ] |
+| 213 | v0.6 §1 | The core invariant no release moves: one phase drives exactly one OpenSpec change and ends at one human review gate | carry | ch1 | [ ] |
+| 214 | v0.6 §2.1 | Every field block emitted in a node header or a phase section is a bullet list — never consecutive `**Field:** value` lines relying on soft breaks, which every compliant renderer collapses into one paragraph | carry | ch2 | [ ] |
+| 215 | v0.6 §2.1 | Wrapped values keep the 2-space continuation indent, so wrapped lines render inside their field | carry | ch2 | [ ] |
+| 216 | v0.6 §2.1 | The phase template's fields: Consumes, Produces, Governed by, Scope, Size estimate, Gate, Verification, Review tier, Collides with, Dependencies | carry | ch7 | [ ] |
+| 217 | v0.6 §2.1 | The `Verification` field is 1–3 lines of intent — what a human should confirm works beyond the gate, as observable behavior, not commands | carry | ch7 | [ ] |
+| 218 | v0.6 §2.1 | Rendering rule, a quality-gate item in both skills: field blocks must be bullet lists or tables, never structure carried by soft line breaks | carry | ch2 | [ ] |
+| 219 | v0.6 §2.1 | Empty lists render as "none", not `[]`: bracket notation is agent-speak and the plan is a human artifact | carry | ch2 | [ ] |
+| 220 | v0.6 §2.1 | Rejected and staying rejected: full tables for the phase record (multi-sentence Scope and Verification become unreadable one-line cells) and hard line breaks (invisible in source, silently stripped) | carry | ch7 | [ ] |
+| 221 | v0.6 §2.2 | `## Phase Plan` opens with a summary table, one row per phase: Phase, Name, Tier, Size, Depends on, Collides with — omitting the last column when no phase collides | carry | ch7 | [ ] |
+| 222 | v0.6 §2.2 | The summary table is the human index and the bullet sections stay the machine-consumed detail: `hsdd-config` injects only the detailed section, so the table never enters an agent's context | carry | ch7 | [ ] |
+| 223 | v0.6 §2.2 | Quality gate: the summary table matches the phase sections | carry+amend (v0.6.1 §6: "opens the section and matches") | ch7 | [ ] |
+| 224 | v0.6 §2.3 | The phase dependency graph is a Mermaid flowchart, one node per phase labeled `{phase-id}<br/>{short name}`; ASCII is retired | carry | ch7 | [ ] |
+| 225 | v0.6 §2.3 | Graph edges are logical dependencies only; textual contention is carried by `Collides with` and never drawn | carry | ch7 | [ ] |
+| 226 | v0.6 §2.3 | Cross-node dependencies appear as dashed edges with the dependency named on the edge label | carry | ch7 | [ ] |
+| 227 | v0.6 §2.3 | If `mermaid-pastel-style` is installed, follow it | carry | ch7 | [ ] |
+| 228 | v0.6 §2.4 | A standalone node spec file uses one `#` title, `##` for document sections, and does not repeat the title as an inner `###` heading | carry | ch2 | [ ] |
+| 229 | v0.6 §3.1 | Sizing floor: a phase must be big enough to earn its cycle | carry | ch7 | [ ] |
+| 230 | v0.6 §3.1 | Two adjacent phases are merge candidates when all hold: same review tier, same consumed contracts, no third phase depends on one without the other, and the merged phase still fits the review window with ≤8 OpenSpec tasks | carry | ch7 | [ ] |
+| 231 | v0.6 §3.1 | Textual contention strengthens the merge case: phases that would serialize anyway have a lower bar to merge | carry | ch7 | [ ] |
+| 232 | v0.6 §3.1 | Keep a small phase separate only for a reason you can name: a tier boundary, a parallel lane assigned to another owner, or a risk you want reviewed in isolation | carry | ch7 | [ ] |
+| 233 | v0.6 §3.1 | The merge smell: if a phase's predicted process artifacts exceed its predicted diff, it is a merge candidate by default | carry | ch7 | [ ] |
+| 234 | v0.6 §3.2 | The review tier sets the artifact profile, not only human attention: proposal depth, whether `design.md` exists at all, and verification-doc depth scale with the tier | carry | ch10 | [ ] |
+| 235 | v0.6 §3.2 | Never scaled: `tasks.md` and the requirement/scenario deltas — they drive TDD and the tests at every tier | carry | ch10 | [ ] |
+| 236 | v0.6 §3.2 | Every phase still produces a verification doc; only its depth varies | carry | ch10 | [ ] |
+| 237 | v0.6 §3.2 | Mechanism: the review tier is already injected into every phase context, so the artifact rules are tier-conditional | carry | ch9 | [ ] |
+| 238 | v0.6 §3.3 | Anti-rationalization: "merge them so there's less to review" — merging to dodge review defeats the tiers; merge only under the sizing floor's conditions | carry | ch7 | [ ] |
+| 239 | v0.6 §3.3 | Anti-rationalization: "small phases are always a feature" — they are a feature when they buy parallelism or isolated review; below the floor they buy neither and still cost a full cycle | carry | ch7 | [ ] |
+| 240 | v0.6 §3.4 | A phase plan may state one `**Default gate:**` command above the summary table; a phase's `Gate` field then reads "node default" unless it overrides | carry | ch7 | [ ] |
+| 241 | v0.6 §4 | The execution protocol is the freeze's mirror for the execution stage, and it lives in the conventions template's parallel-development section, in `hsdd-config`, and in the users guide | carry | ch9 | [ ] |
+| 242 | v0.6 §4.1 | The `## Current Phase` block and its companion contract/ADR blocks in `openspec/config.yaml` are per-session working state, rewritten by every context switch: a merge conflict on them carries no information | carry | ch9 | [ ] |
+| 243 | v0.6 §4.1 | On any merge, resolve `openspec/config.yaml` by taking either side, then re-run the phase context switch before the next OpenSpec cycle; optionally set `merge=ours` in `.gitattributes` on integration branches | carry | ch9 | [ ] |
+| 244 | v0.6 §4.1 | The phase-switch command self-heals: warn when the Current Phase block names a phase that is not next-runnable per the node's plan (already archived, or blocked by an unmerged dependency) | carry | ch9 | [ ] |
+| 245 | v0.6 §4.2 | One integration branch per node; phase branches merge into it | carry | ch9 | [ ] |
+| 246 | v0.6 §4.2 | Node integration branches merge into the root branch | carry | ch9 | [ ] |
+| 247 | v0.6 §4.2 | A node's plan file is written on exactly one lineage — never re-plan or copy a plan onto a diverged sibling lineage | carry | ch9 | [ ] |
+| 248 | v0.6 §4.2 | `hsdd-reconcile` runs once, at the root lineage, after the node plans are merged there — never per-lineage; its commit exists only on the root | carry | ch8 | [ ] |
+| 249 | v0.6 §4.3 | Each phase section carries `- **Collides with:** [phase-ids]` when the plan expects textual contention (omit when none), and the summary table surfaces the column | carry | ch7 | [ ] |
+| 250 | v0.6 §4.3 | Colliding phases execute serially on the node's integration branch; spawn parallel worktrees only for phases with no `Collides with` entry between them | carry | ch9 | [ ] |
+| 251 | v0.6 §4.3 | Logical dependencies and textual contention stay separate concepts: the graph draws the former, the field carries the latter | carry | ch7 | [ ] |
+| 252 | v0.6 §4.4 | Name OpenSpec capabilities after a stable feature area within the node, not after the phase, and accept that same-capability archives serialize | carry | ch9 | [ ] |
+| 253 | v0.6 §4.4 | Fall back to per-phase capability names only when genuinely parallel phases would contend on the same capability spec | carry | ch9 | [ ] |
+| 254 | v0.6 §5.1 | The phase's tasks include a gate task that runs the phase gate command | carry | ch10 | [ ] |
+| 255 | v0.6 §5.1 | After the gate task, a documentation task writes the verification doc at `hsdd/verify/{phase-id}.verification.md` from the bundled template, at the depth the phase's review tier requires | carry | ch10 | [ ] |
+| 256 | v0.6 §5.1 | A phase never updates `hsdd/conventions.md` or `hsdd/contract/`; governance changes are made at the root | carry | ch8 | [ ] |
+| 257 | v0.6 §5.1 | Long compound rules are the ones agents half-apply, so the tasks rule is stated as three separate rules | carry | ch9 | [ ] |
+| 258 | v0.6 §5.2 | The bundled verification template's sections: Commands to run, Expected output, Observed (dated), Outstanding, Sign-off | carry+amend (gains `## Learnings`, vNext §6, and `## Metrics`, vNext §14.1) | ch10 | [ ] |
+| 259 | v0.6 §5.2 | Sign-off records the reviewer and date, the review tier applied, and a disposition for every Outstanding item: verified / waived (reason) / deferred to `{phase-id}` | carry | ch10 | [ ] |
+| 260 | v0.6 §5.2 | The review gate is not passed while an Outstanding item lacks a disposition | carry | ch10 | [ ] |
+| 261 | v0.6 §5.2 | The verification doc is written at apply, never during planning | carry | ch10 | [ ] |
+| 262 | v0.6 §6.1 | The failure named alongside the axis rule: an end-to-end node across two teams has two owners, interleaves two toolchains and deploy targets, silently fails the leaf-parent criterion, and leaves the worktree-per-node model with no single owner to assign | carry | ch2 | [ ] |
+| 263 | v0.6 §6.1 | "Prefer capability slices over technology buckets" rejects *layer* buckets inside one codebase; it never licenses feature slices across an ownership boundary | carry | ch2 | [ ] |
+| 264 | v0.6 §6.2 | Choose the decomposition axis by ownership, not elegance: at each level, first split along the boundaries where different teams, owners, or deploy targets hold different parts of the stack | carry | ch2 | [ ] |
+| 265 | v0.6 §6.2 | Those boundaries come with their natural contract and match how work is actually assigned — Conway's law is a constraint to design with, not a smell to fight | carry | ch2 | [ ] |
+| 266 | v0.6 §6.2 | Within one owner's territory, prefer capability slices over technology buckets | carry | ch2 | [ ] |
+| 267 | v0.6 §6.2 | A capability that spans the stack returns one level down as a node per side, joined by a contract, with the pairing visible in the dependency DAG | carry | ch2 | [ ] |
+| 268 | v0.6 §6.2 | Vertical end-to-end slices remain correct when one owner genuinely holds the whole stack: there the feature boundary *is* the ownership boundary | carry | ch2 | [ ] |
+| 269 | v0.6 §6.2 | The rule reduces to one question — who builds what? — and an unstated team structure over a stack-spanning system is the canonical clarifying question | carry+amend (becomes a mandatory stop, v0.6.1 §4) | ch2 | [ ] |
+| 270 | v0.6 §6.2 | Quality gate: the decomposition axis at each level matches the stated ownership, and no node is owned by two teams | carry+amend (ownership stated by the human, not assumed, v0.6.1 §4) | ch2 | [ ] |
+| 271 | v0.6 §6.2 | Anti-rationalization: "auth end-to-end is one coherent capability" — coherent for whom? Split at the ownership boundary; the capability comes back as a node pair joined by a contract | carry | ch2 | [ ] |
+| 272 | v0.6 §7 | "Skill Edits (summary)" | scaffold (delta bookkeeping; the rule stated only in its cells is row 273) | — | [ ] |
+| 273 | v0.6 §7 | The conventions template's parallel-development section is extended and renamed to cover both stages — planning and execution | carry | ch13 | [ ] |
+| 274 | v0.6 §8 | Settled: the decomposition axis is ownership first; capability slices apply within one owner's territory; an unknown team structure is the canonical one-clarifying-question | carry | ch17 | [ ] |
+| 275 | v0.6 §8 | Settled: field-block format is bullet lists; tables rejected for multi-sentence fields, hard line breaks rejected as invisible and fragile | carry | ch17 | [ ] |
+| 276 | v0.6 §8 | Settled: a plan's human scannability comes from a per-plan summary table, human-only, with zero agent context cost | carry | ch17 | [ ] |
+| 277 | v0.6 §8 | Settled: the dependency-graph format is Mermaid in both skills, always; cross-node edges dashed; contention is a field, not an edge | carry | ch17 | [ ] |
+| 278 | v0.6 §8 | Settled: sizing has a floor as well as a ceiling; a merge requires same tier, same contracts, a clean dependency shape, and window fit; artifacts-exceed-diff is the default merge smell | carry+amend (both ends restated in PE terms, vNext §10) | ch17 | [ ] |
+| 279 | v0.6 §8 | Settled: the review tier controls human attention *and* artifact depth; tasks and spec deltas never scale; a verification doc always exists | carry | ch17 | [ ] |
+| 280 | v0.6 §8 | Settled: one phase = one OpenSpec change = one review gate — unchanged invariant | carry | ch17 | [ ] |
+| 281 | v0.6 §8 | Settled: `openspec/config.yaml` at merge is ephemeral — take either side and re-run the phase switch | carry | ch17 | [ ] |
+| 282 | v0.6 §8 | Settled: a node's plan lives on exactly one lineage, and reconcile runs once, at the root lineage only | carry | ch17 | [ ] |
+| 283 | v0.6 §8 | Settled: textual contention is structured (`Collides with`), surfaced in the summary table, serializes execution, and never reshapes logical dependencies | carry | ch17 | [ ] |
+| 284 | v0.6 §8 | Settled: capability naming is per stable feature area by default; per-phase names only for genuinely parallel contention | carry | ch17 | [ ] |
+| 285 | v0.6 §8 | Settled: the verification doc has a bundled template with Outstanding and Sign-off, and the gate is not passed while an Outstanding item lacks a disposition | carry | ch17 | [ ] |
+| 286 | v0.6 §9 | "Implementation Steps" — including item 8, which proposes this very consolidation | scaffold | — | [ ] |
+| 287 | v0.6.1 §1 | "What 0.6.1 Changes and Why" — four instances of one failure class | scaffold (delta framing; §1's closing carries rows 288–289) | — | [ ] |
+| 288 | v0.6.1 §1 | Rules that live only in prose fire inconsistently: the same skill text produced conforming and non-conforming runs, and unpinned behavior with observed variance is the failure mode | carry | ch1 | [ ] |
+| 289 | v0.6.1 §1 | Every behavior that must fire gets a structural anchor — a required field, a checklist item, or an explicit stop — instead of more prose | carry | ch1 | [ ] |
+| 290 | v0.6.1 §2.1 | Downstream skills read only the node spec's closure (conventions plus the node spec plus contracts plus ADRs), so a detail absent from that closure is unreachable *by construction*, not by accident | carry | ch2 | [ ] |
+| 291 | v0.6.1 §2.1 | Restatement thins at every level of the tree; the pointer is the only carrier that scales | carry | ch2 | [ ] |
+| 292 | v0.6.1 §2.2 | The root spec carries a `## Sources` section listing each input document: path or URL, its authority (accepted RFC / draft / braindump / ticket), and one line on what it governs | carry | ch2 | [ ] |
+| 293 | v0.6.1 §2.2 | The node header gains `- **Sources:**` after `Governed by`, listing only the sources — or named sections of them — that govern that node, or "none" | carry | ch2 | [ ] |
+| 294 | v0.6.1 §2.2 | Sources trickle down at decomposition time, at every level: each child's Sources is the subset of the parent's that governs it, and a source relevant to several nodes appears on each | carry | ch2 | [ ] |
+| 295 | v0.6.1 §2.2 | The Sources field is required whenever the root `## Sources` section exists; it is omitted entirely only in projects with no source documents | carry | ch2 | [ ] |
+| 296 | v0.6.1 §2.2 | The summary indexes the source and never replaces it: restating a normative detail is fine, but the node's Sources must still name where it came from | carry | ch2 | [ ] |
+| 297 | v0.6.1 §2.2 | Quality gate: every input source appears in at least one node's Sources, or is marked in the root `## Sources` as "informative only — not decomposed" with a reason. No source is silently dropped | carry | ch2 | [ ] |
+| 298 | v0.6.1 §2.2 | Quality gate: no node's Sources lists a document that does not govern it — the field is context the next skill will read, not a bibliography | carry | ch2 | [ ] |
+| 299 | v0.6.1 §2.3 | Phase planning reads the node's Sources — the referenced documents or sections, not just the node spec's summary of them — before phasing | carry | ch7 | [ ] |
+| 300 | v0.6.1 §2.3 | A binding detail found only in a source must land where execution will see it: in a phase's Scope or Verification line, or in a contract `request` / `amend` entry so the contract body carries it | carry | ch7 | [ ] |
+| 301 | v0.6.1 §2.3 | Phases carry no Sources field and no source document is injected into a phase context; the phase context stays ~20 lines | carry | ch9 | [ ] |
+| 302 | v0.6.1 §2.3 | Wire-level source detail (envelopes, pagination rules, quotas) is exactly what contract bodies exist to absorb | carry | ch3 | [ ] |
+| 303 | v0.6.1 §2.3 | Anti-rationalization: "the spec captures everything important from the RFC" — summaries thin at every level; if the RFC is not in Sources its details are unreachable, not just unmentioned | carry | ch2 | [ ] |
+| 304 | v0.6.1 §3 | Phase Design Checklist item: adjacent same-tier phases were checked against the sizing floor, and every merge candidate kept separate names its reason | carry | ch7 | [ ] |
+| 305 | v0.6.1 §3 | When a merge-candidate pair is kept split, record the reason in one line — in the kept phase's section or a short note under the summary table; a plan with no merge-candidate pairs records nothing | carry | ch7 | [ ] |
+| 306 | v0.6.1 §3 | Anti-rationalization: "the node spec already lists N pieces, so N phases" — a prose enumeration is not a phase plan; run the floor over adjacent same-tier phases before accepting the count | carry | ch7 | [ ] |
+| 307 | v0.6.1 §4 | When the input does not state the team structure and the system plausibly spans stacks, do not choose an axis: ask "who builds what?" and stop until it is answered | carry | ch2 | [ ] |
+| 308 | v0.6.1 §4 | Here the clarifying question is mandatory, not permitted: an axis guessed wrong reworks every node beneath it | carry | ch2 | [ ] |
+| 309 | v0.6.1 §4 | Stating an assumption and proceeding covers details; it is never an alternative for the decomposition's shape | carry | ch2 | [ ] |
+| 310 | v0.6.1 §4 | The sharpened quality gate: the axis at each level matches ownership **stated by the human, not assumed** | carry | ch2 | [ ] |
+| 311 | v0.6.1 §4 | Anti-rationalization: "the axis is defensible either way, I'll pick a safe default" — defensible-either-way is the definition of a decomposition-changing unknown, and a flag at the bottom of a finished-looking tree does not get read | carry | ch2 | [ ] |
+| 312 | v0.6.1 §5 | Every child node — internal or leaf-parent — gets its own `hsdd/spec/{child-id}.md` at decomposition time | carry | ch2 | [ ] |
+| 313 | v0.6.1 §5 | The parent document embeds each child's header block as a summary; the child's file is the authoritative node spec, which the next skill appends to and a later decomposition edits in place | carry | ch2 | [ ] |
+| 314 | v0.6.1 §5 | Quality gate: every child node has its own spec file | carry | ch2 | [ ] |
+| 315 | v0.6.1 §5 | The standalone-file heading rule applies in every file (restates row 228 for decomposition output) | carry | ch2 | [ ] |
+| 316 | v0.6.1 §6 | Phase ids in the summary table and in every `Collides with` entry use the same id form as the phase section headers; the short `{n}.{i}` form is fine if used consistently throughout the plan | carry | ch7 | [ ] |
+| 317 | v0.6.1 §6 | `Collides with` may carry a one-line reason after an em dash | carry | ch7 | [ ] |
+| 318 | v0.6.1 §6 | `## Phase Plan` begins with the `**Default gate:**` line (when present) followed immediately by the summary table; prose commentary comes after the table, not before | carry | ch7 | [ ] |
+| 319 | v0.6.1 §6 | Cross-node dashed edges appear only when a phase actually depends on another node's artifact; a node that builds purely against contract fixtures draws none | carry | ch7 | [ ] |
+| 320 | v0.6.1 §7 | "Skill Edits (summary)" — including the users-guide tip "point at the doc, don't paste it", which is guide material, not a spec rule | scaffold | — | [ ] |
+| 321 | v0.6.1 §8 | Settled: source provenance lives in a root `## Sources` section plus a per-node field, trickled at every decomposition level; YAML frontmatter for it is rejected | carry | ch17 | [ ] |
+| 322 | v0.6.1 §8 | Settled: restate or reference — both are allowed but the pointer is mandatory; pasting source content into specs is rejected | carry | ch17 | [ ] |
+| 323 | v0.6.1 §8 | Settled: phases carry no Sources, and injecting source documents into phase contexts is rejected | carry | ch17 | [ ] |
+| 324 | v0.6.1 §8 | Settled: an unmapped source must be explicitly marked "informative only — not decomposed" with a reason; silence is the failure being fixed | carry | ch17 | [ ] |
+| 325 | v0.6.1 §8 | Settled: floor enforcement is a checklist item plus a conditional one-line kept-split reason; a mandatory floor-analysis section in every plan is rejected | carry | ch17 | [ ] |
+| 326 | v0.6.1 §8 | Settled: an unknown decomposition axis is asked and stopped on — mandatory, not permitted; proceed-with-flagged-assumption is rejected as the loophole, not the mitigation | carry | ch17 | [ ] |
+| 327 | v0.6.1 §8 | Settled: one file per child, every child, at decomposition time; the parent embeds only the summary block | carry | ch17 | [ ] |
+| 328 | v0.6.1 §8 | Settled: one phase = one OpenSpec change = one review gate — unchanged (restates row 280 in the 0.6.1 table) | carry | ch17 | [ ] |
+| 329 | v0.6.1 §9 | "Implementation Steps" | scaffold | — | [ ] |
