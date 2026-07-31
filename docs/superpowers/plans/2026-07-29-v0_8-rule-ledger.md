@@ -140,3 +140,102 @@ ch12,13→T9 · ch14→T10 · ch15,16→T11 · ch17,18→T12.
 | 110 | v0.3 §15 | Settled: slash commands are optional thin wrappers; the primary surface is skills | carry | ch17 | [ ] |
 | 111 | v0.3 §16 | "Next Steps" — the v0.3 implementation to-do list | scaffold (implementation bookkeeping, not a rule) | — | [ ] |
 | 112 | v0.3 §17 | Glossary terms: node, leaf phase, contract, dependency type, ADR, review tier, review window, companion skill, context isolation | carry+amend (gains the v0.8.0 terms, ch18 task list) | ch18 | [ ] |
+| 113 | v0.4 §1 | "What 0.4 Changes and Why" — the two gaps 0.4 closes | scaffold (delta framing; the rules are in §2–§5) | — | [ ] |
+| 114 | v0.4 §1.1 | The failure named alongside the rule: an ADR left as inline prose has two broken consumers — `hsdd-config` cannot resolve it, and a body-field ADR with no frontmatter is silently skipped by the registry generator | carry | ch4 | [ ] |
+| 115 | v0.4 §1.2 | "The `openspec init` point was never pinned" — delta framing; §5 states the rule | scaffold | — | [ ] |
+| 116 | v0.4 §2 | `hsdd-adr` owns the ADR directory the same way `hsdd-contract` owns contracts: it authors first-class files and lets the deterministic generator project the registry | carry+amend (five skills → ten) | ch1 | [ ] |
+| 117 | v0.4 §2 | `hsdd-adr`'s role: author and maintain cross-cutting ADRs as first-class files with registry-compatible frontmatter, and manage the status lifecycle and the bidirectional `Affects` / `Governed by` links | carry | ch4 | [ ] |
+| 118 | v0.4 §2.1 | The chain gains one line: `hsdd-spec` proposes, the human accepts, `hsdd-adr` materializes, the registry regenerates | carry | ch1 | [ ] |
+| 119 | v0.4 §2.2 | One artifact, one skill: an artifact with its own lifecycle (status transitions, superseding, a registry projection) gets its own skill rather than a branch of another | carry | ch1 | [ ] |
+| 120 | v0.4 §3 | An ADR file is written to `{nnn}-{title}.md` in the ADR directory | carry+amend (`hsdd/adr/`, v0.5) | ch4 | [ ] |
+| 121 | v0.4 §3 | ADR frontmatter: `id`, `status` (proposed / accepted / superseded / deprecated), `affects`, `date`, and optional `supersedes` / `superseded_by` | carry | ch4 | [ ] |
+| 122 | v0.4 §3 | ADR body: `# ADR-{nnn}: {title}`, `## Context`, `## Decision`, `## Consequences`, and an optional `## Alternatives considered` | carry | ch4 | [ ] |
+| 123 | v0.4 §3 | The same split as a contract: frontmatter is registry metadata, the body carries the decision — and Decision and Consequences stay free of deliberation because those two sections are what gets injected | carry | ch4 | [ ] |
+| 124 | v0.4 §3 | The filename carries the number and a slug; the frontmatter `id` is the display id `ADR-001` | carry | ch4 | [ ] |
+| 125 | v0.4 §3 | ADR numbers are global across the whole tree, never per node | carry | ch4 | [ ] |
+| 126 | v0.4 §3 | Node-local decisions stay `D{n}` inside the node spec and never become files | carry | ch4 | [ ] |
+| 127 | v0.4 §3 | "No change to `gen-registry.mjs` is required" — the fix is that the skill emits the frontmatter the generator already reads | scaffold (delta implementation note; the constraint itself is row 121) | — | [ ] |
+| 128 | v0.4 §4.1 | Once an ADR is accepted, `hsdd-spec` hands materialization to `hsdd-adr`, which writes the file; then `Governed by: [ADR-NNN]` is set on every affected node, phase, and contract | carry | ch4 | [ ] |
+| 129 | v0.4 §4.1 | ADRs are never left as inline prose in a node spec | carry | ch4 | [ ] |
+| 130 | v0.4 §4.2 | If a referenced `ADR-NNN` has no file, it was never materialized: stop and author it with `hsdd-adr` before injecting | carry | ch4 | [ ] |
+| 131 | v0.4 §4.2 | The human supplies the decision — never invent one. If the content is unavailable, author the ADR `status: proposed` with the Decision as an explicit TODO and do not inject it as binding until it is `accepted` | carry | ch4 | [ ] |
+| 132 | v0.4 §4.2 | Never write an invented decision as `accepted`, and never silently drop the reference | carry | ch4 | [ ] |
+| 133 | v0.4 §4.3 | The ADR path end to end: `hsdd-spec` proposes → human accepts → `hsdd-adr` writes the file → the generator projects the INDEX and `Governed by` links point back → `hsdd-config` injects Decision plus Consequences into the phase session | carry | ch4 | [ ] |
+| 134 | v0.4 §5 | Run `openspec init` once, at the repository root — the same directory that holds the HSDD tree | carry | ch5 | [ ] |
+| 135 | v0.4 §5 | One HSDD tree has exactly one OpenSpec project: every phase, across every node, is a change under that single `openspec/changes/` | carry | ch5 | [ ] |
+| 136 | v0.4 §5 | Phases are isolated by the per-phase context switch, not by separate OpenSpec projects | carry | ch5 | [ ] |
+| 137 | v0.4 §5.1 | Project-start sequence: `openspec init` at the root → `hsdd-spec` at the root (root node spec plus seeded conventions) → `hsdd-config` init → then, per phase, the context switch followed by the OpenSpec cycle | carry | ch5 | [ ] |
+| 138 | v0.4 §5.1 | `openspec init` is a one-time step owned by no HSDD skill; the skills assume `openspec/` already exists at the root, and `hsdd-config` (init) is the first HSDD step that touches it | carry | ch5 | [ ] |
+| 139 | v0.4 §5.2 | The single project at the root is what makes the layout coherent: one `config.yaml` to switch, one `changes/` history, one place the registries sit beside — context isolation stays a property of the phase switch, not the filesystem | carry | ch5 | [ ] |
+| 140 | v0.4 §5.2 | Polyrepo variant: when the system is already physically split across repositories, run `openspec init` at each repo root and share the contract and ADR directories through a package or a git submodule; the single-project default is canonical | carry+amend (the standalone-spec-repo profile, v0.7 §6) | ch13 | [ ] |
+| 141 | v0.4 §6 | Each skill ships one thin slash-command wrapper (here `/hsdd-adr`); the command stays a one-line delegator and the skill remains the source of truth | carry | ch13 | [ ] |
+| 142 | v0.4 §7 | Settled: `hsdd-adr` authors ADR files — `hsdd-spec` proposes, `hsdd-adr` materializes | carry | ch17 | [ ] |
+| 143 | v0.4 §7 | Settled: the ADR artifact is YAML frontmatter plus body, reconciled with the existing generator | carry | ch17 | [ ] |
+| 144 | v0.4 §7 | Settled: no generator change is needed — the skill emits the frontmatter the generator already reads | carry | ch17 | [ ] |
+| 145 | v0.4 §7 | Settled: ADR numbering is global across the tree, `ADR-{nnn}`, with the filename `{nnn}-{title}.md` | carry | ch17 | [ ] |
+| 146 | v0.4 §7 | Settled: `openspec init` runs once, at the repo root — one OpenSpec project per HSDD tree | carry | ch17 | [ ] |
+| 147 | v0.4 §7 | Settled: a missing ADR at config time stops the switch and hands off to `hsdd-adr`; an unknown decision is authored `proposed` with a TODO, never as an invented `accepted` | carry | ch17 | [ ] |
+| 148 | v0.4 §8 | "Implementation Steps" | scaffold | — | [ ] |
+| 149 | v0.4.2 §1 | "What 0.4.2 Changes and Why" — the three parallel-planning field failures | scaffold (delta framing; §1's closing paragraphs carry rows 150–153) | — | [ ] |
+| 150 | v0.4.2 §1 | **The governance write protocol:** governance files become immutable inputs during phase planning, intended mutations are emitted as data, and a single writer applies them at the root | carry | ch8 | [ ] |
+| 151 | v0.4.2 §1 | The reason, named alongside the rule: contracts, ADRs, `conventions.md`, and the INDEX registries are shared mutable state with concurrent writers, and no skill defined a write protocol | carry | ch8 | [ ] |
+| 152 | v0.4.2 §1 | Two independent generations from the same prose are not byte-identical: a plan may never resolve a shared artifact with "create it verbatim if absent; identical by construction; the merge is trivial" | carry | ch8 | [ ] |
+| 153 | v0.4.2 §1 | A note addressed to "whoever runs next" is a defect: under parallelism that is every run at once | carry | ch8 | [ ] |
+| 154 | v0.4.2 §2 | `hsdd-reconcile` is the single writer for governance effects, the same way `hsdd-contract` is the single author of contract bodies | carry+amend (six skills → ten) | ch1 | [ ] |
+| 155 | v0.4.2 §2 | `hsdd-contract` is a root-only writer | carry | ch8 | [ ] |
+| 156 | v0.4.2 §2 | The phase context switch warns on a provisional contract and stops on a phase contingent on an open `request` | carry | ch9 | [ ] |
+| 157 | v0.4.2 §2 | `hsdd-reconcile`'s job: drain pending governance sections at the root after phase-plan branches merge — apply confirms, resolve requests with the human, finalize `phase_ids`, regenerate the registries | carry | ch8 | [ ] |
+| 158 | v0.4.2 §2.1 | The chain gains one line: reconcile runs at the root after the branches merge, before any phase context switch | carry | ch8 | [ ] |
+| 159 | v0.4.2 §2.2 | Reconcile is its own skill: `hsdd-phase-plan` decides *what a node needs* from governance, `hsdd-reconcile` owns *how and when* governance changes — folding it into either gives one skill two jobs or re-creates the concurrent writer | carry | ch8 | [ ] |
+| 160 | v0.4.2 §3.1 | The frozen set during phase planning: every contract file, every ADR file, `conventions.md`, and both INDEX registries | carry | ch8 | [ ] |
+| 161 | v0.4.2 §3.1 | The freeze is unconditional — root or worktree, serial or parallel; there is no environment detection and nothing to configure | carry | ch8 | [ ] |
+| 162 | v0.4.2 §3.1 | Under the freeze every branch writes only its own node's plan file, so a parallel flow is conflict-free by construction and a serial flow pays one trivially fast reconcile step | carry | ch8 | [ ] |
+| 163 | v0.4.2 §3.2 | `hsdd-phase-plan` appends `## Governance updates (pending reconcile)` to its own node's plan file, with the emitted-by / drained-by note and "do not apply by hand" | carry | ch8 | [ ] |
+| 164 | v0.4.2 §3.2 | Entry kind `confirm`: finalize the provisional `produced_by` / `consumers` phase ids for a contract this node produces or consumes | carry | ch8 | [ ] |
+| 165 | v0.4.2 §3.2 | Entry kind `note`: a conventions-worthy fact; notes that duplicate derived data are dropped at reconcile time, because the registry already projects contract facts | carry | ch8 | [ ] |
+| 166 | v0.4.2 §3.2 | Entry kind `amend`: a producer-side enrichment of a contract this node owns, settled during planning, that consumers may rely on; reconcile applies it to the contract body — a backward-compatible addition keeps the version, a breaking one goes to the human and bumps it | carry | ch8 | [ ] |
+| 167 | v0.4.2 §3.2 | Entry kind `request`: a gap in a consumed contract phrased as a question, with the assumption taken and the contingent phases named; contingent phases must not start until the request is resolved | carry | ch8 | [ ] |
+| 168 | v0.4.2 §3.2 | Any entry may carry short rationale sub-bullets | carry | ch8 | [ ] |
+| 169 | v0.4.2 §3.2 | After draining, `hsdd-reconcile` replaces the section's entries with one line recording the reconcile date; the drained entries live in git history | carry | ch8 | [ ] |
+| 170 | v0.4.2 §3.3 | Two-tier gap rule: if a gap in a consumed contract changes the shape of the plan, stop and ask the human immediately — a wrong structural assumption poisons every downstream phase; otherwise proceed conservatively and record a `request` | carry | ch8 | [ ] |
+| 171 | v0.4.2 §3.4 | Sibling isolation: a planner must not read sibling worktree folders or other nodes' phase plans | carry | ch8 | [ ] |
+| 172 | v0.4.2 §3.4 | Sibling node specs as written by `hsdd-spec` are shared decomposition artifacts and fine to read; a sibling's phase-plan sections and its worktree are not | carry | ch8 | [ ] |
+| 173 | v0.4.2 §4.1 | Contract frontmatter carries `phase_ids: provisional / final`, flipped only by `hsdd-reconcile` | carry | ch3 | [ ] |
+| 174 | v0.4.2 §4.1 | The habit of writing "phase ids are provisional, update them then" in the contract body is retired: that paragraph was a standing invitation for two writers to edit the same prose | carry | ch3 | [ ] |
+| 175 | v0.4.2 §4.1 | The registry generator's parser reads all frontmatter keys but projects only the known columns, so a new key passes through without effect | carry | ch3 | [ ] |
+| 176 | v0.4.2 §4.2 | The hand-maintained `## Established contracts` list is removed from the conventions template: it duplicated what the registry already projects, and hand-maintained projections drift | carry | ch13 | [ ] |
+| 177 | v0.4.2 §4.2 | The conventions template gains a `## Parallel development protocol` section stating the freeze rule, the pending-section mechanism, the reconcile step, and sibling isolation | carry+amend (extended to cover the execution stage, v0.6 §4) | ch13 | [ ] |
+| 178 | v0.4.2 §4.2 | Every skill reads `conventions.md` first, so a protocol stated there reaches every downstream session without new cross-skill references | carry | ch13 | [ ] |
+| 179 | v0.4.2 §5 | "Skill Edits (summary)" — the per-skill edit list | scaffold (delta bookkeeping; the rules stated only in its cells are rows 180–182) | — | [ ] |
+| 180 | v0.4.2 §5 | `hsdd-contract` quality gate: any code-level artifact both sides consume names its canonical path and its owning phase | carry | ch3 | [ ] |
+| 181 | v0.4.2 §5 | A phase's tasks never instruct it to update `conventions.md` | carry | ch8 | [ ] |
+| 182 | v0.4.2 §5 | Conventions stay root-owned: `hsdd-spec` seeds the file and `hsdd-reconcile` updates it | carry | ch13 | [ ] |
+| 183 | v0.4.2 §6 | `/hsdd-reconcile` is a thin wrapper, consistent with the others | carry | ch13 | [ ] |
+| 184 | v0.4.2 §7 | Settled: the write model for governance files during planning is freeze plus effects-as-data, unconditional — no worktree detection, serial and parallel flows identical | carry | ch17 | [ ] |
+| 185 | v0.4.2 §7 | Settled: reconciliation lives in its own skill, run at the root after branches merge | carry | ch17 | [ ] |
+| 186 | v0.4.2 §7 | Settled: contract gaps during planning are two-tier — ask when the gap changes the plan's shape, otherwise record a `request` with the stated assumption | carry | ch17 | [ ] |
+| 187 | v0.4.2 §7 | Settled: collision resolution — the human arbitrates once, at reconcile time; the skill never auto-picks a winner | carry | ch8, ch17 | [ ] |
+| 188 | v0.4.2 §7 | Settled: `conventions.md` is written at the root only; phases and phase planning never touch it | carry | ch17 | [ ] |
+| 189 | v0.4.2 §7 | Settled: sibling worktree reads are forbidden — contracts are the only inter-node knowledge | carry | ch17 | [ ] |
+| 190 | v0.4.2 §7 | Settled: no generator change — `phase_ids` is parsed and ignored by the projection | carry | ch17 | [ ] |
+| 191 | v0.4.2 §7 | Settled: producer-side discoveries travel as the `amend` entry kind, and a breaking amendment goes to the human and bumps the version | carry | ch17 | [ ] |
+| 192 | v0.4.2 §7 | Settled: `draft → stable` is flipped by `hsdd-reconcile` at the end of the pass, once `phase_ids` is `final` and no `request` naming the contract is unresolved; `stable` means interface-frozen (safe to build against), not producer-shipped | carry+amend (also requires executable validation, vNext §5.1) | ch3, ch17 | [ ] |
+| 193 | v0.4.2 §8 | "Implementation Steps" | scaffold | — | [ ] |
+| 194 | v0.5 §1 | "What 0.5 Changes and Why" — scattered output and inconsistent naming | scaffold (delta framing; §1's closing paragraphs carry rows 195–198) | — | [ ] |
+| 195 | v0.5 §1 | Every HSDD artifact lives under one root directory, `hsdd/` | carry | ch13 | [ ] |
+| 196 | v0.5 §1 | Directory names are singular (`spec`, `contract`, `adr`, `verify`): a directory names the artifact kind, not the collection | carry | ch13 | [ ] |
+| 197 | v0.5 §1 | `openspec/` is the one exception — OpenSpec owns that location and expects its files exactly there; HSDD does not relocate another tool's files | carry | ch13 | [ ] |
+| 198 | v0.5 §1 | The ownership boundary is the point: something on disk must say "this is the methodology's output", or cleanup, review scoping, and ignore rules all need tribal knowledge | carry | ch13 | [ ] |
+| 199 | v0.5 §2 | The default layout: `hsdd/conventions.md`, `hsdd/spec/{node-id}.md`, `hsdd/verify/{phase-id}.verification.md`, `hsdd/contract/{slug}.md` plus its INDEX, `hsdd/adr/{nnn}-{title}.md` plus its INDEX, `hsdd/scripts/gen-registry.mjs`; `openspec/` unchanged | carry+amend (adds `hsdd/management/`, v0.7 §8.2, and `management/archive/`, design §6.8) | ch13 | [ ] |
+| 200 | v0.5 §2 | The layout is still a default: `hsdd/conventions.md` remains the single source of truth and a project may override any path in it | carry | ch13 | [ ] |
+| 201 | v0.5 §2 | `openspec init` still runs once, at the repo root — now simply the directory that holds `hsdd/` | carry | ch13 | [ ] |
+| 202 | v0.5 §3 | The registry generator keeps a `--root <dir>` flag; its default root is `./hsdd` and it scans `<root>/contract` and `<root>/adr` | carry | ch13 | [ ] |
+| 203 | v0.5 §3 | The standard invocation is `node hsdd/scripts/gen-registry.mjs` | carry | ch13 | [ ] |
+| 204 | v0.5 §3 | The generator ships bundled with `hsdd-contract` only, and is copied verbatim into the target project at `hsdd/scripts/` | carry | ch13 | [ ] |
+| 205 | v0.5 §4 | The conventions file is the compatibility mechanism: skills load `hsdd/conventions.md` first and honor whatever layout the project's conventions state | carry | ch13 | [ ] |
+| 206 | v0.5 §4 | Pre-0.5 detection (`docs/conventions.md` present instead) and the `git mv` migration recipe | drop (v0.8.0 supports ≥0.6.1 only, design §7; the pre-0.5 rename is history) | — | [ ] |
+| 207 | v0.5 §4 | After migrating, update the layout section of the conventions file and replace the copied generator, since the old copy scans the old paths by default | drop (same reason as row 206) | — | [ ] |
+| 208 | v0.5 §5 | The node, phase, contract, and ADR id schemes are layout-independent | carry | ch13 | [ ] |
+| 209 | v0.5 §5 | The governance freeze protocol and `hsdd-reconcile` semantics are layout-independent | carry | ch13 | [ ] |
+| 210 | v0.5 §5 | The conventions-override mechanism is layout-independent: the layout is a default, not a requirement | carry | ch13 | [ ] |
+| 211 | v0.5 §5 | The `openspec/` location, the per-phase context switch, and the OpenSpec cycle are unchanged by any layout choice | carry | ch13 | [ ] |
