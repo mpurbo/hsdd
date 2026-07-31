@@ -42,16 +42,16 @@ Every chapter cites its sources. Ranges are `file:start-end` in the current repo
 | 1 | What HSDD Is | `v0_3:16-144` (§1–3), `v0_3:777-798` (§13), `v0_3:428-469` (§7 skill set + chaining — **see gap note**), README framing |
 | 2 | The Node Model | `v0_3:145-253` (§4), `v0_6:79-168` (§2.1, §2.4), `v0_6:357-417` (§6 axis), `v0_6_1:58-156` (§2 sources), `v0_6_1:195-255` (§4 stop, §5 one file per child), `v0_6_1:256-277` (§6 format), vNext §13.1 `Team` |
 | 3 | Contracts | `v0_3:254-372` (§5), `v0_4_2:205-221` (§4.1), `v0_5:61-72` (§3), vNext §5.1–5.3 |
-| 4 | ADRs and Open Questions | `v0_4:47-185` (§2–4), `v0_7:445-513` (§5) |
+| 4 | ADRs and Open Questions | `v0_4:47-185` (§2–4), `v0_7:445-513` (§5 — **except** §5.2's conventions-template item, which is ch13) |
 | 5 | Entry A: Greenfield Bootstrap | `v0_3:373-427` (§6), `v0_3:502-567` (§9), `v0_4:186-249` (§5) |
 | 6 | Entry B: Brownfield Adoption | **NEW** — design §5 |
-| 7 | Phase Planning | `v0_3:684-693` (§12.1), `v0_3:719-735` (§12.3), `v0_6:79-168` (§2), `v0_6:169-245` (§3), `v0_6_1:157-194` (§3), vNext §10, §11 |
-| 8 | Governance: Freeze and Reconcile | `v0_4_2:53-204` (§2–3), `v0_4_2:222-234` (§4.2) |
+| 7 | Phase Planning | `v0_3:437` (§7 FP ordering — **see gap note**), `v0_3:684-693` (§12.1), `v0_3:719-735` (§12.3), `v0_6:79-168` (§2), `v0_6:169-245` (§3), `v0_6_1:157-194` (§3), vNext §10, §11 |
+| 8 | Governance: Freeze and Reconcile | `v0_4_2:53-204` (§2–3) |
 | 9 | Execution: the OpenSpec Cycle | `v0_3:414-427` (§6.2), `v0_3:517-567` (§9.2), `v0_3:663-678` (§11.3), `v0_3:470-501` (§8 companion skills — **see gap note**), `v0_6:246-318` (§4), `v0_7:539-576` (§6.2) |
 | 10 | The Gate | `v0_3:679-758` (§12), `v0_6:195-219` (§3.2), `v0_6:319-356` (§5), vNext §6, §6.2, §6.3, §14.1 |
 | 11 | Steady State: Change Intake | **NEW** — design §6 |
 | 12 | Management Layer | `v0_7:101-444` (§2–4), plus design §6.8 sealing, §5.8 drift, §6.11 maintenance mode |
-| 13 | Layout, Profiles, Conventions | `v0_3:616-678` (§11), `v0_3:568-615` (§10 packaging — **see gap note**), `v0_5:44-104` (§2, §4, §5), `v0_7:514-616` (§6), `v0_7:694-704` (§8.2) |
+| 13 | Layout, Profiles, Conventions | `v0_3:616-678` (§11), `v0_3:568-615` (§10 packaging — **see gap note**), `v0_4_2:222-234` (§4.2 conventions template), `v0_5:44-104` (§2, §4, §5), `v0_7:509-511` (§5.2 conventions OQ section), `v0_7:514-616` (§6 — **but §6.2 is ch9**), `v0_7:694-704` (§8.2) |
 | 14 | Upgrading and Compatibility | **NEW** — design §7, modelled on `v0_7:617-675` (§7) |
 | 15 | Claims and Non-Goals | `v0_3:799-827` (§14), `v0_7:763-776` (§10), vNext §8.1, design §10 |
 | 16 | Evidence | vNext §14, pointers into `review/` |
@@ -62,6 +62,7 @@ Every chapter cites its sources. Ranges are `file:start-end` in the current repo
 real rules, so criterion 1 would fail silently without a home:
 
 - **v0.3 §7 (The Skill Set, §7.1 chaining, §7.2/§7.3 naming rationale) → chapter 1**, as a closing section. It answers "what is HSDD made of", which is chapter 1's job. Updated to ten skills.
+  - **Except one rule → chapter 7.** The `hsdd-phase-plan` cell of the §7 roster table is the only place in v0.3–v0.7 that states phase ordering follows an FP progression (types → pure functions → effects → composition). That is phase-planning discipline, not roster material, and vNext §11 amends it into a named ordering policy. Ledger row 55.
 - **v0.3 §8 (Recommended Companion Skills) → chapter 9**, since `hsdd-config` is what wires them into each cycle.
 - **v0.3 §10 (Packaging: skills vs slash commands) → chapter 13**, with layout and distribution.
 
@@ -220,11 +221,17 @@ Extend the node header grammar with three fields — mark each as new:
 
 - [ ] **Step 4: Tick the ledger and verify structure**
 
-```bash
-grep -cE "^## " spec/hsdd-spec-v0_8.md          # expect 18
-grep -nE "^#{1} " spec/hsdd-spec-v0_8.md        # expect exactly 1 (line 1)
+````bash
+grep -cE "^## [0-9]+\. " spec/hsdd-spec-v0_8.md  # expect 18
+awk '/^```/{f=!f} !f && /^# /' spec/hsdd-spec-v0_8.md | wc -l   # expect 1
 grep -nE "read .{0,12}against v0\." spec/hsdd-spec-v0_8.md   # expect no output
-```
+````
+
+Both heading checks must survive templates that later chapters reproduce
+verbatim. `^## [0-9]+\. ` is immune by shape (no template heading is numbered).
+The H1 check cannot be saved that way — `# Contract: {slug}` (ledger row 36,
+ch3) is the same shape as the document title — so it is fence-aware instead.
+Neither check may be narrowed back to a bare `^#` pattern.
 
 Mark every ch1 and ch2 ledger row `[x]`.
 
@@ -931,15 +938,21 @@ git commit -m "docs: README and users guide for v0.8.0 — ten skills, one spec,
 
 - [ ] **Step 1: Run the mechanical checks**
 
-```bash
+````bash
 wc -l spec/hsdd-spec-v0_8.md                                  # expect 1600-2000
-grep -cE "^## " spec/hsdd-spec-v0_8.md                        # expect 18
-grep -nE "^# " spec/hsdd-spec-v0_8.md                         # expect exactly 1
+grep -cE "^## [0-9]+\. " spec/hsdd-spec-v0_8.md               # expect 18
+awk '/^```/{f=!f} !f && /^# /' spec/hsdd-spec-v0_8.md | wc -l # expect 1
 grep -nE "read .{0,12}against v0\." spec/hsdd-spec-v0_8.md    # expect no output
 grep -n "hsdd context\|hsdd lint\|hsdd status\|check-scope\|hsdd rename" spec/hsdd-spec-v0_8.md   # expect no output
 grep -c '\[ \]' docs/superpowers/plans/2026-07-29-v0_8-rule-ledger.md    # expect 0
 grep -c "field-tested\|pressure-tested\|reasoned-only" spec/hsdd-spec-v0_8.md   # expect >= 20
-```
+````
+
+Both heading checks are deliberately shaped to survive templates the chapters
+reproduce verbatim (`## Observed surface`, `## Phase Plan`, `## Learnings`,
+`## Governance updates (pending reconcile)`, `# Contract: {slug}`). If either
+returns an unexpected count, the defect is in the document, not the check — do
+not narrow the pattern to make it pass.
 
 - [ ] **Step 2: Check each of the thirteen acceptance criteria**
 
