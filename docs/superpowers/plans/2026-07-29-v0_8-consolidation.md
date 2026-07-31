@@ -30,6 +30,8 @@ if installed). `grep`/`wc` for mechanical verification. No build step, no CLI.
 - **Node header fields are bullet lists**, never bare `**Field:**` lines (v0.6 §2.1).
 - **Standalone file heading rule:** one `#` title, `##` sections, no repeated `###` title (v0.6 §2.4).
 - **Target length:** 1600–2000 lines. If a chapter draft pushes past its share, thin restatement — never drop a rule.
+- **Density is measured on compressible prose only.** When judging a chapter against the budget, exclude fenced blocks (templates, worked examples, command blocks) from the line count — they cannot be compressed. The sustainable rate on what remains is **~4.8 non-fenced lines per ledger rule**. Every chapter task reports this figure for its chapters, naming the fenced blocks it excluded. Raw lines-per-rule is misleading: a chapter that looks like 10 may be 8 rules plus mandatory framing and fences.
+- **Strict serialization.** Only **one repo-writing agent may run at a time**. Two agents sharing the working tree can silently sweep each other's in-flight edits into a commit (this happened: a "ledger only" commit marked 8 rules done for a chapter that was empty in that same commit). Review agents may run concurrently only if they write nothing.
 
 ---
 
@@ -57,6 +59,27 @@ Every chapter cites its sources. Ranges are `file:start-end` in the current repo
 | 16 | Evidence | vNext §14, pointers into `review/` |
 | 17 | Settled Decisions | `v0_3:828-844`, `v0_4:267-279`, `v0_4_2:259-274`, `v0_6:430-449`, `v0_6_1:291-305`, `v0_7:726-762`, design §2 |
 | 18 | Glossary | `v0_3:859-872`, vNext §19 (tool-free subset) |
+
+**Chapter → task lookup.** Chapter and task numbers coincide through chapter 6
+and then diverge permanently, because three tasks write two chapters each. Never
+address a chapter by task-number arithmetic — use this table (every cell
+verified against the `## Task N:` headings below):
+
+| Chapter(s) | Written by |
+|------------|------------|
+| 1, 2 | Task 2 |
+| 3, 4 | Task 3 |
+| 5 | Task 4 |
+| 6 | Task 5 |
+| 7, 8 | Task 6 |
+| 9, 10 | Task 7 |
+| 11 | Task 8 |
+| 12, 13 | Task 9 |
+| 14 | Task 10 |
+| 15, 16 | Task 11 |
+| 17, 18 | Task 12 |
+
+Tasks 1 (ledger), 13 (README/users guide), and 14 (acceptance) own no chapter.
 
 **Gap note — three v0.3 sections the design outline did not assign.** They carry
 real rules, so criterion 1 would fail silently without a home:
@@ -96,7 +119,8 @@ constrains what an artifact must contain, what a skill must do, or when a
 gate passes.
 
 Dispositions: `carry` (verbatim intent) | `carry+amend` (changed by v0.8.0) |
-`drop` (deliberately removed) | `scaffold` (delta framing, not a rule)
+`drop` (deliberately removed) | `scaffold` (delta framing, not a rule) |
+`new` (introduced by v0.8.0 — source is the design doc, no delta origin)
 
 | # | Source | Rule | Disposition | Target | Done |
 |---|--------|------|-------------|--------|------|
@@ -135,7 +159,33 @@ One row per item in design §3.2's two tables. Absorbed rows get their target
 chapter; dropped rows get `drop` and the reason from the design doc's second
 table.
 
-- [ ] **Step 7: Verify the ledger is complete**
+- [ ] **Step 7: Extract the design-doc-only rules (disposition `new`)**
+
+The ledger so far sees only the deltas, but chapters 6, 11, and 14 are almost
+entirely material that exists *only* in the design doc. Extract rules from
+design §5, §6, and §7 as rows with disposition `new` (`carry`/`drop`/`scaffold`
+all presuppose a delta origin). At minimum this covers: the `v0` convention and
+the `v0 -> v1` adoption exit, the per-version `compatibility` policy and its
+fixture-replay precondition, the `draft -> stable -> deprecated -> retired`
+lifecycle, the live-consumer retirement finding, `external_consumers`, campaign
+sealing, the backfill path, intake records, and the grandfather clause.
+
+- [ ] **Step 8: Sweep the structural blind spots**
+
+The section-level completeness check (next step) verifies only that every delta
+*section* is cited — it **cannot see a rule inside a cited section**. The
+previous execution found 22 rules invisible to it, hiding in table cells and in
+prose under headings that look like pure delta framing. Read these directly,
+cell by cell and paragraph by paragraph, and add a row for every rule found:
+
+- every settled-decisions table: `v0_3` §15, `v0_4` §7, `v0_4_2` §7, `v0_6` §8, `v0_6_1` §8, `v0_7` §9
+- `v0_5` §5 and `v0_7` §10
+- the **closing paragraph** of every "What X Changes and Why" opener — the worst
+  case was `v0_4_2` §1's closing paragraph, which states the governance write
+  protocol and is chapter 8's entire foundation, sitting in a section otherwise
+  correctly classed as scaffolding.
+
+- [ ] **Step 9: Verify the ledger is complete**
 
 ```bash
 # Every ## and ### section of every delta should be represented at least once
@@ -149,7 +199,11 @@ Expected: the ledger row count materially exceeds the total section count (rules
 are finer-grained than sections). Then read the section list back and confirm
 each has at least one ledger row citing it.
 
-- [ ] **Step 8: Commit**
+This check is structural only — necessary, not sufficient. It cannot detect a
+rule missed inside a cited section; that is what Step 8's sweep and the
+per-chapter-task source reads exist for.
+
+- [ ] **Step 10: Commit**
 
 ```bash
 git add docs/superpowers/plans/2026-07-29-v0_8-rule-ledger.md
@@ -166,6 +220,8 @@ git commit -m "plan: v0.8.0 rule ledger — traceability harness for the consoli
 
 **Interfaces:**
 - Produces: the document header block and chapter numbering every later task appends to; the node header grammar chapters 6, 7, and 11 extend.
+
+**Ledger discipline:** Read your mapped source ranges directly; the ledger is a checklist, not a summary. If you find a rule in your ranges with no ledger row, add a row and report it — that is expected, not a defect. When done, report each chapter's density figure (non-fenced lines per ledger rule, per Global Constraints), naming the fenced blocks excluded.
 
 - [ ] **Step 1: Write the header block and chapter skeleton**
 
@@ -256,6 +312,8 @@ and `## Observed completeness`.
 - Consumes: node header grammar (Task 2).
 - Produces: contract frontmatter schema (`id`, `version`, `status`, `kind`, `owner`, `compatibility`, `external_consumers`, `validation`), the `v0` convention, and the integration-node definition — all referenced by chapters 6, 11, 12, 14.
 
+**Ledger discipline:** Read your mapped source ranges directly; the ledger is a checklist, not a summary. If you find a rule in your ranges with no ledger row, add a row and report it — that is expected, not a defect. When done, report each chapter's density figure (non-fenced lines per ledger rule, per Global Constraints), naming the fenced blocks excluded.
+
 - [ ] **Step 1: Write chapter 3, carried material**
 
 Consolidate `v0_3:254-372` (contract artifact, the four dependency types, the
@@ -333,6 +391,8 @@ git commit -m "spec(v0.8): chapter 3 (contracts, v0, compatibility), chapter 4 (
 - Consumes: chapters 2–4.
 - Produces: the entry-point structure chapter 6 mirrors, and the handoff into chapter 7 that both entries share.
 
+**Ledger discipline:** Read your mapped source ranges directly; the ledger is a checklist, not a summary. If you find a rule in your ranges with no ledger row, add a row and report it — that is expected, not a defect. When done, report the chapter's density figure (non-fenced lines per ledger rule, per Global Constraints), naming the fenced blocks excluded.
+
 - [ ] **Step 1: Write the chapter**
 
 Consolidate the end-to-end workflow (`v0_3:373-427`), the trigger quick
@@ -373,6 +433,8 @@ Entirely new. Source: design §5. This chapter and chapter 11 are the release.
 **Interfaces:**
 - Consumes: contract schema and `v0` (Task 3), node header `Adopted` field (Task 2), Entry-A framing (Task 4).
 - Produces: `## Observed surface`, `## Observed completeness`, and the promotion protocol — consumed by chapters 11, 12, 14.
+
+**Ledger discipline:** Read your mapped sources directly (here: design §5 in full); the ledger is a checklist, not a summary. If you find a rule in your sources with no ledger row, add a row and report it — that is expected, not a defect. When done, report the chapter's density figure (non-fenced lines per ledger rule, per Global Constraints), naming the fenced blocks excluded.
 
 - [ ] **Step 1: Write the six-step process and the scripting boundary**
 
@@ -443,6 +505,8 @@ git commit -m "spec(v0.8): chapter 6 — brownfield adoption as Entry B"
 - Consumes: chapters 2–6.
 - Produces: the phase template, review tiers, the sizing floor and PE, and the pending-governance wire format — consumed by chapters 9–12.
 
+**Ledger discipline:** Read your mapped source ranges directly; the ledger is a checklist, not a summary. If you find a rule in your ranges with no ledger row, add a row and report it — that is expected, not a defect. When done, report each chapter's density figure (non-fenced lines per ledger rule, per Global Constraints), naming the fenced blocks excluded.
+
 - [ ] **Step 1: Write chapter 7's carried material**
 
 Readable plans and the phase template (`v0_6:79-168`), proportional ceremony,
@@ -502,6 +566,8 @@ git commit -m "spec(v0.8): chapter 7 (phase planning, unified PE), chapter 8 (go
 **Interfaces:**
 - Consumes: chapters 7–8.
 - Produces: the verification document template (with `## Learnings` and `## Metrics`) — consumed by chapters 11, 12, 14, 16.
+
+**Ledger discipline:** Read your mapped source ranges directly; the ledger is a checklist, not a summary. If you find a rule in your ranges with no ledger row, add a row and report it — that is expected, not a defect. When done, report each chapter's density figure (non-fenced lines per ledger rule, per Global Constraints), naming the fenced blocks excluded.
 
 - [ ] **Step 1: Write chapter 9**
 
@@ -571,6 +637,8 @@ Entirely new. Source: design §6.
 **Interfaces:**
 - Consumes: chapters 2–10 — especially promotion (ch6), the phase template (ch7), the freeze (ch8), and the verification doc (ch10).
 - Produces: the intake record shape and the backfill finding type — consumed by chapter 12.
+
+**Ledger discipline:** Read your mapped sources directly (here: design §6 in full); the ledger is a checklist, not a summary. If you find a rule in your sources with no ledger row, add a row and report it — that is expected, not a defect. When done, report the chapter's density figure (non-fenced lines per ledger rule, per Global Constraints), naming the fenced blocks excluded.
 
 - [ ] **Step 1: Open with the load-bearing rule**
 
@@ -647,6 +715,8 @@ git commit -m "spec(v0.8): chapter 11 — steady state, change intake, the legal
 - Consumes: chapters 6, 10, 11.
 - Produces: `hsdd/management/archive/` and the sealed-milestone rule — consumed by chapter 14.
 
+**Ledger discipline:** Read your mapped source ranges directly; the ledger is a checklist, not a summary. If you find a rule in your ranges with no ledger row, add a row and report it — that is expected, not a defect. When done, report each chapter's density figure (non-fenced lines per ledger rule, per Global Constraints), naming the fenced blocks excluded.
+
 - [ ] **Step 1: Write chapter 12's carried material**
 
 The fourth artifact class, the document chain, the progress report, the
@@ -704,6 +774,8 @@ New. Source: design §7, modelled on `v0_7:617-675`.
 
 **Files:**
 - Modify: `spec/hsdd-spec-v0_8.md`, ledger
+
+**Ledger discipline:** Read your mapped sources directly (here: design §7 in full, and `v0_7:617-675` as the model); the ledger is a checklist, not a summary. If you find a rule in your sources with no ledger row, add a row and report it — that is expected, not a defect. When done, report the chapter's density figure (non-fenced lines per ledger rule, per Global Constraints), naming the fenced blocks excluded.
 
 - [ ] **Step 1: State the compatibility contract**
 
@@ -768,6 +840,8 @@ git commit -m "spec(v0.8): chapter 14 — upgrading from >=0.6.1, grandfather cl
 **Files:**
 - Modify: `spec/hsdd-spec-v0_8.md`, ledger
 
+**Ledger discipline:** Read your mapped source ranges directly; the ledger is a checklist, not a summary. If you find a rule in your ranges with no ledger row, add a row and report it — that is expected, not a defect. When done, report each chapter's density figure (non-fenced lines per ledger rule, per Global Constraints), naming the fenced blocks excluded.
+
 - [ ] **Step 1: Write the claims rewrite (vNext §8.1)**
 
 Replace the isolation and token claims wherever the old wording would have gone:
@@ -823,6 +897,8 @@ git commit -m "spec(v0.8): chapter 15 (honest claims, non-goals), chapter 16 (ev
 
 **Interfaces:**
 - Consumes: every prior chapter, and the ledger's `drop` rows.
+
+**Ledger discipline:** Read your mapped source ranges directly; the ledger is a checklist, not a summary. If you find a rule in your ranges with no ledger row, add a row and report it — that is expected, not a defect. When done, report each chapter's density figure (non-fenced lines per ledger rule, per Global Constraints), naming the fenced blocks excluded.
 
 - [ ] **Step 1: Merge the settled-decisions tables**
 
