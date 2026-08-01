@@ -238,13 +238,48 @@ Required sections, in order:
 - **Ownership split** — nodes per lane, contracts per lane (single-writer),
   external tracks per lane.
 - **Sync points** — the standing weekly plus named consolidation or
-  integration syncs: when, who, agenda.
+  integration syncs: one row per sync (when, who, a one-line agenda),
+  linking to the sync's section where it has one.
+- **Plan graph** — one Mermaid flowchart of the plan ahead: every
+  load-bearing sync as a junction node, every step batch as a node inside
+  its lane's subgraph, edges from the Depends column and the sync
+  sections' *Unblocks* lines. Derived from the tables the way the atlas
+  is derived from the artifacts: regenerated whole with every plan, and
+  when graph and tables disagree, the tables are right — regenerate the
+  graph. The atlas's ~20-node ceiling applies: chart batches, never
+  individual phases. Follow `mermaid-pastel-style` if installed. Scoped
+  runs get no exemption — a scoped checkpoint still supersedes the whole
+  plan.
+- **Sync sections** — one per **load-bearing** sync (a sync any step,
+  decision, or lane start depends on; the standing weekly is exempt — it
+  has a rhythm, not a gate), carrying: **Entry** (checkboxes: what must
+  be done or brought before the sync, citing step IDs); **Agenda** (the
+  decisions the sync settles, defined here once — stable ID, question,
+  live options, and the governance artifact the answer must land in);
+  **Exit** (checkboxes: the sync is discharged when every box ticks; a
+  decision's box names its landing artifact); **Unblocks** (one line per
+  lane: what starts when the sync exits). Steps, tracks, and other syncs
+  cite the agenda's decisions by ID; a step's Depends column may name a
+  sync only if that sync has a section. The agenda defines the
+  *question* — the *answer* still lands in its governance artifact
+  (cite, never define).
 - **Step tables** — stable step IDs, owner, action, dependency, done
   checkbox.
-- **Copy-paste prompts with validation** — for every 🤖/🤝 step: the exact
+- **Step details** — every step in every step table gets exactly one
+  detail block, keyed by step ID. For 🤖/🤝 steps: the exact
   `/<skill> …` prompt to paste and a *Validate:* line naming the
-  observable outcome to check by hand. Required, not decorative — this is
-  what makes the plan executable by someone other than its author.
+  observable outcome to check by hand — required, not decorative; this is
+  what makes the plan executable by someone other than its author. For
+  👤 steps: a **briefing** — *Why:* (one or two sentences; finding IDs
+  cited in parentheses after the fact they justify, never as the
+  subject), *Do:* (a checklist, one checkbox per action, each naming its
+  concrete target — file, branch, field, person), *Done when:* (one
+  observable line, the human analogue of *Validate:*). The human is the
+  one executor who cannot be re-prompted; the block is what they execute
+  from. The table cell holds a one-sentence summary — the cell indexes,
+  the block instructs; a cell that needs a second sentence, a
+  semicolon-chained list, or more than two parenthetical citations has
+  outgrown the table.
 - **External tracks** — `E{n}` table: owner, status, what happens on
   answer, which contingent phases it gates (by OQ id).
 - **Timeline** — weeks × lanes, aligned to the milestone document.
@@ -319,6 +354,18 @@ writes live under `hsdd/management/`.
       and companion links present in every emitted doc.
 - [ ] Guardrails imported/extended append-only; proposals marked as
       proposals.
+- [ ] Every step in every step table has exactly one detail block — a
+      prompt + *Validate:* for 🤖/🤝, a *Why / Do / Done when* briefing
+      for 👤. No step's content lives only in its table cell.
+- [ ] No Action cell in a step table carries more than one sentence.
+- [ ] Plan graph present and consistent with the tables: every
+      load-bearing sync and every step batch appears exactly once, every
+      edge traces to a Depends entry or an *Unblocks* line, and the graph
+      stays under ~20 nodes.
+- [ ] Every load-bearing sync has a section with Entry / Agenda / Exit /
+      Unblocks; no step depends on a sync that has no section.
+- [ ] Every decision queued for a sync is defined once, in that sync's
+      Agenda, and only cited everywhere else.
 - [ ] Atlas regenerated whole; no diagram over ~20 nodes; every element
       greppable back to a source artifact.
 - [ ] Atlas carries its `Generated:` date and `Derived from:` baselines —
@@ -351,3 +398,6 @@ writes live under `hsdd/management/`.
 | "The other repo's path wasn't given; I'll review what I can see" | A report that counts one lane of a two-lane project is wrong, not partial. Ask for the paths and stop until you have them. |
 | "I'll run this in the spec repo — that's where the documents go" | The spec repo has no code, no openspec, no gates, and editing a standalone clone strands every submodule pointer. Run from an implementation repo; the tree is at `hsdd/`. |
 | "The milestone gate is red again — I'll adjust the dates" | Two consecutive reds fire the re-baseline trigger, which belongs to hsdd-milestone and the stakeholders. Tick, report, hand off. |
+| "The table cell already says everything the briefing would" | Then the cell is unreadable, which is the defect. The agent running a 🤖 step can be re-prompted mid-task; the human running a 👤 step has only what the plan gave them. The cell indexes, the block instructs. |
+| "The Depends column already encodes the graph" | Rows are read one at a time; parallelism and funnels are shapes, invisible until drawn. The first thing the field asked for back was the diagram. Derive it from the tables and draw it. |
+| "The sync has an agenda row in the table — that's the checklist" | An agenda names topics; a gate needs entry criteria, exit criteria, and what they unblock. Steps depend on this sync: if nothing defines its discharge, every one of them inherits an undefined dependency. |
