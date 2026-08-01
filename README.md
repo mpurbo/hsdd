@@ -192,6 +192,10 @@ tokens, time, and quality.
   and `hsdd-milestone`, the open-question convention, and the
   standalone-spec-repo profile for projects with more than one implementation
   repo. Read against v0.6.1.
+- [v0.7.1 delta](spec/hsdd-spec-v0_7_1.md): the execution plan's human-facing
+  anchors — a *Why / Do / Done when* briefing for every 👤 step, a required
+  plan graph, and a section per load-bearing sync with entry/exit criteria
+  and what it unblocks. Read against v0.7.
 - [User's guide](docs/users-guide.md): worked examples for a simple single-level
   project and a multi-level system, plus running the project week to week.
 
