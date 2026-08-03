@@ -182,10 +182,9 @@ doc — only the depth scales with the tier.
   issuance — see Step 6 in Example 2, where the manual verification runs
   before sign-off.
 
-See the methodology spec, [§12](../spec/hsdd-spec-v0_3.md), for how tier
-interacts with the ~5h review window, and the [v0.6 delta,
-§3](../spec/hsdd-spec-v0_6.md) for the sizing floor and the tier-scaled
-artifact profile.
+See the [methodology spec](../spec/hsdd-spec-v0_8.md), chapter 7 for how the
+tier interacts with the review sitting and the sizing floor, and chapter 10
+for the tier-scaled artifact profile.
 
 ---
 
