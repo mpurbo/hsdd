@@ -2075,7 +2075,81 @@ grandfathering (invisible, uncountable, never drains).
 
 ## 15. Claims and Non-Goals
 
+### 15.1 The claims, stated honestly
+
+This section is the single home for the isolation and token claims (§1.6
+points here; no other chapter restates them).
+
+**Isolation.** Per-phase context shapes attention: a session receives its
+own phase plus only the interfaces of the contracts it consumes, so it is
+unlikely to wander into a sibling's concern or fabricate an interface it was
+never given. The defense is prose and structure, tested under adversarial
+pressure and found to hold — but it is **probabilistic, not enforced**. HSDD
+does not mechanically prevent a session from reading a file outside its
+phase.
+
+**Tokens.** Per-session context is bounded and proportional to the phase,
+not the system. Total tokens across a project scale with phase count, and
+planning carries its own overhead. HSDD bounds the per-session cost; it
+**does not reduce the total**.
+
+### 15.2 What HSDD includes and why
+
+| Decision | Rationale |
+|----------|-----------|
+| Recursive node model | A flat spec stops scaling at the context window. A tree lets only the leaves drive code. |
+| Context isolation via contracts | The dependency graph, not the whole spec, defines what a session sees. This is the central token and focus win — as qualified in §15.1. |
+| First-class versioned contracts | Contracts are the dependency mechanism. Standalone, versioned files give loose coupling and independent evolution. |
+| Typed dependency edges | `hard`/`contract`/`event`/`shared-model` make the parallelizable parts of the DAG explicit. |
+| Per-phase verification doc | Durable evidence of what was built, how it was proven, and who approved it. |
+| Tiered human review | Scales human attention to risk so the human is not the bottleneck. |
+| Phase sized to a review sitting | Makes pacing a first-class control knob over context, tokens, time, and quality. |
+| Planning/execution separation | Lets execution re-run without rewriting intent. |
+| Generated registries | Derived data should be a pure projection, not hand-maintained. Deterministic and zero-token. |
+| Compose, do not re-implement discipline | TDD, debugging, review come from companion skills, wired in via config. |
+
+### 15.3 Non-goals
+
+| Excluded | Why |
+|----------|-----|
+| A fixed `Feature` tier between subsystem and phase | The recursive model already lets you insert an internal node when a leaf-parent is too big. A constant tier is rigidity without benefit. |
+| Mandatory `retrospective.md` per phase | Useful occasionally, ceremony usually. Opt-in only. |
+| Agent-maintained contract / ADR registries | Non-deterministic and token-expensive. Generated instead. |
+| Heavy, always-on documentation | Sprawl nobody reads is a liability. The required set is minimal; everything else earns its keep. |
+| Re-implementing TDD / review / debugging in HSDD | Those are solved by companion skills. HSDD wires them in, it does not duplicate them. |
+| An `hsdd` CLI | No `context`, `lint`, `status`, `rename`, `check-scope`, `template` commands. Scripts exist only under the chapter-6 boundary: bundled with a new skill, never changing how an existing skill behaves. |
+| Scheduling | The weekly checkpoint cadence is convention; nothing fires on a timer. |
+| A multi-team org model | The `Team` field lands (§13.5); contract acks, ADR approvals, and profile-scoped enforcement do not. |
+| Dashboard/BI ambitions for the atlas | It is a markdown file with diagrams, regenerated whole; interactivity is out. |
+| An `hsdd-review` skill | Deferred; the review tiers and gate commands stand. |
+| Refactoring proposals from `hsdd-adopt` | The tree fits the system (§6.2). |
+| Back-application of v0.8.0 rules to existing artifacts | Conformance applies from the next artifact forward (chapter 14). |
+| Support for projects below 0.6.1 | Upgrade to 0.6.1 first (chapter 14). |
+
+---
+
 ## 16. Evidence
+
+The methodology's load-bearing claims are empirical, and the evidence record
+lives in `review/` in this repository: a full field test on a production
+monorepo (GMP-911 — 14 planned phases, two nodes, measured
+process-to-product ratios), an adversarial pressure campaign with an
+end-to-end regression (the 0.6.0 campaign, GREEN), and the v0.7 acceptance
+run against a live project (microsite). The provenance vocabulary of
+chapter 17 — `field-tested`, `pressure-tested`, `reasoned-only` — indexes
+this record.
+
+The pipeline forward: per-phase numbers accumulate in the verification
+docs' `## Metrics` blocks (§10.5), filled at the gate while fresh, so
+velocity and ceremony findings are computed rather than reconstructed.
+
+**The case study is the v1.0 release criterion.** One real system, built end
+to end with HSDD, published with its tree, contracts, verification docs, and
+metrics, including a comparison baseline — the same or a comparable feature
+driven as one monolithic spec: tokens per phase, review minutes per tier,
+defects caught at gates, contract churn. That artifact, not this
+specification, is what makes the methodology defensible. GMP-911 is the
+natural seed; it lacks only the baseline and the write-up.
 
 ## 17. Settled Decisions
 
