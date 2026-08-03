@@ -5,8 +5,11 @@
 **Owner:** Purbo Mohamad
 **Drafted by:** Claude (Opus 5), from a brainstorming session on brownfield HSDD
 **Produces:** `spec/hsdd-spec-v0_8.md` — a *consolidation*, not a delta
-**Supersedes as a reading path:** v0.3, v0.4, v0.4.2, v0.5, v0.6, v0.6.1, v0.7
-(the files remain in `spec/` as history)
+**Supersedes as a reading path:** v0.3, v0.4, v0.4.2, v0.5, v0.6, v0.6.1, v0.7,
+v0.7.1 (the files remain in `spec/` as history)
+**Amended:** 2026-08-03 — v0.7.1 (merged 2026-08-01, after this design was
+written) joins the consolidation scope; its three execution-plan anchors land
+in chapter 12 and its settled decisions in chapter 17
 
 ---
 
@@ -138,7 +141,7 @@ phase-planning chapter and both feeding the same steady-state loop.
 | 9 | Execution: the OpenSpec Cycle | v0.3 §9; 0.6 §4 parallel protocol; `hsdd-config` | field-tested |
 | 10 | The Gate | 0.6 review tiers; vNext §6 Learnings loop | field-tested / reasoned |
 | 11 | **Steady State: Change Intake** | NEW (§6 below) | reasoned |
-| 12 | Management Layer | v0.7 whole; per-campaign milestones (§6.8) | field-tested / reasoned |
+| 12 | Management Layer | v0.7 whole; v0.7.1 whole (step details, plan graph, sync sections); per-campaign milestones (§6.8) | field-tested / reasoned |
 | 13 | Layout, Profiles, Conventions | v0.5; v0.7 §6; vNext §13.1 | field-tested |
 | 14 | **Upgrading and Compatibility** | NEW (§7 below) | reasoned |
 | 15 | Claims and Non-Goals | vNext §8.1; merged non-goals | reasoned |
@@ -152,7 +155,7 @@ phase-planning chapter and both feeding the same steady-state loop.
 document must say so rather than let new material inherit credibility from the
 tested parts.
 
-Realistic size: **1600–2000 lines.** The seven deltas total 3,143 lines and
+Realistic size: **1600–2000 lines.** The eight deltas total 3,519 lines and
 restate each other heavily; dedup should compress substantially.
 
 ---
@@ -636,7 +639,7 @@ reading path, so net legibility improves.
 Recorded before the run, per the practice established at v0.7 §7.3.
 
 1. **Traceability.** Every normative rule in v0.3, v0.4, v0.4.2, v0.5, v0.6,
-   v0.6.1, and v0.7 appears in v0.8.0 or is listed in an explicit
+   v0.6.1, v0.7, and v0.7.1 appears in v0.8.0 or is listed in an explicit
    "deliberately dropped" table with a reason. Verified delta by delta.
 2. **Salvage fidelity.** Every row of §3.2's "absorbed" table appears; no row of
    the "dropped" table appears.

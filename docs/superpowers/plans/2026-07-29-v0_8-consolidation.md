@@ -3,12 +3,12 @@
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Produce `spec/hsdd-spec-v0_8.md` — a single standalone specification
-consolidating v0.3 through v0.7, absorbing the tool-free half of vNext, and
+consolidating v0.3 through v0.7.1, absorbing the tool-free half of vNext, and
 adding brownfield adoption and steady-state change intake — plus the README and
 users-guide updates that follow from it.
 
 **Architecture:** The deliverable is a document, so the test harness is a
-**rule ledger**: every normative rule in the seven deltas, extracted first
+**rule ledger**: every normative rule in the eight deltas, extracted first
 (Task 1), each row dispositioned `carry` / `carry+amend` / `drop` and assigned a
 target chapter. Chapters are then written in dependency order, each task ticking
 its ledger rows. The ledger's `drop` rows become the spec's own
@@ -52,12 +52,12 @@ Every chapter cites its sources. Ranges are `file:start-end` in the current repo
 | 9 | Execution: the OpenSpec Cycle | `v0_3:414-427` (§6.2), `v0_3:517-567` (§9.2), `v0_3:663-678` (§11.3), `v0_3:470-501` (§8 companion skills — **see gap note**), `v0_6:246-318` (§4), `v0_7:539-576` (§6.2) |
 | 10 | The Gate | `v0_3:679-758` (§12), `v0_6:195-219` (§3.2), `v0_6:319-356` (§5), vNext §6, §6.2, §6.3, §14.1 |
 | 11 | Steady State: Change Intake | **NEW** — design §6 |
-| 12 | Management Layer | `v0_7:101-444` (§2–4), plus design §6.8 sealing, §5.8 drift, §6.11 maintenance mode |
+| 12 | Management Layer | `v0_7:101-444` (§2–4), `v0_7_1:81-331` (§2–4 — step details, plan graph, sync sections), plus design §6.8 sealing, §5.8 drift, §6.11 maintenance mode |
 | 13 | Layout, Profiles, Conventions | `v0_3:616-678` (§11), `v0_3:568-615` (§10 packaging — **see gap note**), `v0_4_2:222-234` (§4.2 conventions template), `v0_5:44-104` (§2, §4, §5), `v0_7:509-511` (§5.2 conventions OQ section), `v0_7:514-616` (§6 — **but §6.2 is ch9**), `v0_7:694-704` (§8.2) |
 | 14 | Upgrading and Compatibility | **NEW** — design §7, modelled on `v0_7:617-675` (§7) |
 | 15 | Claims and Non-Goals | `v0_3:799-827` (§14), `v0_7:763-776` (§10), vNext §8.1, design §10 |
 | 16 | Evidence | vNext §14, pointers into `review/` |
-| 17 | Settled Decisions | `v0_3:828-844`, `v0_4:267-279`, `v0_4_2:259-274`, `v0_6:430-449`, `v0_6_1:291-305`, `v0_7:726-762`, design §2 |
+| 17 | Settled Decisions | `v0_3:828-844`, `v0_4:267-279`, `v0_4_2:259-274`, `v0_6:430-449`, `v0_6_1:291-305`, `v0_7:726-762`, `v0_7_1:345-356`, design §2 |
 | 18 | Glossary | `v0_3:859-872`, vNext §19 (tool-free subset) |
 
 **Chapter → task lookup.** Chapter and task numbers coincide through chapter 6
@@ -723,7 +723,16 @@ The fourth artifact class, the document chain, the progress report, the
 execution plan, the milestone document, the atlas, the findings→plan loop
 (`v0_7:101-325`), checkpoint's one-pass-four-views and two modes
 (`v0_7:326-396`), and milestone generation and the maintenance split
-(`v0_7:397-444`).
+(`v0_7:397-444`). Then the execution plan's human-facing anchors from
+v0.7.1 (`v0_7_1:81-331`): the Step-details rule (every step gets exactly
+one detail block — prompt + *Validate:* for 🤖/🤝, the *Why / Do / Done
+when* briefing for 👤, one-sentence Action cells), the required **Plan
+graph** (derived from the tables, ≤ ~20 nodes, tables win on
+disagreement, no scoped-mode exemption), and **Sync sections** for every
+load-bearing sync (Entry / Agenda / Exit / Unblocks, decisions defined
+once in the Agenda). Note v0.7.1 partially supersedes v0.7 §2.4's
+required-section list — consolidate to the v0.7.1 shape; do not state
+both.
 
 - [ ] **Step 2: Add per-campaign milestones and sealing (new)**
 
