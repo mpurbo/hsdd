@@ -665,14 +665,22 @@ Before the team sync, the lead runs:
 One evidence pass over the spec repo and every implementation repo, then four
 outputs: a dated **progress report** (what is actually done, velocity, ranked
 blockers, a findings register), a dated **execution plan** superseding last
-week's (step tables with copy-paste prompts and *Validate:* lines, external
-tracks, append-only guardrails), a regenerated **atlas** (`hsdd/management/atlas.md`:
+week's (a plan graph of the week's shape, a section per load-bearing sync —
+entry criteria, the decisions it settles, exit criteria, what it unblocks per
+lane — step tables where every step carries a detail block, external tracks,
+append-only guardrails), a regenerated **atlas** (`hsdd/management/atlas.md`:
 the tree with phase status, the contract graph, the ADR coverage map), and
 ticked **milestone gates**.
 
 Pass the repo paths in the prompt — they differ per machine, and the skill will
 ask if you leave them out. Every finding becomes a plan step or an explicit
 waiver: the review compiles into next week's work, it never just advises.
+
+The plan is written for its readers, not its author (v0.7.1). Agent-run steps
+(🤖/🤝) carry the exact prompt to paste and a *Validate:* line; human-only
+steps (👤) carry a *Why / Do / Done when* briefing — the fullest write-up in
+the plan, not the tersest, because an agent mid-task can be re-prompted while
+the human at Monday's sync has only what the plan gave them.
 
 **When new context lands mid-week** (a PRD revision, a design drop, a decision):
 

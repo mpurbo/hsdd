@@ -5,6 +5,54 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.1] - 2026-08-01
+
+Driven by the first real-world `hsdd-checkpoint` run (the moka-microsite
+adoption checkpoint of 2026-07-31) read against the hand-prompted 07-24 plan it
+superseded, plus operator feedback of 2026-08-01. The emission conformed to
+v0.7 §2.4's letter and was still harder for its human audience to execute:
+every regression fell on the plan surface only humans consume, which §2.4
+never made required. Delta spec: `spec/hsdd-spec-v0_7_1.md`.
+
+### Changed
+
+- `hsdd-checkpoint` execution-plan shape — three structural anchors for the
+  human-facing surface, no new invariants:
+  - "Copy-paste prompts with validation" generalizes to **Step details**:
+    every step gets exactly one detail block. 🤖/🤝 steps keep the exact
+    prompt + *Validate:* line; 👤 steps gain a **briefing** (*Why / Do /
+    Done when*) — one checkbox per action, each naming its concrete target.
+    Table cells shrink to a one-sentence summary: the cell indexes, the
+    block instructs.
+  - New required **Plan graph** section: one Mermaid flowchart (load-bearing
+    syncs as junctions, step batches in lane subgraphs, edges from the
+    Depends column), derived from the tables and regenerated whole — when
+    graph and tables disagree, the tables win. ~20-node ceiling; no
+    per-phase charting; applies in scoped mode too.
+  - New required **Sync sections**: every load-bearing sync (one any step,
+    decision, or lane start depends on) gets Entry / Agenda / Exit /
+    Unblocks, with its decisions defined once in the Agenda (question,
+    options, landing artifact) and only cited elsewhere. A step may depend
+    only on a sectioned sync. The standing weekly stays a table row.
+  - Five new quality gates and three new anti-rationalization rows anchor
+    the above.
+- Users guide: the weekly-checkpoint walkthrough describes the new plan
+  surface and states the briefing rule's reason — the human is the one
+  executor who cannot be re-prompted.
+
+### Acceptance
+
+- Re-tested per the delta's §7 against the microsite fixture, 2026-08-01: a
+  clean-room re-emission of the 2026-07-31 execution plan from the same
+  evidence (the updated skill text, the progress report, and the superseded
+  plan — the prior emission withheld) produced all three previously missing
+  behaviors: *Why / Do / Done when* briefings on every 👤 step, a 19-node
+  plan graph consistent with the step tables, and sectioned syncs with
+  their decisions defined once and cited by ID — with all 27 findings
+  still landing as steps or explicit waivers. A loophole hunt over the
+  three new anti-rationalization rows found no dodge the quality gates do
+  not close.
+
 ## [0.7.0] - 2026-07-26
 
 Driven by the moka-microsite field deployment (2026-07-10 → 07-24: three repos,
