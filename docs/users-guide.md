@@ -1,20 +1,18 @@
 # HSDD User's Guide
 
-A practical, example-driven walkthrough. For the full model and rationale, see the
-[methodology spec](../spec/hsdd-spec-v0_3.md) — v0.3 is the base; apply the
-[v0.4](../spec/hsdd-spec-v0_4.md), [v0.4.2](../spec/hsdd-spec-v0_4_2.md),
-[v0.5](../spec/hsdd-spec-v0_5.md), [v0.6](../spec/hsdd-spec-v0_6.md), and
-[v0.6.1](../spec/hsdd-spec-v0_6_1.md) deltas in order, each read against its
-predecessor.
+A practical, example-driven walkthrough. For the full model and rationale, see
+the [methodology specification](../spec/hsdd-spec-v0_8.md) — the single current
+spec; the superseded delta series remains in `spec/` as history.
 
 ## Before you start
 
 Install the skills (see the [README](../README.md)) and, ideally, [Obra's
 superpowers](https://github.com/obra/superpowers) plugin. The HSDD loop, in one line:
 
-> decompose -> contract -> phase-plan (parallel across leaf-parents) ->
-> reconcile -> configure -> one OpenSpec cycle per phase -> human review ->
-> repeat.
+> decompose (or adopt, for an existing codebase) -> contract -> phase-plan
+> (parallel across leaf-parents) -> reconcile -> configure -> one OpenSpec
+> cycle per phase -> human review -> repeat — and once launched, every new
+> change enters through intake and lands in the same tree.
 
 The default layout the skills emit (override it in `hsdd/conventions.md`). Every
 HSDD artifact lives under one root directory, `hsdd/`, with singular directory
@@ -563,7 +561,68 @@ openspec/
 
 ---
 
-## Running the project (v0.7)
+## Example 3: A brownfield system (adopt, intake, promote)
+
+You have `legacy-pay`, a production payments service built long before HSDD:
+no specs, some tests, one team. A new PRD arrives — merchant payout
+scheduling. Instead of speccing the PRD as its own project, adopt the system
+once, then route the PRD into the tree.
+
+### Step 1: Adopt the codebase
+
+> "Adopt this codebase into HSDD."
+
+`hsdd-adopt` runs its bundled `extract-seams.mjs` — manifests, routes, DB
+migrations, event topics, `CODEOWNERS`, coupling clusters — and proposes a
+shallow tree (depth 1–2) on the seams that actually exist: `legacy-pay` with
+children `billing`, `payouts`, `merchant`. You confirm the tree (the
+ownership answer usually comes free from `CODEOWNERS`). Each node spec is
+marked `- **Adopted:** as-built` and carries an `## Observed surface` section
+stamped with the extraction commit — including the required `unknown:` lines
+for what tooling could not see. Contracts come from the seams at
+`version: v0`, `status: stable`, with fixtures lifted from existing tests and
+an `## Observed completeness` block naming what those fixtures do not reach.
+The skill stops there: no decomposition below what the first change needs,
+and never a proposal to refactor the system into a nicer tree.
+
+What you review at the stop: the tree shape (minutes, not days — it mirrors
+the code you already know) and the `unknown:` lines (they are the honest
+edges of the extraction).
+
+### Step 2: Route the PRD through intake
+
+> "Here's the payout-scheduling PRD — where does it go?"
+
+`hsdd-intake` reads the PRD and the atlas, checks open intake records for
+collisions, classifies the change — it needs the `payouts` node, which is
+as-built — and writes the routing record to
+`hsdd/management/2026-08-03-intake-payout-scheduling.md` before any handoff.
+The record names the routing (`promote legacy-pay.payouts, then local`), the
+PRD (which also lands in `## Sources` on every node it governs), and every
+phase the change eventually produces. The PRD never becomes a root; the tree
+stays the system's.
+
+### Step 3: Promote the node it lands on
+
+A change routing to an as-built node promotes it first. `hsdd-spec`
+decomposes `legacy-pay.payouts` using its `## Observed surface` as a primary
+source alongside the PRD, and stops for your confirmation before the
+promoted spec becomes authoritative — the same shape as the "who builds
+what?" stop. After you confirm: `- **Adopted:** promoted`, with the observed
+surface kept as provenance. Phase-plan it, run the cycles, gate each phase
+as usual. The `payout-batch@v0` contract the phases consume keeps its `v0` —
+extension under `additive-only` never exits `v0`; only a redesign would mint
+`v1`.
+
+The end state is a mixed tree — `payouts` promoted and governed, `billing`
+and `merchant` still as-built — and that is normal and permanent, not a
+transitional embarrassment. `hsdd-checkpoint` diffs each as-built node's
+observed surface against the code on every pass, so drift surfaces as
+findings instead of rot.
+
+---
+
+## Running the project
 
 Planning artifacts tell you what to build; the **management layer** tells you how
 it is going. Once implementation starts and more than one person is involved, add
@@ -749,6 +808,18 @@ keep their numbers, nonconformances become findings with migration steps rather
 than errors, and the first atlas is generated however messy the tree is.
 Historical documents are never rewritten — conformance starts from the next
 document forward.
+
+Upgrading an existing (≥0.6.1) project to v0.8.0 rides the same run: it is
+additive, nothing is rewritten, and each new rule states its effect in the
+spec's upgrading chapter (absent fields default to the old behavior;
+`Learnings`/`Metrics` apply to future verification docs only). The one rule
+with teeth — `stable` contracts need executable validation — is
+**grandfathered, discharged on touch**: the upgrade checkpoint marks every
+existing fixtureless `stable` contract, the set is closed, and each contract
+must gain fixtures only when a phase next touches it. The remaining count
+appears in every progress report and can only fall. A fully-governed project
+usually also has code that was never in the tree; run `hsdd-adopt` on that
+(see Example 3) and let the mixed tree be the end state.
 
 ---
 

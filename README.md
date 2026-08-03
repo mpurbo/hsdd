@@ -80,12 +80,14 @@ and to how an AI agent works against it.
   versioned contracts, with a typed dependency graph in place of implicit
   whole-spec coupling.
 - **Bounded context per session.** Each phase's session receives its own spec plus
-  only the interfaces of the contracts it consumes. Context stays proportional to
-  the phase, not the whole system, so token cost does not scale with total system
-  size.
-- **Less drift and hallucination.** The same bound limits what the model can
-  conflate or invent. A session cannot wander into a sibling's concern or fabricate
-  an interface it was never given, because neither is in context.
+  only the interfaces of the contracts it consumes. Per-session context is bounded
+  and proportional to the phase, not the system; total tokens across a project
+  still scale with phase count, and planning carries its own overhead. HSDD bounds
+  the per-session cost — it does not reduce the total.
+- **Less drift and hallucination.** Per-phase context shapes attention: a session
+  is unlikely to wander into a sibling's concern or fabricate an interface it was
+  never given. The defense is prose and structure, tested under adversarial
+  pressure and found to hold — but it is probabilistic, not enforced.
 - **Human review by construction.** Every leaf phase ends at a human review gate,
   sized so review and manual verification fit one working window (one PE). Review
   depth scales to risk through tiers. The human owns correctness; the agent owns
@@ -101,7 +103,7 @@ HSDD ships as agent skills, installable with the [`skills`](https://github.com/v
 CLI (works with Claude Code, Cursor, Codex, and 70+ agents):
 
 ```bash
-# All eight HSDD skills (replace with your repo path)
+# All ten HSDD skills (replace with your repo path)
 npx skills add mpurbo/hsdd
 
 # Or a single skill
@@ -128,10 +130,20 @@ re-implementing them; `hsdd-config` wires them into each OpenSpec cycle.
 | `hsdd-phase-plan` | Break a small-enough node into ordered, independently implementable phases, each sized for one OpenSpec change and one review window. |
 | `hsdd-reconcile` | Drain the pending governance updates emitted by phase planning: finalize contract phase ids, resolve contract-gap requests with you, and regenerate the registries. Runs on the root lineage after parallel plan branches merge. |
 | `hsdd-config` | Configure OpenSpec and switch the phase context so each cycle sees only the current phase plus its consumed contracts. |
+| `hsdd-adopt` | Bring an existing codebase into the tree: script-extracted seams, as-built node specs with an `## Observed surface` section, and `v0` contracts describing current behavior. Brownfield's entry point. |
+| `hsdd-intake` | Route an incoming change request (PRD, RFC, ticket, incident) into the existing tree: classify it, detect collisions with open intakes, write the routing record, and hand off. A PRD is never a root. |
 | `hsdd-checkpoint` | Run the weekly (or context-triggered) evidence pass across the spec repo and every implementation repo, emitting a progress report, a revised execution plan, a regenerated atlas, and ticked milestone gates. One pass, four views; every finding becomes a plan step or an explicit waiver. |
 | `hsdd-milestone` | Generate the stakeholder milestone document once every leaf-parent is phase-planned — a demo and a gate per checkpoint, with externally-gated work in a contingent tail outside the launch gate — and re-baseline it when the dates move. |
 
 ## How it works
+
+Two entry points build the tree; everything after them is shared. **Greenfield**
+starts from an idea and decomposes (steps 1–3). **Brownfield** starts from an
+existing codebase: `hsdd-adopt` extracts the seams by script, writes a shallow
+as-built tree with `v0` contracts describing current behavior, and stops — no
+decomposition below what the first change needs. Once launched, every later
+change enters through `hsdd-intake`, which routes it into the same tree: the
+tree does not complete, phases complete.
 
 1. **Decompose** the system into a tree of nodes (`hsdd-spec`), recursing until a
    node is small enough to phase. Cross-cutting decisions become ADRs
@@ -172,30 +184,10 @@ tokens, time, and quality.
 
 ## Learn more
 
-- [Methodology specification](spec/hsdd-spec-v0_3.md): the full model, diagrams,
-  and design decisions.
-- [v0.4 delta](spec/hsdd-spec-v0_4.md): ADR authoring as a first-class skill and
-  where to run `openspec init`. Read against v0.3.
-- [v0.4.2 delta](spec/hsdd-spec-v0_4_2.md): the governance freeze protocol and
-  `hsdd-reconcile` for parallel leaf-parent development. Read against v0.4.
-- [v0.5 delta](spec/hsdd-spec-v0_5.md): one `hsdd/` root directory for every
-  HSDD artifact, singular directory names. Read against v0.4.2.
-- [v0.6 delta](spec/hsdd-spec-v0_6.md): readable plan templates and a phase
-  summary table, tier-scaled ceremony with a phase sizing floor, the
-  execution protocol for parallel phase branches, and the ownership-first
-  decomposition axis. Read against v0.5.
-- [v0.6.1 delta](spec/hsdd-spec-v0_6_1.md): source-document provenance that
-  trickles down the spec tree, a checklist anchor for the sizing floor, the
-  mandatory "who builds what?" stop, and one spec file per child node. Read
-  against v0.6.
-- [v0.7 delta](spec/hsdd-spec-v0_7.md): the management layer — `hsdd-checkpoint`
-  and `hsdd-milestone`, the open-question convention, and the
-  standalone-spec-repo profile for projects with more than one implementation
-  repo. Read against v0.6.1.
-- [v0.7.1 delta](spec/hsdd-spec-v0_7_1.md): the execution plan's human-facing
-  anchors — a *Why / Do / Done when* briefing for every 👤 step, a required
-  plan graph, and a section per load-bearing sync with entry/exit criteria
-  and what it unblocks. Read against v0.7.
+- [Methodology specification](spec/hsdd-spec-v0_8.md): the single current
+  specification — the full model, both entry points, the steady state, and
+  every settled decision with its provenance. The superseded delta series
+  (v0.3–v0.7.1) remains in `spec/` as history; nothing requires reading it.
 - [User's guide](docs/users-guide.md): worked examples for a simple single-level
   project and a multi-level system, plus running the project week to week.
 
