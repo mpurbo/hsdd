@@ -5,6 +5,92 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.0] - 2026-08-03
+
+A **consolidation, not a delta.** `spec/hsdd-spec-v0_8.md` is a single
+standalone specification absorbing v0.3 through v0.7.1 and the tool-free half
+of the shelved vNext exploration. The delta series remains in `spec/` as
+history; nothing requires reading it. The delta format is retired for major
+revisions.
+
+Two new chapters carry the release's substance, both from one observation:
+**the tree does not complete — phases complete, so after the first change
+every project is brownfield.** Greenfield is a three-month bootstrap; the
+rest of a system's life is the steady state.
+
+Design: `docs/superpowers/specs/2026-07-29-v0_8-consolidation-brownfield-design.md`.
+Acceptance record: `review/hsdd-v0_8-acceptance.md` (13/13 criteria PASS).
+
+### Added
+
+- **Chapter 6 — Entry B: Brownfield Adoption.** A codebase that already
+  exists becomes a structural peer of the greenfield entry, not a special
+  case. `hsdd-adopt` (forthcoming skill) extracts seams by bundled script,
+  proposes a shallow tree on the seams that exist, and writes as-built node
+  specs carrying an `## Observed surface` section stamped with the extraction
+  SHA — with `unknown:` lines required, because a node with no unknowns is a
+  node nobody looked at. It stops there: no decomposition below what the
+  first change needs, and never a proposal to refactor the system into a
+  nicer tree. Adoption cost scales with **seam count, not LOC**.
+- **Chapter 11 — Steady State: Change Intake.** `hsdd-intake` (forthcoming
+  skill) routes an incoming change request into the existing tree —
+  `local` / `cross-node` / `new-capability` / `structural` — and writes the
+  routing decision before the handoff. The load-bearing rule: **a PRD is
+  never a root; there is one tree and it is the system's.** Intake records
+  accumulate, dated and never superseded — the rule that replaces "wipe
+  `hsdd/` and rebuild." Includes phase-plan append mode, spec graft mode,
+  node retirement, collision serialization across open intakes, and a
+  **legal bypass** for production incidents (hotfix → backfill finding →
+  retro phase, escalating if unclosed across two checkpoints).
+- **Chapter 14 — Upgrading and Compatibility.** v0.8.0 is additive; the
+  vehicle is checkpoint's existing adoption run. The one rule with teeth —
+  `stable` contracts need executable validation — is **grandfathered and
+  discharged on touch**: the set closes at upgrade, each contract gains
+  fixtures only when a phase next touches it, and the remaining count is
+  reported every checkpoint and can only fall.
+- Adopted contracts start at **`v0`** with a required `## Observed
+  completeness` caveat. `v0` is a permanent property, not a waypoint;
+  `v0 → v1` is the contract-level adoption exit, taken only on redesign.
+- Per-contract-version **`compatibility:` policy** — `additive-only` (the
+  Protobuf discipline, claimable only if existing fixtures still pass),
+  `versioned` (default), `frozen` — plus the `retired` status,
+  `external_consumers`, and a live-consumer retirement finding.
+- **Per-campaign milestone documents**, sealed when every gate is green and
+  moved to `management/archive/`; sealing is evidence-backed, never declared.
+- From vNext: executable validation for `stable`, both gates running the
+  contract, integration nodes, the `## Learnings` loop dispositioned at the
+  gate, mid-phase contract renegotiation, the unified **Phase Equivalent**,
+  phase ordering as a named policy (`interfaces-first` default), the `Team`
+  field, and the `## Metrics` block.
+
+### Changed
+
+- **Honest claims** (chapter 15, mirrored in the README): context isolation
+  is *probabilistic, not enforced* — the defense is prose and structure,
+  pressure-tested and holding, not a mechanism. HSDD bounds per-session token
+  cost; it *does not reduce the total*.
+- The settled-decisions table gains a required **provenance column**
+  (`field-tested` / `pressure-tested` / `reasoned-only`) so new material
+  cannot inherit credibility from tested material. Most of what this release
+  adds is `reasoned-only`, and the document says so.
+- README and users guide: the reading path collapses to one specification,
+  the skill table grows to ten, and the guide gains a brownfield walkthrough
+  (adopt → intake → promote).
+
+### Not included
+
+- **No `hsdd` CLI.** No `context`, `lint`, `status`, `rename`, `check-scope`,
+  or `template`. Mechanical invariants stay prose- and structure-enforced, on
+  the 0.6.0 pressure-campaign evidence. Scripts are permitted only under one
+  boundary: **bundled with a new skill, never changing how an existing skill
+  behaves.** The mechanization line stays on the shelf as a later candidate.
+- No `hsdd-review` skill, no multi-team enforcement, no back-application of
+  v0.8.0 rules to existing artifacts, and no support for projects below
+  0.6.1 (upgrade to 0.6.1 first).
+- **Skill files are unchanged in this release.** `hsdd-adopt` and
+  `hsdd-intake` and the amendments to the existing eight follow in a separate
+  cycle, after this specification is approved.
+
 ## [0.7.1] - 2026-08-01
 
 Driven by the first real-world `hsdd-checkpoint` run (the moka-microsite
