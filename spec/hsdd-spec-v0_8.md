@@ -1984,6 +1984,95 @@ Integration nodes still name exactly one owning team (§3.7).
 
 ## 14. Upgrading and Compatibility
 
+### 14.1 The compatibility contract
+
+**v0.8.0 is additive. No existing project rewrites anything.** A release
+states its compatibility contract explicitly — which artifacts stay
+conformant, what is opt-in, what applies forward only — and this section is
+that statement for projects on 0.6.1 or later.
+
+The upgrade vehicle is `hsdd-checkpoint`'s **adoption run**: the first
+checkpoint on an existing project treats nonconformances as findings, not
+errors — each becomes a findings-register row and, per §12.8, a migration
+step in the emitted execution plan; the run never hard-fails on the state it
+exists to repair. Existing documents are **adopted, not replaced**:
+pre-existing management documents become the head of the supersedes chain,
+existing numbered guardrails are imported under their numbers, and
+historical dated documents are never rewritten — conformance applies from
+the next document forward. The first atlas is generated whatever state the
+tree is in: an atlas of a messy tree is precisely the map the cleanup needs.
+`hsdd-milestone` behaves symmetrically: an existing milestone document is
+recognized as the current campaign's baseline, never duplicated. A newly
+required stop binds only artifacts authored by the run that hits it;
+pre-existing nonconforming artifacts are reported, never blocked.
+
+The full table — the effect of each v0.8.0 change on an existing ≥0.6.1
+project:
+
+| Change | Effect on an existing ≥0.6.1 project |
+|--------|--------------------------------------|
+| `## Learnings`, `## Metrics` in the verification template (§10.3, §10.5) | Forward-only. Existing verification docs are never rewritten. |
+| `Team` node field (§13.5) | Optional; absent is conformant. |
+| Ordering policy in conventions frontmatter (§7.4) | Absent = `interfaces-first`. No edit needed. |
+| Unified PE definition (§7.2) | Applies to future sizing only. Existing phase plans stand. |
+| `stable` requires executable validation (§3.4) | **Grandfathered, discharged on touch.** See §14.2. |
+| `compatibility:` field (§3.5) | Absent = `versioned`, which is the pre-0.8 behavior. |
+| `retired` status; deprecation lifecycle (§3.5, §11.6) | Additive to the existing `draft \| stable \| deprecated` lifecycle. |
+| Per-campaign milestones; sealing (§12.5) | The existing milestone document becomes the current campaign's. Seal it when green, or leave it open. |
+| `hsdd-intake`, append mode, graft mode (chapter 11) | Used from the next change forward. No back-application. |
+| `hsdd-adopt`, `@v0`, `## Observed surface` (chapter 6) | **Inert** unless the project has unadopted code. |
+| Execution-plan step details, plan graph, sync sections (§12.4) | Forward-only: the next emitted plan carries them; prior plans are never rewritten. |
+
+**The one case worth calling out:** a fully-governed ≥0.6.1 project usually
+still has system surface that was never in the tree — the code the
+HSDD-built part sits inside. `hsdd-adopt` runs on *that*, grafting as-built
+nodes alongside governed ones. The result is the same mixed tree as §6.6,
+reached from the other direction, and it is the normal end state rather than
+a transitional one.
+
+Projects below 0.6.1 are out of scope: upgrade to 0.6.1 first, per the
+existing delta reading path, which remains in `spec/` as history. This is
+the only chapter that references the deltas as a reading path.
+
+Acceptance for a release is evidence-backed and recorded before the run: the
+release is not done until its skills produce conforming documents against a
+live project without manual repair, and the adoption run's findings register
+catches that project's known seeded reality. A run that comes back clean on
+a repo known to contain findings fails acceptance in the more important
+direction.
+
+### 14.2 The grandfather clause, and how it ends
+
+Requiring fixtures before `stable` is the one upgrade rule that would
+otherwise invalidate existing artifacts wholesale. It is grandfathered — but
+a grandfather clause with no end state is how a two-tier system becomes
+permanent. Three properties give it one, without a deadline:
+
+1. **The set is closed at upgrade time.** The upgrade checkpoint enumerates
+   every contract already `stable` without executable validation and marks
+   each `validation: grandfathered` in frontmatter. Nothing may join the set
+   afterward. A *new* contract flipped `draft → stable` without fixtures is
+   an error, not a grandfather case — the clause covers history, never new
+   work.
+2. **It discharges on touch, not on a date.** The moment any phase produces,
+   amends, or bumps a grandfathered contract, that contract must gain
+   fixtures before the phase's gate passes. Obligations attach to work, not
+   to calendars — the same grain as the lazy tree and depth-on-demand. A
+   contract nobody touches needs no fixtures, because nobody is depending on
+   new behavior from it.
+3. **The count is reported and can only fall.** Each checkpoint reports the
+   remaining grandfathered count in the progress report. A closed, finite,
+   monotonically decreasing set needs no sunset: it either drains as the
+   system is worked on, or the untouched remainder is precisely the surface
+   that carries no active risk. **A count that rises is a finding** — it
+   means property 1 was violated.
+
+Deliberately rejected: a fixed sunset date (HSDD does not control anyone's
+calendar, and a cliff invites blanket waivers) and permanent unmarked
+grandfathering (invisible, uncountable, never drains).
+
+---
+
 ## 15. Claims and Non-Goals
 
 ## 16. Evidence
