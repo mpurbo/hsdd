@@ -301,8 +301,8 @@ methodology stayed out of the way.
 
 Now a system big enough to need the tree: `acme`, a full-stack merchant
 onboarding platform with backend, mobile, and web, built by separate teams.
-This stack-first split is the decomposition-axis rule (v0.6
-[§6](../spec/hsdd-spec-v0_6.md)) — the axis follows ownership, which is why
+This stack-first split is the decomposition-axis rule ([spec
+§2.5](../spec/hsdd-spec-v0_8.md)) — the axis follows ownership, which is why
 `acme` does not decompose into `auth-end-to-end` / `billing-end-to-end`
 slices spanning both stacks.
 
@@ -318,7 +318,7 @@ between them. Because the input is a document, `hsdd/spec/acme.md` records it
 in a `## Sources` section, and each node it governs carries a
 `- **Sources:** docs/onboarding-prd.md (§...)` line — sources trickle down at
 every split, so a later phase-planner reads the original instead of trusting
-the summary (v0.6.1 [§2](../spec/hsdd-spec-v0_6_1.md)). The root spec also
+the summary ([spec §2.6](../spec/hsdd-spec-v0_8.md)). The root spec also
 includes this typed dependency DAG:
 
 ```mermaid
