@@ -1889,14 +1889,11 @@ per-phase OpenSpec change + verification doc, and `conventions.md`. `adr/`
 and `retrospective.md` are optional, used only when they earn their keep.
 Depth and ceremony are costs; spend them deliberately.
 
-**Pre-`hsdd/` layouts.** The conventions file is the compatibility
-mechanism: skills read `hsdd/conventions.md` first; if it is absent but
-`docs/conventions.md` exists, the project predates the unified root — honor
-the layout that file states and offer to migrate (a `git mv` rename, not a
-rewrite, plus replacing the copied generator, whose old copy scans the old
-paths). The id schemes, the freeze protocol and reconcile semantics, the
-conventions-override mechanism, and the `openspec/` location are all
-layout-independent.
+The conventions file is the compatibility mechanism: skills load
+`hsdd/conventions.md` first and honor whatever layout the project's
+conventions state. The id schemes, the freeze protocol and reconcile
+semantics, the conventions-override mechanism, and the `openspec/` location
+are all layout-independent.
 
 ### 13.2 The conventions file
 
@@ -2153,4 +2150,159 @@ natural seed; it lacks only the baseline and the write-up.
 
 ## 17. Settled Decisions
 
+The merged decision record of every release through v0.8.0, current answers
+only. **Provenance is a required column** — `field-tested` (validated on a
+real project), `pressure-tested` (held under the adversarial 0.6.0
+campaign), or `reasoned-only` — because new material must not inherit
+credibility from the tested parts: most of what v0.8.0 adds is
+`reasoned-only`, and the table says so instead of letting it borrow.
+
+### 17.1 The decisions
+
+| Question | Decision | Provenance |
+|----------|----------|------------|
+| Skill names | Role-based (`hsdd-spec`, `hsdd-phase-plan`, …), never level-based: the recursive model runs the same operation at multiple levels (§1.5). | field-tested |
+| Merge spec and phase-plan? | No — two specializations of "decompose a node" with sharply different discipline (§1.5). | field-tested |
+| Contract versioning | Simple `v{n}` with a migration note on breaking change. No semver (§3.5). | field-tested |
+| Verification doc location | `{verify}/{phase-id}.verification.md`, outside the OpenSpec change directory (§9.1). | field-tested |
+| Node identification | Dotted slug path from the root, leaf phases numbered (§2.4). | field-tested |
+| Registry maintenance | Script-generated from frontmatter, never agent-maintained (§3.3). | field-tested |
+| Companion plugin | superpowers recommended, wired in via `hsdd-config`; compose, don't re-implement (§9.6). | field-tested |
+| Slash commands | Optional thin wrappers; the primary surface is skills (§13.3). | field-tested |
+| Who authors ADR files | `hsdd-spec` proposes, the human accepts, `hsdd-adr` materializes (§4.3). | field-tested |
+| ADR artifact format | YAML frontmatter plus body, reconciled with the generator — no generator change needed (§4.2). | field-tested |
+| ADR numbering | Global across the tree, `ADR-{nnn}`, filename `{nnn}-{title}.md` (§4.2). | field-tested |
+| `openspec init` location | Once, at the repo root — one OpenSpec project per HSDD tree (§5.2). | field-tested |
+| Missing ADR at config time | Stop and hand off to `hsdd-adr`; an unknown decision is authored `proposed` with a TODO, never an invented `accepted` (§4.3). | field-tested |
+| Write model for governance during planning | Freeze plus effects-as-data, unconditional — no worktree detection; serial and parallel identical (§8.1). | pressure-tested |
+| Where reconciliation lives | Its own skill, run at the root after branches merge — one artifact, one skill (§8.4). | pressure-tested |
+| Contract gaps during planning | Two-tier: ask when the gap changes the plan's shape; otherwise record a `request` with the stated assumption (§8.3). | pressure-tested |
+| Collision resolution | The human arbitrates, once, at reconcile time; the skill never auto-picks a winner (§8.4). | pressure-tested |
+| Who writes `conventions.md` | Root only — `hsdd-spec` seeds, `hsdd-reconcile` updates; phases never touch it (§13.2). | pressure-tested |
+| Sibling worktree reads | Forbidden — contracts are the only inter-node knowledge (§8.3). | pressure-tested |
+| Producer-side contract discoveries | The `amend` entry kind; a breaking amendment goes to the human and bumps (§8.2). | pressure-tested |
+| `draft → stable` | Flipped by `hsdd-reconcile` once `phase_ids` is `final`, no unresolved `request` names the contract, and executable validation exists (§8.4, §3.4). Stable means interface-frozen, not producer-shipped. | pressure-tested |
+| Decomposition axis | Ownership first; capability slices within one owner's territory; unknown axis is a mandatory ask-and-stop (§2.5). | pressure-tested |
+| Field-block format | Bullet lists; tables rejected for multi-sentence fields; hard line breaks rejected as invisible (§2.1, §7.1). | field-tested |
+| Plan scannability | A summary table per plan, human-only; injection unchanged, so agent context cost is zero (§7.5). | field-tested |
+| Dependency-graph format | Mermaid, always; cross-node edges dashed; contention is a field, never drawn (§7.5). | field-tested |
+| Sizing | Floor and ceiling, both ends of one rule in PE terms; artifacts-exceed-diff is the default merge smell (§7.2). | pressure-tested |
+| What the review tier controls | Human attention *and* artifact depth; tasks and spec deltas never scale; a verification doc always exists (§10.1). | field-tested |
+| One phase = one OpenSpec change = one review gate | Unchanged invariant, every release (§1.3). | pressure-tested |
+| `openspec/config.yaml` at merge | Ephemeral — take either side, re-run the switch (§9.3). | field-tested |
+| Plans and reconciles per lineage | A node's plan on exactly one lineage; reconcile once, at the root lineage (§9.4, §8.4). | field-tested |
+| Capability naming | Per stable feature area by default; per-phase names only for genuinely parallel contention (§9.4). | field-tested |
+| Verification doc shape | Bundled template with Outstanding + Sign-off; the gate is not passed while an item lacks a disposition; written at apply (§10.2). | field-tested |
+| Source provenance | Root `## Sources` plus a per-node field, trickled at every level; the pointer is mandatory, restatement optional; frontmatter rejected (§2.6). | field-tested |
+| Phases and sources | Phases carry no Sources and no source is injected — the planner reads them, the phase context stays ~20 lines (§9.2). | field-tested |
+| Unmapped sources | Explicitly marked "informative only" with a reason; silence is the failure (§2.6). | field-tested |
+| Floor enforcement form | A checklist item plus a conditional kept-split reason — not a mandatory analysis section (§7.2). | pressure-tested |
+| Child spec files | One file per child, every child, at decomposition time; the parent embeds only summaries (§2.7). | pressure-tested |
+| Management skills | Two, not four, not zero: one evidence pass feeds four views; milestone generation has its own trigger and audience (§12.7). | field-tested |
+| Cite, never define | Management documents are views; deleting `management/` loses no truth (§12.1). | field-tested |
+| Document chain | Dated chain for point-in-time docs, one living atlas; tick-and-append are the only in-place edits; supersedes by exact filename (§12.2). | field-tested |
+| Checkpoint ticks, milestone re-baselines | Weekly gate maintenance belongs to the weekly skill (§12.7). | field-tested |
+| Open questions | A convention plus structural anchors in the owning skills, not a skill (§4.4). | field-tested |
+| The spec-repo profile | Normative, opt-in, moves no paths; its content is the run-location rule plus four incident-backed rules (§13.4). | field-tested |
+| Additive compatibility | A contract, not an aspiration, with a live project as the acceptance fixture (§14.1). | field-tested |
+| Rejected document classes | No standalone risk register, sync minutes, stakeholder one-pager, or estimation doc — each is derivable from artifacts that already exist (§12). | field-tested |
+| Step detail blocks | Every step gets exactly one; rejected: briefings only for "complex" steps (the complexity judgment is the loophole) and richer table cells (the defect, formalized) (§12.4). | field-tested |
+| Detail-block grouping | Existence is mandated, grouping is not — what failed in the field was absence, not placement (§12.4). | field-tested |
+| Plan-graph granularity | Load-bearing syncs plus step batches, ≤ ~20 nodes; rejected: per-phase graphs and optional-when-small (§12.4). | field-tested |
+| Which syncs get sections | Load-bearing ones; the standing weekly stays a table row; rejected: sections for every row (§12.4). | field-tested |
+| Sync agendas vs cite-never-define | No violation: the agenda defines the question, the answer lands in governance, the Exit box cites it (§12.4). | field-tested |
+| The progress report under v0.7.1 | Unchanged — its dense tables are registers, not executed from; recurrence of unreadability there is future evidence, not this spec's guess (§12.3). | field-tested |
+| The findings→plan loop | Unchanged invariant across every revision (§12.8). | field-tested |
+| Delta or consolidation? | Consolidation: this document absorbs v0.3–v0.7.1; the delta format is retired for major revisions. | reasoned-only |
+| The vNext CLI | Dropped. Mechanical invariants stay prose- and structure-enforced, on the pressure-campaign evidence; the cost is determinism and tokens, not correctness. | reasoned-only |
+| Scripts | Scoped: bundled with a new skill only; no script changes an existing skill's behavior (§6). | reasoned-only |
+| As-built evidence | One artifact tier; the epistemic split is per-section (`## Observed surface`), not per-file (§6.2). | reasoned-only |
+| Adopted contract version | `v0`, permanent; `v0 → v1` is the contract-level adoption exit, taken only on redesign (§6.3, §3.5). | reasoned-only |
+| Where change intake lives | A new skill — different trigger (event vs periodic), different posture (writes into governance vs read-only) (§11.2). | reasoned-only |
+| Where an incoming PRD's spec lives | Nowhere — a PRD is never a root; there is one tree and it is the system's (§11.1). | reasoned-only |
+| Post-launch milestones | Per-campaign documents, sealed when green, archived (§12.5). | reasoned-only |
+| Contract compatibility | A declared per-version `compatibility:` policy, fixture-enforced (§3.5). | reasoned-only |
+| The grandfather clause's end | On touch, not on a date: set closed at upgrade, discharged when a phase touches the contract, count reported and falling (§14.2). | reasoned-only |
+
+### 17.2 Deliberately dropped
+
+Every rule from the superseded deltas that v0.8.0 removes, with its reason —
+the completion of acceptance criterion 1's traceability contract:
+
+| Dropped rule | Reason |
+|--------------|--------|
+| The pre-0.3 `S1` / `S1.2` id compatibility note | A pre-0.3 claim; v0.8.0 supports ≥0.6.1 only (chapter 14). |
+| The v0.3 ADR body example (bold fields, no frontmatter) | Superseded by the registry-compatible frontmatter form (§4.2); the old shape is invisible to the generator. |
+| Pre-0.5 layout detection and the `git mv` migration recipe | v0.8.0 supports ≥0.6.1 only; the pre-0.5 rename is history. |
+| Post-migration conventions/generator update steps | Same reason. |
+| v0.7's "relationship to the 0.8 candidate" section | This document resolves the relationship: the tool-free half of vNext is absorbed, the CLI is not. |
+| The vNext normative grammar | It only mattered as parser input; the 0.6.1 bullet templates already stand as the authored format. |
+| The `hsdd` CLI (`registry`, `context`, `lint`, `status`, `rename`, `check-scope`, `template`) | Registry generation stays script-based; everything else stays skill work. |
+| Pull-based phase context | The push-based switch, as implemented in `hsdd-config`, survives unchanged (§9.2). |
+| Derived state; retirement of `confirm`, `produced_by`, `consumers`, `phase_ids` | These fields and the `confirm` entry kind survive as authored (§3.1, §8.2); derivation of done-ness survives anyway via the verification-doc rule (§12.3). |
+| `Touches` globs plus `check-scope` enforcement | Dead surface: `Collides with` already carries the collision signal (§7.1). |
+| The `hsdd-review` skill | Deferred; the review tiers and gate commands stand (§7.3, §10). |
+| Cross-team contract acks; multi-team ADR approvals | Lint-enforced, so honor-system without it; deferred with the multi-team model (§15.3). |
+
+---
+
 ## 18. Glossary
+
+- **Node:** any unit in the spec tree.
+- **Internal node:** a node that decomposes into child nodes.
+- **Leaf-parent:** a node whose children are phases; owns a phase plan.
+- **Leaf phase:** the unit that drives one OpenSpec cycle.
+- **Integration node:** a leaf-parent child with `hard` edges to producing
+  siblings, whose phases exercise the real composed behavior (§3.7).
+- **Contract:** a named, versioned interface; the only cross-node knowledge.
+- **Dependency type:** hard, contract, event, or shared-model.
+- **ADR:** an architecture decision record for cross-cutting, durable
+  decisions.
+- **Open question (OQ):** a tracked decision that cannot be made yet, defined
+  once in its owning spec (§4.4).
+- **Review tier:** gate-only, spot-check, full-review.
+- **Phase Equivalent (PE):** the largest change one reviewer can genuinely
+  review and manually verify in one sitting, plus the agent run that
+  produced it (§7.2).
+- **Review sitting:** the invariant behind the PE; the ~5h window is its
+  calibration, not its definition.
+- **Ordering policy:** the named phase-ordering rule selected in conventions
+  (`interfaces-first` default) (§7.4).
+- **Companion skill:** a general-purpose discipline skill that HSDD composes
+  with rather than re-implements.
+- **Context isolation:** injecting only consumed contract interfaces (and
+  governing ADR decisions) into a phase's session — probabilistic, not
+  enforced (§15.1).
+- **Profile:** an opt-in layout variant declared in conventions; the
+  standalone-spec-repo profile mounts the tree as a submodule at `hsdd/`
+  (§13.4).
+- **As-built node:** an adopted node whose spec records observed structure,
+  marked `- **Adopted:** as-built` (§6.1).
+- **Promoted node:** an as-built node later decomposed under governance,
+  marked `- **Adopted:** promoted` (§6.4).
+- **Observed surface:** the tooling-extracted section of an as-built node
+  spec, stamped with the extraction SHA (§6.2).
+- **Observed completeness:** the required caveat block in an adopted
+  contract naming what its fixtures do not reach (§6.3).
+- **`v0`:** the permanent version of an adopted contract — observed, not
+  designed; `v0 → v1` is the adoption exit (§3.5).
+- **`external_consumers`:** contract frontmatter naming consumers outside
+  the tree (§3.5).
+- **Intake record:** the dated, never-superseded management document that
+  makes one change request visible as one unit of work (§11.2).
+- **Campaign:** the scope of one milestone document — the adoption
+  bootstrap, one change request's fan-out, or a release train (§12.5).
+- **Sealed milestone:** a campaign's milestone document after every gate is
+  green: stamped, archived, no longer ticked (§12.5).
+- **Backfill:** the finding filed when code ships with no phase; it becomes
+  a retro phase with a retroactive verification doc (§11.8).
+- **Grandfathered contract:** a contract `stable` before v0.8.0 without
+  executable validation, marked and discharged on touch (§14.2).
+- **Learning:** a gate-time finding about the tree, dispositioned before
+  sign-off (§10.3).
+- **Atlas:** the regenerated, derived-only bird's-eye view in
+  `management/atlas.md` (§12.6).
+- **Plan graph:** the execution plan's required Mermaid flowchart of syncs
+  and step batches, derived from the tables (§12.4).
+- **Load-bearing sync:** a sync any step, decision, or lane start depends
+  on; it gets an Entry / Agenda / Exit / Unblocks section (§12.4).

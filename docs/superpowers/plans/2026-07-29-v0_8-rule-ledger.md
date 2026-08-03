@@ -55,7 +55,7 @@ ch12,13→T9 · ch14→T10 · ch15,16→T11 · ch17,18→T12.
 | 25 | v0.3 §4.2 | Depth is a judgment, not a constant: an intermediate "feature" layer is simply an internal node inserted when a subsystem is too big to phase directly | carry | ch2 | [x] |
 | 26 | v0.3 §4.3 | Only leaf phases drive OpenSpec cycles; leaf-parents own a phase plan; internal nodes only decompose and route contracts | carry | ch2 | [x] |
 | 27 | v0.3 §4.4 | The id-scheme table: root `{slug}`, node `{parent}.{slug}`, phase `{leaf-parent}.{n}`, contract `{slug}@v{n}`, node-local decision `D{n}`, ADR `ADR-{nnn}`, story/acceptance `US-{n}` / `AC-{n}.{y}` | carry+amend (adds OQ ids, ch4; `@v0` admissible, ch3) | ch2 | [x] |
-| 28 | v0.3 §4.4 | Backward-compatibility note: the pre-0.3 `S1` / `S1.2` scheme is the depth-2 special case, so existing specs stay valid | drop (pre-0.3 compatibility claim; v0.8.0 supports ≥0.6.1 only, design §7) | — | [ ] |
+| 28 | v0.3 §4.4 | Backward-compatibility note: the pre-0.3 `S1` / `S1.2` scheme is the depth-2 special case, so existing specs stay valid | drop (pre-0.3 compatibility claim; v0.8.0 supports ≥0.6.1 only, design §7) | — | [x] |
 | 29 | v0.3 §5 | Contracts are standalone, versioned artifacts, not prose buried in a spec; a node references them by id and never copies another node's internals | carry | ch3 | [x] |
 | 30 | v0.3 §5.1 | The split is deliberate: frontmatter is the metadata projected into the registry, the body is the interface injected into a consuming phase's context | carry | ch3 | [x] |
 | 31 | v0.3 §5.1 | `status:` vocabulary — stable / draft / deprecated | carry+amend (adds `retired`; full lifecycle draft → stable → deprecated → retired, design §6.9) | ch3 | [x] |
@@ -119,7 +119,7 @@ ch12,13→T9 · ch14→T10 · ch15,16→T11 · ch17,18→T12.
 | 89 | v0.3 §12.4 | The ADR link is bidirectional and by id: the ADR lists `Affects: [node-ids, contract-ids]`, and every affected node, phase, and contract lists `Governed by: [ADR-NNN]` in its header | carry | ch4 | [x] |
 | 90 | v0.3 §12.4 | The ADR registry `INDEX.md` is generated the same way as the contract registry | carry | ch4 | [x] |
 | 91 | v0.3 §12.4 | ADR injection: `hsdd-config` resolves the ADRs referenced by the phase's node and by the contracts the phase consumes, then injects only each ADR's Decision and Consequences — never the Context or the alternatives | carry | ch4 | [x] |
-| 92 | v0.3 §12.4 | The v0.3 ADR body example — bold body fields, no YAML frontmatter | drop (superseded by v0.4 §3's registry-compatible frontmatter form; the old shape is silently skipped by the generator) | — | [ ] |
+| 92 | v0.3 §12.4 | The v0.3 ADR body example — bold body fields, no YAML frontmatter | drop (superseded by v0.4 §3's registry-compatible frontmatter form; the old shape is silently skipped by the generator) | — | [x] |
 | 93 | v0.3 §13 | HSDD versus OpenSpec, dimension by dimension: unit of work, structure, decomposition, coupling, context per session, parallelism, dependency model, cycle engine, human review, pacing, and the scale each reaches | carry | ch1 | [x] |
 | 94 | v0.3 §13 | HSDD does not replace OpenSpec: it composes it with bounded-context decomposition, contract-first architecture, tiered human review, and context isolation | carry | ch1 | [x] |
 | 95 | v0.3 §14.1 | The recursive node model exists because a flat spec stops scaling at the context window; a tree lets only the leaves drive code | carry | ch15 | [x] |
@@ -130,19 +130,19 @@ ch12,13→T9 · ch14→T10 · ch15,16→T11 · ch17,18→T12.
 | 100 | v0.3 §14.2 | Non-goal: agent-maintained contract or ADR registries — non-deterministic and token-expensive; generated instead | carry | ch15 | [x] |
 | 101 | v0.3 §14.2 | Non-goal: heavy, always-on documentation — the required set is minimal and everything else earns its keep | carry | ch15 | [x] |
 | 102 | v0.3 §14.2 | Non-goal: re-implementing TDD, review, or debugging inside HSDD | carry | ch15 | [x] |
-| 103 | v0.3 §15 | Settled: skill names are role-based | carry+amend (ten skills) | ch17 | [ ] |
-| 104 | v0.3 §15 | Settled: spec and phase-plan are not merged | carry | ch17 | [ ] |
-| 105 | v0.3 §15 | Settled: contract versioning is simple `v{n}` with a migration note on a breaking change — no semantic versioning | carry | ch3, ch17 | [ ] |
-| 106 | v0.3 §15 | Settled: the verification doc's location is `{verify}/{phase-id}.verification.md` | carry+amend (`hsdd/verify/`, v0.5) | ch17 | [ ] |
-| 107 | v0.3 §15 | Settled: node identification is the dotted slug path from the root with leaf phases numbered | carry | ch17 | [ ] |
-| 108 | v0.3 §15 | Settled: registry maintenance is script-generated from contract frontmatter | carry | ch17 | [ ] |
-| 109 | v0.3 §15 | Settled: the recommended companion plugin is superpowers, wired in via `hsdd-config` | carry | ch17 | [ ] |
-| 110 | v0.3 §15 | Settled: slash commands are optional thin wrappers; the primary surface is skills | carry | ch17 | [ ] |
-| 111 | v0.3 §16 | "Next Steps" — the v0.3 implementation to-do list | scaffold (implementation bookkeeping, not a rule) | — | [ ] |
-| 112 | v0.3 §17 | Glossary terms: node, leaf phase, contract, dependency type, ADR, review tier, review window, companion skill, context isolation | carry+amend (gains the v0.8.0 terms, ch18 task list) | ch18 | [ ] |
-| 113 | v0.4 §1 | "What 0.4 Changes and Why" — the two gaps 0.4 closes | scaffold (delta framing; the rules are in §2–§5) | — | [ ] |
+| 103 | v0.3 §15 | Settled: skill names are role-based | carry+amend (ten skills) | ch17 | [x] |
+| 104 | v0.3 §15 | Settled: spec and phase-plan are not merged | carry | ch17 | [x] |
+| 105 | v0.3 §15 | Settled: contract versioning is simple `v{n}` with a migration note on a breaking change — no semantic versioning | carry | ch3, ch17 | [x] |
+| 106 | v0.3 §15 | Settled: the verification doc's location is `{verify}/{phase-id}.verification.md` | carry+amend (`hsdd/verify/`, v0.5) | ch17 | [x] |
+| 107 | v0.3 §15 | Settled: node identification is the dotted slug path from the root with leaf phases numbered | carry | ch17 | [x] |
+| 108 | v0.3 §15 | Settled: registry maintenance is script-generated from contract frontmatter | carry | ch17 | [x] |
+| 109 | v0.3 §15 | Settled: the recommended companion plugin is superpowers, wired in via `hsdd-config` | carry | ch17 | [x] |
+| 110 | v0.3 §15 | Settled: slash commands are optional thin wrappers; the primary surface is skills | carry | ch17 | [x] |
+| 111 | v0.3 §16 | "Next Steps" — the v0.3 implementation to-do list | scaffold (implementation bookkeeping, not a rule) | — | [x] |
+| 112 | v0.3 §17 | Glossary terms: node, leaf phase, contract, dependency type, ADR, review tier, review window, companion skill, context isolation | carry+amend (gains the v0.8.0 terms, ch18 task list) | ch18 | [x] |
+| 113 | v0.4 §1 | "What 0.4 Changes and Why" — the two gaps 0.4 closes | scaffold (delta framing; the rules are in §2–§5) | — | [x] |
 | 114 | v0.4 §1.1 | The failure named alongside the rule: an ADR left as inline prose has two broken consumers — `hsdd-config` cannot resolve it, and a body-field ADR with no frontmatter is silently skipped by the registry generator | carry | ch4 | [x] |
-| 115 | v0.4 §1.2 | "The `openspec init` point was never pinned" — delta framing; §5 states the rule | scaffold | — | [ ] |
+| 115 | v0.4 §1.2 | "The `openspec init` point was never pinned" — delta framing; §5 states the rule | scaffold | — | [x] |
 | 116 | v0.4 §2 | `hsdd-adr` owns the ADR directory the same way `hsdd-contract` owns contracts: it authors first-class files and lets the deterministic generator project the registry | carry+amend (five skills → ten) | ch1 | [x] |
 | 117 | v0.4 §2 | `hsdd-adr`'s role: author and maintain cross-cutting ADRs as first-class files with registry-compatible frontmatter, and manage the status lifecycle and the bidirectional `Affects` / `Governed by` links | carry | ch4 | [x] |
 | 118 | v0.4 §2.1 | The chain gains one line: `hsdd-spec` proposes, the human accepts, `hsdd-adr` materializes, the registry regenerates | carry | ch1 | [x] |
@@ -154,7 +154,7 @@ ch12,13→T9 · ch14→T10 · ch15,16→T11 · ch17,18→T12.
 | 124 | v0.4 §3 | The filename carries the number and a slug; the frontmatter `id` is the display id `ADR-001` | carry | ch4 | [x] |
 | 125 | v0.4 §3 | ADR numbers are global across the whole tree, never per node | carry | ch4 | [x] |
 | 126 | v0.4 §3 | Node-local decisions stay `D{n}` inside the node spec and never become files | carry | ch4 | [x] |
-| 127 | v0.4 §3 | "No change to `gen-registry.mjs` is required" — the fix is that the skill emits the frontmatter the generator already reads | scaffold (delta implementation note; the constraint itself is row 121) | — | [ ] |
+| 127 | v0.4 §3 | "No change to `gen-registry.mjs` is required" — the fix is that the skill emits the frontmatter the generator already reads | scaffold (delta implementation note; the constraint itself is row 121) | — | [x] |
 | 128 | v0.4 §4.1 | Once an ADR is accepted, `hsdd-spec` hands materialization to `hsdd-adr`, which writes the file; then `Governed by: [ADR-NNN]` is set on every affected node, phase, and contract | carry | ch4 | [x] |
 | 129 | v0.4 §4.1 | ADRs are never left as inline prose in a node spec | carry | ch4 | [x] |
 | 130 | v0.4 §4.2 | If a referenced `ADR-NNN` has no file, it was never materialized: stop and author it with `hsdd-adr` before injecting | carry | ch4 | [x] |
@@ -169,14 +169,14 @@ ch12,13→T9 · ch14→T10 · ch15,16→T11 · ch17,18→T12.
 | 139 | v0.4 §5.2 | The single project at the root is what makes the layout coherent: one `config.yaml` to switch, one `changes/` history, one place the registries sit beside — context isolation stays a property of the phase switch, not the filesystem | carry | ch5 | [x] |
 | 140 | v0.4 §5.2 | Polyrepo variant: when the system is already physically split across repositories, run `openspec init` at each repo root and share the contract and ADR directories through a package or a git submodule; the single-project default is canonical | carry+amend (the standalone-spec-repo profile, v0.7 §6) | ch13 | [x] |
 | 141 | v0.4 §6 | Each skill ships one thin slash-command wrapper (here `/hsdd-adr`); the command stays a one-line delegator and the skill remains the source of truth | carry | ch13 | [x] |
-| 142 | v0.4 §7 | Settled: `hsdd-adr` authors ADR files — `hsdd-spec` proposes, `hsdd-adr` materializes | carry | ch17 | [ ] |
-| 143 | v0.4 §7 | Settled: the ADR artifact is YAML frontmatter plus body, reconciled with the existing generator | carry | ch17 | [ ] |
-| 144 | v0.4 §7 | Settled: no generator change is needed — the skill emits the frontmatter the generator already reads | carry | ch17 | [ ] |
-| 145 | v0.4 §7 | Settled: ADR numbering is global across the tree, `ADR-{nnn}`, with the filename `{nnn}-{title}.md` | carry | ch17 | [ ] |
-| 146 | v0.4 §7 | Settled: `openspec init` runs once, at the repo root — one OpenSpec project per HSDD tree | carry | ch17 | [ ] |
-| 147 | v0.4 §7 | Settled: a missing ADR at config time stops the switch and hands off to `hsdd-adr`; an unknown decision is authored `proposed` with a TODO, never as an invented `accepted` | carry | ch17 | [ ] |
-| 148 | v0.4 §8 | "Implementation Steps" | scaffold | — | [ ] |
-| 149 | v0.4.2 §1 | "What 0.4.2 Changes and Why" — the three parallel-planning field failures | scaffold (delta framing; §1's closing paragraphs carry rows 150–153) | — | [ ] |
+| 142 | v0.4 §7 | Settled: `hsdd-adr` authors ADR files — `hsdd-spec` proposes, `hsdd-adr` materializes | carry | ch17 | [x] |
+| 143 | v0.4 §7 | Settled: the ADR artifact is YAML frontmatter plus body, reconciled with the existing generator | carry | ch17 | [x] |
+| 144 | v0.4 §7 | Settled: no generator change is needed — the skill emits the frontmatter the generator already reads | carry | ch17 | [x] |
+| 145 | v0.4 §7 | Settled: ADR numbering is global across the tree, `ADR-{nnn}`, with the filename `{nnn}-{title}.md` | carry | ch17 | [x] |
+| 146 | v0.4 §7 | Settled: `openspec init` runs once, at the repo root — one OpenSpec project per HSDD tree | carry | ch17 | [x] |
+| 147 | v0.4 §7 | Settled: a missing ADR at config time stops the switch and hands off to `hsdd-adr`; an unknown decision is authored `proposed` with a TODO, never as an invented `accepted` | carry | ch17 | [x] |
+| 148 | v0.4 §8 | "Implementation Steps" | scaffold | — | [x] |
+| 149 | v0.4.2 §1 | "What 0.4.2 Changes and Why" — the three parallel-planning field failures | scaffold (delta framing; §1's closing paragraphs carry rows 150–153) | — | [x] |
 | 150 | v0.4.2 §1 | **The governance write protocol:** governance files become immutable inputs during phase planning, intended mutations are emitted as data, and a single writer applies them at the root | carry | ch8 | [x] |
 | 151 | v0.4.2 §1 | The reason, named alongside the rule: contracts, ADRs, `conventions.md`, and the INDEX registries are shared mutable state with concurrent writers, and no skill defined a write protocol | carry | ch8 | [x] |
 | 152 | v0.4.2 §1 | Two independent generations from the same prose are not byte-identical: a plan may never resolve a shared artifact with "create it verbatim if absent; identical by construction; the merge is trivial" | carry | ch8 | [x] |
@@ -206,22 +206,22 @@ ch12,13→T9 · ch14→T10 · ch15,16→T11 · ch17,18→T12.
 | 176 | v0.4.2 §4.2 | The hand-maintained `## Established contracts` list is removed from the conventions template: it duplicated what the registry already projects, and hand-maintained projections drift | carry | ch13 | [x] |
 | 177 | v0.4.2 §4.2 | The conventions template gains a `## Parallel development protocol` section stating the freeze rule, the pending-section mechanism, the reconcile step, and sibling isolation | carry+amend (extended to cover the execution stage, v0.6 §4) | ch13 | [x] |
 | 178 | v0.4.2 §4.2 | Every skill reads `conventions.md` first, so a protocol stated there reaches every downstream session without new cross-skill references | carry | ch13 | [x] |
-| 179 | v0.4.2 §5 | "Skill Edits (summary)" — the per-skill edit list | scaffold (delta bookkeeping; the rules stated only in its cells are rows 180–182) | — | [ ] |
+| 179 | v0.4.2 §5 | "Skill Edits (summary)" — the per-skill edit list | scaffold (delta bookkeeping; the rules stated only in its cells are rows 180–182) | — | [x] |
 | 180 | v0.4.2 §5 | `hsdd-contract` quality gate: any code-level artifact both sides consume names its canonical path and its owning phase | carry | ch3 | [x] |
 | 181 | v0.4.2 §5 | A phase's tasks never instruct it to update `conventions.md` | carry | ch8 | [x] |
 | 182 | v0.4.2 §5 | Conventions stay root-owned: `hsdd-spec` seeds the file and `hsdd-reconcile` updates it | carry | ch13 | [x] |
 | 183 | v0.4.2 §6 | `/hsdd-reconcile` is a thin wrapper, consistent with the others | carry | ch13 | [x] |
-| 184 | v0.4.2 §7 | Settled: the write model for governance files during planning is freeze plus effects-as-data, unconditional — no worktree detection, serial and parallel flows identical | carry | ch17 | [ ] |
-| 185 | v0.4.2 §7 | Settled: reconciliation lives in its own skill, run at the root after branches merge | carry | ch17 | [ ] |
-| 186 | v0.4.2 §7 | Settled: contract gaps during planning are two-tier — ask when the gap changes the plan's shape, otherwise record a `request` with the stated assumption | carry | ch17 | [ ] |
-| 187 | v0.4.2 §7 | Settled: collision resolution — the human arbitrates once, at reconcile time; the skill never auto-picks a winner | carry | ch8, ch17 | [ ] |
-| 188 | v0.4.2 §7 | Settled: `conventions.md` is written at the root only; phases and phase planning never touch it | carry | ch17 | [ ] |
-| 189 | v0.4.2 §7 | Settled: sibling worktree reads are forbidden — contracts are the only inter-node knowledge | carry | ch17 | [ ] |
-| 190 | v0.4.2 §7 | Settled: no generator change — `phase_ids` is parsed and ignored by the projection | carry | ch17 | [ ] |
-| 191 | v0.4.2 §7 | Settled: producer-side discoveries travel as the `amend` entry kind, and a breaking amendment goes to the human and bumps the version | carry | ch17 | [ ] |
-| 192 | v0.4.2 §7 | Settled: `draft → stable` is flipped by `hsdd-reconcile` at the end of the pass, once `phase_ids` is `final` and no `request` naming the contract is unresolved; `stable` means interface-frozen (safe to build against), not producer-shipped | carry+amend (also requires executable validation, vNext §5.1) | ch3, ch17 | [ ] |
-| 193 | v0.4.2 §8 | "Implementation Steps" | scaffold | — | [ ] |
-| 194 | v0.5 §1 | "What 0.5 Changes and Why" — scattered output and inconsistent naming | scaffold (delta framing; §1's closing paragraphs carry rows 195–198) | — | [ ] |
+| 184 | v0.4.2 §7 | Settled: the write model for governance files during planning is freeze plus effects-as-data, unconditional — no worktree detection, serial and parallel flows identical | carry | ch17 | [x] |
+| 185 | v0.4.2 §7 | Settled: reconciliation lives in its own skill, run at the root after branches merge | carry | ch17 | [x] |
+| 186 | v0.4.2 §7 | Settled: contract gaps during planning are two-tier — ask when the gap changes the plan's shape, otherwise record a `request` with the stated assumption | carry | ch17 | [x] |
+| 187 | v0.4.2 §7 | Settled: collision resolution — the human arbitrates once, at reconcile time; the skill never auto-picks a winner | carry | ch8, ch17 | [x] |
+| 188 | v0.4.2 §7 | Settled: `conventions.md` is written at the root only; phases and phase planning never touch it | carry | ch17 | [x] |
+| 189 | v0.4.2 §7 | Settled: sibling worktree reads are forbidden — contracts are the only inter-node knowledge | carry | ch17 | [x] |
+| 190 | v0.4.2 §7 | Settled: no generator change — `phase_ids` is parsed and ignored by the projection | carry | ch17 | [x] |
+| 191 | v0.4.2 §7 | Settled: producer-side discoveries travel as the `amend` entry kind, and a breaking amendment goes to the human and bumps the version | carry | ch17 | [x] |
+| 192 | v0.4.2 §7 | Settled: `draft → stable` is flipped by `hsdd-reconcile` at the end of the pass, once `phase_ids` is `final` and no `request` naming the contract is unresolved; `stable` means interface-frozen (safe to build against), not producer-shipped | carry+amend (also requires executable validation, vNext §5.1) | ch3, ch17 | [x] |
+| 193 | v0.4.2 §8 | "Implementation Steps" | scaffold | — | [x] |
+| 194 | v0.5 §1 | "What 0.5 Changes and Why" — scattered output and inconsistent naming | scaffold (delta framing; §1's closing paragraphs carry rows 195–198) | — | [x] |
 | 195 | v0.5 §1 | Every HSDD artifact lives under one root directory, `hsdd/` | carry | ch13 | [x] |
 | 196 | v0.5 §1 | Directory names are singular (`spec`, `contract`, `adr`, `verify`): a directory names the artifact kind, not the collection | carry | ch13 | [x] |
 | 197 | v0.5 §1 | `openspec/` is the one exception — OpenSpec owns that location and expects its files exactly there; HSDD does not relocate another tool's files | carry | ch13 | [x] |
@@ -233,13 +233,13 @@ ch12,13→T9 · ch14→T10 · ch15,16→T11 · ch17,18→T12.
 | 203 | v0.5 §3 | The standard invocation is `node hsdd/scripts/gen-registry.mjs` | carry | ch13 | [x] |
 | 204 | v0.5 §3 | The generator ships bundled with `hsdd-contract` only, and is copied verbatim into the target project at `hsdd/scripts/` | carry | ch13 | [x] |
 | 205 | v0.5 §4 | The conventions file is the compatibility mechanism: skills load `hsdd/conventions.md` first and honor whatever layout the project's conventions state | carry | ch13 | [x] |
-| 206 | v0.5 §4 | Pre-0.5 detection (`docs/conventions.md` present instead) and the `git mv` migration recipe | drop (v0.8.0 supports ≥0.6.1 only, design §7; the pre-0.5 rename is history) | — | [ ] |
-| 207 | v0.5 §4 | After migrating, update the layout section of the conventions file and replace the copied generator, since the old copy scans the old paths by default | drop (same reason as row 206) | — | [ ] |
+| 206 | v0.5 §4 | Pre-0.5 detection (`docs/conventions.md` present instead) and the `git mv` migration recipe | drop (v0.8.0 supports ≥0.6.1 only, design §7; the pre-0.5 rename is history) | — | [x] |
+| 207 | v0.5 §4 | After migrating, update the layout section of the conventions file and replace the copied generator, since the old copy scans the old paths by default | drop (same reason as row 206) | — | [x] |
 | 208 | v0.5 §5 | The node, phase, contract, and ADR id schemes are layout-independent | carry | ch13 | [x] |
 | 209 | v0.5 §5 | The governance freeze protocol and `hsdd-reconcile` semantics are layout-independent | carry | ch13 | [x] |
 | 210 | v0.5 §5 | The conventions-override mechanism is layout-independent: the layout is a default, not a requirement | carry | ch13 | [x] |
 | 211 | v0.5 §5 | The `openspec/` location, the per-phase context switch, and the OpenSpec cycle are unchanged by any layout choice | carry | ch13 | [x] |
-| 212 | v0.6 §1 | "What 0.6 Changes and Why" — the four classes of field friction | scaffold (delta framing; §1's closing paragraph carries row 213) | — | [ ] |
+| 212 | v0.6 §1 | "What 0.6 Changes and Why" — the four classes of field friction | scaffold (delta framing; §1's closing paragraph carries row 213) | — | [x] |
 | 213 | v0.6 §1 | The core invariant no release moves: one phase drives exactly one OpenSpec change and ends at one human review gate | carry | ch1 | [x] |
 | 214 | v0.6 §2.1 | Every field block emitted in a node header or a phase section is a bullet list — never consecutive `**Field:** value` lines relying on soft breaks, which every compliant renderer collapses into one paragraph | carry | ch2 | [x] |
 | 215 | v0.6 §2.1 | Wrapped values keep the 2-space continuation indent, so wrapped lines render inside their field | carry | ch2 | [x] |
@@ -299,22 +299,22 @@ ch12,13→T9 · ch14→T10 · ch15,16→T11 · ch17,18→T12.
 | 269 | v0.6 §6.2 | The rule reduces to one question — who builds what? — and an unstated team structure over a stack-spanning system is the canonical clarifying question | carry+amend (becomes a mandatory stop, v0.6.1 §4) | ch2 | [x] |
 | 270 | v0.6 §6.2 | Quality gate: the decomposition axis at each level matches the stated ownership, and no node is owned by two teams | carry+amend (ownership stated by the human, not assumed, v0.6.1 §4) | ch2 | [x] |
 | 271 | v0.6 §6.2 | Anti-rationalization: "auth end-to-end is one coherent capability" — coherent for whom? Split at the ownership boundary; the capability comes back as a node pair joined by a contract | carry | ch2 | [x] |
-| 272 | v0.6 §7 | "Skill Edits (summary)" | scaffold (delta bookkeeping; the rule stated only in its cells is row 273) | — | [ ] |
+| 272 | v0.6 §7 | "Skill Edits (summary)" | scaffold (delta bookkeeping; the rule stated only in its cells is row 273) | — | [x] |
 | 273 | v0.6 §7 | The conventions template's parallel-development section is extended and renamed to cover both stages — planning and execution | carry | ch13 | [x] |
-| 274 | v0.6 §8 | Settled: the decomposition axis is ownership first; capability slices apply within one owner's territory; an unknown team structure is the canonical one-clarifying-question | carry | ch17 | [ ] |
-| 275 | v0.6 §8 | Settled: field-block format is bullet lists; tables rejected for multi-sentence fields, hard line breaks rejected as invisible and fragile | carry | ch17 | [ ] |
-| 276 | v0.6 §8 | Settled: a plan's human scannability comes from a per-plan summary table, human-only, with zero agent context cost | carry | ch17 | [ ] |
-| 277 | v0.6 §8 | Settled: the dependency-graph format is Mermaid in both skills, always; cross-node edges dashed; contention is a field, not an edge | carry | ch17 | [ ] |
-| 278 | v0.6 §8 | Settled: sizing has a floor as well as a ceiling; a merge requires same tier, same contracts, a clean dependency shape, and window fit; artifacts-exceed-diff is the default merge smell | carry+amend (both ends restated in PE terms, vNext §10) | ch17 | [ ] |
-| 279 | v0.6 §8 | Settled: the review tier controls human attention *and* artifact depth; tasks and spec deltas never scale; a verification doc always exists | carry | ch17 | [ ] |
-| 280 | v0.6 §8 | Settled: one phase = one OpenSpec change = one review gate — unchanged invariant | carry | ch17 | [ ] |
-| 281 | v0.6 §8 | Settled: `openspec/config.yaml` at merge is ephemeral — take either side and re-run the phase switch | carry | ch17 | [ ] |
-| 282 | v0.6 §8 | Settled: a node's plan lives on exactly one lineage, and reconcile runs once, at the root lineage only | carry | ch17 | [ ] |
-| 283 | v0.6 §8 | Settled: textual contention is structured (`Collides with`), surfaced in the summary table, serializes execution, and never reshapes logical dependencies | carry | ch17 | [ ] |
-| 284 | v0.6 §8 | Settled: capability naming is per stable feature area by default; per-phase names only for genuinely parallel contention | carry | ch17 | [ ] |
-| 285 | v0.6 §8 | Settled: the verification doc has a bundled template with Outstanding and Sign-off, and the gate is not passed while an Outstanding item lacks a disposition | carry | ch17 | [ ] |
-| 286 | v0.6 §9 | "Implementation Steps" — including item 8, which proposes this very consolidation | scaffold | — | [ ] |
-| 287 | v0.6.1 §1 | "What 0.6.1 Changes and Why" — four instances of one failure class | scaffold (delta framing; §1's closing carries rows 288–289) | — | [ ] |
+| 274 | v0.6 §8 | Settled: the decomposition axis is ownership first; capability slices apply within one owner's territory; an unknown team structure is the canonical one-clarifying-question | carry | ch17 | [x] |
+| 275 | v0.6 §8 | Settled: field-block format is bullet lists; tables rejected for multi-sentence fields, hard line breaks rejected as invisible and fragile | carry | ch17 | [x] |
+| 276 | v0.6 §8 | Settled: a plan's human scannability comes from a per-plan summary table, human-only, with zero agent context cost | carry | ch17 | [x] |
+| 277 | v0.6 §8 | Settled: the dependency-graph format is Mermaid in both skills, always; cross-node edges dashed; contention is a field, not an edge | carry | ch17 | [x] |
+| 278 | v0.6 §8 | Settled: sizing has a floor as well as a ceiling; a merge requires same tier, same contracts, a clean dependency shape, and window fit; artifacts-exceed-diff is the default merge smell | carry+amend (both ends restated in PE terms, vNext §10) | ch17 | [x] |
+| 279 | v0.6 §8 | Settled: the review tier controls human attention *and* artifact depth; tasks and spec deltas never scale; a verification doc always exists | carry | ch17 | [x] |
+| 280 | v0.6 §8 | Settled: one phase = one OpenSpec change = one review gate — unchanged invariant | carry | ch17 | [x] |
+| 281 | v0.6 §8 | Settled: `openspec/config.yaml` at merge is ephemeral — take either side and re-run the phase switch | carry | ch17 | [x] |
+| 282 | v0.6 §8 | Settled: a node's plan lives on exactly one lineage, and reconcile runs once, at the root lineage only | carry | ch17 | [x] |
+| 283 | v0.6 §8 | Settled: textual contention is structured (`Collides with`), surfaced in the summary table, serializes execution, and never reshapes logical dependencies | carry | ch17 | [x] |
+| 284 | v0.6 §8 | Settled: capability naming is per stable feature area by default; per-phase names only for genuinely parallel contention | carry | ch17 | [x] |
+| 285 | v0.6 §8 | Settled: the verification doc has a bundled template with Outstanding and Sign-off, and the gate is not passed while an Outstanding item lacks a disposition | carry | ch17 | [x] |
+| 286 | v0.6 §9 | "Implementation Steps" — including item 8, which proposes this very consolidation | scaffold | — | [x] |
+| 287 | v0.6.1 §1 | "What 0.6.1 Changes and Why" — four instances of one failure class | scaffold (delta framing; §1's closing carries rows 288–289) | — | [x] |
 | 288 | v0.6.1 §1 | Rules that live only in prose fire inconsistently: the same skill text produced conforming and non-conforming runs, and unpinned behavior with observed variance is the failure mode | carry | ch1 | [x] |
 | 289 | v0.6.1 §1 | Every behavior that must fire gets a structural anchor — a required field, a checklist item, or an explicit stop — instead of more prose | carry | ch1 | [x] |
 | 290 | v0.6.1 §2.1 | Downstream skills read only the node spec's closure (conventions plus the node spec plus contracts plus ADRs), so a detail absent from that closure is unreachable *by construction*, not by accident | carry | ch2 | [x] |
@@ -347,17 +347,17 @@ ch12,13→T9 · ch14→T10 · ch15,16→T11 · ch17,18→T12.
 | 317 | v0.6.1 §6 | `Collides with` may carry a one-line reason after an em dash | carry | ch7 | [x] |
 | 318 | v0.6.1 §6 | `## Phase Plan` begins with the `**Default gate:**` line (when present) followed immediately by the summary table; prose commentary comes after the table, not before | carry | ch7 | [x] |
 | 319 | v0.6.1 §6 | Cross-node dashed edges appear only when a phase actually depends on another node's artifact; a node that builds purely against contract fixtures draws none | carry | ch7 | [x] |
-| 320 | v0.6.1 §7 | "Skill Edits (summary)" — including the users-guide tip "point at the doc, don't paste it", which is guide material, not a spec rule | scaffold | — | [ ] |
-| 321 | v0.6.1 §8 | Settled: source provenance lives in a root `## Sources` section plus a per-node field, trickled at every decomposition level; YAML frontmatter for it is rejected | carry | ch17 | [ ] |
-| 322 | v0.6.1 §8 | Settled: restate or reference — both are allowed but the pointer is mandatory; pasting source content into specs is rejected | carry | ch17 | [ ] |
-| 323 | v0.6.1 §8 | Settled: phases carry no Sources, and injecting source documents into phase contexts is rejected | carry | ch17 | [ ] |
-| 324 | v0.6.1 §8 | Settled: an unmapped source must be explicitly marked "informative only — not decomposed" with a reason; silence is the failure being fixed | carry | ch17 | [ ] |
-| 325 | v0.6.1 §8 | Settled: floor enforcement is a checklist item plus a conditional one-line kept-split reason; a mandatory floor-analysis section in every plan is rejected | carry | ch17 | [ ] |
-| 326 | v0.6.1 §8 | Settled: an unknown decomposition axis is asked and stopped on — mandatory, not permitted; proceed-with-flagged-assumption is rejected as the loophole, not the mitigation | carry | ch17 | [ ] |
-| 327 | v0.6.1 §8 | Settled: one file per child, every child, at decomposition time; the parent embeds only the summary block | carry | ch17 | [ ] |
-| 328 | v0.6.1 §8 | Settled: one phase = one OpenSpec change = one review gate — unchanged (restates row 280 in the 0.6.1 table) | carry | ch17 | [ ] |
-| 329 | v0.6.1 §9 | "Implementation Steps" | scaffold | — | [ ] |
-| 330 | v0.7 §1 | "What 0.7 Changes and Why" — the three field observations behind the management layer | scaffold (delta framing; §1's closing paragraphs carry rows 331–332) | — | [ ] |
+| 320 | v0.6.1 §7 | "Skill Edits (summary)" — including the users-guide tip "point at the doc, don't paste it", which is guide material, not a spec rule | scaffold | — | [x] |
+| 321 | v0.6.1 §8 | Settled: source provenance lives in a root `## Sources` section plus a per-node field, trickled at every decomposition level; YAML frontmatter for it is rejected | carry | ch17 | [x] |
+| 322 | v0.6.1 §8 | Settled: restate or reference — both are allowed but the pointer is mandatory; pasting source content into specs is rejected | carry | ch17 | [x] |
+| 323 | v0.6.1 §8 | Settled: phases carry no Sources, and injecting source documents into phase contexts is rejected | carry | ch17 | [x] |
+| 324 | v0.6.1 §8 | Settled: an unmapped source must be explicitly marked "informative only — not decomposed" with a reason; silence is the failure being fixed | carry | ch17 | [x] |
+| 325 | v0.6.1 §8 | Settled: floor enforcement is a checklist item plus a conditional one-line kept-split reason; a mandatory floor-analysis section in every plan is rejected | carry | ch17 | [x] |
+| 326 | v0.6.1 §8 | Settled: an unknown decomposition axis is asked and stopped on — mandatory, not permitted; proceed-with-flagged-assumption is rejected as the loophole, not the mitigation | carry | ch17 | [x] |
+| 327 | v0.6.1 §8 | Settled: one file per child, every child, at decomposition time; the parent embeds only the summary block | carry | ch17 | [x] |
+| 328 | v0.6.1 §8 | Settled: one phase = one OpenSpec change = one review gate — unchanged (restates row 280 in the 0.6.1 table) | carry | ch17 | [x] |
+| 329 | v0.6.1 §9 | "Implementation Steps" | scaffold | — | [x] |
+| 330 | v0.7 §1 | "What 0.7 Changes and Why" — the three field observations behind the management layer | scaffold (delta framing; §1's closing paragraphs carry rows 331–332) | — | [x] |
 | 331 | v0.7 §1 | The packaging rule: the progress report, the revised execution plan, the milestone gate ticks, and the atlas are four views over one expensive evidence pass, so one skill runs the pass and emits every view | carry | ch12 | [x] |
 | 332 | v0.7 §1 | Milestone *generation* stands alone, because it has a different trigger and a different audience | carry | ch12 | [x] |
 | 333 | v0.7 §2.1 | `management/` joins `spec/`, `contract/`, and `adr/` at the HSDD root and holds the documents that run the project: progress reports, execution plans, milestone documents, and the atlas | carry | ch12, ch13 | [x] |
@@ -472,22 +472,22 @@ ch12,13→T9 · ch14→T10 · ch15,16→T11 · ch17,18→T12.
 | 442 | v0.7 §7.3 | A run that comes back clean on a repo known to contain findings fails acceptance in the more important direction | carry | ch14 | [x] |
 | 443 | v0.7 §8.1 | The skill roster is stated per release with each skill's change, and each new skill gains a slash command | carry+amend (ten skills; the per-skill change table belongs to ch14, never ch1) | ch1 | [x] |
 | 444 | v0.7 §8.2 | Layout addition: `management/YYYY-MM-DD-progress.md`, `-execution-plan.md`, `-milestones.md`, and `atlas.md` under the HSDD root | carry+amend (adds `management/archive/` and the intake record, design §6) | ch13 | [x] |
-| 445 | v0.7 §8.3 | "Relationship to the 0.8 candidate (vNext mechanization)" — the planned hand-off to the CLI | drop (this document resolves the relationship: the tool-free half is absorbed per design §3.2, the CLI is dropped) | — | [ ] |
-| 446 | v0.7 §9 | Settled: two skills, not four, not zero — one evidence pass feeds four views, and milestone generation alone has a distinct trigger and audience | carry | ch17 | [ ] |
-| 447 | v0.7 §9 | Settled: the management layer is field-driven and ships now; mechanization is a bigger bet with its own release | carry+amend (resolved: the tool-free half is absorbed, the CLI is dropped) | ch17 | [ ] |
-| 448 | v0.7 §9 | Settled: cite, never define — management documents are views, and deleting `management/` loses no truth | carry | ch17 | [ ] |
-| 449 | v0.7 §9 | Settled: a dated chain for point-in-time documents and one living atlas; tick-and-append are the only in-place edits; supersedes links are by exact filename | carry | ch17 | [ ] |
-| 450 | v0.7 §9 | Settled: checkpoint ticks, milestone re-baselines | carry | ch17 | [ ] |
-| 451 | v0.7 §9 | Settled: open questions are a convention plus structural anchors, not a skill | carry | ch17 | [ ] |
-| 452 | v0.7 §9 | Settled: the profile is normative and opt-in and moves no paths; its content is the run-location rule plus four incident-backed rules; single-repo remains the default | carry | ch17 | [ ] |
-| 453 | v0.7 §9 | Settled: additive compatibility is a contract, not an aspiration, with a live project as the acceptance fixture | carry | ch17 | [ ] |
-| 454 | v0.7 §9 | Settled: rejected document classes, as derivable or duplicative — a standalone risk register, sync minutes, a stakeholder one-pager, a standalone estimation doc | carry | ch17 | [ ] |
+| 445 | v0.7 §8.3 | "Relationship to the 0.8 candidate (vNext mechanization)" — the planned hand-off to the CLI | drop (this document resolves the relationship: the tool-free half is absorbed per design §3.2, the CLI is dropped) | — | [x] |
+| 446 | v0.7 §9 | Settled: two skills, not four, not zero — one evidence pass feeds four views, and milestone generation alone has a distinct trigger and audience | carry | ch17 | [x] |
+| 447 | v0.7 §9 | Settled: the management layer is field-driven and ships now; mechanization is a bigger bet with its own release | carry+amend (resolved: the tool-free half is absorbed, the CLI is dropped) | ch17 | [x] |
+| 448 | v0.7 §9 | Settled: cite, never define — management documents are views, and deleting `management/` loses no truth | carry | ch17 | [x] |
+| 449 | v0.7 §9 | Settled: a dated chain for point-in-time documents and one living atlas; tick-and-append are the only in-place edits; supersedes links are by exact filename | carry | ch17 | [x] |
+| 450 | v0.7 §9 | Settled: checkpoint ticks, milestone re-baselines | carry | ch17 | [x] |
+| 451 | v0.7 §9 | Settled: open questions are a convention plus structural anchors, not a skill | carry | ch17 | [x] |
+| 452 | v0.7 §9 | Settled: the profile is normative and opt-in and moves no paths; its content is the run-location rule plus four incident-backed rules; single-repo remains the default | carry | ch17 | [x] |
+| 453 | v0.7 §9 | Settled: additive compatibility is a contract, not an aspiration, with a live project as the acceptance fixture | carry | ch17 | [x] |
+| 454 | v0.7 §9 | Settled: rejected document classes, as derivable or duplicative — a standalone risk register, sync minutes, a stakeholder one-pager, a standalone estimation doc | carry | ch17 | [x] |
 | 455 | v0.7 §10 | Non-goal: no mechanization — no CLI, no generated registries beyond what exists, no lint tooling | carry+amend (scripts are permitted only under the design §3.1 boundary) | ch15 | [x] |
 | 456 | v0.7 §10 | Non-goal: no scheduling — the weekly cadence is convention and nothing fires on a timer | carry | ch15 | [x] |
 | 457 | v0.7 §10 | Non-goal: no new governance semantics — freeze, reconcile, ownership, and tiers are untouched, and the management layer sits strictly downstream of them | carry | ch15 | [x] |
 | 458 | v0.7 §10 | Non-goal: no multi-team org model | carry+amend (the `Team` field lands; acks, ADR approvals, and profile lint do not) | ch15 | [x] |
 | 459 | v0.7 §10 | Non-goal: no dashboard or BI ambitions for the atlas — it is a markdown file with diagrams, regenerated whole | carry | ch15 | [x] |
-| 460 | v0.7 §11 | "Implementation Plan" | scaffold | — | [ ] |
+| 460 | v0.7 §11 | "Implementation Plan" | scaffold | — | [x] |
 | 461 | vNext §5.1 (design §3.2) | A contract may not be `stable` unless it carries at least one executable validation artifact — a schema or a fixtures directory — at the canonical paths its frontmatter names; `hsdd-reconcile` asserts it at the `draft → stable` flip | carry (vNext salvage: absorbed) | ch3 | [x] |
 | 462 | vNext §5.1 (design §3.2) | Default validation locations are `hsdd/contract/schema/` and `hsdd/contract/fixture/`, overridable — the contract's frontmatter is authoritative either way; guidance per kind (api/event want schema plus example payloads, schema/shared-model want edge-case fixtures, file wants a sample tree, cli wants recorded invocations) | carry (vNext salvage: absorbed) | ch3 | [x] |
 | 463 | vNext §5.2 (design §3.2) | Both gates run the contract — producer side: the gate of any phase that produces a contract must check that its real output validates against the schema and reproduces the fixtures, written into the phase's `Gate` by default | carry (vNext salvage: absorbed) | ch3, ch10 | [x] |
@@ -511,14 +511,14 @@ ch12,13→T9 · ch14→T10 · ch15,16→T11 · ch17,18→T12.
 | 481 | vNext §13.1 (design §3.2) | The `Team` node field records the answer to "who builds what?", which currently shapes the tree and then evaporates | carry+amend (the field only; `hsdd lint --profile multi-team` enforcement is dropped) | ch2, ch13 | [x] |
 | 482 | vNext §14.1 (design §3.2) | The verification template gains an optional `## Metrics` block, filled at the gate while the numbers are fresh: agent wall-clock, review wall-clock, gate failures before green, tokens if the harness reports them, product diff versus process artifacts, and escaped defects filled retroactively | carry+amend (no `hsdd status --write` aggregation) | ch10 | [x] |
 | 483 | vNext §14.2 (design §3.2) | The evidence program: one real system built end to end with HSDD, published with its tree, contracts, verification docs, and metrics, including a comparison baseline — stated as release criteria for v1.0 | carry (vNext salvage: absorbed) | ch16 | [x] |
-| 484 | vNext §2 (design §3.2) | The normative grammar (machine-parseable node header, phase section, contract frontmatter, and conventions frontmatter) | drop (it only mattered as parser input; the 0.6.1 bullet templates already stand as the authored format) | — | [ ] |
-| 485 | vNext §3 (design §3.2) | The `hsdd` CLI and its commands: `registry`, `context`, `lint`, `status`, `rename`, `check-scope`, `template` | drop (registry generation stays script-based; everything else stays skill work) | — | [ ] |
-| 486 | vNext §4 (design §3.2) | Pull-based phase context (context as a pure function, derived on demand) | drop (the push-based switch of v0.3 §9 / v0.4 §5, as implemented in `hsdd-config`, survives unchanged) | — | [ ] |
-| 487 | vNext §7 (design §3.2) | Derived state, and the retirement of `confirm`, `produced_by`, `consumers`, and `phase_ids` | drop (these fields and the `confirm` entry kind survive as authored, per v0.3 §5.1 / v0.4.2; derivation of done-ness survives anyway via v0.7 checkpoint's verification-doc rule) | — | [ ] |
-| 488 | vNext §8.2 (design §3.2) | `Touches` globs plus `hsdd check-scope` gate enforcement of a phase's file footprint | drop (dead surface: v0.6's `Collides with` already carries the collision signal) | — | [ ] |
-| 489 | vNext §9 (design §3.2) | The `hsdd-review` skill, its per-tier checklists, PR-based sign-off, and the leverage-based tier floor | drop (deferred; the 0.6 review tiers and gate commands stand) | — | [ ] |
-| 490 | vNext §13.2, §13.3 (design §3.2) | Cross-team contract acks before `stable`, and multi-team ADR approvals before `accepted` | drop (lint-enforced, so honor-system without it; deferred) | — | [ ] |
-| 491 | v0.7.1 preamble, §1, §2.1, §3.1, §4.1 | "What 0.7.1 Changes and Why" and the three "observed failure" narratives — the 07-31 checkpoint plan's regressions and the supersedes-in-part note | scaffold | — | [ ] |
+| 484 | vNext §2 (design §3.2) | The normative grammar (machine-parseable node header, phase section, contract frontmatter, and conventions frontmatter) | drop (it only mattered as parser input; the 0.6.1 bullet templates already stand as the authored format) | — | [x] |
+| 485 | vNext §3 (design §3.2) | The `hsdd` CLI and its commands: `registry`, `context`, `lint`, `status`, `rename`, `check-scope`, `template` | drop (registry generation stays script-based; everything else stays skill work) | — | [x] |
+| 486 | vNext §4 (design §3.2) | Pull-based phase context (context as a pure function, derived on demand) | drop (the push-based switch of v0.3 §9 / v0.4 §5, as implemented in `hsdd-config`, survives unchanged) | — | [x] |
+| 487 | vNext §7 (design §3.2) | Derived state, and the retirement of `confirm`, `produced_by`, `consumers`, and `phase_ids` | drop (these fields and the `confirm` entry kind survive as authored, per v0.3 §5.1 / v0.4.2; derivation of done-ness survives anyway via v0.7 checkpoint's verification-doc rule) | — | [x] |
+| 488 | vNext §8.2 (design §3.2) | `Touches` globs plus `hsdd check-scope` gate enforcement of a phase's file footprint | drop (dead surface: v0.6's `Collides with` already carries the collision signal) | — | [x] |
+| 489 | vNext §9 (design §3.2) | The `hsdd-review` skill, its per-tier checklists, PR-based sign-off, and the leverage-based tier floor | drop (deferred; the 0.6 review tiers and gate commands stand) | — | [x] |
+| 490 | vNext §13.2, §13.3 (design §3.2) | Cross-team contract acks before `stable`, and multi-team ADR approvals before `accepted` | drop (lint-enforced, so honor-system without it; deferred) | — | [x] |
+| 491 | v0.7.1 preamble, §1, §2.1, §3.1, §4.1 | "What 0.7.1 Changes and Why" and the three "observed failure" narratives — the 07-31 checkpoint plan's regressions and the supersedes-in-part note | scaffold | — | [x] |
 | 492 | v0.7.1 §2.2 | Step details: every step in every step table gets exactly one detail block, keyed by step ID; no step's content lives only in its table cell | carry | ch12 | [x] |
 | 493 | v0.7.1 §2.2 | The 👤 briefing form — *Why:* one or two sentences of context, finding IDs cited in parentheses after the fact they justify, never as the subject; *Do:* a checklist, one checkbox per action, each naming its concrete target (file, branch, field, person); *Done when:* one observable line, the human analogue of *Validate:* | carry | ch12 | [x] |
 | 494 | v0.7.1 §2.2 | The cell indexes, the block instructs: the Action cell holds a one-sentence summary; a cell that needs a second sentence, a semicolon-chained list, or more than two parenthetical citations has outgrown the table — move the content into the detail block | carry | ch12 | [x] |
@@ -535,15 +535,15 @@ ch12,13→T9 · ch14→T10 · ch15,16→T11 · ch17,18→T12.
 | 505 | v0.7.1 §4.2 | Cite-never-define is preserved: the agenda defines the *question* (options and landing artifact), the *answer* lands in its governance artifact, and the Exit box cites it | carry | ch12 | [x] |
 | 506 | v0.7.1 §4.2 | Checkpoint quality gates: every load-bearing sync has a section with Entry / Agenda / Exit / Unblocks and no step depends on a sync without one; every decision queued for a sync is defined once, in that sync's Agenda, and only cited everywhere else | carry | ch12 | [x] |
 | 507 | v0.7.1 §2.2, §3.2, §4.2 | Three anti-rationalization rows: "the table cell already says everything the briefing would", "the Depends column already encodes the graph", "the sync has an agenda row in the table — that's the checklist" | carry | ch12 | [x] |
-| 508 | v0.7.1 §5 | "Skill Edits (summary)" — including the users-guide updates (plan-graph walkthrough, sync-section example, the briefing rule in the delegation guide), which is guide material, not a spec rule | scaffold | — | [ ] |
-| 509 | v0.7.1 §6 | Settled: every step gets exactly one detail block. Rejected: briefings only for "complex" steps (the complexity judgment is the loophole); richer table cells (that is the defect, formalized) | carry | ch17 | [ ] |
-| 510 | v0.7.1 §6 | Settled: detail-block existence is mandated, grouping is not — under the owning sync's section or in one step-details section both conform; what failed in the field was absence, not placement | carry | ch17 | [ ] |
-| 511 | v0.7.1 §6 | Settled: plan-graph granularity is load-bearing syncs plus step batches. Rejected: per-phase graphs (the atlas's tree, unreadable as a weekly map); optional-when-small (the smallest plan still has a shape; the cost is one fence) | carry | ch17 | [ ] |
-| 512 | v0.7.1 §6 | Settled: only load-bearing syncs get sections; the standing weekly stays a table row. Rejected: sections for every row (ceremony without a gate to define) | carry | ch17 | [ ] |
-| 513 | v0.7.1 §6 | Settled: sync agendas do not violate cite-never-define — the question is defined in the agenda, the answer lands in governance; the R6/G-1 precedent made structural | carry | ch17 | [ ] |
-| 514 | v0.7.1 §6 | Settled: the progress report does not change — its dense tables are registers, diffed and compiled from, not executed from; briefing-grade unreadability recurring there is 0.7.2's evidence, not this delta's guess | carry | ch17 | [ ] |
-| 515 | v0.7.1 §6 | Settled: the findings→plan loop is an unchanged invariant — briefings and sync sections change how steps read, never whether findings land | carry | ch17 | [ ] |
-| 516 | v0.7.1 §7 | Implementation steps and the on-release re-sync note | scaffold | — | [ ] |
+| 508 | v0.7.1 §5 | "Skill Edits (summary)" — including the users-guide updates (plan-graph walkthrough, sync-section example, the briefing rule in the delegation guide), which is guide material, not a spec rule | scaffold | — | [x] |
+| 509 | v0.7.1 §6 | Settled: every step gets exactly one detail block. Rejected: briefings only for "complex" steps (the complexity judgment is the loophole); richer table cells (that is the defect, formalized) | carry | ch17 | [x] |
+| 510 | v0.7.1 §6 | Settled: detail-block existence is mandated, grouping is not — under the owning sync's section or in one step-details section both conform; what failed in the field was absence, not placement | carry | ch17 | [x] |
+| 511 | v0.7.1 §6 | Settled: plan-graph granularity is load-bearing syncs plus step batches. Rejected: per-phase graphs (the atlas's tree, unreadable as a weekly map); optional-when-small (the smallest plan still has a shape; the cost is one fence) | carry | ch17 | [x] |
+| 512 | v0.7.1 §6 | Settled: only load-bearing syncs get sections; the standing weekly stays a table row. Rejected: sections for every row (ceremony without a gate to define) | carry | ch17 | [x] |
+| 513 | v0.7.1 §6 | Settled: sync agendas do not violate cite-never-define — the question is defined in the agenda, the answer lands in governance; the R6/G-1 precedent made structural | carry | ch17 | [x] |
+| 514 | v0.7.1 §6 | Settled: the progress report does not change — its dense tables are registers, diffed and compiled from, not executed from; briefing-grade unreadability recurring there is 0.7.2's evidence, not this delta's guess | carry | ch17 | [x] |
+| 515 | v0.7.1 §6 | Settled: the findings→plan loop is an unchanged invariant — briefings and sync sections change how steps read, never whether findings land | carry | ch17 | [x] |
+| 516 | v0.7.1 §7 | Implementation steps and the on-release re-sync note | scaffold | — | [x] |
 | 517 | design §3.1 | The scripting boundary: a script may ship bundled with a new skill where it materially improves cost or determinism; no script may change how an existing skill behaves | new | ch6 | [x] |
 | 518 | design §3.1 | `hsdd-adopt` bundles `scripts/extract-seams.mjs`: manifests, directory tree, route registrations, proto/OpenAPI/GraphQL schemas, DB migrations, event topic producers and consumers, `CODEOWNERS`, and `git log --numstat` coupling clusters | new | ch6 | [x] |
 | 519 | design §5.1 | Seam archaeology extracts, never reads: the bundled script emits the structure, and the extraction commit SHA is recorded | new | ch6 | [x] |
@@ -594,4 +594,4 @@ ch12,13→T9 · ch14→T10 · ch15,16→T11 · ch17,18→T12.
 | 564 | design §7.1 | Grandfather property 2 — discharge on touch, not on a date: the moment any phase produces, amends, or bumps a grandfathered contract, it must gain fixtures before the phase's gate passes; obligations attach to work, not calendars | new | ch14 | [x] |
 | 565 | design §7.1 | Grandfather property 3 — the remaining count is reported in each checkpoint's progress report and can only fall; a count that rises is a finding | new | ch14 | [x] |
 | 566 | design §7.1 | The rejected alternatives are stated: a fixed sunset date (HSDD does not control anyone's calendar; a cliff invites blanket waivers) and permanent unmarked grandfathering (invisible, uncountable, never drains) | new | ch14 | [x] |
-| 567 | design §4 | Provenance is a required column in the settled-decisions table: `field-tested`, `pressure-tested`, or `reasoned-only` — new material must not inherit credibility from the tested parts | new | ch17 | [ ] |
+| 567 | design §4 | Provenance is a required column in the settled-decisions table: `field-tested`, `pressure-tested`, or `reasoned-only` — new material must not inherit credibility from the tested parts | new | ch17 | [x] |
