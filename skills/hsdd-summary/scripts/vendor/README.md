@@ -9,3 +9,5 @@ package's own notices, copied unchanged.
 `summary.mjs render` inlines it into every page, so diagrams lay out with no
 network, no build step and no viewer. Never edit it. A new version is a new
 download with a new pin, here and in `test/vendor.test.mjs`.
+
+To re-verify: `shasum -a 256 skills/hsdd-summary/scripts/vendor/dagre.min.js` must print the hash above, and `node --test test/vendor.test.mjs` must pass.
