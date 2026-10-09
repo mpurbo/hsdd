@@ -44,6 +44,15 @@ decides *what* each cycle sees and *in what order* cycles run. One
 contract-isolated OpenSpec cycle runs per leaf phase; the integrated system is
 the composition.
 
+**OpenSpec is one coding method of two.** A project may execute its phases
+with superpowers instead: `writing-plans` turns the phase into a plan, and
+`subagent-driven-development` executes it test-first. Both methods start from
+the same generic phase context (§9.7). Wherever this specification says
+"OpenSpec cycle" or "OpenSpec change", a project whose coding method is
+superpowers reads "one superpowers plan, executed to its verification doc"
+(§9.8). The OpenSpec-specific rules (`config.yaml`, archive, capability
+naming) apply only to the OpenSpec method.
+
 ```mermaid
 %%{init:{'theme':'base','themeVariables':{'primaryTextColor':'#1e293b','lineColor':'#475569','edgeLabelBackground':'#ffffff','tertiaryTextColor':'#1e293b'}}}%%
 flowchart TB
@@ -85,7 +94,7 @@ the live implementations behind them.
 
 ### 1.3 The core invariant
 
-One phase drives exactly one OpenSpec change and ends at one human review
+One phase drives exactly one coding cycle (an OpenSpec change, or a superpowers plan) and ends at one human review
 gate. No release of this specification moves that invariant; every other rule
 exists to make it cheap to honor.
 
@@ -112,7 +121,7 @@ a matching slash command.
 | `hsdd-adr` | Author, accept, update, and supersede cross-cutting Architecture Decision Records; owns the ADR directory the way `hsdd-contract` owns contracts, with the registry projected deterministically. | `hsdd/adr/*.md` |
 | `hsdd-phase-plan` | Turn a leaf-parent into ordered, OpenSpec-sized phases with gates, verification, review tiers, and a phase DAG. | leaf-parent phase plan |
 | `hsdd-reconcile` | The single writer for governance effects: drain the pending updates parallel phase planning emits, resolve contract requests, finalize phase ids. | updated governance files |
-| `hsdd-config` | Generate and maintain `openspec/config.yaml`; per-phase context switch that injects the current phase plus only its consumed contract interfaces and governing ADR decisions. | `openspec/config.yaml` |
+| `hsdd-config` | Per-phase context switch: write one self-contained, method-neutral phase context (the phase, the full text of the contracts it consumes and produces, its governing decisions, links), then wrap it for the project's coding method: OpenSpec's `config.yaml` or a superpowers spec. | `hsdd-context/{phase-id}.md`, `openspec/config.yaml` or `hsdd-context/superpowers/{phase-id}.md` |
 | `hsdd-adopt` | Bring an existing codebase into the tree: seam extraction by bundled script, as-built node specs, `v0` contracts (chapter 6). | as-built specs, `v0` contracts |
 | `hsdd-intake` | Route an incoming change request into the existing tree and record the routing (chapter 11). | intake record, handoff |
 | `hsdd-checkpoint` | One evidence pass across the spec repo and every implementation repo, compiled into the management documents (chapter 12). | progress report, execution plan, atlas |
@@ -159,7 +168,7 @@ and the registry regenerates.
 | Context per session | the full spec | one phase + consumed contract interfaces + governing ADRs |
 | Parallelism | one cycle at a time | independent phases/nodes run in parallel |
 | Dependency model | implicit | typed DAG (hard, contract, event, shared-model) |
-| Cycle engine | OpenSpec | OpenSpec, unchanged, run once per phase |
+| Cycle engine | OpenSpec | OpenSpec or superpowers, unchanged, run once per phase |
 | Human review | per change | per phase, tiered, with a verification doc |
 | Pacing | none | phase sized to one review sitting (chapter 7) |
 | Scales to | small systems | multi-team, multi-domain systems |
@@ -219,11 +228,11 @@ chapter 11 defines retirement).
 - A **leaf-parent node**'s children are phases, not further sub-nodes — where
   decomposition stops and execution planning starts.
 - A **leaf phase** is the atomic, independently verifiable unit: it drives
-  exactly one OpenSpec cycle and is sized for one review sitting. Its record
+  exactly one coding cycle (§1.2) and is sized for one review sitting. Its record
   shape and execution attributes are chapter 7's subject.
 
 The kind vocabulary is an open set: the **integration node** (chapter 3)
-specializes leaf-parent. Only leaf phases drive OpenSpec cycles; leaf-parents
+specializes leaf-parent. Only leaf phases drive coding cycles; leaf-parents
 own a phase plan; internal nodes only decompose and route contracts.
 
 ### 2.3 Where recursion stops
@@ -1208,15 +1217,16 @@ tasks never instruct it to, and governance changes are made at the root
 lineage by the owning skills.
 
 ---
-## 9. Execution: the OpenSpec Cycle
+## 9. Execution: Phase Context and Coding Methods
 
 ### 9.1 Planning versus execution
 
 HSDD draws a hard line between the two artifact classes. **Planning artifacts
 (intent):** node specs, contracts, ADRs, phase plans — stable, rarely
-rewritten. **Execution artifacts (mechanism):** the OpenSpec change
-(proposal, design, tasks, specs) plus the verification doc — disposable and
-re-runnable, archived per phase. You can re-run execution for a phase without
+rewritten. **Execution artifacts (mechanism):** the phase context (§9.7), the
+coding method's artifacts (an OpenSpec change, or a superpowers plan), and
+the verification doc. They are disposable and re-runnable, archived per
+phase. You can re-run execution for a phase without
 rewriting its intent. The verification doc is named
 `hsdd/verify/{phase-id}.verification.md` and is kept outside the OpenSpec
 change directory, so it survives `archive` and stays discoverable as durable
@@ -1224,24 +1234,41 @@ project history.
 
 ### 9.2 The phase context switch
 
-`hsdd-config` generates and maintains `openspec/config.yaml` and performs the
-per-phase context switch. **The switch is required before `opsx: new`;** skip
-it and the change inherits the previous phase's context. The injected context
-is the operational form of context isolation: the phase's own section plus
-only the Interface and Guarantees of the contracts it consumes and the
-Decision and Consequences of its governing ADRs — never producer internals,
-sibling phases, or the full node spec. Phases carry no Sources field and no
-source document is injected; the phase context stays ~20 lines, because the
-planner is the one who read the sources (§7.6).
+`hsdd-config` performs the per-phase context switch. **The switch is
+required before a phase's coding session starts** (`opsx: new` for OpenSpec,
+`writing-plans` for superpowers); skip it and the session inherits the
+previous phase's context. The switch writes two files: the **generic phase
+context** (§9.7), method-neutral and self-contained, and the **derivative**
+for the coding method, which wraps the generic body word for word: OpenSpec's
+`config.yaml` (§9.3) or the superpowers spec (§9.8). It is the operational
+form of context isolation: the phase's own section plus the Interface and
+Guarantees of the contracts it consumes and produces and the Decision and
+Consequences of its governing ADRs. Never producer internals, never another
+phase's section, never the full node spec. Phases carry no Sources field and
+no source document is injected, because the planner is the one who read the
+sources (§7.6). The phase block is typically 80 to 150 lines, mostly
+contract text.
 
 The switch **warns on a provisional contract and stops on a phase contingent
-on an open `request`** (§8.2). The review tier is injected with the context,
-so the artifact rules are tier-conditional (§10.1). The tasks it wires are
-stated as three separate rules — long compound rules are the ones agents
-half-apply: a gate task (§10.2), a verification-doc task (§10.2), and the
-no-governance rule (§8.4).
+on an open `request`** (§8.2). It **stops when a cited ADR has no file**
+(§4.3) and when a phase's gate reads `node default` but the plan states no
+default gate. The review tier travels with the context, so the artifact
+rules are tier-conditional (§10.1). For OpenSpec the tasks it wires are
+stated as three separate rules, because long compound rules are the ones
+agents half-apply: a gate task (§10.2), a verification-doc task (§10.2), and
+the no-governance rule (§8.4). For superpowers the same three obligations
+are Global Constraints (§9.8).
 
-### 9.3 `config.yaml` is ephemeral working state
+### 9.3 The OpenSpec derivative: `config.yaml`, ephemeral working state
+
+`config.yaml` keeps its project-wide `context:` sections and its `rules:`
+unchanged. The phase block is the generic phase context's body, verbatim,
+between `<!-- hsdd-phase-context:begin -->` and
+`<!-- hsdd-phase-context:end -->`, indented as the YAML block requires.
+OpenSpec therefore receives a superset of what earlier releases injected:
+the same phase section, consumed contracts and governing decisions, plus the
+contracts the phase produces, its node's purpose and isolation strategy, and
+pinned links.
 
 The `## Current Phase` block and its companion contract/ADR blocks are
 per-session working state, rewritten by every switch: **a merge conflict on
@@ -1301,6 +1328,73 @@ tooling skills (diagram style, stack-specific) are optional and wired the
 same way. `hsdd-config` references only skills that are actually installed:
 it discovers what is present, maps it to workflow steps, and degrades
 gracefully when a companion is missing.
+
+### 9.7 The generic phase context
+
+`hsdd-context/{phase-id}.md` in the implementation repo, written by every
+switch whatever the method, committed on the phase branch, and kept after
+the phase as the record of what the coding session was given. It lives
+outside `hsdd/` because it is execution state, not governance (§14.1), and
+per-phase files never conflict on merge.
+
+```markdown
+<!-- hsdd-phase-context {"phase":"{phase-id}","spec":"{spec-sha}","date":"{YYYY-MM-DD}"} -->
+# Current Phase: {phase-id} - {Phase Name}
+
+## Goal
+## Where it sits
+## Phase
+## Contracts
+## Decisions
+## Open questions
+## Discipline
+## Links (spec {spec-sha})
+```
+
+Five rules govern it:
+
+1. **Selection, never authorship.** Every line is a verbatim excerpt from a
+   governance file, a fixed text `hsdd-config` defines, or a link. The agent
+   writes no sentence of its own into the file.
+2. **Self-contained.** Every contract, ADR and open-question id the file
+   names has its text inline, except other phases' ids, which appear only in
+   the phase's Dependencies and Collides with lines. An external contract
+   with no file gets a one-line entry saying so.
+3. **Push, not pull.** The links are for provenance and escalation; they
+   never replace an inline excerpt (§18.2).
+4. **No truncation.** A context too large to read signals a phase that
+   touches too much; the fix belongs in the phase plan.
+5. **Stamped.** The stamp records the spec-repo SHA the excerpts were read
+   at, suffixed `-dirty` when `hsdd/` had uncommitted changes. When
+   governance changes mid-phase, re-run the switch; the file is rewritten
+   whole.
+
+### 9.8 The superpowers derivative
+
+`hsdd-context/superpowers/{phase-id}.md`: a header telling the session to
+start at `superpowers:writing-plans` (never at brainstorming, because the
+phase was designed and reviewed in HSDD), then **Global Constraints**, then
+a **Plan check**, then the generic body verbatim between the same markers
+`config.yaml` uses. `writing-plans` copies the spec's Global Constraints into
+the plan header, and `subagent-driven-development` hands them to every
+implementer and task reviewer, so they are where HSDD's rules travel:
+test-first in every task's own text, at most as many tasks as the phase's
+size estimate, the gate before the last task, the verification doc as the
+last task at the tier's depth, the governance freeze, contracts consumed by
+Interface and Guarantees only, the tier's artifact profile, and the
+project's tech skills. The run is `writing-plans`, the plan check, then
+`subagent-driven-development` (or `executing-plans`), then the verification
+doc. The definition of done does not change: a verification doc merged to
+spec-repo main.
+
+### 9.9 Choosing the coding method
+
+`hsdd/conventions.md` declares the project's default in a
+`**Coding method:**` line, `openspec` or `superpowers`; a project that
+declares nothing is `openspec`. `/hsdd-phase {phase-id} --method {method}`
+overrides it for one phase. The generic file is written whatever the
+method: it is the audit record and the in-progress signal (§12.6). A new
+method later is a new derivative, never a change to the generic context.
 
 ---
 
@@ -1730,8 +1824,10 @@ Three parts, behind the required stamp of §12.2:
 The atlas is **derived only**: every element must be reconstructible from
 the artifacts — `hsdd/spec/`, `hsdd/contract/`, `hsdd/adr/` for structure;
 `hsdd/verify/` for `done`; each implementation repo's `openspec/changes/`
-for `in-progress`. Never derive `done` from spec prose — prose carries
-claims, and separating claims from evidence is what this pass exists to do.
+and `hsdd-context/` for `in-progress` (a phase with either and no
+verification doc on spec-repo main). Never derive `done` from spec prose,
+because prose carries claims,
+and separating claims from evidence is what this pass exists to do.
 The atlas introduces no new information, so it needs no reconcile, no
 ownership, and no review gate: if it disagrees with the artifacts, the atlas
 is wrong by definition, and the fix is regeneration.
@@ -1869,9 +1965,11 @@ atlas states and adds no new information.
 Every HSDD artifact lives under one root directory, `hsdd/` — the ownership
 boundary is the point: something on disk must say "this is the methodology's
 output". Directory names are singular (`spec`, `contract`, `adr`, `verify`):
-a directory names the artifact kind, not the collection. `openspec/` is the
-one exception — OpenSpec owns that location and expects its `config.yaml`
-and `changes/` exactly there; HSDD does not relocate another tool's files.
+a directory names the artifact kind, not the collection. Two locations sit outside `hsdd/`. `openspec/`: OpenSpec owns that location
+and expects its `config.yaml` and `changes/` exactly there, and HSDD does not
+relocate another tool's files. `hsdd-context/`: per-phase execution state in
+the implementation repo (§9.7), which under the standalone-spec-repo profile
+must not become a spec-repo push.
 
 ```text
 hsdd/
@@ -1901,6 +1999,10 @@ openspec/
   config.yaml                   # phase context (hsdd-config)
   changes/                      # one OpenSpec change per phase
   specs/                        # OpenSpec capability specs
+hsdd-context/
+  {phase-id}.md                 # generic phase context (hsdd-config)
+  superpowers/
+    {phase-id}.md               # superpowers derivative (hsdd-config)
 ```
 
 The layout is a **recommended default** recorded in `hsdd/conventions.md`; a
@@ -1939,6 +2041,8 @@ new cross-skill references. Its frontmatter selects the ordering policy
   hand-maintained projections drift;
 - the `## Open questions (OQ)` section — the convention and the project's
   prefix set (§4.4).
+- the `**Coding method:**` line, `openspec` (default) or `superpowers`
+  (§9.9).
 
 ### 14.3 Packaging: skills and slash commands
 
@@ -1947,9 +2051,7 @@ conversational, auto-discovered, fits the decomposition dialogue) and
 **slash commands** (user-invoked with `$ARGUMENTS`; deterministic, hard to
 forget). Skills are the source of truth; each ships one thin slash-command
 wrapper — a one-line delegator, because the moment a command embeds logic
-the skill also owns, the two drift apart. The highest-value command is the
-phase-context switch (`/hsdd-phase {phase-id}`), the step easiest to forget
-and the one that must run before `opsx: new`.
+the skill also owns, the two drift apart. The highest-value command is the phase-context switch (`/hsdd-phase {phase-id} [--method openspec|superpowers]`), the step easiest to forget and the one that must run before a phase's coding session starts.
 
 ### 14.4 The standalone-spec-repo profile
 
@@ -2054,6 +2156,15 @@ HSDD-built part sits inside. `hsdd-adopt` runs on *that*, grafting as-built
 nodes alongside governed ones. The result is the same mixed tree as §6.6,
 reached from the other direction, and it is the normal end state rather than
 a transitional one.
+
+**v0.9.0 is additive as well.** The effect of each v0.9.0 change on an
+existing ≥0.6.1 project:
+
+| Change | Effect on an existing ≥0.6.1 project |
+|--------|--------------------------------------|
+| Generic phase context, `hsdd-context/` (§9.7) | Appears on the first switch after upgrading. Nothing earlier is rewritten. |
+| Coding method (§9.9) | Absent = `openspec`. No edit needed. |
+| Richer OpenSpec phase block (§9.3) | A superset of what earlier releases injected; `rules:` unchanged. |
 
 Projects below 0.6.1 are out of scope: upgrade to 0.6.1 first, per the
 existing delta reading path, which remains in `spec/` as history. This is
@@ -2216,13 +2327,13 @@ credibility from the tested parts: most of what v0.8.0 adds is
 | Dependency-graph format | Mermaid, always; cross-node edges dashed; contention is a field, never drawn (§7.5). | field-tested |
 | Sizing | Floor and ceiling, both ends of one rule in PE terms; artifacts-exceed-diff is the default merge smell (§7.2). | pressure-tested |
 | What the review tier controls | Human attention *and* artifact depth; tasks and spec deltas never scale; a verification doc always exists (§10.1). | field-tested |
-| One phase = one OpenSpec change = one review gate | Unchanged invariant, every release (§1.3). | pressure-tested |
+| One phase = one coding cycle = one review gate | Unchanged invariant; v0.9.0 widens "OpenSpec change" to "coding cycle" so superpowers runs under the same rule (§1.2). | pressure-tested |
 | `openspec/config.yaml` at merge | Ephemeral — take either side, re-run the switch (§9.3). | field-tested |
 | Plans and reconciles per lineage | A node's plan on exactly one lineage; reconcile once, at the root lineage (§9.4, §8.4). | field-tested |
 | Capability naming | Per stable feature area by default; per-phase names only for genuinely parallel contention (§9.4). | field-tested |
 | Verification doc shape | Bundled template with Outstanding + Sign-off; the gate is not passed while an item lacks a disposition; written at apply (§10.2). | field-tested |
 | Source provenance | Root `## Sources` plus a per-node field, trickled at every level; the pointer is mandatory, restatement optional; frontmatter rejected (§2.6). | field-tested |
-| Phases and sources | Phases carry no Sources and no source is injected — the planner reads them, the phase context stays ~20 lines (§9.2). | field-tested |
+| Phases and sources | Phases carry no Sources and no source is injected. The planner reads them, and the phase block is mostly contract text (§9.2). | field-tested |
 | Unmapped sources | Explicitly marked "informative only" with a reason; silence is the failure (§2.6). | field-tested |
 | Floor enforcement form | A checklist item plus a conditional kept-split reason — not a mandatory analysis section (§7.2). | pressure-tested |
 | Child spec files | One file per child, every child, at decomposition time; the parent embeds only summaries (§2.7). | pressure-tested |
@@ -2251,6 +2362,9 @@ credibility from the tested parts: most of what v0.8.0 adds is
 | Post-launch milestones | Per-campaign documents, sealed when green, archived (§12.5). | reasoned-only |
 | Contract compatibility | A declared per-version `compatibility:` policy, fixture-enforced (§3.5). | reasoned-only |
 | The grandfather clause's end | On touch, not on a date: set closed at upgrade, discharged when a phase touches the contract, count reported and falling (§15.2). | reasoned-only |
+| Phase context shape | One generic, method-neutral, self-contained file per phase, selected verbatim, never authored (§9.7). | reasoned-only |
+| Derivatives | Wrap the generic body word for word; a `diff` proves they agree (§9.3, §9.8). | reasoned-only |
+| Coding method | Project default in conventions, per-phase override at the switch (§9.9). | reasoned-only |
 
 ### 18.2 Deliberately dropped
 
@@ -2334,3 +2448,9 @@ the completion of acceptance criterion 1's traceability contract:
   and step batches, derived from the tables (§12.4).
 - **Load-bearing sync:** a sync any step, decision, or lane start depends
   on; it gets an Entry / Agenda / Exit / Unblocks section (§12.4).
+- **Generic phase context:** the self-contained, method-neutral file
+  `hsdd-config` writes for a phase before its coding session (§9.7).
+- **Derivative:** the generic phase context wrapped for one coding method:
+  OpenSpec's `config.yaml` or the superpowers spec (§9.3, §9.8).
+- **Coding method:** how a project executes phases, `openspec` or
+  `superpowers`, declared in conventions (§9.9).
