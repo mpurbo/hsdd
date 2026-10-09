@@ -196,6 +196,7 @@
     if (ev.key === "u") {
       const links = crumbs.querySelectorAll("a");
       if (links.length) window.location.hash = links[links.length - 1].getAttribute("href");
+      else if (r.view !== "top") go(r.audience, "top");
       return;
     }
     if (ev.key in PAGE_VIEWS.keys) go(r.audience, PAGE_VIEWS.keys[ev.key] || "top");
