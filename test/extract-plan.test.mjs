@@ -228,3 +228,46 @@ test("a collision reason after the target is not a phase reference", () => {
   assert.deepEqual(m.phases.find((p) => p.id === "x.c.1").collidesWith, ["x.a.2"]);
   assert.ok(!m.unparsed.some((u) => u.path.endsWith("/collidesWith")), "no unparsed collision entry");
 });
+
+test("a dash range in Collides with stays a range; a reason after a space-dash is cut", () => {
+  const root = makeTree({
+    "hsdd/spec/x.md": "# x: Root\n\n## Node\n\n- **Kind:** internal\n- **Purpose:** r\n- **Consumes:** none\n- **Produces:** none\n",
+    "hsdd/spec/x.a.md": "# x.a: A\n\n## Node\n\n- **Kind:** leaf-parent\n- **Purpose:** a\n- **Consumes:** none\n- **Produces:** none\n",
+    "hsdd/spec/x.c.md": [
+      "# x.c: C",
+      "",
+      "## Node",
+      "",
+      "- **Kind:** leaf-parent",
+      "- **Purpose:** c",
+      "- **Consumes:** none",
+      "- **Produces:** none",
+      "",
+      "## Phase Plan",
+      "",
+      "**Default gate:** `npm test`",
+      "",
+      "| Phase | Name | Depends on |",
+      "|------:|------|------------|",
+      "| c.1 | One | none |",
+      "| c.2 | Two | none |",
+      "",
+      "### c.1: One",
+      "",
+      "- **Scope:** s",
+      "- **Review tier:** gate-only",
+      "- **Collides with:** a.1\u2013a.3",
+      "",
+      "### c.2: Two",
+      "",
+      "- **Scope:** s",
+      "- **Review tier:** gate-only",
+      "- **Collides with:** [a.2] \u2014 same file (src/x.ts)",
+      "",
+    ].join("\n"),
+  });
+  const m = extractPlan(root, { specSha: "x" });
+  assert.deepEqual(m.phases.find((p) => p.id === "x.c.1").collidesWith, ["x.a.1", "x.a.2", "x.a.3"]);
+  assert.deepEqual(m.phases.find((p) => p.id === "x.c.2").collidesWith, ["x.a.2"]);
+  assert.ok(!m.unparsed.some((u) => u.path.endsWith("/collidesWith")), "no unparsed collision entry");
+});

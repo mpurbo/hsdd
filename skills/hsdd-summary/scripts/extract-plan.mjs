@@ -126,6 +126,17 @@ export function phaseList(cell, nodeId, nodeIds, aliases = new Map()) {
   return out;
 }
 
+// A Collides with value may carry a reason after its targets ("[a.2] \u2014 same file").
+// Cut at the first " dash " separator whose tail is not a phase reference, so a range
+// ("a.1\u2013a.3", no spaces, or "a.1 \u2013 a.3") stays whole.
+function collidesTarget(text) {
+  for (const m of text.matchAll(/\s[\u2014\u2013-]\s/g)) {
+    const tail = text.slice(m.index + m[0].length);
+    if (!/^[[`]?[\w.]*\d+/.test(tail)) return text.slice(0, m.index);
+  }
+  return text;
+}
+
 function openQuestions(ls) {
   const sec = sections(ls, 2).find((s) => /^open questions/i.test(sectionName(s.title)));
   if (!sec) return [];
@@ -311,8 +322,8 @@ export function extractPlan(root, { specSha = "n/a" } = {}) {
         unparsed.push({ path: `/phases/${pi}/dependsOn`, file, line: (pf.Dependencies?.line ?? h.line) + 1, reason: "the phase has no summary-table row; read its Dependencies line" });
       }
       const collCell = row && column(table, "collides") >= 0 ? row.cells[column(table, "collides")] : value(pf, "Collides with");
-      // A reason after the target ("[a.2] \u2014 same file") is prose, not a phase reference.
-      const coll = phaseList(collCell?.split(/\u2014|\u2013|\s-\s/)[0] ?? null, id, idSet, aliases);
+      // A reason after the targets ("[a.2] \u2014 same file") is prose, not a phase reference.
+      const coll = phaseList(collCell == null ? null : collidesTarget(collCell), id, idSet, aliases);
       if (coll.unresolved.length) unparsed.push({ path: `/phases/${pi}/collidesWith`, file, line: (row ? row.line : (pf["Collides with"]?.line ?? h.line)) + 1, reason: `Collides with names ${coll.unresolved.join(", ")}, which matches no phase` });
 
       const gate = value(pf, "Gate") === null ? null : plain(value(pf, "Gate"));
