@@ -154,7 +154,7 @@ plain sentences, not fragments; say what a thing does, not what it is called.
   tree arrive from one "Outside the tree" box, and on a part's own page,
   contracts produced elsewhere in the tree arrive from one "Elsewhere in the
   tree" box.
-- **A leaf-parent's phases** are coloured by review tier, joined by their
+- **A leaf-parent's phases** are colored by review tier, joined by their
   dependencies; collisions nothing orders are dashed, and collisions a
   dependency already orders are counted, not drawn. More than 12 phases
   collapse into steps (phases with no dependency between them); more than six

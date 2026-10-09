@@ -1979,19 +1979,20 @@ atlas states and adds no new information.
    symlinks. **Check** reports a stale page or stale prose, and always
    exits 0.
 
-Every page meets the same requirements. It is one file that makes no
-network request, under a Content-Security-Policy that lists the hash of
-each inline script and the style. Every value is escaped. Diagrams fit the
-viewport and carry a legend. A phase graph of more than 12 boxes collapses
-into steps, more than six steps become an ordered list, and more than 12
-parts are listed instead of drawn; the page says so each time. Boxes are
-focusable and open on Enter, focus survives a redraw, a skip control moves
-to the content without changing the view, and single-key shortcuts can be
-turned off. The URL fragment holds the view, and an unknown id falls back
+Every page meets the same requirements. It is one file that makes no network
+request, under a Content-Security-Policy that lists the hash of each inline
+script and the style. Every value is escaped. Diagrams fit the viewport and
+carry a legend. The stakeholder always sees phases as steps; for the reviewer
+and the implementer, a phase graph of more than 12 boxes collapses into
+steps, and the page says so. More than six steps become an ordered list, and
+more than 12 parts are listed instead of drawn, with a line saying so. Boxes
+are focusable and open on Enter, focus survives a redraw, a skip control
+moves to the content without changing the view, and single-key shortcuts can
+be turned off. The URL fragment holds the view, and an unknown id falls back
 to the top. The stakeholder never sees an id: every id a view prints is
-registered and tested for. Inputs that are missing or malformed fail by
-name. The vendored layout library is pinned by version and hash, and its
-licence notice is inlined with it in every page. The palette is
+registered and tested for. Inputs that are missing or malformed fail by name.
+The vendored layout library is pinned by version and hash, and its license
+notice is inlined with it in every page. The palette is
 `mermaid-pastel-style`'s, in light and dark themes, so the pages match the
 Mermaid diagrams in the specs.
 
@@ -2008,7 +2009,7 @@ and decisions are a click away.
   outside the tree arrive from one "Outside the tree" box, and on a part's
   own page, contracts produced elsewhere in the tree arrive from one
   "Elsewhere in the tree" box. The Mermaid dependency DAG is never parsed.
-- **Phases** are coloured by review tier and joined by their dependencies;
+- **Phases** are colored by review tier and joined by their dependencies;
   collisions nothing orders are dashed, and those a dependency already
   orders are counted, not drawn.
 - **What to check**, at every level and for everything beneath it:
@@ -2024,9 +2025,9 @@ and decisions are a click away.
   "promise" per contract, and a required glossary phrase per contract id.
 
 It is regenerated after each `hsdd-spec` level and each phase plan, so the
-reviewer opens it in the same MR, and it is committed with the change it
-summarizes. Under the standalone-spec-repo profile it lives in the spec
-repo like the rest of `hsdd/`.
+reviewer opens it in the same merge request, and it is committed with the
+change it summarizes. Under the standalone-spec-repo profile it lives in the
+spec repo like the rest of `hsdd/`.
 
 ---
 
