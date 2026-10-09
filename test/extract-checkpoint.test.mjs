@@ -153,6 +153,14 @@ test("unparsed progress: a removed Findings register heading is reported at /pro
   assert.ok(x.unparsed.some((u) => u.path === "/progress/findings" && u.file === `${MGMT}/2026-10-02-progress.md`), JSON.stringify(x.unparsed));
 });
 
+test("unparsed progress: a Findings register renamed to another heading is reported at /progress/findings", () => {
+  const x = withEdit((d) => {
+    const p = join(d, MGMT, "2026-10-02-progress.md");
+    writeFileSync(p, readFileSync(p, "utf8").replace(/^## Findings register/m, "## New findings"));
+  });
+  assert.ok(x.unparsed.some((u) => u.path === "/progress/findings" && u.file === `${MGMT}/2026-10-02-progress.md`), JSON.stringify(x.unparsed));
+});
+
 test("unparsed plan: renaming every Owner header reports the missing column and the empty step list", () => {
   const x = withEdit((d) => {
     const p = join(d, MGMT, "2026-10-02-execution-plan.md");

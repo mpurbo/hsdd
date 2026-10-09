@@ -393,13 +393,13 @@ export function extractCheckpoint(root, { specSha = "n/a" } = {}) {
   const progress = parseProgress(pls);
   const { skippedTables, ...plan } = parsePlan(read(root, planFile));
 
-  const heads = headings(pls).map((h) => h.text);
+  // The same predicates parseProgress uses, so a present check means a parsed section.
   const requiredHeads = [
-    [/verdict/i, "/progress/verdict", "the newest progress report has no Verdict heading the extractor can read; fill the verdict from the report"],
-    [/blockers/i, "/progress/blockers", "the newest progress report has no Blockers heading the extractor can read; fill the blockers from the report, or [] if it has none"],
-    [/findings/i, "/progress/findings", "the newest progress report has no Findings register heading the extractor can read; fill the findings from the report, or [] if it has none"],
+    [/^verdict/i, "/progress/verdict", "the newest progress report has no Verdict heading the extractor can read; fill the verdict from the report"],
+    [/^blockers/i, "/progress/blockers", "the newest progress report has no Blockers heading the extractor can read; fill the blockers from the report, or [] if it has none"],
+    [/^findings register/i, "/progress/findings", "the newest progress report has no Findings register heading the extractor can read; fill the findings from the report, or [] if it has none"],
   ];
-  for (const [re, path, reason] of requiredHeads) if (!heads.some((t) => re.test(t))) unparsed.push({ path, file: progressFile, line: 1, reason });
+  for (const [re, path, reason] of requiredHeads) if (!section(pls, re)) unparsed.push({ path, file: progressFile, line: 1, reason });
   if (!plan.steps.length) unparsed.push({ path: "/plan/steps", file: planFile, line: 1, reason: "the newest execution plan has no step table the extractor can read (a table with ID, Owner and Action columns); fill the steps from the plan" });
   for (const t of skippedTables) unparsed.push({ path: "/plan/steps", file: planFile, line: t.line, reason: `the table at line ${t.line} lists step ids but has no ${t.missing} column; add its steps from the plan` });
 
