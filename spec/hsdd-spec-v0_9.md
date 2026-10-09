@@ -109,7 +109,7 @@ follow apply this principle throughout.
 
 ### 1.5 The skill set
 
-Ten skills, one per artifact with its own lifecycle. **One artifact, one
+Eleven skills, one per artifact with its own lifecycle. **One artifact, one
 skill:** an artifact with status transitions, superseding, or a registry
 projection gets its own skill rather than a branch of another. Each skill has
 a matching slash command.
@@ -126,6 +126,7 @@ a matching slash command.
 | `hsdd-intake` | Route an incoming change request into the existing tree and record the routing (chapter 11). | intake record, handoff |
 | `hsdd-checkpoint` | One evidence pass across the spec repo and every implementation repo, compiled into the management documents (chapter 12). | progress report, execution plan, atlas |
 | `hsdd-milestone` | Generate and re-baseline the per-campaign stakeholder milestone document (chapter 12). | milestone document |
+| `hsdd-summary` | Render optional reading aids over the canonical artifacts: the plan page, an offline HTML view of the tree from the root down to the phase cards, for a reviewer, a stakeholder or an implementer (chapter 13). | `hsdd/summary/*.html` |
 
 Skills are named by **role**, not by tree level: the recursive model runs the
 same operation at multiple levels, so a tier in the name (`system-spec`,
@@ -1956,6 +1957,77 @@ four rules:
 The atlas (§12.6) stays a markdown file. The checkpoint page draws what the
 atlas states and adds no new information.
 
+### 13.2 The engine
+
+`hsdd-summary` bundles zero-dependency Node scripts, copied verbatim into
+`hsdd/scripts/summary/`, and one pipeline serves every page:
+
+1. **Extract.** A script parses what the HSDD templates fix and lists every
+   item it could not parse: the model path, the source file and line, and
+   the reason.
+2. **Fill.** The agent sets each unparsed field from the source line it
+   names. It never adds an item, never guesses, never edits a source.
+3. **Validate.** A schema and cross-checks over the model. An error means
+   the extraction is wrong and stops the run; a finding is a fact about the
+   artifacts and appears on the page.
+4. **Prose.** The script seeds a prose store and a glossary; the agent
+   writes the empty and stale slots within word limits; a lint checks the
+   limits, ids where ids are forbidden, and markdown; at most two rewrites;
+   then the rewritten entries are stamped with the facts they describe.
+5. **Render** writes one HTML file under `hsdd/summary/`, stamped with a
+   hash of every input; it refuses any other target, judged after resolving
+   symlinks. **Check** reports a stale page or stale prose, and always
+   exits 0.
+
+Every page meets the same requirements. It is one file that makes no
+network request, under a Content-Security-Policy that lists the hash of
+each inline script and the style. Every value is escaped. Diagrams fit the
+viewport and carry a legend. A phase graph of more than 12 boxes collapses
+into steps, more than six steps become an ordered list, and more than 12
+parts are listed instead of drawn; the page says so each time. Boxes are
+focusable and open on Enter, focus survives a redraw, a skip control moves
+to the content without changing the view, and single-key shortcuts can be
+turned off. The URL fragment holds the view, and an unknown id falls back
+to the top. The stakeholder never sees an id: every id a view prints is
+registered and tested for. Inputs that are missing or malformed fail by
+name. The vendored layout library is pinned by version and hash, and its
+licence notice is inlined with it in every page. The palette is
+`mermaid-pastel-style`'s, in light and dark themes, so the pages match the
+Mermaid diagrams in the specs.
+
+### 13.3 The plan page
+
+`hsdd/summary/summary.html`, built from `hsdd/spec/`, `hsdd/contract/`,
+`hsdd/adr/`, `hsdd/conventions.md`, the glossary and the prose store. It
+starts at the root's parts, each a box with its plain explanation, and
+opens down to a leaf-parent's phase graph and each phase's card; contracts
+and decisions are a click away.
+
+- **Edges come from contracts.** An edge means something in one part
+  consumes a contract something in the other produces; contracts produced
+  outside the tree arrive from one "Outside the tree" box, and on a part's
+  own page, contracts produced elsewhere in the tree arrive from one
+  "Elsewhere in the tree" box. The Mermaid dependency DAG is never parsed.
+- **Phases** are coloured by review tier and joined by their dependencies;
+  collisions nothing orders are dashed, and those a dependency already
+  orders are counted, not drawn.
+- **What to check**, at every level and for everything beneath it:
+  full-review phases, contingent phases, contracts named but not written,
+  provisional contracts, version drift in node fields, missing or proposed
+  ADRs, undrained governance updates, phases missing from their summary
+  table, and collisions.
+- **Three audiences.** The reviewer (default) reads it to approve a level
+  and then the source; the stakeholder reads names, counts and plain words,
+  never an id; the implementer gets the reviewer's view plus gates.
+- **Prose slots:** a required 25-word explanation per active node, optional
+  40-word notes per audience, a 25-word "delivers" line per phase, a 40-word
+  "promise" per contract, and a required glossary phrase per contract id.
+
+It is regenerated after each `hsdd-spec` level and each phase plan, so the
+reviewer opens it in the same MR, and it is committed with the change it
+summarizes. Under the standalone-spec-repo profile it lives in the spec
+repo like the rest of `hsdd/`.
+
 ---
 
 ## 14. Layout, Profiles, Conventions
@@ -1995,6 +2067,11 @@ hsdd/
     archive/                    # sealed milestone documents (§12.5)
   scripts/
     gen-registry.mjs
+    summary/                    # hsdd-summary's scripts, copied verbatim
+  summary/
+    summary.html                # the plan page (hsdd-summary)
+    prose.json                  # stamped prose slots
+    glossary.json               # plain words for contract ids
 openspec/
   config.yaml                   # phase context (hsdd-config)
   changes/                      # one OpenSpec change per phase
@@ -2165,6 +2242,7 @@ existing ≥0.6.1 project:
 | Generic phase context, `hsdd-context/` (§9.7) | Appears on the first switch after upgrading. Nothing earlier is rewritten. |
 | Coding method (§9.9) | Absent = `openspec`. No edit needed. |
 | Richer OpenSpec phase block (§9.3) | A superset of what earlier releases injected; `rules:` unchanged. |
+| `hsdd-summary`, `hsdd/summary/` (chapter 13) | Opt-in. A project without `hsdd/summary/` is unaffected. |
 
 Projects below 0.6.1 are out of scope: upgrade to 0.6.1 first, per the
 existing delta reading path, which remains in `spec/` as history. This is
@@ -2365,6 +2443,9 @@ credibility from the tested parts: most of what v0.8.0 adds is
 | Phase context shape | One generic, method-neutral, self-contained file per phase, selected verbatim, never authored (§9.7). | reasoned-only |
 | Derivatives | Wrap the generic body word for word; a `diff` proves they agree (§9.3, §9.8). | reasoned-only |
 | Coding method | Project default in conventions, per-phase override at the switch (§9.9). | reasoned-only |
+| Reading aids | Optional, derived, stamped HTML pages under `hsdd/summary/`; never authoritative, never a gate (chapter 13). | reasoned-only |
+| Summary extraction | A script parses what the templates fix; the agent fills only the items it flags, from the source; a schema and cross-checks validate (§13.2). | reasoned-only |
+| Plan-page edges | Derived from the contracts each part consumes and produces; the Mermaid DAG is never parsed (§13.3). | reasoned-only |
 
 ### 18.2 Deliberately dropped
 
@@ -2454,3 +2535,9 @@ the completion of acceptance criterion 1's traceability contract:
   OpenSpec's `config.yaml` or the superpowers spec (§9.3, §9.8).
 - **Coding method:** how a project executes phases, `openspec` or
   `superpowers`, declared in conventions (§9.9).
+- **Reading aid:** an optional, derived HTML page over the canonical
+  artifacts, rendered by `hsdd-summary` (chapter 13).
+- **Plan page:** the reading aid over the tree, from the root's parts down
+  to the phase cards, with contracts, decisions and What to check (§13.3).
+- **Unparsed item:** a model field the extraction script could not read;
+  the agent fills it from the source line it names (§13.2).
