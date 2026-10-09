@@ -1979,10 +1979,11 @@ atlas states and adds no new information.
 3. **Validate.** A schema and cross-checks over the model. An error means
    the extraction is wrong and stops the run; a finding is a fact about the
    artifacts and appears on the page.
-4. **Prose.** The script seeds a prose store and a glossary; the agent
-   writes the empty and stale slots within word limits; a lint checks the
-   limits, ids where ids are forbidden, and markdown; at most two rewrites;
-   then the rewritten entries are stamped with the facts they describe.
+4. **Prose.** The script seeds the page's own prose store and the shared
+   glossary; the agent writes the empty and stale slots within word limits;
+   a lint checks the limits, ids where ids are forbidden, and markdown; at
+   most two rewrites; then the rewritten entries are stamped with the facts
+   they describe.
 5. **Render** writes one HTML file under `hsdd/summary/`, stamped with a
    hash of every input; it refuses any other target, judged after resolving
    symlinks. **Check** reports a stale page or stale prose, and always
@@ -2042,11 +2043,11 @@ spec repo like the rest of `hsdd/`.
 
 `hsdd/summary/checkpoint.html`, rendered by `hsdd-checkpoint` as step 7 of
 its process when the project has `hsdd/summary/` (§12.7), from the newest
-progress report and execution plan, the eight newest of each behind them,
-the atlas, the node names under `hsdd/spec/`, `hsdd/contract/` and
-`hsdd/adr/`, and its own prose store, `checkpoint-prose.json`. Like the
-atlas it is living: the filename carries no date, the stamp names the files
-it read, and a newer report or plan makes it stale.
+progress report and execution plan, read with the rest of the eight newest
+of each, the atlas, `hsdd/spec/`, `hsdd/contract/` and `hsdd/adr/`, and its
+own prose store, `checkpoint-prose.json`. Like the atlas it is living: the
+filename carries no date, the stamp names the files it read, and a newer
+report or plan makes it stale.
 
 - **Extraction** reads what §12.3 and §12.4 fix: the header lines, the
   Bottom line table and the one-sentence read, the Milestone gate status
@@ -2066,8 +2067,10 @@ it read, and a newer report or plan makes it stale.
   milestone's movement since the previous report; and the plan graph,
   recomputed from Depends cells and each sync's Entry and Unblocks lines,
   with steps batched by lane and depth above 20 boxes and an ordered list
-  above 20 batches, and the page says so each time. The status view lists
-  the parts instead of drawing them above 12, with a line saying so.
+  above 20 batches, and the page says so each time. A status view shows
+  build progress from the atlas, drawn as a part and its children; when
+  that drawing would exceed 12 boxes it lists the children instead, with a
+  line saying so.
 - **Plan integrity** shows, as information, what `hsdd-checkpoint`'s
   quality gates check: a finding with no step and no waiver, a step with no
   detail block, a Depends entry that resolves to nothing, a decision defined
