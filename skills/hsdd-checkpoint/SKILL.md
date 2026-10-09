@@ -73,7 +73,7 @@ Chain rules (enforced here, checked every pass):
 ## Where This Runs, and What It Needs
 
 Run from an **implementation repo** — governance is at `hsdd/`, and the
-code-vs-plan pass needs the code, `openspec/`, and the gates. Under the
+code-vs-plan pass needs the code, `openspec/`, `hsdd-context/`, and the gates. Under the
 standalone-spec-repo profile this is a rule, not a preference: never run
 from a standalone clone of the spec repo (see conventions.md).
 
@@ -306,8 +306,8 @@ weeks stale:
 checkpoint; never hand-patched.
 **Derived from:** `hsdd/spec/` + `hsdd/contract/` + `hsdd/adr/` at spec-repo
 {sha} · `hsdd/verify/` for **done** · each implementation repo's
-`openspec/changes/` for **in-progress** · {repo}@{sha} for every
-implementation repo.
+`openspec/changes/` and `hsdd-context/` for **in-progress** ·
+{repo}@{sha} for every implementation repo.
 If this file disagrees with those artifacts, this file is wrong — regenerate it.
 ```
 
@@ -328,9 +328,7 @@ Three parts, regenerated whole every checkpoint:
 The atlas is **derived only**: every element must be reconstructible from the
 artifacts — `hsdd/spec/`, `hsdd/contract/`, `hsdd/adr/` for the tree, contracts,
 and ADR coverage; `hsdd/verify/` for `done` (the pinned definition: a
-verification doc merged to spec-repo main); each implementation repo's
-`openspec/changes/` for `in-progress`. Never derive `done` from spec prose —
-prose carries claims, and separating claims from evidence is what this pass
+verification doc merged to spec-repo main); each implementation repo's `openspec/changes/` and `hsdd-context/` for `in-progress` (a phase with either and no verification doc on spec-repo main). Never derive `done` from spec prose, because prose carries claims, and separating claims from evidence is what this pass
 exists to do. If it disagrees with the
 artifacts, the atlas is wrong by definition; the fix is regeneration. If
 `mermaid-pastel-style` is installed, follow it for all diagrams.
@@ -350,6 +348,9 @@ writes live under `hsdd/management/`.
       diff register against plan, nothing orphaned.
 - [ ] "Done" claims verified against verification docs on main; claims
       without docs reported as claims.
+- [ ] In-progress read from both `openspec/changes/` and `hsdd-context/` in
+      every implementation repo; a phase with either and no verification
+      doc on main is in-progress, never done.
 - [ ] New plan supersedes the previous plan by exact filename; baselines
       and companion links present in every emitted doc.
 - [ ] Guardrails imported/extended append-only; proposals marked as
