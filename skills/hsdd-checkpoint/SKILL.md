@@ -122,10 +122,12 @@ be standing in produces a progress report that undercounts the project.
    claims.
 
    If `hsdd/summary/` exists, run `node hsdd/scripts/summary/summary.mjs
-   check` and list the stale plan page and stale prose entries on the
-   report's `**Stale summaries:**` header line (`none` when all are fresh).
-   They are information only: never a findings-register entry, never a plan
-   step, never a gate.
+   check` and list the plan page, if it is stale, and the plan page's stale
+   prose entries on the report's `**Stale summaries:**` header line (`none`
+   when they are fresh). Leave the checkpoint page and its prose off the line:
+   this run re-renders them at step 7. If `hsdd/scripts/summary/` is missing,
+   run `hsdd-summary`'s Setup first. They are information only: never a
+   findings-register entry, never a plan step, never a gate.
 4. **Revise the execution plan** (shape below): a new dated file superseding
    the previous plan, current-state delta computed from the evidence pass,
    every findings-register row compiled into a step or explicitly waived
