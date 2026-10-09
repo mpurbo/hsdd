@@ -127,7 +127,7 @@ re-implementing them; `hsdd-config` wires them into each phase's coding session,
 | `hsdd-spec` | Turn a brain-dump into a high-level spec, or decompose any node into child nodes. Recursive: runs at the root and every internal level. |
 | `hsdd-contract` | Define and version the first-class contracts between nodes. |
 | `hsdd-adr` | Author and maintain cross-cutting Architecture Decision Records as first-class files, with registry-compatible frontmatter and a status lifecycle. |
-| `hsdd-phase-plan` | Break a small-enough node into ordered, independently implementable phases, each sized for one OpenSpec change and one review window. |
+| `hsdd-phase-plan` | Break a small-enough node into ordered, independently implementable phases, each sized for one coding cycle and one review window. |
 | `hsdd-reconcile` | Drain the pending governance updates emitted by phase planning: finalize contract phase ids, resolve contract-gap requests with you, and regenerate the registries. Runs on the root lineage after parallel plan branches merge. |
 | `hsdd-config` | Before each phase, write one self-contained phase context (the phase, the text of the contracts it touches, its decisions, pinned links) and wrap it for the project's coding method: OpenSpec's `config.yaml`, or a spec for superpowers' `writing-plans`. |
 | `hsdd-adopt` | Bring an existing codebase into the tree: script-extracted seams, as-built node specs with an `## Observed surface` section, and `v0` contracts describing current behavior. Brownfield's entry point. |

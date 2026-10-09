@@ -781,7 +781,7 @@ derived and never edited:
   how long each finding has been carried; each executor picks a lane and
   works its steps in order, copying prompts from the page; stakeholders see
   the verdict and the milestones in plain words. Once `hsdd/summary/`
-  exists, every checkpoint renders it as its last step before landing.
+  exists, every checkpoint renders it at step 7, before the commit lands.
 
 `/hsdd-summary` check lists any page or prose that has gone stale.
 
