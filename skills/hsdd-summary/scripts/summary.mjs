@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 // hsdd-summary CLI: extract | validate | slots | lint | stamp | render | check.
 // Run from the project root (the directory that holds hsdd/).
-import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync } from "node:fs";
-import { join, resolve, relative, dirname } from "node:path";
+import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync, realpathSync, lstatSync } from "node:fs";
+import { join, resolve, relative, dirname, isAbsolute, sep } from "node:path";
 import { tmpdir } from "node:os";
 import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
@@ -53,6 +53,26 @@ function writeJson(path, value) {
   writeFileSync(path, JSON.stringify(value, null, 2) + "\n");
 }
 
+// True when `path` lies under `dir`, judged on the real paths of the part that
+// exists, so a symlink inside `dir` cannot carry a write outside it.
+function insideDir(dir, path) {
+  const rel = relative(dir, path);
+  if (!rel || rel === ".." || rel.startsWith(`..${sep}`) || isAbsolute(rel)) return false;
+  mkdirSync(dir, { recursive: true });
+  let p = dirname(path);
+  while (!existsSync(p)) p = dirname(p);
+  const real = relative(realpathSync(dir), realpathSync(p));
+  if (real === ".." || real.startsWith(`..${sep}`) || isAbsolute(real)) return false;
+  // lstat, not existsSync: a dangling symlink reports false from existsSync but
+  // writeFileSync would still follow it.
+  try {
+    return !lstatSync(path).isSymbolicLink();
+  } catch (e) {
+    if (e.code === "ENOENT") return true;
+    throw e;
+  }
+}
+
 export function specSha(root) {
   try {
     return execFileSync("git", ["-C", join(root, "hsdd"), "rev-parse", "--short", "HEAD"], { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] }).trim();
@@ -69,7 +89,7 @@ function loadModel(a) {
   const path = a.model ?? defaultModel(a._[1] ?? "plan");
   const model = readJson(path, null);
   if (!model) throw new Error(`no model at ${path}; run extract first`);
-  if (!KINDS[model.kind]) throw new Error(`${path} has kind "${model.kind}", which no page draws`);
+  if (!Object.hasOwn(KINDS, model.kind)) throw new Error(`${path} has kind "${model.kind}", which no page draws`);
   return { model, path };
 }
 
@@ -106,7 +126,7 @@ export function main(argv, root = process.cwd()) {
   const cmd = a._[0];
   if (cmd === "extract") {
     const kind = a._[1] ?? "plan";
-    if (!KINDS[kind]) throw new Error(`extract: unknown kind "${kind}"`);
+    if (!Object.hasOwn(KINDS, kind)) throw new Error(`extract: unknown kind "${kind}"`);
     const model = KINDS[kind].extract(root, { specSha: specSha(root) });
     const path = a.model ?? defaultModel(kind);
     writeJson(path, model);
@@ -175,7 +195,7 @@ export function main(argv, root = process.cwd()) {
     const st = proseStatus(store, glossary, slots, keys, model.kind);
     if (st.emptyRequired.length || st.glossEmpty.length) throw new Error(`render: ${st.emptyRequired.length + st.glossEmpty.length} required slot(s) are empty (first: ${[...st.emptyRequired, ...st.glossEmpty][0]}); run slots`);
     const out = resolve(root, a.o ?? join("hsdd/summary", k.page));
-    if (relative(join(root, "hsdd/summary"), out).startsWith("..")) throw new Error("render: the page must be written under hsdd/summary/");
+    if (!out.endsWith(".html") || !insideDir(join(root, "hsdd/summary"), out)) throw new Error("render: the page must be an .html file under hsdd/summary/");
     const generated = new Date().toISOString().slice(0, 10);
     const page = {
       kind: model.kind,
@@ -200,7 +220,7 @@ export function main(argv, root = process.cwd()) {
     if (!pages.length) console.log("check: no pages under hsdd/summary/");
     for (const f of pages) {
       const stamp = readPageStamp(readFileSync(join(dir, f), "utf8"));
-      if (!stamp || !KINDS[stamp.kind] || !stamp.inputs || typeof stamp.inputs !== "object") {
+      if (!stamp || !Object.hasOwn(KINDS, stamp.kind) || !stamp.inputs || typeof stamp.inputs !== "object") {
         console.log(`${f}: no readable stamp; regenerate it`);
         continue;
       }

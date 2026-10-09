@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { mkdtempSync, cpSync, readFileSync, writeFileSync, appendFileSync, existsSync } from "node:fs";
+import { mkdtempSync, cpSync, readFileSync, writeFileSync, appendFileSync, existsSync, symlinkSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { TREE } from "./helpers/plan-fixture.mjs";
@@ -91,4 +91,59 @@ test("check survives a malformed prose store and a page with no stamp", () => {
   assert.match(r.out, /x\.html: no readable stamp/);
   assert.match(r.out, /bare\.html: no readable stamp; regenerate it/);
   assert.match(r.out, /prose store unreadable/);
+});
+
+// Brings a project to the point where render is allowed.
+function ready() {
+  const { root, model } = project();
+  run(root, "extract", "plan", "--model", model);
+  fillUnparsed(model);
+  run(root, "slots", "--model", model);
+  fillProse(root);
+  return { root, model };
+}
+
+test("render writes only .html pages under hsdd/summary/, never over the prose store", () => {
+  const { root, model } = ready();
+  const prose = join(root, "hsdd/summary/prose.json");
+  const before = readFileSync(prose, "utf8");
+  assert.match(run(root, "render", "--model", model, "-o", "hsdd/summary/prose.json").error, /an \.html file under hsdd\/summary/);
+  assert.equal(readFileSync(prose, "utf8"), before);
+  assert.match(run(root, "render", "--model", model, "-o", "hsdd/summary/../x.html").error, /an \.html file under hsdd\/summary/);
+  assert.equal(run(root, "render", "--model", model).code, 0);
+});
+
+test("render refuses to write through a symlink that leaves hsdd/summary/", () => {
+  const { root, model } = ready();
+  const outside = mkdtempSync(join(tmpdir(), "hsdd-outside-"));
+  symlinkSync(outside, join(root, "hsdd/summary/lnk"));
+  const r = run(root, "render", "--model", model, "-o", "hsdd/summary/lnk/y.html");
+  assert.match(r.error, /an \.html file under hsdd\/summary/);
+  assert.equal(existsSync(join(outside, "y.html")), false);
+});
+
+test("render refuses a dangling symlink whose target is outside hsdd/summary/", () => {
+  const { root, model } = ready();
+  const outside = mkdtempSync(join(tmpdir(), "hsdd-outside-"));
+  symlinkSync(join(outside, "z.html"), join(root, "hsdd/summary/d.html"));
+  const r = run(root, "render", "--model", model, "-o", "hsdd/summary/d.html");
+  assert.match(r.error, /an \.html file under hsdd\/summary/);
+  assert.equal(existsSync(join(outside, "z.html")), false);
+});
+
+test("check reads a stamp whose kind is an inherited Object property as unreadable", () => {
+  const { root } = ready();
+  writeFileSync(join(root, "hsdd/summary/ctor.html"), '<script type="application/json" id="hsdd-stamp">{"kind":"constructor","inputs":{}}</script>');
+  const r = run(root, "check");
+  assert.equal(r.error, undefined);
+  assert.equal(r.code, 0);
+  assert.match(r.out, /ctor\.html: no readable stamp; regenerate it/);
+});
+
+test("a model whose kind is an inherited Object property is refused by name", () => {
+  const { root, model } = project();
+  writeFileSync(model, JSON.stringify({ kind: "constructor", unparsed: [] }));
+  const r = run(root, "validate", "--model", model);
+  assert.match(r.error, /which no page draws/);
+  assert.doesNotMatch(r.error, /TypeError/);
 });
