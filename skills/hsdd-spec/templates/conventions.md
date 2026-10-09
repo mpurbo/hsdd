@@ -7,7 +7,8 @@
 
 ## Layout (default)
 Every HSDD artifact lives under one root directory, `hsdd/`. Directory names
-are singular. OpenSpec files stay where OpenSpec expects them (`openspec/`).
+are singular. OpenSpec files stay where OpenSpec expects them (`openspec/`),
+and per-phase contexts stay in each implementation repo (`hsdd-context/`).
 
 - `hsdd/conventions.md`                       this file
 - `hsdd/spec/{node-id}.md`                    node specs and leaf-parent phase plans
@@ -17,6 +18,7 @@ are singular. OpenSpec files stay where OpenSpec expects them (`openspec/`).
 - `hsdd/scripts/gen-registry.mjs`             registry generator (copied verbatim from hsdd-contract)
 - `hsdd/templates/verification.md`            verification-doc template, copied from hsdd-config
 - `openspec/config.yaml` + `openspec/changes/` config and one change per phase
+- `hsdd-context/{phase-id}.md` (+ `hsdd-context/superpowers/{phase-id}.md`)  generic phase context and its superpowers derivative, written by hsdd-config in the implementation repo
 - `hsdd/management/`                          management layer (progress, execution plans, milestones, atlas) — written only by hsdd-checkpoint / hsdd-milestone
 
 **Standalone-spec-repo profile (opt-in, multi-repo projects):** declare it
@@ -40,6 +42,13 @@ the profile moves no paths.
 - List the implementation repos here (lane + repo name). Their filesystem
   paths differ per machine, so cross-repo skills take those paths from the
   invoking prompt, not from this file.
+
+## Coding method
+**Coding method:** openspec
+
+`openspec` (default) or `superpowers`. Before every phase, hsdd-config writes
+the generic phase context, then the derivative for this method;
+`/hsdd-phase {phase-id} --method {method}` overrides it for one phase.
 
 ## OpenSpec init
 Run `openspec init` once, at the repo root (the directory holding `hsdd/`,
