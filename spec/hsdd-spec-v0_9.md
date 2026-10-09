@@ -1986,8 +1986,9 @@ atlas states and adds no new information.
    they describe.
 5. **Render** writes one HTML file under `hsdd/summary/`, stamped with a
    hash of every input; it refuses any other target, judged after resolving
-   symlinks. **Check** reports a stale page or stale prose, and always
-   exits 0.
+   symlinks. It refuses a model extracted from another project or from
+   sources changed since extraction. **Check** reports a stale page or stale
+   prose, and always exits 0.
 
 Every page meets the same requirements. It is one file that makes no network
 request, under a Content-Security-Policy that lists the hash of each inline
@@ -2037,7 +2038,11 @@ and decisions are a click away.
 It is regenerated after each `hsdd-spec` level and each phase plan, so the
 reviewer opens it in the same merge request, and it is committed with the
 change it summarizes. Under the standalone-spec-repo profile it lives in the
-spec repo like the rest of `hsdd/`.
+spec repo like the rest of `hsdd/`. On a merge conflict under
+`hsdd/summary/`, take either side of a page (it carries nothing of its own)
+and render again after the merge; merge the prose stores and the glossary
+by key, keeping both sides' entries and the newer text for a key both sides
+changed, then stamp and render.
 
 ### 13.4 The checkpoint page
 
@@ -2251,7 +2256,8 @@ Integration nodes still name exactly one owning team (§3.7).
 
 ### 15.1 The compatibility contract
 
-**v0.8.0 is additive. No existing project rewrites anything.** A release
+**Upgrading to v0.9.0 is additive. No existing project rewrites
+anything.** A release
 states its compatibility contract explicitly — which artifacts stay
 conformant, what is opt-in, what applies forward only — and this section is
 that statement for projects on 0.6.1 or later.
@@ -2303,6 +2309,7 @@ existing ≥0.6.1 project:
 | Generic phase context, `hsdd-context/` (§9.7) | Appears on the first switch after upgrading. Nothing earlier is rewritten. |
 | Coding method (§9.9) | Absent = `openspec`. No edit needed. |
 | Richer OpenSpec phase block (§9.3) | A superset of what earlier releases injected; `rules:` unchanged. |
+| `openspec/config.yaml` from v0.8 | The first switch replaces the three v0.8 phase blocks with the marked block; nothing else in the file changes. |
 | `hsdd-summary`, `hsdd/summary/` (chapter 13) | Opt-in. A project without `hsdd/summary/` is unaffected. |
 
 Projects below 0.6.1 are out of scope: upgrade to 0.6.1 first, per the
@@ -2398,7 +2405,7 @@ planning carries its own overhead. HSDD bounds the per-session cost; it
 | Dashboard/BI ambitions for the atlas | The atlas stays a markdown file with diagrams, regenerated whole. Interactive reading lives in the optional checkpoint page (chapter 13), which is derived from the management documents and never authoritative. |
 | An `hsdd-review` skill | Deferred; the review tiers and gate commands stand. |
 | Refactoring proposals from `hsdd-adopt` | The tree fits the system (§6.2). |
-| Back-application of v0.8.0 rules to existing artifacts | Conformance applies from the next artifact forward (chapter 15). |
+| Back-application of v0.9.0 rules to existing artifacts | Conformance applies from the next artifact forward (chapter 15). |
 | Support for projects below 0.6.1 | Upgrade to 0.6.1 first (chapter 15). |
 
 ---
@@ -2428,11 +2435,11 @@ natural seed; it lacks only the baseline and the write-up.
 
 ## 18. Settled Decisions
 
-The merged decision record of every release through v0.8.0, current answers
+The merged decision record of every release through v0.9.0, current answers
 only. **Provenance is a required column** — `field-tested` (validated on a
 real project), `pressure-tested` (held under the adversarial 0.6.0
 campaign), or `reasoned-only` — because new material must not inherit
-credibility from the tested parts: most of what v0.8.0 adds is
+credibility from the tested parts: most of what v0.8.0 and v0.9.0 add is
 `reasoned-only`, and the table says so instead of letting it borrow.
 
 ### 18.1 The decisions

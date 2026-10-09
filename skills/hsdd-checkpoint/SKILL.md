@@ -146,10 +146,10 @@ be standing in produces a progress report that undercounts the project.
    `hsdd-summary` and follow its Process (checkpoint page) over the documents
    this run just wrote. If the page reports a Plan integrity finding (a
    finding with no step and no waiver, a step with no detail block, a
-   Depends entry that resolves to nothing), this run's own quality gate
-   failed: fix the new plan, then render again. A project without
-   `hsdd/summary/` skips this step entirely and runs no `hsdd-summary`
-   script.
+   Depends entry that resolves to nothing, a decision defined twice), this
+   run's own quality gate failed: fix the new plan, then render again. A
+   project without `hsdd/summary/` skips this step entirely and runs no
+   `hsdd-summary` script.
 8. **Report** with the same discipline the pass audits: what was written,
    what could not be verified, and where the decisions are recorded. Never a
    silent green.

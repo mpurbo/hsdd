@@ -153,7 +153,7 @@ replaced by the plan's default gate command in backticks}
 ## Links (spec {spec-sha})
 - Phase section: hsdd/spec/{node-id}.md, heading "{the phase's heading line as written}"
 - Node spec: hsdd/spec/{node-id}.md
-- {contract-id}@{version}: hsdd/contract/{contract-file} (none for an external contract)
+- {contract-id}@{version}: hsdd/contract/{contract-file} (omit this line for an external contract)
 - ADR-{nnn}: hsdd/adr/{adr-file}
 - Conventions: hsdd/conventions.md
 - Verification template: hsdd/templates/verification.md
@@ -171,9 +171,10 @@ replaced by the plan's default gate command in backticks}
   `### {contract-id}@{version} · consumes · external` (or `produces`) and the
   single line `External contract; no file in hsdd/contract/.`, and the switch
   warns. When the phase names no contract, omit the section.
-- **Decisions:** the ADRs the phase's Governed by names, plus every ADR whose
-  `affects` frontmatter names a contract in the Contracts section, each once,
-  in ADR number order. A `proposed` ADR keeps its subsection and gains the line
+- **Decisions:** the ADRs the phase's Governed by names, the ADRs each
+  contract in the Contracts section names in its own Governed by, and every
+  ADR whose `affects` frontmatter names such a contract; each once, in ADR
+  number order. A `proposed` ADR keeps its subsection and gains the line
   `Not binding until accepted.` under its heading. When there are none, omit
   the section.
 - **Open questions:** only the ids the phase or its contracts cite, with the
@@ -285,8 +286,8 @@ other id makes OpenSpec reject the config. Quote any rule containing `: `.
 6. Nothing under hsdd/ changes except that verification doc. Contracts, ADRs,
    specs and conventions change only through hsdd-contract, hsdd-adr and
    hsdd-reconcile.
-7. Build against the Interface and Guarantees in the Contracts section below,
-   never against another node's internals.
+7. Build against the Interface and Guarantees in the Contracts section below
+   (if any), never against another node's internals.
 8. Review tier {review tier}: {tier line}.
 {9. When writing {language}, use {skill}. One numbered line per installed tech skill.}
 
@@ -371,7 +372,11 @@ Run this after writing-plans' self-review, before choosing an execution method.
 9. **Write the derivative** for the method: replace the content between the
    markers in `openspec/config.yaml`, or write
    `hsdd-context/superpowers/{phase-id}.md`. Do not touch the project-wide
-   context or the rules.
+   context or the rules. When `openspec/config.yaml` has no markers (a v0.8
+   config), replace v0.8's phase blocks (`## Current Phase`,
+   `## Contracts from Prior Phases / Nodes`, `## Governing Decisions`, from
+   the first of them through the end of the last) with the marked block, keep
+   everything else, and say so once in the run report.
 10. **Equality check.** The generic body must equal the text between the
     markers. For superpowers:
     `diff <(tail -n +2 hsdd-context/{phase-id}.md) <(sed -n '/hsdd-phase-context:begin/,/hsdd-phase-context:end/p' hsdd-context/superpowers/{phase-id}.md | sed '1d;$d')`.

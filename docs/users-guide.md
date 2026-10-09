@@ -423,17 +423,64 @@ The phase switch injects only what `auth.2` needs. The OpenSpec session for
 `auth.2` never sees the billing spec, the web spec, or sibling phases:
 
 ```yaml
-  ## Current Phase: acme.backend.auth.2 - Token issuance
-  Scope: issue JWTs on login via provider X; sign, set claims, handle errors.
-  Produces: auth-token@v1
-  Gate: cargo test
-  Review tier: full-review
+  <!-- hsdd-phase-context:begin -->
+  # Current Phase: acme.backend.auth.2 - Token issuance (provider X)
 
-  ## Contracts from Prior Phases / Nodes
-  auth-token@v1: { sub, exp, iat, scopes }; exp > iat; sub immutable. (interface only)
+  ## Goal
+  Issue JWTs on login via provider X; sign, set claims, handle errors.
 
-  ## Governing Decisions
-  ADR-001: use provider X with rotating asymmetric keys; verification needs JWKS.
+  ## Where it sits
+  - Node: acme.backend.auth · Sign merchants in and issue the tokens other nodes verify.
+  - Owns: login, token issuance, sessions
+  - Does not own: merchant profiles, billing
+  - Isolation strategy: provider X's sandbox and auth-token@v1 fixtures
+
+  ## Phase
+  - **Consumes:** none
+  - **Produces:** auth-token@v1
+  - **Governed by:** ADR-001
+  - **Scope:** Issue JWTs on login via provider X; sign, set claims, handle errors.
+  - **Size estimate:** ~6 files (~400 lines), <= 6 OpenSpec tasks
+  - **Gate:** `cargo test`
+  - **Verification:** a sandbox login returns a token whose claims match auth-token@v1
+  - **Review tier:** full-review
+  - **Dependencies:** acme.backend.auth.1 (the auth-token types)
+
+  ## Contracts
+  ### auth-token@v1 · produces · stable
+  **Interface**
+  A signed JWT with the claims `{ sub, exp, iat, scopes }`.
+  **Guarantees**
+  - `exp > iat`
+  - `sub` never changes for a merchant.
+
+  ## Decisions
+  ### ADR-001: Auth provider · accepted
+  **Decision**
+  Use provider X with rotating asymmetric keys.
+  **Consequences**
+  - token verification needs the public JWKS endpoint
+  - key rotation is a hard dependency for auth.2
+
+  ## Discipline
+  - Test-first: write each behaviour's failing test, and see it fail, before
+    the code that makes it pass.
+  - Governance freeze: change nothing under hsdd/ except this phase's
+    verification doc; contracts, ADRs, specs and conventions change only
+    through hsdd-contract, hsdd-adr and hsdd-reconcile.
+  - Consume contracts only: build against the Interface and Guarantees above,
+    never against another node's internals.
+  - Verification doc: hsdd/verify/acme.backend.auth.2.verification.md from
+    hsdd/templates/verification.md at full-review depth.
+
+  ## Links (spec 4f2a9c1)
+  - Phase section: hsdd/spec/acme.backend.auth.md, heading "### acme.backend.auth.2: Token issuance (provider X)"
+  - Node spec: hsdd/spec/acme.backend.auth.md
+  - auth-token@v1: hsdd/contract/auth-token.md
+  - ADR-001: hsdd/adr/001-auth-provider.md
+  - Conventions: hsdd/conventions.md
+  - Verification template: hsdd/templates/verification.md
+  <!-- hsdd-phase-context:end -->
 ```
 
 The same switch writes `hsdd-context/acme.backend.auth.2.md` first: the

@@ -85,7 +85,10 @@ findings and `s` build progress. The Shortcuts button turns them off.
    becomes full phase ids). Delete the entry from `unparsed`. Never add an
    item the parser did not flag, never guess a value the source does not
    state, and never edit the source: a source defect is a finding for its
-   owning skill.
+   owning skill. When the source states a value the model does not allow
+   (for example a tier outside the three), do not map it: leave the item,
+   report it to the owner of that document, and stop. The page waits until
+   the source is fixed.
 3. **Validate.**
 
    ```bash
@@ -119,7 +122,9 @@ findings and `s` build progress. The Shortcuts button turns them off.
    only the entries you rewrote.
 8. **Render.** `node hsdd/scripts/summary/summary.mjs render plan` writes
    `hsdd/summary/summary.html`. It refuses while the model does not validate
-   or a required slot is empty.
+   or a required slot is empty. It also refuses a model extracted from
+   another project, or from sources that changed after extract: run extract
+   again.
 9. **Check.** `node hsdd/scripts/summary/summary.mjs check` must report the
    page `fresh`.
 10. **Report:** the page's path, the unparsed items you filled and from
@@ -150,6 +155,11 @@ summarizes. Never commit the scratch model. Under the standalone-spec-repo
 profile `hsdd/summary/` lives in the spec repo, so it lands the way every
 governance edit does: committed and pushed inside the submodule, then each
 implementation repo's pointer bumped.
+
+On a merge conflict under `hsdd/summary/`, take either side of a page (it
+carries nothing of its own) and render again after the merge; merge the
+prose stores and the glossary by key, keeping both sides' entries and the
+newer text for a key both sides changed, then stamp and render.
 
 ## Writing the Prose
 
