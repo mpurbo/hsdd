@@ -100,3 +100,40 @@ test("hostile text in the documents is escaped", () => {
     assert.doesNotMatch(renderCheckpoint(p, { audience: "lead", ...r }).body, /<img|<script/);
   }
 });
+
+const extraStep = (id, lane, depends) => ({ id, owner: lane, mode: "delegate", lanes: [lane], action: `Do ${id}.`, depends, findings: [], done: false, group: "Z · bulk", line: 900 });
+
+test("a plan graph too big to draw says so and keeps one diagram", () => {
+  const m = completedCheckpoint();
+  for (let i = 1; i <= 25; i++) m.plan.steps.push(extraStep(`Z-${i}`, "API", "none"));
+  const v = renderCheckpoint(checkpointPage(m), { audience: "lead", view: "top" });
+  assert.match(v.body, /are too many to draw one by one/);
+  assert.equal(v.diagrams.length, 1);
+});
+
+test("a plan graph too big even when grouped lists its steps in order", () => {
+  const m = completedCheckpoint();
+  for (let i = 1; i <= 30; i++) m.plan.steps.push(extraStep(`Z-${i}`, "API", i === 1 ? "none" : `Z-${i - 1}`));
+  const v = renderCheckpoint(checkpointPage(m), { audience: "lead", view: "top" });
+  assert.equal(v.diagrams.find((d) => d.id === "plan"), undefined);
+  assert.match(v.body, /too many to draw even when grouped/);
+  assert.match(v.body, /Order of work/);
+});
+
+test("a status view with more children than fit draws a list, not a diagram", () => {
+  const m = completedCheckpoint();
+  const root = m.project.root;
+  const rootNode = m.tree.find((n) => n.id === root);
+  for (let k = 1; k <= 13; k++) {
+    const id = `${root}.k${k}`;
+    m.tree.push({ id, name: `Part ${k}`, parent: root, children: [], kind: "leaf-parent", status: "active" });
+    rootNode.children.push(id);
+  }
+  const lead = renderCheckpoint(checkpointPage(m), { audience: "lead", view: "status" });
+  assert.deepEqual(lead.diagrams, []);
+  assert.match(lead.body, /16 children are too many to draw/);
+  const stake = renderCheckpoint(checkpointPage(m), { audience: "stakeholder", view: "status" });
+  assert.deepEqual(stake.diagrams, []);
+  assert.match(stake.body, /16 parts are too many to draw as one picture/);
+  assert.equal(namesId(visibleText(stake), m.ids), null);
+});

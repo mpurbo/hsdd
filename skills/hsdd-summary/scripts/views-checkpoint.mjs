@@ -1,7 +1,7 @@
 // The checkpoint page's views. Pure: (page data, route) -> { title, crumbs,
 // body, diagrams }. Inlined into the page with views-core.mjs and graph.mjs.
 import { html, raw, inline, plural, href, chip, section, diagramSlot, renderBlocks, capitalize } from "./views-core.mjs";
-import { planGraph, collapsePlanGraph, dependsRefs, layers } from "./graph.mjs";
+import { planGraph, collapsePlanGraph, dependsRefs, layers, MAX_BOXES } from "./graph.mjs";
 
 export const CHECKPOINT_AUDIENCES = ["lead", "executor", "stakeholder"];
 export const PLAN_GRAPH_MAX = 20;
@@ -142,6 +142,7 @@ function readability(ctx) {
 function cpLeadTop(ctx) {
   const { m, page } = ctx;
   const spec = graphSpec(ctx);
+  const size = planGraph(m).nodes.length;
   const ages = page.computed.ages ?? {};
   const delta = page.computed.delta;
   const sev = Object.fromEntries(SEVERITIES.map((s) => [s, m.progress.findings.filter((f) => f.severity === s)]));
@@ -155,7 +156,7 @@ function cpLeadTop(ctx) {
     ${bottomTiles(ctx, false)}
     ${section("Milestone gates", gates(ctx))}
     ${section("Syncs", html`<ul class="cards">${syncCards}</ul>`)}
-    ${spec ? section("Plan graph", diagramSlot("plan")) : section("Order of work", stepOrder(ctx))}
+    ${spec ? section("Plan graph", html`${size > PLAN_GRAPH_MAX ? html`<p class="explain">${size} steps and syncs are too many to draw one by one; steps of one lane at the same depth are grouped into one box.</p>` : ""}${diagramSlot("plan")}`) : section("Order of work", html`${size > PLAN_GRAPH_MAX ? html`<p class="explain">${size} steps and syncs are too many to draw even when grouped, so they are listed in order.</p>` : ""}${stepOrder(ctx)}`)}
     ${section("Blockers", html`<ol class="blockers">${m.progress.blockers.map((b) => html`<li><strong>${b.lead ?? ""}</strong> ${b.findings.map((f) => findingChip(ctx, f))} ${b.steps.map((s) => stepChip(ctx, s))}</li>`)}</ol>`)}
     ${section("Findings", html`<p>${SEVERITIES.map((s) => html`<span class="badge sev-${s}">${s}: ${sev[s].length}</span> `)} <a href="${href(ctx.a, "findings")}">all ${m.progress.findings.length}</a></p>
       <ul>${m.progress.findings.filter((f) => f.severity === "High" || (ages[f.id] ?? 0) > 1).map((f) => html`<li>${findingChip(ctx, f.id)} ${f.lead ?? ""}${(ages[f.id] ?? 0) > 1 ? html` <span class="badge warn">${plural(ages[f.id], "report")} running</span>` : ""}</li>`)}</ul>`)}
@@ -318,6 +319,7 @@ function cpStatus(ctx, id) {
     return r ? { live: acc.live + r.live, done: acc.done + r.done, warn: acc.warn || r.warn } : acc;
   }, { live: 0, done: 0, warn: false });
   const kids = (tree.get(at)?.children ?? []).map((c) => tree.get(c)).filter((n) => n && n.status === "active");
+  const tooBig = kids.length + 1 > MAX_BOXES;
   const box = (n) => {
     const t = totals(n.id);
     return { id: n.id, label: n.name, sub: t.live ? `${t.done} of ${t.live} ${ctx.stake ? "pieces of work" : "phases"} done` : ctx.stake ? "nothing planned yet" : "no phases", role: t.warn ? "status-contingent" : t.live && t.done === t.live ? "status-done" : "status-planned", href: (tree.get(n.id)?.children ?? []).length || rows.has(n.id) ? href(ctx.a, "status", n.id) : null };
@@ -332,8 +334,9 @@ function cpStatus(ctx, id) {
   const body = html`
     <header class="page-head"><p class="eyebrow">Build progress</p><h1>${node.name}</h1>
       <p class="explain">${t.live ? `${t.done} of ${t.live} ${ctx.stake ? "pieces of work" : "phases"} done.` : ""}</p></header>
-    ${kids.length ? diagramSlot("status") : ""}
+    ${kids.length && !tooBig ? diagramSlot("status") : ""}
+    ${tooBig ? html`<p class="explain">${kids.length} ${ctx.stake ? "parts are too many to draw as one picture; they are listed below." : "children are too many to draw; they are listed below."}</p><ul>${kids.map((k) => html`<li><a href="${href(ctx.a, "status", k.id)}">${k.name}</a> · ${box(k).sub}</li>`)}</ul>` : ""}
     ${r && !ctx.stake ? section("From the atlas", html`<dl><dt>Live</dt><dd>${r.live}</dd><dt>Done</dt><dd>${r.done}${r.warn ? " (flagged)" : ""}</dd><dt>Remaining</dt><dd>${inline(r.remaining)}</dd></dl>`) : ""}
     ${ctx.stake ? "" : src(ctx.m.files.atlas, r?.line)}`;
-  return { title: node.name, crumbs, body: body.s, diagrams: kids.length ? [{ id: "status", spec }] : [] };
+  return { title: node.name, crumbs, body: body.s, diagrams: kids.length && !tooBig ? [{ id: "status", spec }] : [] };
 }
