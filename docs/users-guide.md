@@ -436,6 +436,21 @@ The phase switch injects only what `auth.2` needs. The OpenSpec session for
   ADR-001: use provider X with rotating asymmetric keys; verification needs JWKS.
 ```
 
+The same switch writes `hsdd-context/acme.backend.auth.2.md` first: the
+method-neutral phase context that the `config.yaml` block above is copied
+from, word for word. A team on superpowers instead of OpenSpec runs:
+
+```text
+You: "/hsdd-phase acme.backend.auth.2 --method superpowers"
+```
+
+and starts the phase's session with
+`Use superpowers:writing-plans to plan hsdd-context/superpowers/acme.backend.auth.2.md`.
+The file's Global Constraints carry test-first, the task cap, the gate and
+the verification doc into every task `subagent-driven-development` runs.
+Set `**Coding method:** superpowers` in `hsdd/conventions.md` to make it the
+default.
+
 ### Step 6: Run, verify, parallelize
 
 ```text
@@ -747,6 +762,28 @@ the human at Monday's sync has only what the plan gave them.
 
 The pass narrows to the touched artifacts plus their closure, and patches the
 plan the same day instead of letting drift pile up until Friday.
+
+### Reading aids
+
+Two optional pages, both one offline HTML file under `hsdd/summary/`, both
+derived and never edited:
+
+- **The plan page** (`summary.html`): the tree from the root's parts down to
+  each phase's card, with What to check at every level, for a reviewer, a
+  stakeholder or an implementer. Render it after a spec level or a phase
+  plan, so the reviewer opens it in the same MR:
+
+  > `/hsdd-summary` render the plan page.
+
+- **The checkpoint page** (`checkpoint.html`): the newest progress report
+  and execution plan laid out for the sync. The lead sees the read, the
+  gates and their movement, the syncs, the plan graph, the blockers, and
+  how long each finding has been carried; each executor picks a lane and
+  works its steps in order, copying prompts from the page; stakeholders see
+  the verdict and the milestones in plain words. Once `hsdd/summary/`
+  exists, every checkpoint renders it as its last step before landing.
+
+`/hsdd-summary` check lists any page or prose that has gone stale.
 
 ### Milestones
 

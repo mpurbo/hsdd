@@ -103,7 +103,7 @@ HSDD ships as agent skills, installable with the [`skills`](https://github.com/v
 CLI (works with Claude Code, Cursor, Codex, and 70+ agents):
 
 ```bash
-# All ten HSDD skills (replace with your repo path)
+# All eleven HSDD skills (replace with your repo path)
 npx skills add mpurbo/hsdd
 
 # Or a single skill
@@ -118,7 +118,7 @@ The optional slash commands and the registry generator are not installed by the
 **Recommended companion:** Obra's [superpowers](https://github.com/obra/superpowers)
 plugin. HSDD composes with its `brainstorming`, `test-driven-development`,
 `verification-before-completion`, and code-review skills rather than
-re-implementing them; `hsdd-config` wires them into each OpenSpec cycle.
+re-implementing them; `hsdd-config` wires them into each phase's coding session, OpenSpec or superpowers.
 
 ## The skill set
 
@@ -129,11 +129,12 @@ re-implementing them; `hsdd-config` wires them into each OpenSpec cycle.
 | `hsdd-adr` | Author and maintain cross-cutting Architecture Decision Records as first-class files, with registry-compatible frontmatter and a status lifecycle. |
 | `hsdd-phase-plan` | Break a small-enough node into ordered, independently implementable phases, each sized for one OpenSpec change and one review window. |
 | `hsdd-reconcile` | Drain the pending governance updates emitted by phase planning: finalize contract phase ids, resolve contract-gap requests with you, and regenerate the registries. Runs on the root lineage after parallel plan branches merge. |
-| `hsdd-config` | Configure OpenSpec and switch the phase context so each cycle sees only the current phase plus its consumed contracts. |
+| `hsdd-config` | Before each phase, write one self-contained phase context (the phase, the text of the contracts it touches, its decisions, pinned links) and wrap it for the project's coding method: OpenSpec's `config.yaml`, or a spec for superpowers' `writing-plans`. |
 | `hsdd-adopt` | Bring an existing codebase into the tree: script-extracted seams, as-built node specs with an `## Observed surface` section, and `v0` contracts describing current behavior. Brownfield's entry point. |
 | `hsdd-intake` | Route an incoming change request (PRD, RFC, ticket, incident) into the existing tree: classify it, detect collisions with open intakes, write the routing record, and hand off. A PRD is never a root. |
 | `hsdd-checkpoint` | Run the weekly (or context-triggered) evidence pass across the spec repo and every implementation repo, emitting a progress report, a revised execution plan, a regenerated atlas, and ticked milestone gates. One pass, four views; every finding becomes a plan step or an explicit waiver. |
 | `hsdd-milestone` | Generate the stakeholder milestone document once every leaf-parent is phase-planned — a demo and a gate per checkpoint, with externally-gated work in a contingent tail outside the launch gate — and re-baseline it when the dates move. |
+| `hsdd-summary` | Render offline HTML reading aids: the plan page (root to phase cards, for a reviewer, a stakeholder or an implementer) and the checkpoint page (the newest progress report and execution plan, for the lead running the sync, each lane's executor, and stakeholders). |
 
 ## How it works
 

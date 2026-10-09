@@ -5,6 +5,39 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+Targets 0.9.0. Design:
+`docs/superpowers/specs/2026-10-09-v0_9-phase-context-and-summaries-design.md`.
+Acceptance: `review/hsdd-v0_9-acceptance.md`.
+
+### Added
+
+- **The generic phase context.** Before each phase, `hsdd-config` writes
+  `hsdd-context/{phase-id}.md` in the implementation repo: the phase, the
+  Interface and Guarantees of every contract it consumes and produces, the
+  Decision and Consequences of its ADRs, its open questions, and pinned
+  links. Every line is copied from a governance file or is fixed text.
+- **Coding methods.** The phase context is wrapped, word for word, for
+  OpenSpec (`openspec/config.yaml`) or for superpowers
+  (`hsdd-context/superpowers/{phase-id}.md`, a spec for `writing-plans`
+  whose Global Constraints carry test-first, the task cap, the gate and the
+  verification doc). `**Coding method:**` in conventions sets the default;
+  `/hsdd-phase {id} --method` overrides it.
+- **`hsdd-summary`**, a new skill with zero-dependency scripts: the plan
+  page and the checkpoint page, offline HTML reading aids with three
+  audiences each, stamped against their inputs.
+- **Chapter 13, Reading Aids**, in `spec/hsdd-spec-v0_9.md`.
+
+### Changed
+
+- `hsdd-config`: no longer OpenSpec-only. OpenSpec's phase block is now a
+  superset of what earlier releases injected; `rules:` are unchanged.
+- `hsdd-checkpoint`: `hsdd-context/` counts as in-progress evidence; when
+  `hsdd/summary/` exists, its step 7 renders the checkpoint page.
+- The invariant "one phase = one OpenSpec change" reads "one phase = one
+  coding cycle"; the atlas non-goal is narrowed, not reversed.
+
 ## [0.8.0] - 2026-08-03
 
 A **consolidation, not a delta.** `spec/hsdd-spec-v0_8.md` is a single
