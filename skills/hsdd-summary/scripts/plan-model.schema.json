@@ -1,0 +1,166 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "hsdd-summary/plan-model",
+  "title": "hsdd-summary plan model",
+  "description": "What extract plan writes and the agent completes. Every field comes from an artifact under hsdd/; nothing here is authored.",
+  "type": "object",
+  "required": ["kind", "schemaVersion", "project", "nodes", "phases", "contracts", "adrs", "ids", "facts", "unparsed"],
+  "additionalProperties": false,
+  "properties": {
+    "kind": { "const": "plan" },
+    "schemaVersion": { "const": 1 },
+    "project": {
+      "type": "object",
+      "required": ["root", "name", "specSha", "codingMethod"],
+      "additionalProperties": false,
+      "properties": {
+        "root": { "type": "string", "minLength": 1 },
+        "name": { "type": "string", "minLength": 1 },
+        "specSha": { "type": "string" },
+        "codingMethod": { "enum": ["openspec", "superpowers"] }
+      }
+    },
+    "nodes": { "type": "array", "items": { "$ref": "#/$defs/node" } },
+    "phases": { "type": "array", "items": { "$ref": "#/$defs/phase" } },
+    "contracts": { "type": "array", "items": { "$ref": "#/$defs/contract" } },
+    "adrs": { "type": "array", "items": { "$ref": "#/$defs/adr" } },
+    "ids": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+    "facts": { "type": "object", "additionalProperties": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" } },
+    "unparsed": { "type": "array", "items": { "$ref": "#/$defs/unparsed" } }
+  },
+  "$defs": {
+    "ref": {
+      "type": "object",
+      "required": ["ref", "ext"],
+      "additionalProperties": false,
+      "properties": {
+        "ref": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9-]*@v\\d+$" },
+        "ext": { "type": "boolean" }
+      }
+    },
+    "refs": { "type": "array", "items": { "$ref": "#/$defs/ref" } },
+    "text": { "type": ["string", "null"] },
+    "oq": {
+      "type": "object",
+      "required": ["id", "question", "status", "waitsOn", "affects", "hasDetail"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string", "pattern": "^OQ-?[A-Z]*\\d+$" },
+        "question": { "type": "string" },
+        "status": { "type": "string" },
+        "waitsOn": { "type": "string" },
+        "affects": { "type": "string" },
+        "hasDetail": { "type": "boolean" }
+      }
+    },
+    "node": {
+      "type": "object",
+      "required": ["id", "name", "parent", "kind", "status", "adopted", "team", "purpose", "owns", "doesNotOwn", "isolation", "consumes", "produces", "governedBy", "children", "phases", "defaultGate", "openQuestions", "pendingGovernance", "observedSurface", "sourceFile"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string", "pattern": "^[A-Za-z0-9][\\w.-]*$" },
+        "name": { "type": "string", "minLength": 1 },
+        "parent": { "type": ["string", "null"] },
+        "kind": { "enum": ["root", "internal", "leaf-parent", "integration"] },
+        "status": { "enum": ["active", "retired"] },
+        "adopted": { "enum": [null, "as-built", "promoted"] },
+        "team": { "$ref": "#/$defs/text" },
+        "purpose": { "$ref": "#/$defs/text" },
+        "owns": { "$ref": "#/$defs/text" },
+        "doesNotOwn": { "$ref": "#/$defs/text" },
+        "isolation": { "$ref": "#/$defs/text" },
+        "consumes": { "$ref": "#/$defs/refs" },
+        "produces": { "$ref": "#/$defs/refs" },
+        "governedBy": { "type": "array", "items": { "type": "string", "pattern": "^ADR-\\d{3,}$" } },
+        "children": { "type": "array", "items": { "type": "string" } },
+        "phases": { "type": "array", "items": { "type": "string" } },
+        "defaultGate": { "$ref": "#/$defs/text" },
+        "openQuestions": { "type": "array", "items": { "$ref": "#/$defs/oq" } },
+        "pendingGovernance": { "type": "boolean" },
+        "observedSurface": { "type": "boolean" },
+        "sourceFile": { "type": "string", "pattern": "^hsdd/spec/.+\\.md$" },
+        "tableOnly": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["id", "line"],
+            "additionalProperties": false,
+            "properties": { "id": { "type": "string" }, "line": { "type": "integer", "minimum": 1 } }
+          }
+        }
+      }
+    },
+    "phase": {
+      "type": "object",
+      "required": ["id", "node", "heading", "n", "name", "tier", "size", "taskCap", "scope", "verification", "gate", "resolvedGate", "consumes", "produces", "governedBy", "dependsOn", "collidesWith", "contingentOn", "citesOq", "inTable", "sourceFile", "line"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string", "pattern": "^[A-Za-z0-9][\\w.-]*\\.\\d+$" },
+        "node": { "type": "string" },
+        "heading": { "type": "string" },
+        "n": { "type": "integer", "minimum": 0 },
+        "name": { "type": "string", "minLength": 1 },
+        "tier": { "enum": ["gate-only", "spot-check", "full-review"] },
+        "size": { "$ref": "#/$defs/text" },
+        "taskCap": { "type": ["integer", "null"] },
+        "scope": { "$ref": "#/$defs/text" },
+        "verification": { "$ref": "#/$defs/text" },
+        "gate": { "$ref": "#/$defs/text" },
+        "resolvedGate": { "$ref": "#/$defs/text" },
+        "consumes": { "$ref": "#/$defs/refs" },
+        "produces": { "$ref": "#/$defs/refs" },
+        "governedBy": { "type": "array", "items": { "type": "string", "pattern": "^ADR-\\d{3,}$" } },
+        "dependsOn": { "type": "array", "items": { "type": "string" } },
+        "collidesWith": { "type": "array", "items": { "type": "string" } },
+        "contingentOn": { "type": "array", "items": { "type": "string" } },
+        "citesOq": { "type": "array", "items": { "type": "string" } },
+        "inTable": { "type": "boolean" },
+        "sourceFile": { "type": "string", "pattern": "^hsdd/spec/.+\\.md$" },
+        "line": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "contract": {
+      "type": "object",
+      "required": ["ref", "id", "version", "status", "kind", "owner", "producedBy", "consumers", "phaseIds", "external", "guarantees", "sourceFile"],
+      "additionalProperties": false,
+      "properties": {
+        "ref": { "type": "string" },
+        "id": { "type": "string", "minLength": 1 },
+        "version": { "type": ["string", "null"] },
+        "status": { "type": ["string", "null"] },
+        "kind": { "type": ["string", "null"] },
+        "owner": { "type": ["string", "null"] },
+        "producedBy": { "type": "array", "items": { "type": "string" } },
+        "consumers": { "type": "array", "items": { "type": "string" } },
+        "phaseIds": { "type": ["string", "null"] },
+        "external": { "type": "boolean" },
+        "guarantees": { "type": "array", "items": { "type": "string" } },
+        "sourceFile": { "type": "string", "pattern": "^hsdd/contract/.+\\.md$" }
+      }
+    },
+    "adr": {
+      "type": "object",
+      "required": ["id", "title", "status", "affects", "decision", "sourceFile"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string", "pattern": "^ADR-\\d{3,}$" },
+        "title": { "type": "string" },
+        "status": { "type": ["string", "null"] },
+        "affects": { "type": "array", "items": { "type": "string" } },
+        "decision": { "type": "string" },
+        "sourceFile": { "type": "string", "pattern": "^hsdd/adr/.+\\.md$" }
+      }
+    },
+    "unparsed": {
+      "type": "object",
+      "required": ["path", "file", "line", "reason"],
+      "additionalProperties": false,
+      "properties": {
+        "path": { "type": "string", "pattern": "^/" },
+        "file": { "type": "string" },
+        "line": { "type": "integer", "minimum": 1 },
+        "reason": { "type": "string" }
+      }
+    }
+  }
+}
