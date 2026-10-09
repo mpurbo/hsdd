@@ -8,9 +8,12 @@ import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { extractPlan } from "./extract-plan.mjs";
 import { crossCheckPlan } from "./checks-plan.mjs";
+import { extractCheckpoint, chainFiles } from "./extract-checkpoint.mjs";
+import { crossCheckCheckpoint } from "./checks-checkpoint.mjs";
+import { plain } from "./md.mjs";
 import { validate } from "./schema.mjs";
-import { planSlots, planGlossaryKeys, emptyStore, seed, proseStatus, stampProse, lintProse } from "./prose.mjs";
-import { planInputs, hashInputs, diffInputs, readPageStamp } from "./stamp.mjs";
+import { planSlots, planGlossaryKeys, checkpointSlots, emptyStore, seed, proseStatus, stampProse, lintProse, namesId } from "./prose.mjs";
+import { planInputs, checkpointInputs, hashInputs, diffInputs, readPageStamp } from "./stamp.mjs";
 import { renderPage } from "./html.mjs";
 
 export const KINDS = {
@@ -25,6 +28,22 @@ export const KINDS = {
     inputs: (root) => planInputs(root),
     extras: () => ({}),
     present: (root) => existsSync(join(root, "hsdd/spec")),
+  },
+  checkpoint: {
+    schema: "./checkpoint-model.schema.json",
+    page: "checkpoint.html",
+    prose: "checkpoint-prose.json",
+    extract: (root, opts) => extractCheckpoint(root, opts),
+    check: crossCheckCheckpoint,
+    slots: checkpointSlots,
+    glossKeys: () => [],
+    inputs: (root) => checkpointInputs(root),
+    // The stakeholder sees a bottom-line row only when it names no id.
+    extras: (model, checked) => ({
+      computed: checked.computed,
+      safe: { bottomLine: model.progress.bottomLine.map((r) => !/`/.test(r.value) && !namesId(plain(r.value), model.ids)) },
+    }),
+    present: (root) => existsSync(join(root, "hsdd/summary/checkpoint.html")) && chainFiles(root).progress.length > 0,
   },
 };
 
@@ -249,7 +268,7 @@ export function main(argv, root = process.cwd()) {
     }
     return 0;
   }
-  console.log("usage: summary.mjs extract plan | validate | slots | lint | stamp | render [-o hsdd/summary/x.html] | check   [--model path]");
+  console.log("usage: summary.mjs extract plan|checkpoint | validate | slots | lint | stamp | render [-o hsdd/summary/x.html] | check   [--model path]");
   return cmd ? 2 : 0;
 }
 

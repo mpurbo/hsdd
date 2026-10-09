@@ -5,6 +5,7 @@ import { createHash } from "node:crypto";
 import { esc } from "./views-core.mjs";
 import { safeJson } from "./stamp.mjs";
 import { PLAN_AUDIENCES } from "./views-plan.mjs";
+import { CHECKPOINT_AUDIENCES } from "./views-checkpoint.mjs";
 
 const here = (f) => readFileSync(new URL(f, import.meta.url), "utf8");
 
@@ -19,6 +20,18 @@ export const KINDS = {
       { label: "Plan", path: "", key: "t" },
       { label: "Contracts", path: "contracts", key: "c" },
       { label: "Decisions", path: "adrs", key: "d" },
+    ],
+  },
+  checkpoint: {
+    label: "Checkpoint",
+    files: ["views-core.mjs", "graph.mjs", "views-checkpoint.mjs"],
+    audiences: CHECKPOINT_AUDIENCES,
+    render: "renderCheckpoint",
+    audienceConst: "CHECKPOINT_AUDIENCES",
+    nav: [
+      { label: "Checkpoint", path: "", key: "t" },
+      { label: "Findings", path: "findings", key: "f" },
+      { label: "Build progress", path: "status", key: "s" },
     ],
   },
 };

@@ -3,6 +3,7 @@ import { readFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import { createHash } from "node:crypto";
 import { listMd } from "./extract-plan.mjs";
+import { chainFiles, HISTORY } from "./extract-checkpoint.mjs";
 
 export function fileHash(path) {
   return "sha256:" + createHash("sha256").update(readFileSync(path)).digest("hex");
@@ -15,6 +16,18 @@ export function planInputs(root) {
   for (const dir of ["spec", "contract", "adr"]) for (const f of listMd(join(root, "hsdd", dir))) out.push(`hsdd/${dir}/${f}`);
   for (const f of ["glossary.json", "prose.json"]) if (existsSync(join(root, "hsdd/summary", f))) out.push(`hsdd/summary/${f}`);
   return out.sort();
+}
+
+// Every file the checkpoint page reads: the chain it walks (newest first,
+// bounded), the atlas, the specs its status view names, and the prose store.
+// A newer report or plan changes the set, so the page reads stale.
+export function checkpointInputs(root) {
+  const c = chainFiles(root);
+  const out = [...c.progress.slice(0, HISTORY), ...c.plans.slice(0, HISTORY)];
+  if (c.atlas) out.push(c.atlas);
+  for (const p of planInputs(root)) if (!p.startsWith("hsdd/summary/")) out.push(p);
+  if (existsSync(join(root, "hsdd/summary/checkpoint-prose.json"))) out.push("hsdd/summary/checkpoint-prose.json");
+  return [...new Set(out)].sort();
 }
 
 export function hashInputs(root, paths) {
