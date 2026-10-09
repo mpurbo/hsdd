@@ -100,3 +100,44 @@ record names.
   finding for that node's spec, recorded here; a leak from the page's own
   words is a defect in `views-plan.mjs`.
 - **Result:**
+
+
+## C. The checkpoint page
+
+### C1. The page renders the field project's chain, with the computed values pinned
+
+- **Run:** in an implementation repo, with the v0.9 skills installed and
+  `hsdd/summary/` present, `hsdd-summary`'s Process (checkpoint page)
+  against the chain whose heads are the 2026-09-18 report and plan.
+- **Expected:**
+  - Exactly two unparsed items, both a step owned by "both" (C-90, G-24),
+    filled from the plan's Operating model.
+  - `validate checkpoint` exits 0 with no integrity finding.
+  - Carried ages: F-189 and F-195 at 2 consecutive registers; F-206 at 1.
+  - Step I-2 open in 2 consecutive plans.
+  - Delta against the 2026-09-15 plan: 1 step carried (I-2), 21 no longer
+    present.
+  - M4 6 / 6 up from 5 / 6; M5 6 / 10 up from 5 / 9; M6 2 / 8 up from
+    0 / 6; M7 0 / 6 shown as new.
+  - The plan graph: 21 nodes, drawn as 14 boxes (steps batched by lane and
+    depth), with Sync Y and Sync Z as junctions.
+  - The lead top says, above the plan graph, that the 21 steps and syncs
+    are too many to draw one by one and are grouped by lane and depth.
+  - `check` reports `checkpoint.html: fresh`, and the plan page's state is
+    unchanged by the run.
+- **Result:**
+
+### C2. Inverted: known defects are not shown as clean
+
+- **Expected:** Build progress shows the backend gateway node flagged (the
+  atlas marks its count); the lead's Findings list shows F-189 and F-195 as
+  running for 2 reports; I-2 carries "open in 2 plans".
+- **Fails if:** any of the three appears clean.
+- **Result:**
+
+### C3. A tree without `hsdd/summary/` is untouched
+
+- **Run:** `/hsdd-checkpoint` on a project with no `hsdd/summary/`.
+- **Expected:** no `**Stale summaries:**` line, no page, no `hsdd-summary`
+  script run; the management documents have v0.8's shapes.
+- **Result:**
