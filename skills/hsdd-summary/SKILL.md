@@ -35,7 +35,7 @@ source.
 | Page | File | Built from | Regenerate |
 |------|------|------------|------------|
 | Plan page | `hsdd/summary/summary.html` | `hsdd/spec/`, `hsdd/contract/`, `hsdd/adr/`, `hsdd/conventions.md`, `glossary.json`, `prose.json` | after each `hsdd-spec` level and each phase plan, so the reviewer opens it in the same merge request |
-| Checkpoint page | `hsdd/summary/checkpoint.html` | the newest progress report and execution plan, the chain behind them, the atlas, the node names in `hsdd/spec/`, `checkpoint-prose.json` | at every checkpoint, as `hsdd-checkpoint`'s gated step |
+| Checkpoint page | `hsdd/summary/checkpoint.html` | the newest progress report and execution plan, the chain behind them, the atlas, `hsdd/spec/`, `hsdd/contract/` and `hsdd/adr/`, `checkpoint-prose.json` | at each checkpoint in a project that has `hsdd/summary/`, as a step of `hsdd-checkpoint` |
 
 Each page is stamped with a hash of every input it read; `check` reports it
 stale when any input changes. Nothing gates on a page, and nothing outside
@@ -128,8 +128,8 @@ findings and `s` build progress. The Shortcuts button turns them off.
 ## Process (checkpoint page)
 
 Run it after `hsdd-checkpoint` has written the dated progress report and
-execution plan (its gated step invokes this). The steps are the plan page's,
-with `checkpoint` in place of `plan`:
+execution plan (when the project has `hsdd/summary/`, its step 7 invokes
+this). The steps are the plan page's, with `checkpoint` in place of `plan`:
 
 1. `node hsdd/scripts/summary/summary.mjs extract checkpoint`. The usual
    unparsed item is a step whose owner names no lane ("both"): set its

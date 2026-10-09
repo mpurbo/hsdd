@@ -120,6 +120,12 @@ be standing in produces a progress report that undercounts the project.
    is: implemented, gate command green, verification doc merged to the spec
    repo's main branch. Claims without a verification doc are reported as
    claims.
+
+   If `hsdd/summary/` exists, run `node hsdd/scripts/summary/summary.mjs
+   check` and list the stale plan page and stale prose entries on the
+   report's `**Stale summaries:**` header line (`none` when all are fresh).
+   They are information only: never a findings-register entry, never a plan
+   step, never a gate.
 4. **Revise the execution plan** (shape below): a new dated file superseding
    the previous plan, current-state delta computed from the evidence pass,
    every findings-register row compiled into a step or explicitly waived
@@ -134,7 +140,15 @@ be standing in produces a progress report that undercounts the project.
    status in the progress report's Milestone gate status section, and
    compare it against the previous report's — two consecutive reds fire the
    trigger.
-7. **Report** with the same discipline the pass audits: what was written,
+7. **Render the checkpoint page (only when `hsdd/summary/` exists).** Invoke
+   `hsdd-summary` and follow its Process (checkpoint page) over the documents
+   this run just wrote. If the page reports a Plan integrity finding (a
+   finding with no step and no waiver, a step with no detail block, a
+   Depends entry that resolves to nothing), this run's own quality gate
+   failed: fix the new plan, then render again. A project without
+   `hsdd/summary/` skips this step entirely and runs no `hsdd-summary`
+   script.
+8. **Report** with the same discipline the pass audits: what was written,
    what could not be verified, and where the decisions are recorded. Never a
    silent green.
 
@@ -148,7 +162,8 @@ be standing in produces a progress report that undercounts the project.
    adjudicate findings converts a written agenda back into an interactive
    interrogation, and whatever they answer alone is a decision the team never
    saw.
-8. **Land the output.** Commit the `hsdd/management/` changes. Under the
+9. **Land the output.** Commit the `hsdd/management/` changes, and
+   `hsdd/summary/` when step 7 ran, in the same commit. Under the
    standalone-spec-repo profile, commit and push them **inside the submodule**
    to spec-repo main, then bump every implementation repo's pointer to that
    commit — including the repos you did not run from. Skipping the bump for the
@@ -204,7 +219,8 @@ Required sections, in order:
 
 - Header block: date, `**Supersedes:**` (previous progress report, exact
   filename), `**Repo baselines:**`, `**Companion docs:**`, `**Method:**` (one
-  line: which repos were reviewed, against what).
+  line: which repos were reviewed, against what). When `hsdd/summary/`
+  exists, an optional `**Stale summaries:**` line (step 3).
 - **Bottom line** — one table: phases planned / code-complete / remaining
   (externally-contingent count broken out), implementation progress %,
   observed velocity per lane (PE/manday), calibrated remaining effort,
@@ -338,7 +354,8 @@ artifacts, the atlas is wrong by definition; the fix is regeneration. If
 Checkpoint *finds* the stale ADR note, the undrained reconcile section,
 the contract drift — it does not fix them. Fixes become plan steps routed
 to the owning skill and the owning human. The only files this skill
-writes live under `hsdd/management/`.
+writes live under `hsdd/management/`, plus `hsdd/summary/` through
+`hsdd-summary` when that directory exists (step 7).
 
 ## Quality Gates
 
@@ -372,7 +389,12 @@ writes live under `hsdd/management/`.
 - [ ] Atlas carries its `Generated:` date and `Derived from:` baselines —
       the filename has no date, so the header must.
 - [ ] Milestone gates ticked; re-baseline trigger evaluated and reported.
-- [ ] No file outside `hsdd/management/` modified.
+- [ ] No file outside `hsdd/management/` modified, except `hsdd/summary/`
+      through step 7.
+- [ ] When `hsdd/summary/` exists: the Stale summaries line is filled, the
+      checkpoint page rendered with no Plan integrity finding, and it landed
+      with the management documents. When it does not exist: no
+      `hsdd-summary` script ran.
 - [ ] Every implementation repo was reviewed — paths taken from the prompt,
       or asked for when absent; none silently skipped.
 - [ ] Every decision this pass surfaced is a plan step with an owner and a
@@ -402,3 +424,4 @@ writes live under `hsdd/management/`.
 | "The table cell already says everything the briefing would" | Then the cell is unreadable, which is the defect. The agent running a 🤖 step can be re-prompted mid-task; the human running a 👤 step has only what the plan gave them. The cell indexes, the block instructs. |
 | "The Depends column already encodes the graph" | Rows are read one at a time; parallelism and funnels are shapes, invisible until drawn. The first thing the field asked for back was the diagram. Derive it from the tables and draw it. |
 | "The sync has an agenda row in the table — that's the checklist" | An agenda names topics; a gate needs entry criteria, exit criteria, and what they unblock. Steps depend on this sync: if nothing defines its discharge, every one of them inherits an undefined dependency. |
+| "The checkpoint page shows a Plan integrity finding; I'll mention it in the report" | It is this run's own quality gate failing, read back by a script. Fix the plan, render again, then land. |
