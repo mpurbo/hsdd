@@ -5,6 +5,8 @@ export const MAX_BOXES = 12;
 // A collapsed graph is a chain of steps; past this many it reads better as a list.
 export const MAX_STEPS = 6;
 export const OUTSIDE = "(outside)";
+// Contracts produced elsewhere in the tree, outside this parent, arrive from one ELSEWHERE box.
+export const ELSEWHERE = "(elsewhere)";
 
 export function nodeById(model) {
   return new Map(model.nodes.map((n) => [n.id, n]));
@@ -64,12 +66,14 @@ function edgeKind(model, refs) {
 
 // Boxes are the active children of `parentId`; an edge A -> B means something
 // in B's subtree consumes a contract something in A's subtree produces.
-// Contracts produced outside the tree arrive from one OUTSIDE box.
+// Contracts produced outside the tree arrive from one OUTSIDE box; contracts
+// produced elsewhere in the tree, outside `parentId`, arrive from one ELSEWHERE box.
 export function childGraph(model, parentId) {
   const kids = activeChildren(model, parentId);
   const subs = new Map(kids.map((k) => [k.id, subtree(model, k.id)]));
   const prod = producers(model);
   const external = new Set(model.contracts.filter((c) => c.external).map((c) => c.id));
+  const here = subtree(model, parentId);
   const edges = new Map();
   const addEdge = (from, to, ref) => {
     const key = `${from}|${to}`;
@@ -82,10 +86,16 @@ export function childGraph(model, parentId) {
       const from = kids.filter((a) => a.id !== b.id && [...(prod.get(cid) ?? [])].some((p) => subs.get(a.id).has(p)));
       for (const a of from) addEdge(a.id, b.id, r.ref);
       if (!from.length && (r.ext || external.has(cid)) && !(prod.get(cid)?.size)) addEdge(OUTSIDE, b.id, r.ref);
+      if (!from.length && [...(prod.get(cid) ?? [])].some((p) => !here.has(p))) addEdge(ELSEWHERE, b.id, r.ref);
     }
   }
   const list = [...edges.values()].map((e) => ({ ...e, kind: edgeKind(model, e.refs) }));
-  return { boxes: kids.map((k) => k.id), outside: list.some((e) => e.from === OUTSIDE), edges: list };
+  return {
+    boxes: kids.map((k) => k.id),
+    outside: list.some((e) => e.from === OUTSIDE),
+    elsewhere: list.some((e) => e.from === ELSEWHERE),
+    edges: list,
+  };
 }
 
 // Longest-path layering over in-set dependencies: layer 0 depends on nothing in the set.

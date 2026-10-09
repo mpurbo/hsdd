@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { completedModel } from "./helpers/plan-fixture.mjs";
-import { childGraph, phaseGraph, layers, subtree, producers, OUTSIDE, MAX_BOXES } from "../skills/hsdd-summary/scripts/graph.mjs";
+import { childGraph, phaseGraph, layers, subtree, producers, OUTSIDE, ELSEWHERE, MAX_BOXES } from "../skills/hsdd-summary/scripts/graph.mjs";
 
 const model = completedModel();
 
@@ -19,6 +19,20 @@ test("childGraph at the root: retired nodes hidden, edges from contracts, extern
     "acme.api>acme.web contract auth-token@v1,session@v1",
   ]);
   assert.equal(g.outside, true);
+  assert.equal(g.elsewhere, false);
+});
+
+test("childGraph on a non-root page: contracts produced elsewhere in the tree arrive from ELSEWHERE", () => {
+  const g = childGraph(model, "acme.web");
+  assert.deepEqual(g.boxes, ["acme.web.console"]);
+  assert.equal(g.elsewhere, true);
+  assert.equal(g.outside, false);
+  assert.equal(g.edges.length, 1);
+  const [e] = g.edges;
+  assert.equal(e.from, ELSEWHERE);
+  assert.equal(e.to, "acme.web.console");
+  assert.ok(e.refs.includes("auth-token@v1"));
+  assert.ok(e.refs.includes("session@v1"));
 });
 
 test("phaseGraph: dependency edges, ordered collisions counted, cross-node listed", () => {
