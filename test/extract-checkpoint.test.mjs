@@ -1,5 +1,8 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { mkdtempSync, cpSync, readFileSync, writeFileSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { TREE } from "./helpers/plan-fixture.mjs";
 import { toLines } from "../skills/hsdd-summary/scripts/md.mjs";
 import { extractCheckpoint, chainFiles, headerFields, parsePlan, modeOf, lanesFor } from "../skills/hsdd-summary/scripts/extract-checkpoint.mjs";
@@ -114,4 +117,47 @@ test("modeOf and lanesFor", () => {
   assert.deepEqual(lanesFor("BE+FE", lanes), ["FE", "BE"]);
   assert.deepEqual(lanesFor("operator \u{1F91D}", lanes), ["Operator"]);
   assert.deepEqual(lanesFor("both", lanes), []);
+});
+
+// Runs the extractor on a throwaway copy of the fixture after one edit.
+function withEdit(edit) {
+  const dir = mkdtempSync(join(tmpdir(), "hsdd-cp-"));
+  try {
+    cpSync(TREE, dir, { recursive: true });
+    edit(dir);
+    return extractCheckpoint(dir, {});
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+}
+
+const MGMT = "hsdd/management";
+
+test("unparsed chain: a progress report the chain does not read is reported under /history", () => {
+  const x = withEdit((d) => writeFileSync(join(d, MGMT, "2026-9-25-progress.md"), readFileSync(join(d, MGMT, "2026-09-25-progress.md"))));
+  assert.ok(x.unparsed.some((u) => u.path === "/history" && u.file === `${MGMT}/2026-9-25-progress.md`), JSON.stringify(x.unparsed));
+});
+
+test("unparsed chain: two progress reports on one date are reported under /history", () => {
+  const x = withEdit((d) => writeFileSync(join(d, MGMT, "2026-10-02-hsdd-progress.md"), readFileSync(join(d, MGMT, "2026-10-02-progress.md"))));
+  const u = x.unparsed.find((e) => e.path === "/history" && e.file === `${MGMT}/2026-10-02-hsdd-progress.md`);
+  assert.ok(u, JSON.stringify(x.unparsed));
+  assert.match(u.reason, /share the date 2026-10-02/);
+});
+
+test("unparsed progress: a removed Findings register heading is reported at /progress/findings", () => {
+  const x = withEdit((d) => {
+    const p = join(d, MGMT, "2026-10-02-progress.md");
+    writeFileSync(p, readFileSync(p, "utf8").split("\n").filter((l) => !/^## Findings register/.test(l)).join("\n"));
+  });
+  assert.ok(x.unparsed.some((u) => u.path === "/progress/findings" && u.file === `${MGMT}/2026-10-02-progress.md`), JSON.stringify(x.unparsed));
+});
+
+test("unparsed plan: renaming every Owner header reports the missing column and the empty step list", () => {
+  const x = withEdit((d) => {
+    const p = join(d, MGMT, "2026-10-02-execution-plan.md");
+    writeFileSync(p, readFileSync(p, "utf8").replaceAll("| Owner |", "| Who |"));
+  });
+  assert.ok(x.unparsed.some((u) => u.path === "/plan/steps" && /no Owner column/.test(u.reason)), JSON.stringify(x.unparsed));
+  assert.ok(x.unparsed.some((u) => u.path === "/plan/steps" && /no step table/.test(u.reason)), JSON.stringify(x.unparsed));
 });

@@ -256,6 +256,7 @@ export function parsePlan(ls) {
 
   const steps = [];
   const waivers = [];
+  const skippedTables = [];
   const hs = headings(ls);
   for (const t of tables(ls)) {
     const titleOf = () => plain([...hs].reverse().find((h) => h.line < t.line)?.text ?? "");
@@ -280,6 +281,9 @@ export function parsePlan(ls) {
       }
     } else if (column(t, "finding") >= 0 && column(t, "disposition") >= 0) {
       for (const r of t.rows) waivers.push({ finding: plain(r.cells[column(t, "finding")] ?? ""), text: r.cells[column(t, "disposition")] ?? "", line: r.line + 1 });
+    } else if (column(t, "id") >= 0 && t.rows.some((r) => STEP_ID.test(plain(r.cells[0] ?? "")))) {
+      const missing = [column(t, "owner") < 0 ? "Owner" : null, column(t, "action") < 0 ? "Action" : null].filter(Boolean);
+      skippedTables.push({ line: t.line + 1, missing: missing.join(" and ") });
     }
   }
   // With no ownership table, single-word owners name the lanes.
@@ -332,6 +336,7 @@ export function parsePlan(ls) {
     syncs,
     steps,
     waivers,
+    skippedTables,
     details,
     externalTracks: etTable ? { header: etTable.header, rows: etTable.rows.map((r) => r.cells) } : null,
     timeline: tlTable ? { header: tlTable.header, rows: tlTable.rows.map((r) => r.cells) } : null,
@@ -353,16 +358,50 @@ function idsIn(text, known) {
   return [...new Set((String(text).match(STEP_IDS) ?? []).filter((x) => known.has(x)))];
 }
 
+// The chain is read whole or reported: a progress report or plan the chain
+// does not read, and a date shared by two files of one kind.
+function chainProblems(root, chain) {
+  const dir = join(root, "hsdd/management");
+  const prefix = "hsdd/management/";
+  const known = new Set([...chain.progress, ...chain.plans].map((f) => f.slice(prefix.length)));
+  const out = [];
+  const stray = existsSync(dir) ? readdirSync(dir).filter((f) => f.endsWith(".md") && f !== "atlas.md" && /progress|execution-plan/i.test(f) && !known.has(f)) : [];
+  for (const name of stray) out.push({ path: "/history", file: `${prefix}${name}`, line: 1, reason: `"${name}" looks like a progress report or execution plan, but only YYYY-MM-DD-progress.md and YYYY-MM-DD-execution-plan.md names are read; rename it and extract again, or move it out of hsdd/management/` });
+  for (const [kind, files] of [["progress report", chain.progress], ["execution plan", chain.plans]]) {
+    const byDate = new Map();
+    for (const f of files) {
+      const name = f.slice(prefix.length);
+      const date = name.slice(0, 10);
+      byDate.set(date, [...(byDate.get(date) ?? []), name]);
+    }
+    for (const [date, names] of byDate) {
+      for (const b of names.slice(1)) out.push({ path: "/history", file: `${prefix}${b}`, line: 1, reason: `two ${kind} files share the date ${date} (${names[0]}, ${b}); keep one and extract again` });
+    }
+  }
+  return out;
+}
+
 export function extractCheckpoint(root, { specSha = "n/a" } = {}) {
   const chain = chainFiles(root);
   const unparsed = [];
+  unparsed.push(...chainProblems(root, chain));
   const facts = {};
   if (!chain.progress.length || !chain.plans.length) throw new Error("extract checkpoint: hsdd/management/ holds no dated progress report and execution plan");
   const progressFile = chain.progress[0];
   const planFile = chain.plans[0];
   const pls = read(root, progressFile);
   const progress = parseProgress(pls);
-  const plan = parsePlan(read(root, planFile));
+  const { skippedTables, ...plan } = parsePlan(read(root, planFile));
+
+  const heads = headings(pls).map((h) => h.text);
+  const requiredHeads = [
+    [/verdict/i, "/progress/verdict", "the newest progress report has no Verdict heading the extractor can read; fill the verdict from the report"],
+    [/blockers/i, "/progress/blockers", "the newest progress report has no Blockers heading the extractor can read; fill the blockers from the report, or [] if it has none"],
+    [/findings/i, "/progress/findings", "the newest progress report has no Findings register heading the extractor can read; fill the findings from the report, or [] if it has none"],
+  ];
+  for (const [re, path, reason] of requiredHeads) if (!heads.some((t) => re.test(t))) unparsed.push({ path, file: progressFile, line: 1, reason });
+  if (!plan.steps.length) unparsed.push({ path: "/plan/steps", file: planFile, line: 1, reason: "the newest execution plan has no step table the extractor can read (a table with ID, Owner and Action columns); fill the steps from the plan" });
+  for (const t of skippedTables) unparsed.push({ path: "/plan/steps", file: planFile, line: t.line, reason: `the table at line ${t.line} lists step ids but has no ${t.missing} column; add its steps from the plan` });
 
   const tree = extractPlan(root, { specSha });
   const nodeIds = new Set(tree.nodes.map((n) => n.id));
