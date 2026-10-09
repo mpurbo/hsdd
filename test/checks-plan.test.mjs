@@ -68,10 +68,13 @@ test("reaches follows dependency chains", () => {
 test("a node described only inside its parent's spec has no-spec-file", () => {
   const dir = mkdtempSync(join(tmpdir(), "hsdd-x-"));
   cpSync(TREE, dir, { recursive: true });
-  appendFileSync(join(dir, "hsdd/spec/x.md"), "\n### x.d: D\n\n- **Kind:** leaf-parent\n- **Purpose:** D does one thing.\n- **Consumes:** none\n- **Produces:** none\n");
+  appendFileSync(join(dir, "hsdd/spec/acme.md"), "\n### acme.d: D\n\n- **Kind:** leaf-parent\n- **Purpose:** D does one thing.\n- **Consumes:** none\n- **Produces:** none\n");
   const model = extractPlan(dir, { specSha: "abc1234" });
   for (const p of model.phases) if (p.tier === null) p.tier = "spot-check"; // the fixture's own completion, as completedModel does
   assert.deepEqual(validate(SCHEMA, model), []);
+  const d = model.nodes.find((n) => n.id === "acme.d");
+  assert.equal(d.sourceFile, "hsdd/spec/acme.md");
+  assert.ok(model.nodes.find((n) => n.id === "acme").children.includes("acme.d"));
   const { findings } = crossCheckPlan(model);
-  assert.ok(findings.some((f) => f.node === "x.d" && f.kind === "no-spec-file"), JSON.stringify(findings));
+  assert.ok(findings.some((f) => f.node === "acme.d" && f.kind === "no-spec-file"), JSON.stringify(findings));
 });
