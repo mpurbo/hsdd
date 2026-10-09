@@ -157,3 +157,83 @@ export function phaseGraph(model, nodeId) {
   const steps = layers(ids, depsOf);
   return { ids, edges, collisions, orderedCollisions, cross, steps, collapsed: ids.length > MAX_BOXES };
 }
+
+const STEP_REF = /\b[A-Z]{1,2}-(?:\d+|[a-z])[′″']*(?![\w-])/g;
+
+export function stepRefsIn(text, stepIds) {
+  return [...new Set((String(text ?? "").match(STEP_REF) ?? []).filter((x) => stepIds.has(x)))];
+}
+
+// A Depends cell -> the steps, syncs (with sections) and decisions it names.
+// A decision stands for the sync whose agenda defines it.
+export function dependsRefs(text, stepIds, syncIds, decisionHome) {
+  const out = { steps: [], syncs: [], decisions: [], unresolved: [] };
+  const t = String(text ?? "").replace(/`/g, "");
+  for (const m of t.matchAll(/\bSync\s+([^\s,;()·]+)/gi)) {
+    if (syncIds.has(m[1])) out.syncs.push(m[1]);
+    else out.unresolved.push(`Sync ${m[1]}`);
+  }
+  for (const m of t.matchAll(/\bD-\d+[′″']*/g)) {
+    const home = decisionHome.get(m[0]);
+    if (home) {
+      out.decisions.push(m[0]);
+      out.syncs.push(home);
+    } else out.unresolved.push(m[0]);
+  }
+  const rest = t.replace(/\bSync\s+[^\s,;()·]+/gi, " ").replace(/\bD-\d+[′″']*/g, " ");
+  for (const m of rest.matchAll(STEP_REF)) (stepIds.has(m[0]) ? out.steps : out.unresolved).push(m[0]);
+  for (const k of Object.keys(out)) out[k] = [...new Set(out[k])];
+  return out;
+}
+
+// The execution plan as a graph: syncs with sections and steps. Edges come
+// from Depends cells, from steps a sync's Entry names (step -> sync), and from
+// steps its Unblocks lines name (sync -> step). Never from the plan's Mermaid.
+export function planGraph(model) {
+  const { plan } = model;
+  const stepIds = new Set(plan.steps.map((s) => s.id));
+  const syncIds = new Set(plan.syncs.map((s) => s.id));
+  const home = new Map();
+  for (const s of plan.syncs) for (const d of s.decisions) if (!home.has(d.id)) home.set(d.id, s.id);
+  const nodes = [
+    ...plan.syncs.map((s) => ({ id: `sync:${s.id}`, kind: "sync", ref: s.id, lane: null })),
+    ...plan.steps.map((s) => ({ id: `step:${s.id}`, kind: "step", ref: s.id, lane: s.lanes.length === 1 ? s.lanes[0] : s.lanes.length ? "shared" : null, done: s.done })),
+  ];
+  const edges = new Map();
+  const add = (a, b) => {
+    if (a !== b) edges.set(`${a}>${b}`, { from: a, to: b });
+  };
+  for (const s of plan.steps) {
+    const r = dependsRefs(s.depends, stepIds, syncIds, home);
+    for (const d of r.steps) add(`step:${d}`, `step:${s.id}`);
+    for (const y of r.syncs) add(`sync:${y}`, `step:${s.id}`);
+  }
+  for (const y of plan.syncs) {
+    for (const it of y.entry) for (const id of stepRefsIn(it.text, stepIds)) add(`step:${id}`, `sync:${y.id}`);
+    for (const u of y.unblocks) for (const id of stepRefsIn(u.text, stepIds)) add(`sync:${y.id}`, `step:${id}`);
+  }
+  return { nodes, edges: [...edges.values()] };
+}
+
+// Above the box limit, steps batch by (lane, layer); syncs stay single boxes.
+export function collapsePlanGraph(g, max = MAX_BOXES) {
+  if (g.nodes.length <= max) return { ...g, collapsed: false };
+  const byId = new Map(g.nodes.map((n) => [n.id, n]));
+  const lay = layers(g.nodes.map((n) => n.id), (id) => g.edges.filter((e) => e.to === id).map((e) => e.from));
+  const layerOf = new Map();
+  lay.forEach((ids, k) => ids.forEach((id) => layerOf.set(id, k)));
+  const batchOf = (n) => (n.kind === "sync" ? n.id : `batch:${n.lane ?? "unassigned"}:${layerOf.get(n.id)}`);
+  const boxes = new Map();
+  for (const n of g.nodes) {
+    const b = batchOf(n);
+    if (!boxes.has(b)) boxes.set(b, { id: b, kind: n.kind === "sync" ? "sync" : "batch", ref: n.kind === "sync" ? n.ref : null, lane: n.lane, layer: layerOf.get(n.id), members: [] });
+    boxes.get(b).members.push(n.ref);
+  }
+  const edges = new Map();
+  for (const e of g.edges) {
+    const a = batchOf(byId.get(e.from));
+    const b = batchOf(byId.get(e.to));
+    if (a !== b) edges.set(`${a}>${b}`, { from: a, to: b });
+  }
+  return { nodes: [...boxes.values()], edges: [...edges.values()], collapsed: true };
+}

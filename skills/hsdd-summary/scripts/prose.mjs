@@ -40,6 +40,17 @@ export function planGlossaryKeys(model) {
   return [...contracts].sort();
 }
 
+// The checkpoint page's slots: the stakeholder reads only these, so all are
+// required and none may name an id. Keys share the store under "cp:".
+export function checkpointSlots(model) {
+  const f = model.facts;
+  return [
+    { key: "cp:verdict", limit: 60, required: true, noIds: true, facts: f["cp:verdict"] },
+    ...model.progress.milestones.map((m) => ({ key: `cp:milestone:${m.id}`, limit: 25, required: true, noIds: true, facts: f[`cp:milestone:${m.id}`] })),
+    ...model.progress.blockers.map((b) => ({ key: `cp:blocker:${b.rank}`, limit: 25, required: true, noIds: true, facts: f[`cp:blocker:${b.rank}`] })),
+  ];
+}
+
 export function slotKind(key) {
   return key.startsWith("cp:") ? "checkpoint" : "plan";
 }

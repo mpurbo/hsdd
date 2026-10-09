@@ -1,0 +1,1043 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "hsdd-summary/checkpoint-model",
+  "title": "hsdd-summary checkpoint model",
+  "description": "What extract checkpoint writes and the agent completes: the newest progress report and execution plan, the atlas, the chain behind them, and the tree's node skeleton. Nothing here is authored.",
+  "type": "object",
+  "required": [
+    "kind",
+    "schemaVersion",
+    "project",
+    "files",
+    "tree",
+    "progress",
+    "plan",
+    "atlas",
+    "history",
+    "ids",
+    "facts",
+    "unparsed"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "kind": {
+      "const": "checkpoint"
+    },
+    "schemaVersion": {
+      "const": 1
+    },
+    "project": {
+      "type": "object",
+      "required": [
+        "root",
+        "name",
+        "specSha",
+        "codingMethod",
+        "date"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "root": {
+          "type": "string",
+          "minLength": 1
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "specSha": {
+          "type": "string"
+        },
+        "codingMethod": {
+          "enum": [
+            "openspec",
+            "superpowers"
+          ]
+        },
+        "date": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+        }
+      }
+    },
+    "files": {
+      "type": "object",
+      "required": [
+        "progress",
+        "plan",
+        "atlas",
+        "chain"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "progress": {
+          "type": "string",
+          "pattern": "^hsdd/management/"
+        },
+        "plan": {
+          "type": "string",
+          "pattern": "^hsdd/management/"
+        },
+        "atlas": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "chain": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "tree": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "parent",
+          "children",
+          "kind",
+          "status"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "parent": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "children": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "kind": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "status": {
+            "enum": [
+              "active",
+              "retired"
+            ]
+          }
+        }
+      }
+    },
+    "progress": {
+      "type": "object",
+      "required": [
+        "header",
+        "bottomLine",
+        "read",
+        "milestones",
+        "trigger",
+        "done",
+        "doneNotes",
+        "velocity",
+        "blockers",
+        "findings",
+        "verdict",
+        "sections"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "header": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "bottomLine": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "label",
+              "value"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "label": {
+                "type": "string"
+              },
+              "value": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "read": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "milestones": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/milestone"
+          }
+        },
+        "trigger": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "lead",
+              "text"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "lead": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "text": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "done": {
+          "$ref": "#/$defs/table"
+        },
+        "doneNotes": {
+          "$ref": "#/$defs/blocks"
+        },
+        "velocity": {
+          "$ref": "#/$defs/blocks"
+        },
+        "blockers": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "rank",
+              "lead",
+              "text",
+              "findings",
+              "steps"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "rank": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "lead": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "text": {
+                "type": "string"
+              },
+              "findings": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "steps": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "findings": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/finding"
+          }
+        },
+        "verdict": {
+          "$ref": "#/$defs/blocks"
+        },
+        "sections": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "plan": {
+      "type": "object",
+      "required": [
+        "header",
+        "lanes",
+        "ownership",
+        "currentState",
+        "syncPoints",
+        "syncs",
+        "steps",
+        "waivers",
+        "details",
+        "externalTracks",
+        "timeline",
+        "timelineNotes",
+        "sections"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "header": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "lanes": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "name",
+              "key"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "key": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          }
+        },
+        "ownership": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "label",
+              "cells"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "label": {
+                "type": "string"
+              },
+              "cells": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "currentState": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "syncPoints": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "id",
+              "name",
+              "when",
+              "who",
+              "agenda"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "name": {
+                "type": "string"
+              },
+              "when": {
+                "type": "string"
+              },
+              "who": {
+                "type": "string"
+              },
+              "agenda": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "syncs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/sync"
+          }
+        },
+        "steps": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/step"
+          }
+        },
+        "waivers": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "finding",
+              "text",
+              "line"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "finding": {
+                "type": "string"
+              },
+              "text": {
+                "type": "string"
+              },
+              "line": {
+                "type": "integer"
+              }
+            }
+          }
+        },
+        "details": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/detail"
+          }
+        },
+        "externalTracks": {
+          "$ref": "#/$defs/table"
+        },
+        "timeline": {
+          "$ref": "#/$defs/table"
+        },
+        "timelineNotes": {
+          "$ref": "#/$defs/blocks"
+        },
+        "sections": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "atlas": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "node",
+          "live",
+          "done",
+          "warn",
+          "remaining",
+          "line"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "node": {
+            "type": "string"
+          },
+          "live": {
+            "type": "number"
+          },
+          "done": {
+            "type": "number"
+          },
+          "warn": {
+            "type": "boolean"
+          },
+          "remaining": {
+            "type": "string"
+          },
+          "line": {
+            "type": "integer"
+          }
+        }
+      }
+    },
+    "history": {
+      "type": "object",
+      "required": [
+        "progress",
+        "plans"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "progress": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "file",
+              "findings",
+              "gates"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "file": {
+                "type": "string"
+              },
+              "findings": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "gates": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": [
+                    "array",
+                    "null"
+                  ],
+                  "items": {
+                    "type": "integer"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "plans": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "file",
+              "open",
+              "done"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "file": {
+                "type": "string"
+              },
+              "open": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "done": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "ids": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "facts": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string",
+        "pattern": "^sha256:[0-9a-f]{64}$"
+      }
+    },
+    "unparsed": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "path",
+          "file",
+          "line",
+          "reason"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "path": {
+            "type": "string",
+            "pattern": "^/"
+          },
+          "file": {
+            "type": "string"
+          },
+          "line": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "reason": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "block": {
+      "type": "object",
+      "required": [
+        "type"
+      ],
+      "properties": {
+        "type": {
+          "enum": [
+            "p",
+            "ul",
+            "ol",
+            "code",
+            "table",
+            "quote",
+            "heading"
+          ]
+        }
+      }
+    },
+    "blocks": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/block"
+      }
+    },
+    "table": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "properties": {
+        "header": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "rows": {
+          "type": "array",
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "item": {
+      "type": "object",
+      "required": [
+        "checked",
+        "text"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "checked": {
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "text": {
+          "type": "string"
+        }
+      }
+    },
+    "milestone": {
+      "type": "object",
+      "required": [
+        "id",
+        "name",
+        "date",
+        "gate",
+        "fraction",
+        "reached",
+        "movement",
+        "items",
+        "raw",
+        "line"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "name": {
+          "type": "string"
+        },
+        "date": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "gate": {
+          "type": "string"
+        },
+        "fraction": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "minItems": 2
+        },
+        "reached": {
+          "type": "boolean"
+        },
+        "movement": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "met",
+              "text"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "met": {
+                "type": "boolean"
+              },
+              "text": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "raw": {
+          "type": "string"
+        },
+        "line": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    },
+    "finding": {
+      "type": "object",
+      "required": [
+        "id",
+        "severity",
+        "area",
+        "lead",
+        "text",
+        "line"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "severity": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "area": {
+          "type": "string"
+        },
+        "lead": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "text": {
+          "type": "string"
+        },
+        "line": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    },
+    "sync": {
+      "type": "object",
+      "required": [
+        "id",
+        "title",
+        "gating",
+        "why",
+        "entry",
+        "decisions",
+        "exit",
+        "unblocks",
+        "line"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "title": {
+          "type": "string"
+        },
+        "gating": {
+          "type": "boolean"
+        },
+        "why": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "entry": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/item"
+          }
+        },
+        "decisions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "id",
+              "question",
+              "text",
+              "landsIn",
+              "line"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^D-\\d+"
+              },
+              "question": {
+                "type": "string"
+              },
+              "text": {
+                "type": "string"
+              },
+              "landsIn": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "line": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              }
+            }
+          }
+        },
+        "exit": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/item"
+          }
+        },
+        "unblocks": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "lane",
+              "text"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "lane": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "text": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "line": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    },
+    "step": {
+      "type": "object",
+      "required": [
+        "id",
+        "owner",
+        "mode",
+        "lanes",
+        "action",
+        "depends",
+        "findings",
+        "done",
+        "group",
+        "line"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "owner": {
+          "type": "string"
+        },
+        "mode": {
+          "enum": [
+            null,
+            "delegate",
+            "interactive",
+            "human"
+          ]
+        },
+        "lanes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1
+        },
+        "action": {
+          "type": "string"
+        },
+        "depends": {
+          "type": "string"
+        },
+        "findings": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "done": {
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "group": {
+          "type": "string"
+        },
+        "line": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    },
+    "detail": {
+      "type": "object",
+      "required": [
+        "id",
+        "title",
+        "mode",
+        "owner",
+        "prompt",
+        "validate",
+        "why",
+        "do",
+        "doneWhen",
+        "body",
+        "line"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "mode": {
+          "enum": [
+            null,
+            "delegate",
+            "interactive",
+            "human"
+          ]
+        },
+        "owner": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "prompt": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "validate": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "why": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "do": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/item"
+          }
+        },
+        "doneWhen": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "body": {
+          "$ref": "#/$defs/blocks"
+        },
+        "line": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    }
+  }
+}
