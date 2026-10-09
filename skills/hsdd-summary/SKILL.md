@@ -1,16 +1,19 @@
 ---
 name: hsdd-summary
 description: >
-  Use when someone needs to read an HSDD tree without reading every artifact:
-  renders the plan page, one offline HTML file that takes a reviewer, a
-  stakeholder or an implementer from the root down to the phase cards, with
-  What to check at every level, the contracts and the decisions. Triggers:
-  "summary page", "review page", "plan page", "summary.html", "a reading aid
-  for this MR", "explain the tree to the PM", "show me the plan from the top",
-  "stale summaries", "hsdd/summary". Runs at any stage after the root spec
-  exists. Do NOT use for writing or changing specs, contracts or ADRs
-  (hsdd-spec, hsdd-contract, hsdd-adr), progress or the execution plan
-  (hsdd-checkpoint), or the phase context (hsdd-config).
+  Use when someone needs to read an HSDD tree or its management documents
+  without reading every artifact: renders offline HTML reading aids. The plan
+  page takes a reviewer, a stakeholder or an implementer from the root down to
+  the phase cards, with What to check at every level; the checkpoint page lays
+  out the newest progress report and execution plan for the lead running the
+  sync, each lane's executor, and stakeholders. Triggers: "summary page",
+  "review page", "plan page", "summary.html", "checkpoint page",
+  "checkpoint.html", "make the execution plan readable", "a reading aid for
+  this MR", "explain the tree to the PM", "show me the plan from the top",
+  "stale summaries", "hsdd/summary". Do NOT use for writing or changing specs,
+  contracts or ADRs (hsdd-spec, hsdd-contract, hsdd-adr), writing progress
+  reports or execution plans (hsdd-checkpoint), or the phase context
+  (hsdd-config).
 ---
 
 # HSDD Summary: Reading Aids
@@ -31,7 +34,8 @@ source.
 
 | Page | File | Built from | Regenerate |
 |------|------|------------|------------|
-| Plan page | `hsdd/summary/summary.html` | `hsdd/spec/`, `hsdd/contract/`, `hsdd/adr/`, `hsdd/conventions.md`, the glossary and the prose store | after each `hsdd-spec` level and each phase plan, so the reviewer opens it in the same MR |
+| Plan page | `hsdd/summary/summary.html` | `hsdd/spec/`, `hsdd/contract/`, `hsdd/adr/`, `hsdd/conventions.md`, `glossary.json`, `prose.json` | after each `hsdd-spec` level and each phase plan, so the reviewer opens it in the same merge request |
+| Checkpoint page | `hsdd/summary/checkpoint.html` | the newest progress report and execution plan, the chain behind them, the atlas, the node names in `hsdd/spec/`, `checkpoint-prose.json` | at every checkpoint, as `hsdd-checkpoint`'s gated step |
 
 Each page is stamped with a hash of every input it read; `check` reports it
 stale when any input changes. Nothing gates on a page, and nothing outside
@@ -53,8 +57,17 @@ below runs from the project root, the directory that holds `hsdd/`.
 | `stakeholder` | understand the plan without reading the source | never | names, counts and plain words; no gates, no question text |
 | `implementer` | orient before a phase | shown | full, plus gates |
 
-Keys on the page: `1` `2` `3` switch audience, `t` the top, `c` contracts,
-`d` decisions, `u` up a level. The Shortcuts button turns them off.
+On the checkpoint page:
+
+| Audience | Reads the page to | Ids | Detail |
+|----------|-------------------|-----|--------|
+| `lead` (default) | run the sync | shown | the read, tiles, gates, syncs, the plan graph, blockers, findings, the delta |
+| `executor` | work a lane between syncs | shown | each lane's steps in run order, prompts and briefings in full, a copy button on every prompt |
+| `stakeholder` | know where things stand | never | the verdict, id-free bottom-line rows, milestones in plain words, what could slip |
+
+Keys on the page: `1` `2` `3` switch audience, `t` the top, `u` up a level;
+on the plan page `c` contracts and `d` decisions; on the checkpoint page `f`
+findings and `s` build progress. The Shortcuts button turns them off.
 
 ## Process (plan page)
 
@@ -112,7 +125,27 @@ Keys on the page: `1` `2` `3` switch audience, `t` the top, `c` contracts,
 10. **Report:** the page's path, the unparsed items you filled and from
     where, the slots you wrote, and any readability notes left.
 
-Commit `hsdd/summary/` (page, prose store, glossary) with the change it
+## Process (checkpoint page)
+
+Run it after `hsdd-checkpoint` has written the dated progress report and
+execution plan (its gated step invokes this). The steps are the plan page's,
+with `checkpoint` in place of `plan`:
+
+1. `node hsdd/scripts/summary/summary.mjs extract checkpoint`. The usual
+   unparsed item is a step whose owner names no lane ("both"): set its
+   `lanes` from the plan's Operating model or Ownership split.
+2. `validate checkpoint` must exit 0. Integrity findings (an orphan finding,
+   a step with no detail block, a Depends entry that resolves to nothing)
+   are not errors: they are `hsdd-checkpoint`'s own quality gates, and the
+   checkpoint run fixes its plan before landing.
+3. `slots checkpoint`, then write the stakeholder prose in
+   `hsdd/summary/checkpoint-prose.json`: `cp:verdict`, one
+   `cp:milestone:{id}` per milestone, one `cp:blocker:{rank}` per blocker.
+4. `lint checkpoint`, at most two rewrites; `stamp checkpoint`;
+   `render checkpoint` writes `hsdd/summary/checkpoint.html`; `check` must
+   report it fresh.
+
+Commit `hsdd/summary/` (pages, prose stores, glossary) with the change it
 summarizes. Never commit the scratch model. Under the standalone-spec-repo
 profile `hsdd/summary/` lives in the spec repo, so it lands the way every
 governance edit does: committed and pushed inside the submodule, then each
@@ -127,6 +160,9 @@ implementation repo's pointer bumped.
 | `delivers:{phase}` | 25 | what is true when the phase is done |
 | `promise:{contract}` | 40 | what a consumer can rely on, in plain words; no ids |
 | glossary `{contract-id}` (required) | 8 | a plain noun phrase the stakeholder reads instead of the id |
+| `cp:verdict` (required) | 60 | the checkpoint's verdict for someone outside the team; no ids |
+| `cp:milestone:{id}` (required) | 25 | what reaching this milestone means for the people it serves; no ids |
+| `cp:blocker:{rank}` (required) | 25 | what could slip because of this blocker, and why; no ids |
 
 The lint checks the word limit, ids in id-free slots, and markdown. Write
 plain sentences, not fragments; say what a thing does, not what it is called.
@@ -142,6 +178,13 @@ plain sentences, not fragments; say what a thing does, not what it is called.
 - `promise:auth-token@v1`: "A pass always names exactly one user and stops
   working one day after it was issued, with no grace period."
 - glossary `auth-token`: "the sign-in pass".
+- `cp:verdict`: "The first milestone landed on its date. The second waits on
+  one open question about where sessions are stored, which the team settles
+  on Monday."
+- `cp:milestone:M2`: "Merchants can open the console and see every outlet
+  they run, with its current status."
+- `cp:blocker:1`: "Building session storage cannot start until the team
+  picks where sessions live; every day of delay moves the outlet screens."
 
 ## What the Plan Page Shows
 
@@ -165,6 +208,30 @@ plain sentences, not fragments; say what a thing does, not what it is called.
   governance updates, phases missing from their summary table, collisions.
 - **Contracts and decisions,** each a click away.
 
+## What the Checkpoint Page Shows
+
+Every fact comes from the documents by script; every card links to its
+source file and line, and the markdown stays the record.
+
+- **The lead's top view:** the one-sentence read; the bottom-line rows as
+  tiles; each milestone gate as a bar with its movement since the previous
+  report; the syncs; the plan graph (syncs as junctions, steps joined by
+  their Depends cells, their syncs' Entry and Unblocks lines; above 20
+  boxes, steps batch by lane and depth; above 20 batches, an ordered list);
+  the blockers; the findings by severity, each with the number of
+  consecutive registers it has appeared in; and what changed since the
+  previous plan.
+- **A sync:** Entry, each decision with its options and where its answer
+  lands, Exit, Unblocks, and the steps waiting on it.
+- **A lane:** its steps in the order they can run; for the executor, every
+  prompt with a copy button and every briefing's Why, Do and Done when.
+- **A finding:** its text, how many consecutive registers it has been in,
+  and the steps that land it or the waiver that closes it. A finding with
+  neither says so.
+- **Build progress:** the atlas's per-node counts on the node tree.
+- **Plan integrity:** the cross-checks `hsdd-checkpoint`'s quality gates
+  name, as the scripts read the documents.
+
 ## Quality Gates
 
 - [ ] `validate` exited 0, and every unparsed item was filled from the line
@@ -175,6 +242,8 @@ plain sentences, not fragments; say what a thing does, not what it is called.
 - [ ] Prose stamped; page rendered; `check` reports it fresh.
 - [ ] No file outside `hsdd/summary/` changed, and the scratch model is not
       committed.
+- [ ] Checkpoint page: every step has its lanes, and the page shows no Plan
+      integrity finding that the checkpoint run should have fixed first.
 - [ ] The scripts under `hsdd/scripts/summary/` are byte-identical to this
       skill's `scripts/`.
 
@@ -191,3 +260,5 @@ plain sentences, not fragments; say what a thing does, not what it is called.
 | "The glossary entry is clumsy; I'll improve it" | People own existing entries. Fill empty ones only. |
 | "I'll retype the script from memory, it's quicker than copying" | A retyped script is not the one the tests cover: escaping, the offline rule and the id scan are pinned only for the bundled code. Copy the directory verbatim. |
 | "The page is stale but close enough" | A stale page shows a plan that no longer exists. Regenerate it, or say in your report that it is stale. |
+| "The report says 'third consecutive pass'; the page says two" | The page counts register rows by script. The report's prose may count days or the underlying problem. Both can be true; neither is edited to match the other. |
+| "This owner says 'both'; I'll leave the lanes empty" | Then the step appears in no lane and its executor never sees it. Read the plan's Operating model and fill the lanes. |
