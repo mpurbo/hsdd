@@ -218,11 +218,14 @@ function planNode(ctx, id) {
     const g = phaseGraph(ctx.model, id);
     const asSteps = ctx.stake || g.collapsed;
     if (g.ids.length && !(asSteps && g.steps.length > MAX_STEPS)) diagrams.push({ id: "main", spec: phaseSpec(ctx, g) });
-    listing = html`${asSteps && g.steps.length > MAX_STEPS ? stepList(ctx, g) : ""}${phaseListSection(ctx, n, g)}`;
+    const note = !ctx.stake && g.collapsed ? html`<p class="explain">${g.ids.length} phases are too many to draw one by one, so they are grouped into steps; the phase table below lists each dependency.</p>` : "";
+    listing = html`${note}${asSteps && g.steps.length > MAX_STEPS ? stepList(ctx, g) : ""}${phaseListSection(ctx, n, g)}`;
   } else {
     const g = childGraph(ctx.model, id);
     if (g.boxes.length && g.boxes.length <= MAX_BOXES) diagrams.push({ id: "main", spec: childSpec(ctx, g) });
-    listing = childrenSection(ctx, n);
+    listing = g.boxes.length > MAX_BOXES
+      ? html`<p class="explain">${ctx.stake ? `${g.boxes.length} parts are too many to draw as one picture; they are listed below, and Connections shows how they depend on each other.` : `${g.boxes.length} children are too many to draw; they are listed below, and Contracts shows the edges between them.`}</p>${childrenSection(ctx, n)}`
+      : childrenSection(ctx, n);
   }
   const note = prose(ctx, `note:${id}:${ctx.a}`);
   const markers = [
@@ -293,16 +296,17 @@ function contractCard(ctx, c, full) {
 function planContracts(ctx) {
   const root = ctx.model.project.root;
   const g = childGraph(ctx.model, root);
+  const drawn = g.boxes.length > 0 && g.boxes.length <= MAX_BOXES;
   const spec = childSpec(ctx, g);
   const cs = [...ctx.model.contracts].sort((x, y) => x.ref.localeCompare(y.ref));
   const named = [...new Set([...ctx.model.nodes, ...ctx.model.phases].flatMap((x) => [...x.consumes, ...x.produces]).filter((r) => !r.ext && !ctx.model.contracts.some((c) => c.id === r.ref.split("@")[0])).map((r) => r.ref))].sort();
   const body = html`
     <header class="page-head"><p class="eyebrow">${ctx.stake ? "How the parts connect" : "Contracts"}</p><h1>${ctx.stake ? "Connections" : "Contracts"}</h1>
       <p class="explain">${ctx.stake ? `${plural(cs.length, "connection")} between the parts, and how they depend on each other.` : `${plural(cs.length, "contract")} with a file; ${plural(named.length, "more is", "more are")} named, not yet written.`}</p></header>
-    ${g.boxes.length ? diagramSlot("main") : ""}
+    ${drawn ? diagramSlot("main") : g.boxes.length ? html`<p class="explain">${ctx.stake ? "Too many parts to draw as one picture; the list below covers every connection." : `${g.boxes.length} parts are too many to draw; each card names its producer, and its page lists the consumers.`}</p>` : ""}
     ${section(ctx.stake ? "The connections" : "Written", html`<ul class="cards">${cs.map((c) => contractCard(ctx, c, false))}</ul>`)}
     ${named.length ? section(ctx.stake ? "Named but not yet written down" : "Named, not yet written", html`<ul>${named.map((r) => html`<li>${ctx.stake ? capitalize(gloss(ctx, r)) : html`<code>${r}</code>`}</li>`)}</ul>`) : ""}`;
-  return { title: ctx.stake ? "Connections" : "Contracts", crumbs: [{ label: ctx.stake ? "Connections" : "Contracts", href: href(ctx.a, "contracts") }], body: body.s, diagrams: g.boxes.length ? [{ id: "main", spec }] : [] };
+  return { title: ctx.stake ? "Connections" : "Contracts", crumbs: [{ label: ctx.stake ? "Connections" : "Contracts", href: href(ctx.a, "contracts") }], body: body.s, diagrams: drawn ? [{ id: "main", spec }] : [] };
 }
 
 function planContract(ctx, c) {

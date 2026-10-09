@@ -136,3 +136,40 @@ test("a non-root node draws the elsewhere box for contracts produced outside its
   const s = renderPlan(page, { audience: "stakeholder", view: "node", id: "acme.web" }).diagrams[0].spec;
   assert.ok(s.legend.some((l) => l.text === "another part of this plan"));
 });
+
+function bigModel() {
+  const m = completedModel();
+  const tmpl = m.nodes.find((x) => x.id === "acme.ops");
+  for (let i = 1; i <= 11; i++) {
+    const id = `acme.k${i}`;
+    m.nodes.push({ ...tmpl, id, name: `K${i}`, children: [], phases: [], sourceFile: `hsdd/spec/${id}.md` });
+    m.nodes.find((x) => x.id === "acme").children.push(id);
+  }
+  return m;
+}
+
+test("too many children: the node and top views say so, and the contracts page drops its diagram", () => {
+  const m = bigModel();
+  const bp = planPage(m, { findings: crossCheckPlan(m).findings });
+  const rev = renderPlan(bp, { audience: "reviewer", view: "top" });
+  assert.equal(rev.diagrams.length, 0);
+  assert.match(rev.body, /14 children are too many to draw/);
+  const stk = renderPlan(bp, { audience: "stakeholder", view: "top" });
+  assert.match(stk.body, /14 parts are too many to draw as one picture/);
+  assert.equal(namesId(visibleText(stk), m.ids), null);
+  const c = renderPlan(bp, { audience: "reviewer", view: "contracts" });
+  assert.equal(c.diagrams.length, 0);
+  assert.match(c.body, /14 parts are too many to draw/);
+});
+
+test("too many phases: the leaf page says the phases were grouped into steps", () => {
+  const m = completedModel();
+  const node = m.nodes.find((x) => x.id === "acme.api");
+  for (let i = 1; i <= 13; i++) {
+    const id = `acme.api.${100 + i}`;
+    m.phases.push({ ...m.phases[0], id, n: 100 + i, heading: `api.${100 + i}`, dependsOn: [], collidesWith: [], contingentOn: [], citesOq: [] });
+    node.phases.push(id);
+  }
+  const v = renderPlan(planPage(m), { audience: "reviewer", view: "node", id: "acme.api" });
+  assert.match(v.body, /phases are too many to draw one by one/);
+});
