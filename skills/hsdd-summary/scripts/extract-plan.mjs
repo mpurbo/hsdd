@@ -117,8 +117,9 @@ export function phaseList(cell, nodeId, nodeIds, aliases = new Map()) {
       out.ids.push(`${nodeId}.${m[2]}`);
       continue;
     }
-    const owner = aliases.get(prefix) ?? [...nodeIds].find((n) => n === prefix || n.endsWith("." + prefix));
-    if (owner) out.ids.push(`${owner}.${m[2]}`);
+    // A prefix resolves only when it names exactly one node; zero or several is unresolved.
+    const candidates = aliases.has(prefix) ? [aliases.get(prefix)] : [...nodeIds].filter((n) => n === prefix || n.endsWith("." + prefix));
+    if (candidates.length === 1) out.ids.push(`${candidates[0]}.${m[2]}`);
     else out.unresolved.push(t);
   }
   out.ids = [...new Set(out.ids)];
@@ -184,11 +185,21 @@ export function extractPlan(root, { specSha = "n/a" } = {}) {
   for (const [file, ls] of docs) {
     for (const h of headings(ls).filter((x) => x.level === 3)) {
       const { id, name } = splitTitle(plain(h.text));
-      if (!id || !idSet.has(id) || id === file) continue;
+      if (!id || id === file) continue;
       const fb = fieldBlock(ls, h.line + 1, nextHeadingLine(ls, h.line, 3));
-      if (fb) embedded.set(id, { fb, ls, name, file });
+      if (!fb) continue;
+      // An id with no spec file counts only as a node one dotted segment below a
+      // known node, and only when its block states Kind or Purpose.
+      const parentPart = id.includes(".") ? id.slice(0, id.lastIndexOf(".")) : null;
+      const orphanChild = !idSet.has(id) && parentPart !== null && idSet.has(parentPart) && Boolean(fb.fields.Kind || fb.fields.Purpose);
+      if (idSet.has(id) || orphanChild) embedded.set(id, { fb, ls, name, file });
     }
   }
+  // Embedded children without a spec file become nodes, so parentOf and children see them.
+  const orphanIds = [...embedded.keys()].filter((id) => !idSet.has(id)).sort();
+  for (const id of orphanIds) idSet.add(id);
+  specIds.push(...orphanIds);
+  specIds.sort();
 
   // Phase-heading prefixes per node ("an" in "### an.3: ..."): a prefix used by
   // exactly one node resolves short ids in Depends on cells anywhere in the tree.
@@ -206,18 +217,20 @@ export function extractPlan(root, { specSha = "n/a" } = {}) {
   const nodes = [];
   const phases = [];
   for (const id of specIds) {
-    const ls = docs.get(id);
-    const file = `hsdd/spec/${id}.md`;
-    const title = headings(ls).find((h) => h.level === 1);
-    const t = title ? splitTitle(plain(title.text)) : { name: id };
-    const own = ownBlock(ls);
     const emb = embedded.get(id);
+    // A child with no spec file is read from its parent's embedded block alone.
+    const orphan = !docs.has(id);
+    const ls = orphan ? emb.ls : docs.get(id);
+    const file = orphan ? `hsdd/spec/${emb.file}.md` : `hsdd/spec/${id}.md`;
+    const title = headings(ls).find((h) => h.level === 1);
+    const t = orphan ? { name: emb.name } : title ? splitTitle(plain(title.text)) : { name: id };
+    const own = orphan ? null : ownBlock(ls);
     const block = own ?? emb?.fb ?? null;
     const blockLs = own ? ls : emb?.ls;
     const f = block?.fields ?? {};
     const i = nodes.length;
     const isRoot = id === rootId;
-    const planSec = sections(ls, 2).find((s) => /^phase plan/i.test(sectionName(s.title)));
+    const planSec = orphan ? null : sections(ls, 2).find((s) => /^phase plan/i.test(sectionName(s.title)));
     const children = specIds.filter((c) => parentOf(c, idSet) === id);
 
     let kind = isRoot ? "root" : normKind(value(f, "Kind"));
@@ -250,9 +263,9 @@ export function extractPlan(root, { specSha = "n/a" } = {}) {
       children,
       phases: [],
       defaultGate: null,
-      openQuestions: openQuestions(ls),
-      pendingGovernance: pendingGovernance(ls),
-      observedSurface: sections(ls, 2).some((s) => /^observed surface/i.test(sectionName(s.title))),
+      openQuestions: orphan ? [] : openQuestions(ls),
+      pendingGovernance: orphan ? false : pendingGovernance(ls),
+      observedSurface: !orphan && sections(ls, 2).some((s) => /^observed surface/i.test(sectionName(s.title))),
       sourceFile: file,
     };
     nodes.push(node);
@@ -270,7 +283,8 @@ export function extractPlan(root, { specSha = "n/a" } = {}) {
         if (n) rowByN.set(n[1], r);
       }
     }
-    const heads = headings(ls).filter((h) => h.level === 3 && h.line > planSec.line);
+    const heads = headings(ls).filter((h) => h.level === 3 && h.line > planSec.line && h.line < planSec.end);
+    const extracted = new Set();
     for (const h of heads) {
       const m = /^([\w.-]*?(\d+))\s*:\s*(.+)$/.exec(plain(h.text));
       if (!m || idSet.has(m[1])) continue;
@@ -297,7 +311,9 @@ export function extractPlan(root, { specSha = "n/a" } = {}) {
         unparsed.push({ path: `/phases/${pi}/dependsOn`, file, line: (pf.Dependencies?.line ?? h.line) + 1, reason: "the phase has no summary-table row; read its Dependencies line" });
       }
       const collCell = row && column(table, "collides") >= 0 ? row.cells[column(table, "collides")] : value(pf, "Collides with");
-      const coll = phaseList(collCell, id, idSet, aliases);
+      // A reason after the target ("[a.2] \u2014 same file") is prose, not a phase reference.
+      const coll = phaseList(collCell?.split(/\u2014|\u2013|\s-\s/)[0] ?? null, id, idSet, aliases);
+      if (coll.unresolved.length) unparsed.push({ path: `/phases/${pi}/collidesWith`, file, line: (row ? row.line : (pf["Collides with"]?.line ?? h.line)) + 1, reason: `Collides with names ${coll.unresolved.join(", ")}, which matches no phase` });
 
       const gate = value(pf, "Gate") === null ? null : plain(value(pf, "Gate"));
       const size = value(pf, "Size estimate") === null ? (row && column(table, "size") >= 0 ? plain(row.cells[column(table, "size")]) : null) : plain(value(pf, "Size estimate"));
@@ -329,10 +345,26 @@ export function extractPlan(root, { specSha = "n/a" } = {}) {
         line: h.line + 1,
       });
       node.phases.push(pid);
+      extracted.add(h.line);
+    }
+    // A phase section that the heading or field form rejects is reported, never dropped.
+    // A table row whose section is rejected is then not a bare table row, so it is not in tableOnly.
+    const skipped = new Set();
+    for (const h of heads) {
+      if (extracted.has(h.line)) continue;
+      const text = plain(h.text);
+      const sid = splitTitle(text).id;
+      if (sid && idSet.has(sid)) continue;
+      const num = /(\d+)\s*(?::|\u2014|\u2013|\s-|$)/.exec(text)?.[1] ?? null;
+      const hasRow = num !== null && rowByN.has(num);
+      const hasBullet = ls.slice(h.line + 1, nextHeadingLine(ls, h.line, 3)).some((l) => /^[-*]\s+\S/.test(l));
+      if (!hasRow && !hasBullet) continue;
+      if (hasRow) skipped.add(num);
+      unparsed.push({ path: "/phases/-", file, line: h.line + 1, reason: `the phase section "${text}" could not be read (heading or field form); add the phase from it` });
     }
     if (table) {
       for (const [n, r] of rowByN) {
-        if (!node.phases.includes(`${id}.${n}`)) node.tableOnly = [...(node.tableOnly ?? []), { id: `${id}.${n}`, line: r.line + 1 }];
+        if (!node.phases.includes(`${id}.${n}`) && !skipped.has(n)) node.tableOnly = [...(node.tableOnly ?? []), { id: `${id}.${n}`, line: r.line + 1 }];
       }
     }
   }

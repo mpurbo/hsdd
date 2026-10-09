@@ -1,7 +1,20 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { fileURLToPath } from "node:url";
+import { mkdtempSync, mkdirSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { dirname, join } from "node:path";
 import { extractPlan, phaseList, splitTitle, codingMethod } from "../skills/hsdd-summary/scripts/extract-plan.mjs";
+
+// A throwaway HSDD tree: { "hsdd/spec/x.md": text, ... } written under a fresh temp dir.
+function makeTree(files) {
+  const root = mkdtempSync(join(tmpdir(), "hsdd-x-"));
+  for (const [rel, text] of Object.entries(files)) {
+    mkdirSync(dirname(join(root, rel)), { recursive: true });
+    writeFileSync(join(root, rel), text);
+  }
+  return root;
+}
 
 const TREE = fileURLToPath(new URL("./fixtures/tree", import.meta.url));
 const model = extractPlan(TREE, { specSha: "abc1234" });
@@ -105,4 +118,113 @@ test("splitTitle: colon, em dash and spaced hyphen", () => {
   assert.deepEqual(splitTitle("acme.api: Token Service"), { id: "acme.api", name: "Token Service" });
   assert.deepEqual(splitTitle("moka-x.backend \u2014 Backend"), { id: "moka-x.backend", name: "Backend" });
   assert.deepEqual(splitTitle("acme.web - Web"), { id: "acme.web", name: "Web" });
+});
+
+test("a phase section the heading or field form rejects is reported, not dropped", () => {
+  const spec = [
+    "# a: Root",
+    "",
+    "## Node",
+    "",
+    "- **Kind:** leaf-parent",
+    "- **Purpose:** the root",
+    "- **Consumes:** none",
+    "- **Produces:** none",
+    "",
+    "## Phase Plan",
+    "",
+    "**Default gate:** `npm test`",
+    "",
+    "| Phase | Name | Tier |",
+    "|------:|------|------|",
+    "| a.1 | One | gate-only |",
+    "| a.3 | Three | gate-only |",
+    "",
+    "### a.1: One",
+    "",
+    "- **Scope:** s",
+    "- **Review tier:** gate-only",
+    "",
+    "### Phase a.3: Three",
+    "",
+    "- **Scope**: s",
+    "",
+  ].join("\n");
+  const m = extractPlan(makeTree({ "hsdd/spec/a.md": spec }), { specSha: "x" });
+  const entry = m.unparsed.find((u) => u.path === "/phases/-");
+  assert.ok(entry, "an unparsed entry for the unreadable section");
+  assert.equal(entry.file, "hsdd/spec/a.md");
+  assert.equal(entry.line, spec.split("\n").findIndex((l) => l === "### Phase a.3: Three") + 1);
+  assert.match(entry.reason, /Phase a\.3: Three/);
+  assert.deepEqual((m.nodes.find((n) => n.id === "a").tableOnly ?? []).map((t) => t.id), []);
+});
+
+test("a child embedded without a spec file of its own is a node", () => {
+  const root = makeTree({
+    "hsdd/spec/x.md": [
+      "# x: Root",
+      "",
+      "## Node",
+      "",
+      "- **Kind:** leaf-parent",
+      "- **Purpose:** the root",
+      "- **Consumes:** none",
+      "- **Produces:** none",
+      "",
+      "### x.d: D",
+      "",
+      "- **Kind:** leaf-parent",
+      "- **Purpose:** the d part",
+      "- **Consumes:** none",
+      "- **Produces:** none",
+      "",
+    ].join("\n"),
+  });
+  const m = extractPlan(root, { specSha: "x" });
+  const d = m.nodes.find((n) => n.id === "x.d");
+  assert.ok(d, "x.d is a node");
+  assert.equal(d.purpose, "the d part");
+  assert.equal(d.sourceFile, "hsdd/spec/x.md");
+  assert.equal(d.parent, "x");
+  assert.ok(m.nodes.find((n) => n.id === "x").children.includes("x.d"));
+});
+
+test("a phase prefix resolves only when it names exactly one node", () => {
+  assert.deepEqual(phaseList("a.1", "x.c", new Set(["x.c", "x.a", "y.a"])), { ids: [], unresolved: ["a.1"] });
+  assert.deepEqual(phaseList("a.1", "x.c", new Set(["x.c", "x.a"])).ids, ["x.a.1"]);
+});
+
+test("a collision reason after the target is not a phase reference", () => {
+  const root = makeTree({
+    "hsdd/spec/x.md": "# x: Root\n\n## Node\n\n- **Kind:** internal\n- **Purpose:** r\n- **Consumes:** none\n- **Produces:** none\n",
+    "hsdd/spec/x.a.md": "# x.a: A\n\n## Node\n\n- **Kind:** leaf-parent\n- **Purpose:** a\n- **Consumes:** none\n- **Produces:** none\n",
+    "hsdd/spec/x.c.md": [
+      "# x.c: C",
+      "",
+      "## Node",
+      "",
+      "- **Kind:** leaf-parent",
+      "- **Purpose:** c",
+      "- **Consumes:** none",
+      "- **Produces:** none",
+      "",
+      "## Phase Plan",
+      "",
+      "**Default gate:** `npm test`",
+      "",
+      "| Phase | Name | Depends on |",
+      "|------:|------|------------|",
+      "| c.1 | One | none |",
+      "",
+      "### c.1: One",
+      "",
+      "- **Scope:** s",
+      "- **Review tier:** gate-only",
+      "- **Collides with:** [a.2] \u2014 same file (src/x.ts)",
+      "",
+    ].join("\n"),
+  });
+  const m = extractPlan(root, { specSha: "x" });
+  assert.deepEqual(m.phases.find((p) => p.id === "x.c.1").collidesWith, ["x.a.2"]);
+  assert.ok(!m.unparsed.some((u) => u.path.endsWith("/collidesWith")), "no unparsed collision entry");
 });
