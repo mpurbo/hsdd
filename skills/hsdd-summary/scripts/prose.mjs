@@ -105,7 +105,7 @@ export function stampProse(store, slots) {
   return { store: s, restamped };
 }
 
-function escapeRe(s) {
+export function escapeRe(s) {
   return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 

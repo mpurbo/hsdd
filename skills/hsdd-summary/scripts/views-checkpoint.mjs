@@ -5,6 +5,18 @@ import { planGraph, collapsePlanGraph, dependsRefs, layers, MAX_BOXES } from "./
 
 export const CHECKPOINT_AUDIENCES = ["lead", "executor", "stakeholder"];
 export const PLAN_GRAPH_MAX = 20;
+// Mirrors extract-checkpoint.mjs's HISTORY (the page cannot import it): ages
+// are counted over at most this many reports or plans.
+export const HISTORY = 8;
+
+// An age as shown: one at the cap may be older, so it reads "8+".
+function age(n) {
+  return n >= HISTORY ? `${HISTORY}+` : String(n);
+}
+
+function agePlural(n, one) {
+  return `${age(n)} ${n === 1 ? one : `${one}s`}`;
+}
 
 const MODE_WORDS = { delegate: "\u{1F916} delegate", interactive: "\u{1F91D} interactive", human: "\u{1F464} human-only" };
 const SEVERITIES = ["High", "Medium", "Low"];
@@ -109,8 +121,11 @@ function graphSpec(ctx) {
   return { direction: "LR", nodes, edges: c.edges.map((e) => ({ ...e, kind: "depends", label: "" })), legend };
 }
 
+// The stakeholder sees only the safe rows, each with its milestone ids
+// replaced by the milestones' names.
 function bottomTiles(ctx, onlySafe) {
-  const rows = ctx.m.progress.bottomLine.filter((r, i) => !onlySafe || ctx.page.safe?.bottomLine?.[i]);
+  const safe = ctx.page.safe ?? {};
+  const rows = ctx.m.progress.bottomLine.flatMap((r, i) => (!onlySafe ? [r] : safe.bottomLine?.[i] ? [{ label: r.label, value: safe.stakeValue?.[i] ?? r.value }] : []));
   if (!rows.length) return raw("");
   return html`<dl class="tiles">${rows.map((r) => html`<div class="tile"><dt>${r.label}</dt><dd>${inline(r.value)}</dd></div>`)}</dl>`;
 }
@@ -121,7 +136,7 @@ function gates(ctx) {
   if (!ms.length) return raw("");
   return html`<ul class="gates">${ms.map((x) => {
     const v = mv[x.id];
-    const label = ctx.stake ? html`<strong>${x.name || x.id}</strong>` : html`<a href="${href(ctx.a, "milestone", x.id)}"><strong>${x.id}</strong></a> ${x.name}`;
+    const label = ctx.stake ? html`<strong>${x.name || "a milestone"}</strong>` : html`<a href="${href(ctx.a, "milestone", x.id)}"><strong>${x.id}</strong></a> ${x.name}`;
     return html`<li><span class="gate-name">${label}${x.date ? html` <span class="muted">${x.date}</span>` : ""}</span>
       ${x.fraction ? html`${bar(x.fraction)}<span class="gate-count">${x.fraction[0]} / ${x.fraction[1]}</span>` : html`<span><span class="badge status-done">reached</span></span><span></span>`}
       <span>${!ctx.stake && v && v.dir !== "same" ? html`<span class="move move-${v.dir}" title="${v.prev ? `was ${v.prev[0]} / ${v.prev[1]}` : "first reading"}">${arrow(v.dir)}</span>` : ""}</span>
@@ -159,7 +174,7 @@ function cpLeadTop(ctx) {
     ${spec ? section("Plan graph", html`${size > PLAN_GRAPH_MAX ? html`<p class="explain">${size} steps and syncs are too many to draw one by one; steps of one lane at the same depth are grouped into one box.</p>` : ""}${diagramSlot("plan")}`) : section("Order of work", html`${size > PLAN_GRAPH_MAX ? html`<p class="explain">${size} steps and syncs are too many to draw even when grouped, so they are listed in order.</p>` : ""}${stepOrder(ctx)}`)}
     ${section("Blockers", html`<ol class="blockers">${m.progress.blockers.map((b) => html`<li><strong>${b.lead ?? ""}</strong> ${b.findings.map((f) => findingChip(ctx, f))} ${b.steps.map((s) => stepChip(ctx, s))}</li>`)}</ol>`)}
     ${section("Findings", html`<p>${SEVERITIES.map((s) => html`<span class="badge sev-${s}">${s}: ${sev[s].length}</span> `)} <a href="${href(ctx.a, "findings")}">all ${m.progress.findings.length}</a></p>
-      <ul>${m.progress.findings.filter((f) => f.severity === "High" || (ages[f.id] ?? 0) > 1).map((f) => html`<li>${findingChip(ctx, f.id)} ${f.lead ?? ""}${(ages[f.id] ?? 0) > 1 ? html` <span class="badge warn">${plural(ages[f.id], "report")} running</span>` : ""}</li>`)}</ul>`)}
+      <ul>${m.progress.findings.filter((f) => f.severity === "High" || (ages[f.id] ?? 0) > 1).map((f) => html`<li>${findingChip(ctx, f.id)} ${f.lead ?? ""}${(ages[f.id] ?? 0) > 1 ? html` <span class="badge warn">${agePlural(ages[f.id], "report")} running</span>` : ""}</li>`)}</ul>`)}
     ${delta ? section("Since the last plan", html`<p>Against <a href="${delta.file.replace(/^hsdd\//, "../")}">${delta.file.split("/").pop()}</a>: ${plural(delta.carried.length, "step")} carried into this plan, ${plural(delta.gone.length, "step")} no longer in it (landed or dropped; the Current state says which).</p>
       ${m.plan.currentState.length ? html`<ul>${m.plan.currentState.map((t) => html`<li>${inline(t)}</li>`)}</ul>` : ""}`) : ""}
     ${integrity(ctx)}
@@ -231,9 +246,9 @@ function cpSync(ctx, s) {
 
 function stepCard(ctx, s, full) {
   const d = ctx.details.get(s.id);
-  const age = ctx.page.computed.stepAges?.[s.id] ?? 0;
+  const open = ctx.page.computed.stepAges?.[s.id] ?? 0;
   return html`<article class="card step">
-    <p class="eyebrow">${s.mode ? MODE_WORDS[s.mode] : "step"} · ${s.owner}${s.done ? html` <span class="badge status-done">done</span>` : ""}${age > 1 ? html` <span class="badge warn">open in ${plural(age, "plan")}</span>` : ""}</p>
+    <p class="eyebrow">${s.mode ? MODE_WORDS[s.mode] : "step"} · ${s.owner}${s.done ? html` <span class="badge status-done">done</span>` : ""}${open > 1 ? html` <span class="badge warn">open in ${agePlural(open, "plan")}</span>` : ""}</p>
     <h3><a href="${href(ctx.a, "step", s.id)}">${s.id}</a> · ${d ? d.title : ""}</h3>
     <p>${inline(s.action)}</p>
     <p class="muted">Depends: ${dependsChips(ctx, s.depends)}${s.findings.length ? html` · Findings: ${s.findings.map((f) => findingChip(ctx, f))}` : ""}</p>
@@ -270,13 +285,13 @@ function cpStep(ctx, s) {
 }
 
 function cpFinding(ctx, f) {
-  const age = ctx.page.computed.ages?.[f.id] ?? 1;
+  const runs = ctx.page.computed.ages?.[f.id] ?? 1;
   const landed = ctx.page.computed.landedBy?.[f.id] ?? { steps: [], waived: false };
   const waiver = ctx.m.plan.waivers.find((w) => w.finding === f.id);
-  const reports = ctx.m.history.progress.slice(0, age).map((h) => h.file);
+  const reports = ctx.m.history.progress.slice(0, runs).map((h) => h.file);
   const body = html`
     <header class="page-head"><p class="eyebrow"><span class="badge sev-${f.severity}">${f.severity}</span> ${f.area}</p><h1>${f.id} · ${f.lead ?? ""}</h1>
-      <p class="muted">In ${plural(age, "consecutive register")}${age > 1 ? html`: ${reports.map((r) => html`<a href="${r.replace(/^hsdd\//, "../")}">${r.split("/").pop()}</a> `)}` : ""}</p></header>
+      <p class="muted">In ${agePlural(runs, "consecutive register")}${runs > 1 ? html`: ${reports.map((r) => html`<a href="${r.replace(/^hsdd\//, "../")}">${r.split("/").pop()}</a> `)}` : ""}</p></header>
     <div class="card">${renderBlocks([{ type: "p", text: f.text }])}</div>
     ${section("Lands in the plan as", landed.steps.length ? html`<p>${landed.steps.map((s) => stepChip(ctx, s))}</p>` : waiver ? html`<p><strong>Waived:</strong> ${inline(waiver.text)}</p>` : html`<p class="warn-text">No step and no waiver.</p>`)}
     ${src(ctx.m.files.progress, f.line)}`;
@@ -288,7 +303,7 @@ function cpFindings(ctx) {
   const landed = ctx.page.computed.landedBy ?? {};
   const body = html`<header class="page-head"><h1>Findings register</h1></header>
     <div class="table-wrap"><table><thead><tr><th>ID</th><th>Severity</th><th>Area</th><th>Finding</th><th>Reports</th><th>Lands in</th></tr></thead><tbody>
-    ${ctx.m.progress.findings.map((f) => html`<tr><td><a href="${href(ctx.a, "finding", f.id)}">${f.id}</a></td><td><span class="badge sev-${f.severity}">${f.severity}</span></td><td>${f.area}</td><td>${f.lead ?? ""}</td><td>${ages[f.id] ?? 1}</td><td>${(landed[f.id]?.steps ?? []).map((s) => stepChip(ctx, s))}${landed[f.id]?.waived ? "waived" : ""}</td></tr>`)}
+    ${ctx.m.progress.findings.map((f) => html`<tr><td><a href="${href(ctx.a, "finding", f.id)}">${f.id}</a></td><td><span class="badge sev-${f.severity}">${f.severity}</span></td><td>${f.area}</td><td>${f.lead ?? ""}</td><td>${age(ages[f.id] ?? 1)}</td><td>${(landed[f.id]?.steps ?? []).map((s) => stepChip(ctx, s))}${landed[f.id]?.waived ? "waived" : ""}</td></tr>`)}
     </tbody></table></div>`;
   return { title: "Findings", crumbs: [home(ctx), { label: "Findings", href: href(ctx.a, "findings") }], body: body.s, diagrams: [] };
 }
@@ -296,12 +311,12 @@ function cpFindings(ctx) {
 function cpMilestone(ctx, x) {
   const v = ctx.page.computed.movement?.[x.id];
   const body = html`
-    <header class="page-head"><p class="eyebrow">Milestone${x.date ? ` · ${x.date}` : ""}</p><h1>${ctx.stake ? capitalize(x.name || x.id) : `${x.id} · ${x.name}`}</h1>
+    <header class="page-head"><p class="eyebrow">Milestone${x.date ? ` · ${x.date}` : ""}</p><h1>${ctx.stake ? capitalize(x.name || "a milestone") : `${x.id} · ${x.name}`}</h1>
       <p>${x.fraction ? html`${bar(x.fraction)} ${x.fraction[0]} / ${x.fraction[1]}` : html`<span class="badge status-done">reached</span>`}${!ctx.stake && v && v.prev ? html` <span class="muted">(was ${v.prev[0]} / ${v.prev[1]})</span>` : ""}</p>
       ${ctx.stake ? html`<p class="explain">${prose(ctx, `cp:milestone:${x.id}`)}</p>` : ""}</header>
     ${ctx.stake ? "" : x.items.length ? section("Gate items", renderBlocks([{ type: "ul", items: x.items.map((it) => ({ checked: it.met, text: it.text })) }])) : section("Gate", html`<p>${inline(x.raw)}</p>`)}
     ${ctx.stake ? "" : src(ctx.m.files.progress, x.line)}`;
-  return { title: ctx.stake ? capitalize(x.name || x.id) : x.id, crumbs: [ctx.stake ? { label: `Progress on ${ctx.m.project.date}`, href: href(ctx.a) } : home(ctx), { label: ctx.stake ? capitalize(x.name || x.id) : x.id, href: href(ctx.a, "milestone", x.id) }], body: body.s, diagrams: [] };
+  return { title: ctx.stake ? capitalize(x.name || "a milestone") : x.id, crumbs: [ctx.stake ? { label: `Progress on ${ctx.m.project.date}`, href: href(ctx.a) } : home(ctx), { label: ctx.stake ? capitalize(x.name || "a milestone") : x.id, href: href(ctx.a, "milestone", x.id) }], body: body.s, diagrams: [] };
 }
 
 function cpStatus(ctx, id) {

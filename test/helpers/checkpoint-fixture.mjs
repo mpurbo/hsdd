@@ -1,5 +1,6 @@
 import { extractCheckpoint } from "../../skills/hsdd-summary/scripts/extract-checkpoint.mjs";
 import { crossCheckCheckpoint } from "../../skills/hsdd-summary/scripts/checks-checkpoint.mjs";
+import { stakeholderBottomLine } from "../../skills/hsdd-summary/scripts/summary.mjs";
 import { TREE } from "./plan-fixture.mjs";
 
 // The checkpoint model as the agent leaves it: C-6's "both" owner filled
@@ -17,6 +18,6 @@ export function checkpointPage(model = completedCheckpoint(), extra = {}) {
   const prose = { "cp:verdict": "The first milestone landed on time; the second waits on one open question about where sessions live." };
   for (const ms of model.progress.milestones) prose[`cp:milestone:${ms.id}`] = "Plain words about what this milestone means for merchants.";
   for (const b of model.progress.blockers) prose[`cp:blocker:${b.rank}`] = "Plain words about what could slip and why.";
-  const safe = { bottomLine: model.progress.bottomLine.map((r) => !/`/.test(r.value)) };
+  const safe = stakeholderBottomLine(model);
   return { kind: "checkpoint", project: model.project, model, prose, gloss: {}, findings: checked.findings, computed: checked.computed, safe, readability: [], generated: "2026-10-02", ...extra };
 }

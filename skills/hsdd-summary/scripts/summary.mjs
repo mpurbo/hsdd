@@ -6,13 +6,14 @@ import { join, resolve, relative, dirname, isAbsolute, sep } from "node:path";
 import { tmpdir } from "node:os";
 import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
+import { createHash } from "node:crypto";
 import { extractPlan } from "./extract-plan.mjs";
 import { crossCheckPlan } from "./checks-plan.mjs";
 import { extractCheckpoint, chainFiles } from "./extract-checkpoint.mjs";
 import { crossCheckCheckpoint } from "./checks-checkpoint.mjs";
 import { plain } from "./md.mjs";
 import { validate } from "./schema.mjs";
-import { planSlots, planGlossaryKeys, checkpointSlots, emptyStore, seed, proseStatus, stampProse, lintProse, namesId } from "./prose.mjs";
+import { planSlots, planGlossaryKeys, checkpointSlots, emptyStore, seed, proseStatus, stampProse, lintProse, namesId, escapeRe } from "./prose.mjs";
 import { planInputs, checkpointInputs, hashInputs, diffInputs, readPageStamp } from "./stamp.mjs";
 import { renderPage } from "./html.mjs";
 
@@ -38,14 +39,19 @@ export const KINDS = {
     slots: checkpointSlots,
     glossKeys: () => [],
     inputs: (root) => checkpointInputs(root),
-    // The stakeholder sees a bottom-line row only when it names no id.
-    extras: (model, checked) => ({
-      computed: checked.computed,
-      safe: { bottomLine: model.progress.bottomLine.map((r) => !/`/.test(r.value) && !namesId(plain(r.value), model.ids)) },
-    }),
+    extras: (model, checked) => ({ computed: checked.computed, safe: stakeholderBottomLine(model) }),
     present: (root) => existsSync(join(root, "hsdd/summary/checkpoint.html")) && chainFiles(root).progress.length > 0,
   },
 };
+
+// The stakeholder sees a bottom-line row only when it names no id, once each
+// milestone id it names is replaced by that milestone's name; stakeValue is
+// the text the stakeholder sees.
+export function stakeholderBottomLine(model) {
+  const ms = [...model.progress.milestones].sort((x, y) => y.id.length - x.id.length);
+  const stakeValue = model.progress.bottomLine.map((r) => ms.reduce((v, m) => v.replace(new RegExp(`(^|[^\\w.@-])${escapeRe(m.id)}(?=$|[^\\w@-])`, "g"), (_, pre) => pre + (m.name || "a milestone")), r.value));
+  return { bottomLine: stakeValue.map((v) => !/`/.test(v) && !namesId(plain(v), model.ids)), stakeValue };
+}
 
 function args(argv) {
   const out = { _: [] };
@@ -100,12 +106,33 @@ export function specSha(root) {
   }
 }
 
-function defaultModel(kind) {
-  return join(tmpdir(), `hsdd-summary-${kind}-model.json`);
+// The scratch model's default path, keyed by the project's real path, so two
+// projects or worktrees never share one.
+export function defaultModel(kind, root) {
+  const hash = createHash("sha256").update(realpathSync(root)).digest("hex").slice(0, 12);
+  return join(tmpdir(), `hsdd-summary-${kind}-${hash}-model.json`);
 }
 
-function loadModel(a) {
-  const path = a.model ?? defaultModel(a._[1] ?? "plan");
+// The sources a model is bound to: the kind's inputs without the page's own
+// files under hsdd/summary/, which slots and stamp write after extract.
+function sourceInputs(root, kind) {
+  return hashInputs(root, KINDS[kind].inputs(root).filter((p) => !p.startsWith("hsdd/summary/")));
+}
+
+// Render draws only a model extracted from this project's current sources.
+function checkSource(root, model) {
+  const src = model.source;
+  if (!src || typeof src !== "object" || !src.inputs || typeof src.inputs !== "object") throw new Error("render: the model has no source binding; run extract again");
+  if (src.root !== realpathSync(root)) throw new Error(`render: the model was extracted from another project (${src.root}); run extract in this project`);
+  const d = diffInputs(src.inputs, sourceInputs(root, model.kind));
+  if (!d.fresh) {
+    const groups = [["changed", d.changed], ["added", d.added], ["removed", d.removed]].filter(([, xs]) => xs.length).map(([label, xs]) => `${label}: ${xs.join(", ")}`);
+    throw new Error(`render: the sources changed since extract (${groups.join(", ")}); run extract again`);
+  }
+}
+
+function loadModel(a, root) {
+  const path = a.model ?? defaultModel(a._[1] ?? "plan", root);
   const model = readJson(path, null);
   if (!model) throw new Error(`no model at ${path}; run extract first`);
   if (!Object.hasOwn(KINDS, model.kind)) throw new Error(`${path} has kind "${model.kind}", which no page draws`);
@@ -147,14 +174,15 @@ export function main(argv, root = process.cwd()) {
     const kind = a._[1] ?? "plan";
     if (!Object.hasOwn(KINDS, kind)) throw new Error(`extract: unknown kind "${kind}"`);
     const model = KINDS[kind].extract(root, { specSha: specSha(root) });
-    const path = a.model ?? defaultModel(kind);
+    model.source = { root: realpathSync(root), inputs: sourceInputs(root, kind) };
+    const path = a.model ?? defaultModel(kind, root);
     writeJson(path, model);
     console.log(`model: ${path}`);
     list("unparsed: fill each at its path from the source, then delete the entry", model.unparsed.map((u) => `${u.path}  ${u.file}:${u.line}  ${u.reason}`), 200);
     return 0;
   }
   if (cmd === "validate") {
-    const { model } = loadModel(a);
+    const { model } = loadModel(a, root);
     const se = schemaErrors(model);
     const { errors, findings } = KINDS[model.kind].check(model);
     list("schema errors", se, 200);
@@ -163,7 +191,7 @@ export function main(argv, root = process.cwd()) {
     return se.length || errors.length ? 1 : 0;
   }
   if (cmd === "slots") {
-    const { model } = loadModel(a);
+    const { model } = loadModel(a, root);
     const k = KINDS[model.kind];
     const { store, glossary } = loadProse(root, model.kind);
     const slots = k.slots(model);
@@ -183,7 +211,7 @@ export function main(argv, root = process.cwd()) {
     return 0;
   }
   if (cmd === "lint") {
-    const { model } = loadModel(a);
+    const { model } = loadModel(a, root);
     const k = KINDS[model.kind];
     const { store, glossary } = loadProse(root, model.kind);
     const f = lintProse(store, glossary, k.slots(model), k.glossKeys(model), model.ids);
@@ -193,7 +221,7 @@ export function main(argv, root = process.cwd()) {
   }
   if (cmd === "stamp") {
     if (a._.some((x) => /\.html?$/i.test(x)) || (a.o && /\.html?$/i.test(a.o))) throw new Error("stamp: pages are stamped by render, never by hand");
-    const { model } = loadModel(a);
+    const { model } = loadModel(a, root);
     const { store } = loadProse(root, model.kind);
     const { store: s, restamped } = stampProse(store, KINDS[model.kind].slots(model));
     writeJson(proseFiles(root, model.kind).prosePath, s);
@@ -202,7 +230,8 @@ export function main(argv, root = process.cwd()) {
     return 0;
   }
   if (cmd === "render") {
-    const { model } = loadModel(a);
+    const { model } = loadModel(a, root);
+    checkSource(root, model);
     const k = KINDS[model.kind];
     const se = schemaErrors(model);
     const checked = k.check(model);
@@ -235,17 +264,21 @@ export function main(argv, root = process.cwd()) {
   }
   if (cmd === "check") {
     const dir = join(root, "hsdd/summary");
-    const pages = existsSync(dir) ? readdirSync(dir).filter((f) => f.endsWith(".html")).sort() : [];
+    const pages = existsSync(dir) ? readdirSync(dir, { withFileTypes: true }).filter((e) => e.isFile() && e.name.endsWith(".html")).map((e) => e.name).sort() : [];
     if (!pages.length) console.log("check: no pages under hsdd/summary/");
     for (const f of pages) {
-      const stamp = readPageStamp(readFileSync(join(dir, f), "utf8"));
-      if (!stamp || !Object.hasOwn(KINDS, stamp.kind) || !stamp.inputs || typeof stamp.inputs !== "object") {
-        console.log(`${f}: no readable stamp; regenerate it`);
-        continue;
+      try {
+        const stamp = readPageStamp(readFileSync(join(dir, f), "utf8"));
+        if (!stamp || !Object.hasOwn(KINDS, stamp.kind) || !stamp.inputs || typeof stamp.inputs !== "object") {
+          console.log(`${f}: no readable stamp; regenerate it`);
+          continue;
+        }
+        const d = diffInputs(stamp.inputs, hashInputs(root, KINDS[stamp.kind].inputs(root)));
+        console.log(`${f}: ${d.fresh ? "fresh" : "stale"}`);
+        for (const [label, xs] of [["changed", d.changed], ["added", d.added], ["removed", d.removed]]) if (xs.length) console.log(`  ${label}: ${xs.join(", ")}`);
+      } catch (e) {
+        console.log(`${f}: cannot be checked (${e.message}); regenerate it`);
       }
-      const d = diffInputs(stamp.inputs, hashInputs(root, KINDS[stamp.kind].inputs(root)));
-      console.log(`${f}: ${d.fresh ? "fresh" : "stale"}`);
-      for (const [label, xs] of [["changed", d.changed], ["added", d.added], ["removed", d.removed]]) if (xs.length) console.log(`  ${label}: ${xs.join(", ")}`);
     }
     const models = [];
     for (const [kind, k] of Object.entries(KINDS)) {

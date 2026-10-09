@@ -447,6 +447,7 @@ export function extractCheckpoint(root, { specSha = "n/a" } = {}) {
   const nodeShort = tree.nodes.map((n) => n.id.slice(rootId.length + 1)).filter(Boolean);
   const ids = [...new Set([
     ...tree.ids, ...phaseShort, ...nodeShort, ...stepIds, ...progress.findings.map((f) => f.id),
+    ...progress.milestones.map((m) => m.id),
     ...plan.syncs.flatMap((s) => s.decisions.map((d) => d.id)),
     ...(plan.externalTracks?.rows ?? []).map((r) => /\bE-\d+\b/.exec(r[0] ?? "")?.[0]).filter(Boolean),
   ])].filter((x) => x && x.length > 1);

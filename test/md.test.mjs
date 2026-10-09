@@ -96,8 +96,8 @@ test("isNone recognizes the not-applicable markers", () => {
 });
 
 test("contractRefs: order, dedupe, ext marker", () => {
-  const refs = contractRefs("[`moka-handoff-token@v1` (ext, forwarded)], [`be-common@v2`], be-common@v2, user-store@v1 (ext)");
-  assert.deepEqual(refs.map((r) => [r.ref, r.ext]), [["moka-handoff-token@v1", true], ["be-common@v2", false], ["user-store@v1", true]]);
+  const refs = contractRefs("[`acme-handoff-token@v1` (ext, forwarded)], [`acme-common@v2`], acme-common@v2, user-store@v1 (ext)");
+  assert.deepEqual(refs.map((r) => [r.ref, r.ext]), [["acme-handoff-token@v1", true], ["acme-common@v2", false], ["user-store@v1", true]]);
 });
 
 test("adrRefs pads numbers; oqRefs finds every form", () => {

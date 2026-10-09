@@ -571,6 +571,26 @@
         "pattern": "^sha256:[0-9a-f]{64}$"
       }
     },
+    "source": {
+      "description": "What extract read: the project's real path and the hash of each source file. Optional here; render refuses a model without it.",
+      "type": "object",
+      "required": [
+        "root",
+        "inputs"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "root": {
+          "type": "string"
+        },
+        "inputs": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        }
+      }
+    },
     "unparsed": {
       "type": "array",
       "items": {

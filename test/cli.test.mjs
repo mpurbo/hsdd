@@ -1,10 +1,10 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { mkdtempSync, cpSync, readFileSync, writeFileSync, appendFileSync, existsSync, symlinkSync } from "node:fs";
+import { mkdtempSync, mkdirSync, cpSync, readFileSync, writeFileSync, appendFileSync, existsSync, symlinkSync, realpathSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { TREE } from "./helpers/plan-fixture.mjs";
-import { main } from "../skills/hsdd-summary/scripts/summary.mjs";
+import { main, defaultModel } from "../skills/hsdd-summary/scripts/summary.mjs";
 
 function run(root, ...argv) {
   const lines = [];
@@ -138,6 +138,55 @@ test("check reads a stamp whose kind is an inherited Object property as unreadab
   assert.equal(r.error, undefined);
   assert.equal(r.code, 0);
   assert.match(r.out, /ctor\.html: no readable stamp; regenerate it/);
+});
+
+test("render refuses a model whose sources changed after extract, and writes nothing", () => {
+  const { root, model } = ready();
+  assert.match(run(root, "stamp", "--model", model).out, /restamped/);
+  appendFileSync(join(root, "hsdd/spec/acme.ops.md"), "\nmore\n");
+  const r = run(root, "render", "--model", model);
+  assert.match(r.error, /sources changed since extract \(changed: hsdd\/spec\/acme\.ops\.md\); run extract again/);
+  assert.equal(existsSync(join(root, "hsdd/summary/summary.html")), false);
+});
+
+test("render refuses a model extracted from another project, or one with no source binding", () => {
+  const { root } = ready();
+  const other = project();
+  run(other.root, "extract", "plan", "--model", other.model);
+  fillUnparsed(other.model);
+  let r = run(root, "render", "--model", other.model);
+  assert.match(r.error, /extracted from another project \(.*\); run extract in this project/);
+  assert.equal(existsSync(join(root, "hsdd/summary/summary.html")), false);
+  const m = JSON.parse(readFileSync(other.model, "utf8"));
+  delete m.source;
+  writeFileSync(other.model, JSON.stringify(m));
+  r = run(root, "render", "--model", other.model);
+  assert.match(r.error, /the model has no source binding; run extract again/);
+  assert.equal(existsSync(join(root, "hsdd/summary/summary.html")), false);
+});
+
+test("check never throws: a directory named like a page, a dangling symlink among the inputs", () => {
+  const { root, model } = ready();
+  run(root, "stamp", "--model", model);
+  assert.equal(run(root, "render", "--model", model).code, 0);
+  mkdirSync(join(root, "hsdd/summary/odd.html"));
+  symlinkSync(join(root, "hsdd/spec/nowhere.md"), join(root, "hsdd/spec/gone.md"));
+  const r = run(root, "check");
+  assert.equal(r.error, undefined);
+  assert.equal(r.code, 0);
+  assert.match(r.out, /summary\.html: cannot be checked \(.*gone\.md.*\); regenerate it/);
+  assert.doesNotMatch(r.out, /odd\.html/);
+});
+
+test("the default model path is keyed by the project", () => {
+  const a = project();
+  const b = project();
+  assert.notEqual(defaultModel("plan", a.root), defaultModel("plan", b.root));
+  assert.equal(defaultModel("plan", a.root), defaultModel("plan", realpathSync(a.root)));
+  assert.match(defaultModel("checkpoint", a.root), /hsdd-summary-checkpoint-[0-9a-f]{12}-model\.json$/);
+  const r = run(a.root, "extract", "plan");
+  assert.equal(r.out.split("\n")[0], `model: ${defaultModel("plan", a.root)}`);
+  rmSync(defaultModel("plan", a.root), { force: true });
 });
 
 test("a model whose kind is an inherited Object property is refused by name", () => {

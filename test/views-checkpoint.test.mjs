@@ -1,7 +1,8 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { completedCheckpoint, checkpointPage } from "./helpers/checkpoint-fixture.mjs";
-import { renderCheckpoint, CHECKPOINT_AUDIENCES } from "../skills/hsdd-summary/scripts/views-checkpoint.mjs";
+import { renderCheckpoint, CHECKPOINT_AUDIENCES, HISTORY as VIEW_HISTORY } from "../skills/hsdd-summary/scripts/views-checkpoint.mjs";
+import { HISTORY } from "../skills/hsdd-summary/scripts/extract-checkpoint.mjs";
 import { namesId } from "../skills/hsdd-summary/scripts/prose.mjs";
 
 const model = completedCheckpoint();
@@ -86,6 +87,26 @@ test("stakeholder top: verdict, safe rows only, milestones in plain words, what 
   assert.match(b, /What could slip/);
 });
 
+test("milestone ids are ids; the stakeholder reads the milestone's name in their place", () => {
+  for (const id of ["M1", "M2"]) assert.ok(model.ids.includes(id), id);
+  const b = renderCheckpoint(page, { audience: "stakeholder", view: "top" }).body;
+  assert.match(b, /<dt>Calendar outlook<\/dt><dd>merchants see their outlets on Fri Oct 16 is <strong>reachable<\/strong><\/dd>/);
+  assert.doesNotMatch(b, /\bM2\b/);
+  assert.match(renderCheckpoint(page, { audience: "lead", view: "top" }).body, /M2 on Fri Oct 16/);
+});
+
+test("a milestone with no name reads as a milestone to the stakeholder", () => {
+  const m = completedCheckpoint();
+  m.progress.milestones[1].name = "";
+  const p = checkpointPage(m);
+  const top = renderCheckpoint(p, { audience: "stakeholder", view: "top" });
+  assert.match(top.body, /<strong>a milestone<\/strong>/);
+  assert.match(top.body, /<dt>Calendar outlook<\/dt><dd>a milestone on Fri Oct 16/);
+  const one = renderCheckpoint(p, { audience: "stakeholder", view: "milestone", id: "M2" });
+  assert.equal(one.title, "A milestone");
+  for (const v of [top, one]) assert.equal(namesId(visibleText(v), m.ids), null);
+});
+
 test("lead-only views fall back to the stakeholder top; unknown ids fall back too", () => {
   assert.equal(renderCheckpoint(page, { audience: "stakeholder", view: "step", id: "C-5" }).title, "Progress on 2026-10-02");
   assert.equal(renderCheckpoint(page, { audience: "lead", view: "step", id: "Z-9" }).title, "Checkpoint 2026-10-02");
@@ -136,4 +157,23 @@ test("a status view with more children than fit draws a list, not a diagram", ()
   assert.deepEqual(stake.diagrams, []);
   assert.match(stake.body, /16 parts are too many to draw as one picture/);
   assert.equal(namesId(visibleText(stake), m.ids), null);
+});
+
+test("an age at the history cap reads as capped", () => {
+  assert.equal(VIEW_HISTORY, HISTORY);
+  const m = completedCheckpoint();
+  const step = m.plan.steps.find((x) => x.done !== true).id;
+  const [p0] = m.history.progress;
+  const [q0] = m.history.plans;
+  const day = (i) => `2026-08-${String(i + 1).padStart(2, "0")}`;
+  m.history.progress = [p0, ...Array.from({ length: HISTORY - 1 }, (_, i) => ({ ...p0, file: `hsdd/management/${day(i)}-progress.md` }))];
+  m.history.plans = [q0, ...Array.from({ length: HISTORY - 1 }, (_, i) => ({ ...q0, file: `hsdd/management/${day(i)}-execution-plan.md` }))];
+  const p = checkpointPage(m);
+  assert.equal(p.computed.ages["F-3"], HISTORY);
+  assert.equal(p.computed.stepAges[step], HISTORY);
+  assert.match(renderCheckpoint(p, { audience: "lead", view: "top" }).body, /8\+ reports running/);
+  assert.match(renderCheckpoint(p, { audience: "lead", view: "finding", id: "F-3" }).body, /In 8\+ consecutive registers/);
+  assert.match(renderCheckpoint(p, { audience: "lead", view: "findings" }).body, /<td>8\+<\/td>/);
+  assert.match(renderCheckpoint(p, { audience: "lead", view: "step", id: step }).body, /open in 8\+ plans/);
+  assert.match(renderCheckpoint(page, { audience: "lead", view: "top" }).body, /3 reports running/);
 });

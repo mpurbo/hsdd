@@ -116,7 +116,7 @@ test("phaseList: aliases, cross-node, ranges, footnote marks, none", () => {
 
 test("splitTitle: colon, em dash and spaced hyphen", () => {
   assert.deepEqual(splitTitle("acme.api: Token Service"), { id: "acme.api", name: "Token Service" });
-  assert.deepEqual(splitTitle("moka-x.backend \u2014 Backend"), { id: "moka-x.backend", name: "Backend" });
+  assert.deepEqual(splitTitle("acme-x.backend \u2014 Backend"), { id: "acme-x.backend", name: "Backend" });
   assert.deepEqual(splitTitle("acme.web - Web"), { id: "acme.web", name: "Web" });
 });
 
