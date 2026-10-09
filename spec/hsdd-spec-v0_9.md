@@ -126,7 +126,7 @@ a matching slash command.
 | `hsdd-intake` | Route an incoming change request into the existing tree and record the routing (chapter 11). | intake record, handoff |
 | `hsdd-checkpoint` | One evidence pass across the spec repo and every implementation repo, compiled into the management documents (chapter 12). | progress report, execution plan, atlas |
 | `hsdd-milestone` | Generate and re-baseline the per-campaign stakeholder milestone document (chapter 12). | milestone document |
-| `hsdd-summary` | Render optional reading aids over the canonical artifacts: the plan page, an offline HTML view of the tree from the root down to the phase cards, for a reviewer, a stakeholder or an implementer (chapter 13). | `hsdd/summary/*.html` |
+| `hsdd-summary` | Render optional reading aids over the canonical artifacts: the plan page, an offline HTML view of the tree from the root down to the phase cards, and the checkpoint page, over the newest progress report and execution plan (chapter 13). | `hsdd/summary/*.html` |
 
 Skills are named by **role**, not by tree level: the recursive model runs the
 same operation at multiple levels, so a tier in the name (`system-spec`,
@@ -1681,8 +1681,11 @@ execution plan and the milestone document take their numbers from here, not
 from independent counting. Required sections:
 
 - **Header block:** date, `**Supersedes:**` by exact filename,
-  `**Repo baselines:**`, `**Companion docs:**`, and `**Method:**` — one line
-  naming what was actually reviewed.
+  `**Repo baselines:**`, `**Companion docs:**`, and `**Method:**`, one line
+  naming what was actually reviewed; when `hsdd/summary/` exists, an
+  optional `**Stale summaries:**` line (chapter 13) naming the plan page and
+  its prose entries when they are stale, information only; the checkpoint
+  page is left off because the same run re-renders it.
 - **Bottom line** — one table: phases planned / code-complete / remaining
   (externally-contingent count broken out), implementation progress %,
   observed velocity per lane, calibrated remaining effort, calendar outlook.
@@ -1866,6 +1869,11 @@ One run of `hsdd-checkpoint`:
 6. **Ticks the milestone gates** in the current campaign's milestone
    document and evaluates the re-baseline trigger, reporting it loudly if
    it fires.
+7. **Renders the checkpoint page**, only when `hsdd/summary/` exists
+   (§13.4). A Plan integrity finding on the page is this run's own quality
+   gate failing: the run fixes its plan, renders again, and lands the page
+   with the management documents. A project without `hsdd/summary/` runs no
+   `hsdd-summary` script.
 
 Checkpoint's output ends with the same discipline it audits: what it
 changed, what it could not verify, and what needs a human decision — never a
@@ -1893,7 +1901,8 @@ sections.
 Checkpoint is **read-only toward governance artifacts**: it finds the stale
 note, the undrained section, the contract drift — the fixes become plan
 steps routed to the owning skill and the owning human. The only files it
-writes are `management/` files.
+writes are `management/` files, plus `summary/` through `hsdd-summary`
+when that directory exists.
 
 **`hsdd-milestone`** generates the milestone document, with a precondition
 stop: every leaf-parent in the campaign's scope has a phase plan — the first
@@ -2029,6 +2038,52 @@ reviewer opens it in the same merge request, and it is committed with the
 change it summarizes. Under the standalone-spec-repo profile it lives in the
 spec repo like the rest of `hsdd/`.
 
+### 13.4 The checkpoint page
+
+`hsdd/summary/checkpoint.html`, rendered by `hsdd-checkpoint` as step 7 of
+its process when the project has `hsdd/summary/` (§12.7), from the newest
+progress report and execution plan, the eight newest of each behind them,
+the atlas, the node names under `hsdd/spec/`, `hsdd/contract/` and
+`hsdd/adr/`, and its own prose store, `checkpoint-prose.json`. Like the
+atlas it is living: the filename carries no date, the stamp names the files
+it read, and a newer report or plan makes it stale.
+
+- **Extraction** reads what §12.3 and §12.4 fix: the header lines, the
+  Bottom line table and the one-sentence read, the Milestone gate status
+  table with each cell split into met and unmet items, the Blockers, the
+  findings register and the Verdict; the Ownership split's lanes, the Sync
+  points table, every sync section's Entry, Agenda decisions, Exit and
+  Unblocks (marked by `###` headings or bold labels, with decisions as led
+  paragraphs or as a table), every table with ID, Owner and Action columns,
+  the waivers, and each step's detail block; the atlas's per-node counts. A
+  step whose owner names no lane is an unparsed item. The plan's Mermaid
+  graph is never parsed.
+- **Computed by the script:** the findings-to-plan loop (each finding's
+  landing steps or its waiver); how many consecutive registers each finding
+  has appeared in, and how many consecutive plans each step has stayed
+  open; the previous plan's steps carried into this one and those no longer
+  in it (ticks are not trusted, because plans are often left unticked); each
+  milestone's movement since the previous report; and the plan graph,
+  recomputed from Depends cells and each sync's Entry and Unblocks lines,
+  with steps batched by lane and depth above 20 boxes and an ordered list
+  above 20 batches, and the page says so each time. The status view lists
+  the parts instead of drawing them above 12, with a line saying so.
+- **Plan integrity** shows, as information, what `hsdd-checkpoint`'s
+  quality gates check: a finding with no step and no waiver, a step with no
+  detail block, a Depends entry that resolves to nothing, a decision defined
+  twice. A checkpoint run that sees one fixes its plan before landing.
+- **Three audiences.** The lead (default) gets the read, the bottom line,
+  the gates, the syncs, the plan graph, the blockers, the findings with
+  their ages, and the delta; a sync opens to its Entry, decisions, Exit and
+  Unblocks. The executor picks a lane and reads its steps in run order, with
+  every prompt and briefing in full. The stakeholder reads a 60-word
+  verdict, the bottom-line rows that name no id, each milestone with a
+  25-word plain explanation, and a 25-word gist per blocker.
+
+A count the page computes can differ from a report's prose ("tenth day",
+"third consecutive pass"): prose may count days or the underlying problem,
+while the page counts register rows. Neither is edited to match the other.
+
 ---
 
 ## 14. Layout, Profiles, Conventions
@@ -2073,6 +2128,8 @@ hsdd/
     summary.html                # the plan page (hsdd-summary)
     prose.json                  # stamped prose slots
     glossary.json               # plain words for contract ids
+    checkpoint.html             # the checkpoint page (hsdd-summary, via hsdd-checkpoint)
+    checkpoint-prose.json       # its stakeholder prose
 openspec/
   config.yaml                   # phase context (hsdd-config)
   changes/                      # one OpenSpec change per phase
@@ -2447,6 +2504,8 @@ credibility from the tested parts: most of what v0.8.0 adds is
 | Reading aids | Optional, derived, stamped HTML pages under `hsdd/summary/`; never authoritative, never a gate (chapter 13). | reasoned-only |
 | Summary extraction | A script parses what the templates fix; the agent fills only the items it flags, from the source; a schema and cross-checks validate (§13.2). | reasoned-only |
 | Plan-page edges | Derived from the contracts each part consumes and produces; the Mermaid DAG is never parsed (§13.3). | reasoned-only |
+| Checkpoint page | A living reading aid over the newest management documents, first for the lead running the sync; ages, the loop, the delta, gate movement and the plan graph computed by script (§13.4). | reasoned-only |
+| Prose stores | One per page (`prose.json`, `checkpoint-prose.json`), so writing one page's prose never makes another stale (§13.2). | reasoned-only |
 
 ### 18.2 Deliberately dropped
 
@@ -2542,3 +2601,8 @@ the completion of acceptance criterion 1's traceability contract:
   to the phase cards, with contracts, decisions and What to check (§13.3).
 - **Unparsed item:** a model field the extraction script could not read;
   the agent fills it from the source line it names (§13.2).
+- **Checkpoint page:** the reading aid over the newest progress report and
+  execution plan, rendered by `hsdd-checkpoint` as step 7 of its process
+  when the project has `hsdd/summary/` (§13.4).
+- **Carried age:** the number of consecutive progress-report registers a
+  finding has appeared in, counted by script (§13.4).
