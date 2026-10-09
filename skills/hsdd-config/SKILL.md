@@ -151,9 +151,9 @@ replaced by the plan's default gate command in backticks}
   hsdd/templates/verification.md at {review tier} depth.
 
 ## Links (spec {spec-sha})
-- Phase section: hsdd/spec/{node-id}.md, heading "### {heading id as written}"
+- Phase section: hsdd/spec/{node-id}.md, heading "{the phase's heading line as written}"
 - Node spec: hsdd/spec/{node-id}.md
-- {contract-id}@{version}: hsdd/contract/{contract-file}
+- {contract-id}@{version}: hsdd/contract/{contract-file} (none for an external contract)
 - ADR-{nnn}: hsdd/adr/{adr-file}
 - Conventions: hsdd/conventions.md
 - Verification template: hsdd/templates/verification.md
@@ -168,12 +168,14 @@ replaced by the plan's default gate command in backticks}
 - **Contracts:** every contract the phase's Consumes or Produces names, in that
   order, one subsection each. A contract named with `(ext)` or otherwise
   external and with no file under `hsdd/contract/` gets the subsection heading
-  and the single line `External contract; no file in hsdd/contract/.`, and the
-  switch warns.
+  `### {contract-id}@{version} · consumes · external` (or `produces`) and the
+  single line `External contract; no file in hsdd/contract/.`, and the switch
+  warns. When the phase names no contract, omit the section.
 - **Decisions:** the ADRs the phase's Governed by names, plus every ADR whose
   `affects` frontmatter names a contract in the Contracts section, each once,
   in ADR number order. A `proposed` ADR keeps its subsection and gains the line
-  `Not binding until accepted.` under its heading.
+  `Not binding until accepted.` under its heading. When there are none, omit
+  the section.
 - **Open questions:** only the ids the phase or its contracts cite, with the
   status and question from the owning spec's table. Omit the section when there
   are none.
