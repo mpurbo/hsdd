@@ -116,9 +116,21 @@
       const path = a.getAttribute("data-nav");
       a.setAttribute("href", path ? href(r.audience, path) : href(r.audience));
     }
-    if (focusKey) {
-      const again = main.querySelector(`[data-key="${CSS.escape(focusKey)}"]`);
+    // A redraw keeps focus on the box that had it. Coming Back to a view whose box
+    // opened the page we left, focus returns to that box (its key is in the history entry).
+    const wantKey = focusKey || (window.history.state && window.history.state.focus) || null;
+    if (wantKey) {
+      const again = main.querySelector(`[data-key="${CSS.escape(wantKey)}"]`);
       if (again) again.focus();
+    }
+  }
+
+  // Remember which box opens the next view, in the entry being left, before the hash changes.
+  function rememberBox(box) {
+    try {
+      window.history.replaceState({ focus: box.getAttribute("data-key") }, "");
+    } catch {
+      /* history state unavailable: Back lands without a focused box */
     }
   }
 
@@ -128,6 +140,8 @@
   }
 
   document.addEventListener("click", (ev) => {
+    const box = ev.target.closest && ev.target.closest("a.box");
+    if (box) rememberBox(box);
     const aud = ev.target.closest("[data-audience]");
     if (aud) {
       const r = route();
@@ -169,6 +183,7 @@
 
   document.addEventListener("keydown", (ev) => {
     if (ev.key === "Enter" && ev.target.matches && ev.target.matches("a.box")) {
+      rememberBox(ev.target);
       window.location.hash = ev.target.getAttribute("href");
       ev.preventDefault();
       return;
