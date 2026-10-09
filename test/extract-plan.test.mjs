@@ -95,7 +95,7 @@ test("facts are stable hashes keyed by slot subject", () => {
 test("phaseList: aliases, cross-node, ranges, footnote marks, none", () => {
   const nodes = new Set(["x.web", "x.api"]);
   const aliases = new Map([["w", "x.web"], ["api", "x.api"]]);
-  assert.deepEqual(phaseList("1, w.2, api.3†", "x.web", nodes, aliases).ids, ["x.web.1", "x.web.2", "x.api.3"]);
+  assert.deepEqual(phaseList("1, w.2, api.3\u2020", "x.web", nodes, aliases).ids, ["x.web.1", "x.web.2", "x.api.3"]);
   assert.deepEqual(phaseList("w.1\u2013w.3", "x.web", nodes, aliases).ids, ["x.web.1", "x.web.2", "x.web.3"]);
   assert.deepEqual(phaseList("\u2014", "x.web", nodes).ids, []);
   assert.deepEqual(phaseList("zz.4", "x.web", nodes).unresolved, ["zz.4"]);

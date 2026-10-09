@@ -301,7 +301,7 @@ export function extractPlan(root, { specSha = "n/a" } = {}) {
 
       const gate = value(pf, "Gate") === null ? null : plain(value(pf, "Gate"));
       const size = value(pf, "Size estimate") === null ? (row && column(table, "size") >= 0 ? plain(row.cells[column(table, "size")]) : null) : plain(value(pf, "Size estimate"));
-      const cap = /(?:<=|≤)\s*(\d+)/.exec(size ?? "");
+      const cap = /(?:<=|\u2264)\s*(\d+)/.exec(size ?? "");
       const contingentOn = [...new Set(toLines(blockText).filter((l) => /contingent/i.test(l)).flatMap(oqRefs))];
 
       phases.push({
