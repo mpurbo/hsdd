@@ -51,3 +51,52 @@ record names.
 - **Expected:** `config.yaml`'s phase block and `hsdd-context/{phase-id}.md`
   are written, and nothing else (`git status --porcelain` lists only those).
 - **Result:**
+
+## B. The plan page
+
+### B1. The plan page renders the field project's tree
+
+- **Run:** in an implementation repo, with the v0.9 skills installed, invoke
+  `hsdd-summary` and follow its process to the end (extract, fill, validate,
+  slots, prose, lint, stamp, render, check).
+- **Expected:** every unparsed item is filled from the line it names (the
+  tree has exactly two: a phase with no summary-table row, and a phase section
+  whose heading or fields do not parse); `validate` exits 0; `check` reports
+  `summary.html: fresh`; the page opens from disk with networking disabled and
+  draws the root's parts with contract edges; the leaf-parent with the most
+  phases shows an ordered list of steps, not a diagram, and its reviewer page
+  says why; an internal node's page draws contracts produced elsewhere in the
+  tree from one "Elsewhere in the tree" box; no file outside `hsdd/summary/`
+  changed.
+- **Fails if:** a source file changed, a value was guessed where the source
+  states none, or the page requests the network.
+- **Result:**
+
+### B2. The stakeholder sees no id
+
+- **Run:** from the project root, after B1:
+
+  ```bash
+  node --input-type=module -e '
+  import { readFileSync } from "node:fs";
+  import { renderPlan } from "./hsdd/scripts/summary/views-plan.mjs";
+  import { namesId } from "./hsdd/scripts/summary/prose.mjs";
+  const html = readFileSync("hsdd/summary/summary.html", "utf8");
+  const page = JSON.parse(/id="hsdd-page">([^<]*)</.exec(html)[1]);
+  const m = page.model;
+  const routes = [{ view: "top" }, ...m.nodes.map((n) => ({ view: "node", id: n.id })), { view: "contracts" }, ...m.contracts.map((c) => ({ view: "contract", id: c.ref })), { view: "adrs" }];
+  let bad = 0;
+  for (const r of routes) {
+    const v = renderPlan(page, { audience: "stakeholder", ...r });
+    const text = [v.title, v.body.replace(/<[^>]*>/g, " "), ...v.diagrams.flatMap((d) => d.spec.nodes.flatMap((n) => [n.label, n.sub]))].join(" ");
+    const id = namesId(text, m.ids);
+    if (id) { bad++; console.log(r.view, r.id ?? "", "names", id); }
+  }
+  console.log(bad ? `${bad} view(s) leak an id` : "no id in any stakeholder view");'
+  ```
+
+- **Expected:** `no id in any stakeholder view`.
+- **Fails if:** any view names an id. A leak from a node's own name is a
+  finding for that node's spec, recorded here; a leak from the page's own
+  words is a defect in `views-plan.mjs`.
+- **Result:**
