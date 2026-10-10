@@ -118,3 +118,11 @@ test("owners: the fixture, prefixed and whole", () => {
   assert.equal(ownersLine(dir, ["src/payouts"]), "- owners: @payments-team, @treasury");
   assert.equal(ownersLine(dir, []), "- owners: @payments-team, @platform, @treasury");
 });
+
+test("owners: a trailing glob segment matches one level; a bare name matches below", async () => {
+  const { ownersOf } = await import("../skills/hsdd-adopt/scripts/owners.mjs");
+  const rules = [{ pattern: "/docs/", owners: ["@a"] }, { pattern: "docs/*", owners: ["@d"] }];
+  assert.deepEqual(ownersOf(rules, "docs/top.md").owners, ["@d"]);
+  assert.deepEqual(ownersOf(rules, "docs/sub/deep.md").owners, ["@a"]);
+  assert.deepEqual(ownersOf([{ pattern: "docs", owners: ["@b"] }], "docs/sub/deep.md").owners, ["@b"]);
+});

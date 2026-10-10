@@ -47,14 +47,23 @@ function matcher(pattern) {
   const dirOnly = pattern.endsWith("/");
   const anchored = pattern.startsWith("/") || pattern.slice(0, -1).includes("/");
   const body = pattern.replace(/^\/+/, "").replace(/\/+$/, "");
-  const re = new RegExp(`^${anchored ? "" : "(?:.*/)?"}${globToSource(body)}${dirOnly ? "/.*" : "(?:/.*)?"}$`);
+  // A literal last segment may name a directory, so it matches below it; a glob
+  // last segment (docs/*) matches one level only.
+  const literalLast = !/[*?]/.test(body.split("/").pop());
+  const re = new RegExp(`^${anchored ? "" : "(?:.*/)?"}${globToSource(body)}${dirOnly ? "/.*" : literalLast ? "(?:/.*)?" : ""}$`);
   return (path) => re.test(path);
 }
+
+const compiled = new Map();
+const matcherFor = (pattern) => {
+  if (!compiled.has(pattern)) compiled.set(pattern, matcher(pattern));
+  return compiled.get(pattern);
+};
 
 // The applicable rule for a file is the last rule in file order that matches
 // it. Returns that rule, or null.
 export function ownersOf(rules, path) {
   let hit = null;
-  for (const r of rules) if (matcher(r.pattern)(path)) hit = r;
+  for (const r of rules) if (matcherFor(r.pattern)(path)) hit = r;
   return hit;
 }
