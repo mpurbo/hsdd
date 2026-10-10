@@ -491,7 +491,9 @@ paths its frontmatter names. `hsdd-reconcile` asserts this at the
 `hsdd/contract/fixture/`, overridable — the frontmatter is authoritative
 either way. Per kind: `api` and `event` want schema plus example payloads;
 `schema` and `shared-model` want the schema plus edge-case fixtures; `file`
-wants a sample tree; `cli` wants recorded invocations.
+wants a sample tree; `cli` wants recorded invocations. `hsdd-contract`
+writes these artifacts when it authors a contract or a new version; a phase
+never writes them, and both gates replay them.
 
 **Both gates run the contract** (chapter 10 places this in the gate):
 
@@ -505,7 +507,8 @@ wants a sample tree; `cli` wants recorded invocations.
   drifting silently.
 
 Quality gate in `hsdd-contract`: any code-level artifact both sides consume
-names its canonical path and its owning phase.
+names its canonical path and its owner: the owning phase for code,
+`hsdd-contract` for validation artifacts.
 
 ### 3.5 Versions and compatibility
 
@@ -899,6 +902,11 @@ A tree with none never reaches it.
 - unknown: settlement retry logic (no tests, no docs)
 ```
 
+The `modules:` line records the scope the section was rendered from: the
+node's path prefixes, or `./` for a whole repository. The drift check
+re-extracts exactly that scope, so unchanged code reports no difference. The
+stamp's SHA is suffixed `-dirty` when the scope had uncommitted changes.
+
 The extraction SHA is required. The epistemic split is **per-section, not
 per-file**: authored bullet fields claim intent; `## Observed surface` claims
 only what tooling saw, stamped with the SHA. One artifact type — the honesty
@@ -946,8 +954,9 @@ section — the contract-level analogue of the node's `unknown:` lines:
 
 An adopted contract's guarantees are *inferred*; recording what the fixtures
 do not reach is what keeps `stable` honest. The caveat is **maintained, not
-write-once**: when a phase closes a gap by adding a fixture, it updates the
-block, and a stale caveat is a checkpoint drift finding.
+write-once**: when a fixture added through `hsdd-contract` closes a gap, the
+same edit updates the block, and a stale caveat is a checkpoint drift
+finding.
 
 **`v0` is a permanent property, not a waypoint** (§3.5): under
 `additive-only` a well-behaved contract absorbs additions indefinitely
@@ -1093,7 +1102,9 @@ and shared types first, effects behind interfaces, composition last),
 `fp-progression` (types → pure functions → effects → composition), or a
 project-defined policy documented in the conventions body. `hsdd-phase-plan`
 reads the policy and orders phases accordingly; sizing, tiers, gates, the
-summary table, and the floor are policy-independent.
+summary table, and the floor are policy-independent. Absent means
+`interfaces-first`, except that a conventions file still carrying the
+pre-v0.10 `FP ordering:` bullet reads as `fp-progression` (§15.1).
 
 ### 7.5 The phase plan document
 
@@ -1435,6 +1446,7 @@ The tier also sets the **artifact profile**, not only human attention:
 Never scaled: `tasks.md` and the requirement/scenario deltas — they drive TDD
 and the tests at every tier. Every phase still produces a verification doc;
 only its depth varies.
+
 For the superpowers method the profile travels as the derivative's tier
 line (§9.8): gate-only, "no design discussion in the plan; slim
 verification doc"; spot-check, "design notes only for a decision this phase
@@ -1493,7 +1505,9 @@ untouched.
 
 When a phase discovers mid-`apply` that a consumed contract is wrong or
 incomplete: **pause** the apply at a task boundary — never improvise around
-the contract; **record** the gap in `request`/`amend` vocabulary (§8.2);
+the contract; **record** the gap in `request`/`amend` vocabulary (§8.2)
+under the verification doc's Outstanding, for the human to carry into the
+node's plan;
 **renegotiate at the root lineage** with the human via `hsdd-contract` — a
 compatible addition amends the current version, a breaking change drafts
 `v{n+1}` with a migration note (§3.5); **propagate** the change into the
@@ -1558,10 +1572,11 @@ The intake record's header carries, as bullet lines, `**Date:**`,
 with `**Contracts:**`, `**Promotes:**`, `**Collisions:**` and `**Status:**`
 (`open`, or `closed (date)`); its body carries `## Request`, `## Routing`
 (the decision and the exact handoff, written first), `## Produced` (a
-ledger of the nodes, contracts, ADRs and phases the change produced,
-appended as handoffs land) and `## Change log`. The slug never contains
-`progress` or `execution-plan`, so the reading aids never mistake a record
-for a dated report.
+ledger of the nodes, contracts, ADRs and phases the change produced;
+`hsdd-checkpoint` appends the phases whose Scope cites the record, and the
+rest may be appended by hand) and `## Change log`. The slug never contains
+`progress`, `execution-plan`, `milestones` or `atlas`, so the reading aids
+never mistake a record for a dated report.
 
 | Class | Means | Routes to |
 |-------|-------|-----------|
@@ -1581,6 +1596,9 @@ then reclassify.**
   it.
 - Shipped-ness is *not authored*: it derives from the verification doc on the
   spec repo's main branch — the only admissible "done" (chapter 12).
+- A phase appended for a change request names the intake record in its
+  Scope, and the request's path joins the node's `Sources` field (appended,
+  never replacing an entry).
 
 ### 11.4 `hsdd-spec` graft mode
 
@@ -1596,9 +1614,10 @@ Intake records are **dated and never superseded**, unlike progress reports and
 execution plans, which supersede by design. After five change requests,
 `hsdd/spec/` holds more nodes and longer phase ledgers; `hsdd/management/`
 holds five intake records. **This is the rule that replaces "wipe `hsdd/` and
-rebuild."** An intake record closes when every phase it produced has a
-verification doc on main, the same admissibility rule as everywhere else;
-`hsdd-checkpoint` ticks it closed (§12.7).
+rebuild."** An intake record closes when its `## Produced` names at least
+one phase and every listed phase has a verification doc on main, the same
+admissibility rule as everywhere else; `hsdd-checkpoint` appends the phases
+and ticks it closed (§12.7).
 
 ### 11.6 Node retirement
 
@@ -1639,6 +1658,10 @@ The path:
 5. **A backfill unclosed across two consecutive checkpoints escalates** —
    the same shape as the two-consecutive-reds milestone trigger (chapter
    12).
+
+Backfill applies after launch. A project is launched once its system runs
+in production: an adopted tree from adoption, a greenfield tree from the
+sealing of the campaign whose gate includes launch.
 
 A recorded bypass beats a hidden one.
 
@@ -1721,7 +1744,8 @@ from independent counting. Required sections:
   and the grandfathered-contract count with the previous report's (§15.2).
 - **Milestone gate status** — one row per milestone (gate items met / total,
   each unmet item's blocker); the persisted input that makes the slip
-  trigger's "red across two consecutive checkpoints" checkable.
+  trigger's "red across two consecutive checkpoints" checkable. With no
+  current milestone document, the section stays, with one line saying so.
 - **What is done** — per node, **with evidence.** The only admissible
   "done": *the phase's verification document is merged to the spec repo's
   main branch.* Claims without a verification doc are reported as claims,
@@ -1835,7 +1859,9 @@ bootstrap, one change request's fan-out, or a release train. When every gate
 in a campaign is green, the checkpoint whose tick made it so **seals** its
 milestone document: `- **Sealed:** YYYY-MM-DD` in the header, the file moves
 to `hsdd/management/archive/`, and later checkpoints stop ticking it; the next
-campaign opens a new one through `hsdd-milestone`. Admissibility for sealing
+campaign opens a new one through `hsdd-milestone`. The header names its
+campaign on an optional `**Campaign:**` line, which `hsdd-milestone` always
+writes; a document without one stays conformant. Admissibility for sealing
 is the rule that already exists, namely that every phase in scope has a verification doc
 merged to spec-repo main. The seal is evidence-backed, never declared.
 
@@ -1883,8 +1909,10 @@ One run of `hsdd-checkpoint`:
      claimed-done phase has its doc on main, sign-offs filled, no template
      residue), management chain integrity, grandfather audit (the count of
      `validation: grandfathered` contracts, compared with the previous
-     report's; a rise is a finding), and retired contract versions that
-     still have a live consumer, `external_consumers` included (§3.5).
+     report's; a rise is a finding; a grandfathered contract whose artifact
+     now exists is a discharge finding routed to `hsdd-reconcile`), and
+     retired contract versions that still have a live consumer,
+     `external_consumers` included (§3.5).
    - *Code vs plan* (each implementation repo): what phases the code
      actually completes versus what the plans and prior report claim;
      contract-surface drift in both directions; scope creep — code with no
@@ -1892,14 +1920,21 @@ One run of `hsdd-checkpoint`:
    - *As-built drift* (only when the tree contains adopted nodes — §6, the
      gate that keeps this path from touching greenfield behavior):
      run `hsdd/scripts/seams/extract-seams.mjs diff` for every node that
-     carries an `## Observed surface` and record each printed difference. A
-     difference is a finding, not an error; a `v0` contract whose fixtures
-     grew while its `## Observed completeness` stood still is one too.
-   - *Intake records:* every record at `**Status:** open` is read; one whose
-     produced phases all have verification docs on spec-repo main is ticked
-     `closed (date)` with a change-log line; an open record whose
-     `## Produced` is still empty two checkpoints after its date is a
-     finding.
+     carries an `## Observed surface` and record each printed difference.
+     Under the profile, each node's diff runs against the implementation
+     repo whose history contains the node's recorded SHA; a SHA no repo
+     contains is a finding. A difference is a finding, not an error: on an
+     as-built node it resolves by a reviewed re-render through `hsdd-adopt`;
+     on a promoted or governed node, code with no phase is a backfill, and a
+     difference that shipped phases explain resolves by the same re-render.
+     A `v0` contract whose fixtures grew while its `## Observed completeness`
+     stood still is a finding too.
+   - *Intake records:* every record at `**Status:** open` is read; the
+     phases whose Scope cites the record are appended to its `## Produced`;
+     a record whose list names at least one phase, all with verification
+     docs on spec-repo main, is ticked `closed (date)` with a change-log
+     line; an open record whose `## Produced` is still empty two
+     checkpoints after its date is a finding.
 3. **Emits the progress report** (§12.3), findings register included.
 4. **Revises the execution plan** (§12.4): a new dated file superseding the
    previous one, findings compiled into steps per §12.8, guardrail
@@ -1909,7 +1944,9 @@ One run of `hsdd-checkpoint`:
 6. **Ticks the milestone gates** in the current campaign's milestone
    document and evaluates the re-baseline trigger, reporting it loudly if
    it fires. When the tick turns the last gate green, the run seals the
-   document (§12.5) and says so.
+   document (§12.5) and says so. With no current document, there is nothing
+   to tick, and the progress report says so in its Milestone gate status
+   section.
 7. **Renders the checkpoint page**, only when `hsdd/summary/` exists
    (§13.4). A Plan integrity finding on the page is this run's own quality
    gate failing: the run fixes its plan, renders again, and lands the page
@@ -2220,19 +2257,22 @@ are all layout-independent.
 
 ### 14.2 The conventions file
 
-`hsdd/conventions.md` is root-owned: `hsdd-spec` seeds it and
-`hsdd-reconcile` updates it — never a phase session. Every skill reads it
+`hsdd/conventions.md` is root-owned. `hsdd-spec` seeds it, or `hsdd-adopt`
+when adoption creates the tree; `hsdd-reconcile` updates it; a phase
+session never writes it. Every skill reads it
 first, so a protocol stated there reaches every downstream session without
 new cross-skill references. Its body carries:
 
 - the layout section (the chosen paths);
+- the `Profile: standalone-spec-repo` line, only when the project opts into
+  the profile (§14.4);
 - the `## Parallel development protocol` section — the freeze rule, the
   pending-section mechanism, the reconcile step, sibling isolation, and the
   execution-stage mirror (§9.4). The hand-maintained `## Established
   contracts` list is gone: it duplicated what the registry projects, and
   hand-maintained projections drift;
 - the `## Open questions (OQ)` section — the convention and the project's
-  prefix set (§4.4).
+  prefix set (§4.4);
 - the `**Ordering policy:**` line, `interfaces-first` (default),
   `fp-progression`, or a project-defined name whose order the body
   describes (§7.4);
@@ -2321,11 +2361,13 @@ which rules a skill implements. This section is that statement for projects
 on 0.6.1 or later. v0.8.0 and v0.9.0 were never released, so a project on
 0.7.1 upgrades straight to v0.10.0 and takes the whole table below.
 
-The upgrade vehicle is `hsdd-checkpoint`'s **adoption run**: the first
-checkpoint on an existing project treats nonconformances as findings, not
-errors; each becomes a findings-register row and, per §12.8, a migration
-step in the emitted execution plan; the run never hard-fails on the state it
-exists to repair. Existing documents are **adopted, not replaced**:
+Upgrading means reinstalling the eleven skills. The upgrade vehicle is
+`hsdd-checkpoint`'s **adoption run**: the first checkpoint on an existing
+project, or the first after upgrading HSDD (the newest progress report's
+Bottom line has no grandfathered-contracts row), treats nonconformances as
+findings, not errors; each becomes a findings-register row and, per §12.8,
+a migration step in the emitted execution plan; the run never hard-fails on
+the state it exists to repair. Existing documents are **adopted, not replaced**:
 pre-existing management documents become the head of the supersedes chain,
 existing numbered guardrails are imported under their numbers, and
 historical dated documents are never rewritten; conformance applies from
@@ -2344,9 +2386,9 @@ v0.10.0, or says the rule is specified without a skill.
 |--------|--------------------------------------|---------------------------|
 | `## Learnings`, `## Metrics` in the verification template (§10.3, §10.5) | Forward-only: the first v0.10 switch replaces a project's pre-v0.10 template copy; existing verification docs are never rewritten. | `hsdd-config` template; the gate rule in the generic phase context |
 | `Team` node field, `**Teams:**` conventions line (§14.5) | Optional; absent is conformant and means `single-team`. | `hsdd-spec` |
-| `**Ordering policy:**` line in conventions (§7.4) | Absent = `interfaces-first`. No edit needed. Existing phase plans stand. | `hsdd-phase-plan`, `hsdd-spec` conventions template |
+| `**Ordering policy:**` line in conventions (§7.4) | Absent = `interfaces-first`, except that a conventions file still carrying 0.7.1's `FP ordering:` bullet reads as `fp-progression`. Add `**Ordering policy:** fp-progression` to keep 0.7.1's ordering, or remove the old bullet to take `interfaces-first`. Existing phase plans stand. | `hsdd-phase-plan`, `hsdd-spec` conventions template |
 | Unified Phase Equivalent (§7.2) | Applies to future sizing only. | `hsdd-phase-plan` |
-| `stable` requires executable validation (§3.4) | **Grandfathered, discharged on touch.** See §15.2. | `hsdd-reconcile` asserts at the flip; `hsdd-phase-plan` writes the replay into producing phases' gates; `hsdd-config` carries it into the phase context |
+| `stable` requires executable validation (§3.4) | **Grandfathered, discharged on touch.** See §15.2. | `hsdd-contract` writes the artifacts; `hsdd-reconcile` asserts at the flip; `hsdd-phase-plan` writes the replay into producing phases' gates; `hsdd-config` carries it into the phase context |
 | `compatibility:` field (§3.5) | Absent = `versioned`, the behavior of 0.7.1 and earlier. | `hsdd-contract` |
 | `external_consumers:`; `retired` status; live-consumer retirement finding (§3.5, §11.6) | Additive to the existing lifecycle. | `hsdd-contract`, `hsdd-reconcile`, `hsdd-checkpoint` |
 | Integration nodes (§3.7) | Proposed at the next decomposition of a node whose children exchange contracts; nothing existing changes. | `hsdd-spec` |
@@ -2400,12 +2442,13 @@ permanent. Three properties give it one, without a deadline:
    a grandfather case: the clause covers history, never new work.
 2. **It discharges on touch, not on a date.** The moment any phase produces,
    amends, or bumps a grandfathered contract, that contract must gain
-   fixtures before the phase's gate passes. The phase context names the
-   obligation (§9.7), and the reconcile that drains the phase's plan removes
-   the mark once the artifacts exist. Obligations attach to work, not
-   to calendars — the same grain as the lazy tree and depth-on-demand. A
-   contract nobody touches needs no fixtures, because nobody is depending on
-   new behavior from it.
+   fixtures, written at the root through `hsdd-contract`, before the
+   phase's gate passes. The phase context names the obligation (§9.7), and
+   the next reconcile after the phase's gate removes the mark, on the
+   checkpoint's discharge finding, once the artifacts exist. Obligations
+   attach to work, not to calendars, which is the same grain as the lazy
+   tree and depth-on-demand. A contract nobody touches needs no fixtures,
+   because nobody is depending on new behavior from it.
 3. **The count is reported and can only fall.** Each checkpoint reports the
    remaining grandfathered count, read from frontmatter, in the progress
    report's Bottom line, next to the previous report's count. A closed,
@@ -2518,8 +2561,8 @@ The merged decision record of every release through v0.10.0, current answers
 only. **Provenance is a required column** — `field-tested` (validated on a
 real project), `pressure-tested` (held under the adversarial 0.6.0
 campaign), or `reasoned-only` — because new material must not inherit
-credibility from the tested parts: most of what v0.8.0 and v0.10.0 add is
-`reasoned-only`, and the table says so instead of letting it borrow.
+credibility from the tested parts: most of what v0.8.0, v0.9.0 and v0.10.0
+add is `reasoned-only`, and the table says so instead of letting it borrow.
 
 ### 18.1 The decisions
 
@@ -2542,7 +2585,7 @@ credibility from the tested parts: most of what v0.8.0 and v0.10.0 add is
 | Where reconciliation lives | Its own skill, run at the root after branches merge — one artifact, one skill (§8.4). | pressure-tested |
 | Contract gaps during planning | Two-tier: ask when the gap changes the plan's shape; otherwise record a `request` with the stated assumption (§8.3). | pressure-tested |
 | Collision resolution | The human arbitrates, once, at reconcile time; the skill never auto-picks a winner (§8.4). | pressure-tested |
-| Who writes `conventions.md` | Root only — `hsdd-spec` seeds, `hsdd-reconcile` updates; phases never touch it (§14.2). | pressure-tested |
+| Who writes `conventions.md` | `hsdd-spec` seeds it at the root, or `hsdd-adopt` when adoption creates the tree; `hsdd-reconcile` updates it; phases never touch it (§14.2). | pressure-tested |
 | Sibling worktree reads | Forbidden — contracts are the only inter-node knowledge (§8.3). | pressure-tested |
 | Producer-side contract discoveries | The `amend` entry kind; a breaking amendment goes to the human and bumps (§8.2). | pressure-tested |
 | `draft → stable` | Flipped by `hsdd-reconcile` once `phase_ids` is `final`, no unresolved `request` names the contract, and executable validation exists (§8.4, §3.4). Stable means interface-frozen, not producer-shipped. | pressure-tested |
@@ -2595,13 +2638,14 @@ credibility from the tested parts: most of what v0.8.0 and v0.10.0 add is
 | Plan-page edges | Derived from the contracts each part consumes and produces; the Mermaid DAG is never parsed (§13.3). | reasoned-only |
 | Checkpoint page | A living reading aid over the newest management documents, first for the lead running the sync; ages, the loop, the delta, gate movement and the plan graph computed by script (§13.4). | reasoned-only |
 | Prose stores | One per page (`prose.json`, `checkpoint-prose.json`), so writing one page's prose never makes another stale (§13.2). | reasoned-only |
+| Who writes validation artifacts | `hsdd-contract`, when it authors a contract or a new version; phases only replay them, so `stable` stays interface-frozen rather than producer-shipped (§3.4). | reasoned-only |
 | Who writes the grandfather mark | `hsdd-reconcile`, on the plan step the upgrade checkpoint emits; the checkpoint stays read-only toward governance (§15.2). | reasoned-only |
 | Who seals a milestone document | The checkpoint whose tick turns the last gate green (§12.5). | reasoned-only |
 | Ordering policy selection | A line in the conventions body, not frontmatter; `interfaces-first` default, `fp-progression` the stricter variant (§7.4). | reasoned-only |
 | Append, graft and promotion modes | Shipped in the owning skills; `hsdd-intake` routes to them (chapter 11, §6.4). | reasoned-only |
 | Adoption and intake | Shipped as chapters 6 and 11 specify, with the seam extractor as `hsdd-adopt`'s bundled script; `reasoned-only` until the first field adoption and intake runs (chapter 15). | reasoned-only |
 | Artifact stability | Formats frozen for the 1.0 line; additive optional fields only (§15.3). | reasoned-only |
-| Verification template copy | By the switch when missing, for either method (§9.2). | reasoned-only |
+| Verification template copy | By the switch when missing, and in place of a pre-v0.10 copy without `## Learnings`, for either method (§9.2). | reasoned-only |
 | v0.8.0 and v0.9.0 | Never released; v0.10.0 follows v0.7.1 and states per rule what the skills implement (chapter 15). | reasoned-only |
 
 ### 18.2 Deliberately dropped
