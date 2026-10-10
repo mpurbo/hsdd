@@ -97,18 +97,19 @@ edits governance files); this skill performs the semantic merge.
    for each that is `stable`, lacks an artifact at its Validation paths, and
    has no `validation:` key, add `validation: grandfathered` to its
    frontmatter and report the count. Never mark a `draft`, and never mark a
-   contract whose file was created after the upgrade checkpoint's baseline
-   SHA. Discharge: when a drained entry shows a phase produced, amended or
-   bumped a grandfathered contract and the artifact now exists at the
-   Validation paths, remove the key and say so; if the artifact does not
-   exist, leave the key and report the phase by id, because its gate must
-   not have passed.
+   contract whose file was created after the upgrade checkpoint's baseline SHA
+   (the plan step carries it, from that progress report's Repo baselines
+   header; invoked without one, ask for it). Discharge: when a drained entry
+   shows a phase produced, amended or bumped a grandfathered contract and the
+   artifact now exists at the Validation paths, remove the key and say so; if
+   the artifact does not exist, leave the key and report the phase by id,
+   because its gate must not have passed.
 9. **Contract retirement.** When a drained entry or the invoking prompt
    retires a node (`- **Status:** retired`), set each contract that node
    solely produced to `status: retired` **unless** a consumer or an
    `external_consumers` entry still names the version; in that case leave
    the status, and report the live consumer as a finding for the checkpoint.
-10. **Apply `note` entries**
+10. **Apply `note` entries** to `hsdd/conventions.md` only when they change a
    convention. Drop notes that duplicate derived data; the registry already
    projects contract facts.
 11. **Stamp each drained section**, replacing its entries with one line:
