@@ -6,9 +6,10 @@ description: >
   Triggers: "write the phase plan for X", "break X into phases", "implementation
   phases", "phase breakdown", "this node is small enough to phase", "phase
   dependency graph", "review tiers", "gate command", "size estimate per phase".
-  Each phase becomes one OpenSpec change and fits one review window. If the node
-  still contains subsystems, decompose it with hsdd-spec FIRST. Do NOT use for
-  OpenSpec artifacts (use openspec directly).
+  Also "append a phase to X", "add a retro phase", "the plan needs another phase"
+  (append mode). Each phase becomes one OpenSpec change and fits one review
+  window. If the node still contains subsystems, decompose it with hsdd-spec
+  FIRST. Do NOT use for OpenSpec artifacts (use openspec directly).
 ---
 
 # HSDD Phase Plan: Leaf-Parent to Ordered Phases
@@ -19,8 +20,8 @@ sized so the AI run plus human review and manual verification fit one Claude Cod
 rolling window (target ~5h).
 
 **Core principle:** Define contracts and phases before any code. Each phase is
-independently testable, contract-bounded, and follows FP progression: types ->
-pure functions -> effects -> composition.
+independently testable, contract-bounded, and ordered by the project's named
+ordering policy (below).
 
 ## When to Use
 
@@ -37,8 +38,7 @@ pure functions -> effects -> composition.
 ## Process
 
 1. **Load conventions.** Read `hsdd/conventions.md` (single source of truth for
-   naming, layout, and the parallel development protocol; a pre-0.5 project has
-   it at `docs/conventions.md`: honor its layout and offer to migrate). Do not
+   naming, layout, and the parallel development protocol). Do not
    re-scan every prior spec.
 2. **Reference the node spec.** Load `hsdd/spec/{node-id}.md`: purpose,
    consumed/produced contract ids, governing ADRs, isolation strategy. Reference
@@ -50,8 +50,9 @@ pure functions -> effects -> composition.
    in a contract `request`/`amend` entry so the contract body carries it.
    Phases do not carry a Sources field; the phase plan is written by
    someone who read the sources.
-3. **Define phases** using the template below, applying FP ordering and the
-   sizing rule. Reference contracts by id (`hsdd-contract` owns the bodies).
+3. **Define phases** using the template below, applying the project's
+   ordering policy (Phase Ordering, below) and the sizing rule. Reference
+   contracts by id (`hsdd-contract` owns the bodies).
    Open the `## Phase Plan` section with the phase summary table (one row
    per phase), then the detailed phase sections.
 4. **Draw the phase dependency graph** as a Mermaid flowchart, showing
@@ -127,16 +128,36 @@ written by `hsdd-spec` (purpose, contracts, DAG) are shared decomposition
 artifacts and fine to read; a sibling's phase-plan sections and its worktree
 are not.
 
-## Phase Ordering (FP Progression)
+## Phase Ordering (a named policy)
 
-1. **Phase 1 (always):** domain types, core traits/interfaces, scaffolding. No
-   business logic, only the type-level skeleton.
-2. **Early phases (parallel-safe):** config, state, IO utilities, independent
-   modules consuming Phase 1 types.
-3. **Middle phases:** pure-core logic, then effects/IO at boundaries; concrete
-   implementations of the traits.
-4. **Final phase:** integration wiring, entry point, dependency assembly. The
-   imperative shell.
+Read the `**Ordering policy:**` line in `hsdd/conventions.md`. Absent means
+`interfaces-first`. Sizing, tiers, gates, the summary table and the floor
+do not depend on the policy; only the order does.
+
+**`interfaces-first` (default).**
+1. **First phase (always):** the stable interfaces: domain types, the
+   contract-bounded surfaces this node produces, scaffolding. No business
+   logic.
+2. **Early phases (parallel-safe):** independent modules that consume the
+   first phase's types; effects stay behind the interfaces they implement.
+3. **Middle phases:** the logic behind each interface, pure where the
+   design allows, with IO at the boundaries.
+4. **Final phase:** composition: integration wiring, entry point,
+   dependency assembly.
+
+**`fp-progression`.** The stricter variant: types, then pure functions,
+then effects, then composition, as four ordered bands. Phase 1 is the
+type-level skeleton; pure-core phases precede every effect phase; the
+final phase is the imperative shell.
+
+**Project-defined.** Named on the conventions line and described in the
+conventions body; follow it as written and cite it in the plan's first
+line after the summary table.
+
+Whatever the policy, a phase that produces a contract comes before any
+phase that consumes it, and the plan's first line after the summary table
+names the policy it followed.
+
 
 ## Phase Summary Table
 
@@ -205,6 +226,16 @@ Dependencies; a one-line reason may follow an em dash:
 the summary table — ``**Default gate:** `<command>` `` — and a phase's
 `- **Gate:**` field then reads `node default` unless it overrides.
 
+**Producer gate replays the contract.** For every phase whose `Produces`
+is not `none`, the `Gate` line includes the contract replay: the command
+that validates the phase's real output against
+`hsdd/contract/schema/{slug}.schema.json` and reproduces
+`hsdd/contract/fixture/{slug}/` for each produced contract. When the
+project has no such command yet, the phase's Scope includes creating it and
+the Gate names it. A `Gate` of `node default` on a producing phase reads
+`node default plus contract replay for {slug}`. Consuming phases test
+against those fixtures, never against hand-rolled mocks.
+
 ## Review Tiers
 
 | Tier | For | At the gate |
@@ -226,12 +257,18 @@ enforce this.
 Phase 1 (types/scaffolding) is gate-only. Pure utilities are spot-check. External
 integrations and orchestration are full-review.
 
-## Sizing to the Review Window
+## Sizing: the Phase Equivalent
 
-Each phase must fit one window: `[AI: new -> design -> tasks -> apply -> verify]`
-plus `[human: review specs + read diff + run manual verification]` within ~5h. The
-review tier modulates the human half. If a phase cannot fit, it is too big: split
-it. Phase sizing is the control knob for context, tokens, time, and quality.
+One **Phase Equivalent (PE)** is the largest change one reviewer can
+genuinely review and manually verify in one sitting, plus the agent run
+that produced it: roughly <= 400 changed lines of non-generated code, <= 8
+OpenSpec tasks, about half a working day end to end. The ~5h window is
+calibration for that; the review sitting is the invariant. Each phase is
+one PE: `[AI: plan -> implement -> verify]` plus `[human: review specs +
+read diff + run manual verification]`, with the review tier modulating the
+human half. If a phase cannot fit, it is too big: split it. Phase sizing is
+the control knob for context, tokens, time, and quality.
+
 
 > **Sizing floor.** A phase must be big enough to earn its cycle. Two
 > adjacent phases are merge candidates when all hold: (i) same review tier,
@@ -249,7 +286,26 @@ When a merge-candidate pair is kept split, record the reason in one line —
 in the kept phase's section or a short note under the summary table. A plan
 with no merge-candidate pairs records nothing.
 
+## Append Mode (a plan that already has phases)
+
+A change routed to this node, or a backfill finding from `hsdd-checkpoint`,
+appends phases to an existing plan. Rules:
+
+- Continue numbering from the highest existing phase id. **Never renumber.
+  Never rewrite a shipped phase.** A shipped phase is one whose verification
+  doc is on the spec repo's main branch; shipped-ness is read from
+  `hsdd/verify/`, never authored here.
+- The summary table is a permanent ledger: shipped phases keep their rows;
+  new rows are appended.
+- A **retro phase** (a backfill for code that shipped with no phase) is
+  marked `(retro)` in its name, cites the finding id in its Scope, and its
+  verification doc is written after the fact and marked retroactive.
+- The dependency graph gains the new nodes; existing edges are not redrawn.
+- The pending-governance section is appended to, with a new emission date
+  line, and drained by `hsdd-reconcile` as usual.
+
 ## Phase Dependency Graph
+
 
 The graph is a Mermaid flowchart: one node per phase labeled
 `{phase-id}<br/>{short name}`; edges are logical dependencies only
@@ -290,7 +346,13 @@ flowchart TD
 - [ ] Summary table opens the section and matches the phase sections.
 - [ ] Field blocks are bullet lists; empty lists say "none".
 - [ ] Every contingent phase names the OQ id it waits on; no contingency
-      without a minted OQ.
+            without a minted OQ.
+- [ ] The plan names the ordering policy it followed, matching the
+      conventions line (or `interfaces-first` when absent).
+- [ ] Every producing phase's Gate includes the contract replay for each
+      contract it produces.
+- [ ] In append mode: no existing id changed, no shipped phase edited,
+      numbering continued from the highest existing id.
 
 ## Anti-Rationalization
 
