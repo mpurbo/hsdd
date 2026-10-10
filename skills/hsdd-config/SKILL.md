@@ -148,19 +148,21 @@ replaced by the plan's default gate command in backticks}
   through hsdd-contract, hsdd-adr and hsdd-reconcile.
 - Consume contracts only: build against the Interface and Guarantees above,
   never against another node's internals.
-- Contract wrong mid-phase: pause at a task boundary; record the gap as a
-  request or amend entry in this node's plan; renegotiate at the root through
-  hsdd-contract; re-run the phase switch; resume. Never improvise around the
-  contract.
+- Contract wrong mid-phase: pause at a task boundary; write the gap, in
+  request or amend wording, under the verification doc's Outstanding and
+  stop; the human records it in the node's plan, renegotiates at the root
+  through hsdd-contract, and propagates the change into this phase's branch;
+  re-run the phase switch; resume. Never improvise around the contract.
 - Verification doc: hsdd/verify/{phase-id}.verification.md from
   hsdd/templates/verification.md at {review tier} depth. Every Learning
   carries one disposition before sign-off; "- none" is valid, silence is not.
 - Contract replay: the gate validates this phase's real output against the
   schema and reproduces the fixtures of {each produced contract-id@version}.
 - Grandfathered: {contract-id@version} carries validation: grandfathered and
-  this phase produces or amends it, so it must gain
-  hsdd/contract/schema/{slug}.schema.json or
-  hsdd/contract/fixture/{slug}/ before the gate passes.
+  this phase produces it. Its schema or fixtures must exist at
+  hsdd/contract/schema/{slug}.schema.json or hsdd/contract/fixture/{slug}/
+  before the gate passes; if they do not, pause and ask for them at the root
+  through hsdd-contract.
 
 ## Links (spec {spec-sha})
 - Phase section: hsdd/spec/{node-id}.md, heading "{the phase's heading line as written}"
@@ -380,10 +382,10 @@ Run this after writing-plans' self-review, before choosing an execution method.
    Warn if a dependency phase has neither a verification doc nor a merged
    branch: its contracts and decisions may not be what this phase expects.
 6. **Reconcile check.** If any contract the phase consumes or produces has
-   `phase_ids: provisional`, or the node's plan has an unresolved `request`
-   naming it, warn and recommend `hsdd-reconcile` first. If the phase is listed
-   under a request's `contingent phases`, stop and require explicit human
-   confirmation before proceeding.
+   `phase_ids: provisional` or is `status: draft`, or the node's plan has an
+   unresolved `request` naming it, warn and recommend `hsdd-reconcile` first.
+   If the phase is listed under a request's `contingent phases`, stop and
+   require explicit human confirmation before proceeding.
 7. **Template check.** If `hsdd/templates/verification.md` is missing, copy
    `templates/verification.md` verbatim from this skill now, whatever the
    method, and say so in the report. If it exists but has no `## Learnings`

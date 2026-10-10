@@ -27,11 +27,14 @@ reads exactly one of those, never the producing node's internals.
 - A contract must change: bump the version, add a guarantee, deprecate.
 - The registry (`hsdd/contract/INDEX.md`) needs regenerating after a change.
 - A phase discovered mid-apply that a consumed contract is wrong or
-  incomplete, paused at a task boundary, and recorded the gap. Renegotiate
-  here, at the root: a compatible addition amends the current version; a
-  breaking change drafts `v{n+1}` with a migration note. The phase then
-  re-runs its context switch and resumes. Producer-side code changes ship
-  through the producing node's own phases.
+  incomplete, paused at a task boundary, and wrote the gap, in `request` or
+  `amend` wording, under its verification doc's Outstanding; the human
+  recorded it in the node's plan. Renegotiate here, at the root: a
+  compatible addition amends the current version; a breaking change drafts
+  `v{n+1}` with a migration note; either way the schema and fixtures change
+  here too. The human then propagates the change into the phase's branch,
+  and the phase re-runs its context switch and resumes. Producer-side code
+  changes ship through the producing node's own phases.
 
 **Do NOT use for** node decomposition (`hsdd-spec`) or phase planning
 (`hsdd-phase-plan`).
@@ -127,13 +130,20 @@ Gate by default). Consuming phases build and test against the fixtures,
 not hand-rolled mocks: **the mocks are the fixtures**, so a bump changes the
 fixtures and consumer tests fail loudly instead of drifting.
 
+**Authoring writes the artifact.** When this skill creates a contract or a
+new version, it also writes `hsdd/contract/schema/{slug}.schema.json` from
+the Interface and, for `api` and `event`, example payloads under
+`hsdd/contract/fixture/{slug}/`. A phase never writes them; the producing
+phase's gate replays them.
+
 **Grandfathered contracts.** A contract that was already `stable` without
 an artifact when the project upgraded carries `validation: grandfathered` in
 frontmatter, written by `hsdd-reconcile` on the upgrade checkpoint's plan
 step. The set is closed at upgrade: a new contract may never take the key.
 It discharges on touch: the first phase that produces, amends, or bumps a
-grandfathered contract must add the artifact before its gate passes, and
-the reconcile that drains that phase's plan removes the key. The
+grandfathered contract cannot pass its gate until the artifact exists,
+written at the root through this skill. Once it exists, the checkpoint
+files a discharge finding and `hsdd-reconcile` removes the key. The
 checkpoint reports the remaining count every pass.
 
 ## Adopted Contracts: `## Observed completeness`
@@ -151,8 +161,8 @@ contract-level analogue of a node's `unknown:` lines:
 
 An adopted contract's guarantees are inferred; recording what the fixtures
 do not reach is what keeps `stable` honest. The caveat is **maintained,
-not write-once**: when a phase closes a gap by adding a fixture, the same
-change updates this block. A `v0` contract whose fixture directory gained
+not write-once**: when a fixture added through this skill closes a gap, the
+same edit updates this block. A `v0` contract whose fixture directory gained
 files while this block stayed unchanged is a stale-caveat finding at the
 next checkpoint. Until promotion gives an adopted node phases, its
 contracts' `produced_by` and `consumers` name node ids with
@@ -176,7 +186,7 @@ through `hsdd-reconcile`, as for any other contract.
   |-------|---------|-------------|
   | `additive-only` | optional additions only; never remove, retype, or repurpose a field; consumers ignore unknowns | compatible changes keep the version; claimable only if the existing fixtures still pass against the new schema |
   | `versioned` (default) | breaking changes bump | next version, a migration note in `## Versioning`, a deprecation window |
-  | `frozen` | not under our control | a change is a new contract, not a new version |
+  | `frozen` | not under our control, or adopted pending investigation | a change is a new contract, not a new version |
 
 - A backward-compatible addition stays the same version. A breaking change
   creates `v{n+1}` and a migration note in `## Versioning`. The old version
@@ -229,7 +239,9 @@ are authored by `hsdd-adr`, not here; this skill owns `hsdd/contract/` only.
 - [ ] A breaking change bumped the version and added a migration note.
 - [ ] The registry was regenerated.
 - [ ] `phase_ids` is present (`provisional` until `hsdd-reconcile` finalizes it).
-- [ ] Every code-level artifact both sides consume (types file, fixtures, shared package) names its canonical path and owning phase in the Interface or Validation section.
+- [ ] Every code-level artifact both sides consume (types file, fixtures, shared package) names its canonical path and its owner in the Interface or Validation section: the owning phase for code, `hsdd-contract` for validation artifacts.
+- [ ] A contract or version created by this run has its schema (and, for
+      `api` and `event`, example payloads) written at the canonical paths.
 - [ ] Open questions are cited by ID only — never defined here; prose
       justifying behavior as "pending OQ-x" is swept when the OQ resolves
       (hsdd-reconcile).
@@ -251,6 +263,7 @@ are authored by `hsdd-adr`, not here; this skill owns `hsdd/contract/` only.
 | "I'll just edit INDEX.md by hand" | The registry is derived. Hand edits drift from the contracts. Run the generator. |
 | "Small change, no version bump" | If a consumer's code could break, it is a new version. Bump and note the migration. |
 | "Put the schema in the node spec" | Then consumers must read the producer's spec. Contracts exist so they do not. |
+| "The producing phase will write the schema from the real code" | A phase never writes under `hsdd/contract/`. Write it here from the Interface; a schema that turns out wrong is caught by the producer's replay and renegotiated mid-phase. |
 | "Both sides can regenerate the shared types; they'll match" | Two generations from the same prose diverge. Name one canonical artifact path and one owning phase in the contract. |
 | "I'll note 'update phase ids later' in the body" | Prose notes invite concurrent edits from both sides. `phase_ids: provisional` carries that state; `hsdd-reconcile` flips it. |
 | "I'll explain the open question inline so the contract is self-contained" | A second definition forks the question. Cite the ID; the owning spec carries the question, status, and resolution trail. |
