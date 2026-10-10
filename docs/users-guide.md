@@ -1,7 +1,7 @@
 # HSDD User's Guide
 
 A practical, example-driven walkthrough. For the full model and rationale, see
-the [methodology specification](../spec/hsdd-spec-v0_9.md), the single current
+the [methodology specification](../spec/hsdd-spec-v0_10.md), the single current
 spec; the superseded delta series remains in `spec/` as history.
 
 ## Before you start
@@ -22,11 +22,16 @@ hsdd/conventions.md                        naming, layout, and process conventio
 hsdd/spec/{node-id}.md                     node specs and phase plans
 hsdd/verify/{phase-id}.verification.md     per-phase verification docs
 hsdd/contract/{slug}.md + INDEX.md         first-class contracts (registry generated)
+hsdd/contract/schema/, hsdd/contract/fixture/  executable validation; a contract is stable only with one of these
 hsdd/adr/{nnn}-{title}.md + INDEX.md       cross-cutting decisions (hsdd-adr, registry generated)
 hsdd/scripts/gen-registry.mjs              registry generator (copied from hsdd-contract)
+hsdd/scripts/seams/                        seam extractor (copied from hsdd-adopt; adopted trees only)
 hsdd/templates/verification.md             verification-doc template, copied from hsdd-config
 hsdd/management/                           management layer (progress reports, execution plans, milestones, atlas) — written only by hsdd-checkpoint / hsdd-milestone
-openspec/                                  config.yaml + one change per phase
+hsdd/management/archive/                   sealed milestone documents (closed campaigns)
+hsdd/summary/                              optional reading aids (hsdd-summary): summary.html, checkpoint.html
+openspec/                                  config.yaml + one change per phase (OpenSpec method)
+hsdd-context/{phase-id}.md                 generic phase context, written by /hsdd-phase before each phase
 ```
 
 **Where to run `openspec init`:** once, at the repo root (the directory that holds
@@ -181,7 +186,7 @@ doc — only the depth scales with the tier.
   issuance — see Step 6 in Example 2, where the manual verification runs
   before sign-off.
 
-See the [methodology spec](../spec/hsdd-spec-v0_9.md), chapter 7 for how the
+See the [methodology spec](../spec/hsdd-spec-v0_10.md), chapter 7 for how the
 tier interacts with the review sitting and the sizing floor, and chapter 10
 for the tier-scaled artifact profile.
 
@@ -240,7 +245,7 @@ node hsdd/scripts/gen-registry.mjs
 You: "Write the phase plan for linkcheck."
 ```
 
-`hsdd-phase-plan` produces FP-ordered phases, each <= 8 OpenSpec tasks, opening
+`hsdd-phase-plan` orders the phases by the project's ordering policy (`interfaces-first` unless `hsdd/conventions.md` says otherwise), each one PE (<= 8 OpenSpec tasks), opening
 with the phase summary table:
 
 | Phase | Name | Tier | Size | Depends on |
@@ -264,6 +269,17 @@ flowchart TD
     l2 --> l4
     l3 --> l4
 ```
+
+Phase 1 produces `linkcheck-report@v1`, so its Gate includes the contract
+replay, and the contract can only become `stable` once an executable
+validation artifact exists. Write the schema the report must satisfy:
+
+```bash
+mkdir -p hsdd/contract/schema
+$EDITOR hsdd/contract/schema/linkcheck-report.schema.json   # the JSON shape the report emits
+```
+
+The contract's `## Validation` section already names that path.
 
 The plan ends with a `## Governance updates (pending reconcile)` section
 (confirming the `linkcheck-report@v1` phase ids). Even serial, finish planning
@@ -301,7 +317,7 @@ methodology stayed out of the way.
 Now a system big enough to need the tree: `acme`, a full-stack merchant
 onboarding platform with backend, mobile, and web, built by separate teams.
 This stack-first split is the decomposition-axis rule ([spec
-§2.5](../spec/hsdd-spec-v0_9.md)). The axis follows ownership, which is why
+§2.5](../spec/hsdd-spec-v0_10.md)). The axis follows ownership, which is why
 `acme` does not decompose into `auth-end-to-end` / `billing-end-to-end`
 slices spanning both stacks.
 
@@ -317,7 +333,7 @@ between them. Because the input is a document, `hsdd/spec/acme.md` records it
 in a `## Sources` section, and each node it governs carries a
 `- **Sources:** docs/onboarding-prd.md (§...)` line — sources trickle down at
 every split, so a later phase-planner reads the original instead of trusting
-the summary ([spec §2.6](../spec/hsdd-spec-v0_9.md)). The root spec also
+the summary ([spec §2.6](../spec/hsdd-spec-v0_10.md)). The root spec also
 includes this typed dependency DAG:
 
 ```mermaid
@@ -462,15 +478,22 @@ The phase switch injects only what `auth.2` needs. The OpenSpec session for
   - key rotation is a hard dependency for auth.2
 
   ## Discipline
-  - Test-first: write each behaviour's failing test, and see it fail, before
+  - Test-first: write each behavior's failing test, and see it fail, before
     the code that makes it pass.
   - Governance freeze: change nothing under hsdd/ except this phase's
     verification doc; contracts, ADRs, specs and conventions change only
     through hsdd-contract, hsdd-adr and hsdd-reconcile.
   - Consume contracts only: build against the Interface and Guarantees above,
     never against another node's internals.
+  - Contract wrong mid-phase: pause at a task boundary; record the gap as a
+    request or amend entry in this node's plan; renegotiate at the root through
+    hsdd-contract; re-run the phase switch; resume. Never improvise around the
+    contract.
   - Verification doc: hsdd/verify/acme.backend.auth.2.verification.md from
-    hsdd/templates/verification.md at full-review depth.
+    hsdd/templates/verification.md at full-review depth. Every Learning
+    carries one disposition before sign-off; "- none" is valid, silence is not.
+  - Contract replay: the gate validates this phase's real output against the
+    schema and reproduces the fixtures of auth-token@v1.
 
   ## Links (spec 4f2a9c1)
   - Phase section: hsdd/spec/acme.backend.auth.md, heading "### acme.backend.auth.2: Token issuance (provider X)"
@@ -504,7 +527,7 @@ You: "opsx: new ..."   (proposal -> design -> tasks -> apply -> archive)
 ```
 
 `apply` writes `hsdd/verify/acme.backend.auth.2.verification.md`. You give it a
-`full-review`. Meanwhile, in a separate session or by another teammate, the web
+`full-review`. Its `## Learnings` section carries anything the gate taught you about the tree, each line with a disposition (`spec-updated`, `contract-bumped`, `adr-proposed`, `dropped`), or `- none`; the gate is not passed while one lacks it. Meanwhile, in a separate session or by another teammate, the web
 team starts `acme.web.dashboard` against the `auth-token@v1` mock, and billing
 starts against the same contract. Three teams, three small contexts, one shared
 contract.
@@ -532,7 +555,7 @@ Billing's section might read:
 
 - confirm `auth-token@v1` consumers: [acme.backend.billing.2]
 - request `auth-token@v1`: which fixture do consumers mock against?
-  - assumption: `hsdd/contract/fixtures/auth-token.json`, owned by
+  - assumption: `hsdd/contract/fixture/auth-token/`, owned by
     acme.backend.auth.1
   - contingent phases: acme.backend.billing.2
 ```
@@ -615,9 +638,278 @@ hsdd/
     gen-registry.mjs
   templates/
     verification.md
+  hsdd-context/
+    acme.backend.auth.1.md  ...  acme.backend.auth.4.md
 openspec/
   config.yaml  changes/...
 ```
+
+---
+
+## Example 3: A brownfield system (adopt, intake, promote)
+
+You have `legacy-pay`, a production payments service built long before HSDD:
+no specs, some tests, two teams in `CODEOWNERS` (payments and treasury). A
+PRD arrives: merchant payout scheduling. Instead of speccing the PRD as its
+own project, adopt the system once, route the PRD into the tree, and promote
+only the node the change lands on. Cost scales with the number of seams
+(routes, topics, tables, owners), never with lines of code: the skill
+extracts structure by script and reads nothing else.
+
+This example adopts a whole repository. The same steps, scoped to named
+modules, adopt the code around an already governed tree; see the end of the
+example.
+
+### Step 1: Extract the seams
+
+```text
+You: "Adopt this codebase into HSDD."
+```
+
+`hsdd-adopt` first copies its scripts verbatim into `hsdd/scripts/seams/`
+(the same precedent as the registry generator), then runs the extractor:
+
+```bash
+node hsdd/scripts/seams/extract-seams.mjs extract -o hsdd/seams.json
+```
+
+The model records what tooling can see, stamped with the commit it looked
+at: manifests (`package.json`, `go.mod`), modules (`src/billing`,
+`src/payouts`, `src/merchant`, `db`, `cmd/server`), route registrations
+with their `file:line`, schemas (`src/payouts/openapi.yaml`,
+`src/merchant/schema.graphql`), migrations and the tables they create,
+topics produced and consumed, `CODEOWNERS`, and which directories change
+together in git history. Routes and topics are regex candidates; the model
+says where each came from. `hsdd/seams.json` is scratch and is never
+committed.
+
+### Step 2: Confirm the tree before any file exists
+
+The skill proposes a shallow tree on the seams that exist and stops:
+
+```text
+legacy-pay                     (root, internal)
+  legacy-pay.billing           leaf-parent, as-built   src/billing   @payments-team
+  legacy-pay.payouts           leaf-parent, as-built   src/payouts   @payments-team (+ @treasury)
+  legacy-pay.merchant          leaf-parent, as-built   src/merchant  (no CODEOWNERS entry)
+  (db/ and cmd/server are shared infrastructure, folded into the nodes that own their tables and entry point)
+
+unknowns so far: settlement retry logic (no tests); merchant has no owner line
+```
+
+`CODEOWNERS` answers "who builds what?", so the mandatory axis stop becomes
+a confirmation. Treasury co-owns `src/payouts/` in `CODEOWNERS`, but a node
+has exactly one owning team: payments owns it, treasury is recorded as a
+stakeholder in the node's Purpose. You confirm, or move a module, and only
+then does the skill write files. Depth is 1 to 2; nothing below what the
+first change will need.
+
+### Step 3: As-built node specs
+
+One file per node. `hsdd/spec/legacy-pay.payouts.md`:
+
+```markdown
+# legacy-pay.payouts: Payouts (as built)
+
+- **Kind:** leaf-parent
+- **Purpose:** schedule and settle merchant payouts, as currently deployed;
+  treasury signs off on settlement runs
+- **Team:** payments-team
+- **Owns:** payouts and payout_batches tables, the settlement job, GET and
+  POST /v1/payouts
+- **Does not own:** invoicing (legacy-pay.billing), merchant profiles
+  (legacy-pay.merchant)
+- **Consumes:** [kyc-verified-events@v0]
+- **Produces:** [payouts-api@v0, payout-settled-events@v0]
+- **Sources:** none
+- **Adopted:** as-built
+- **Decomposes into:** phases (only when this subtree changes)
+- **Isolation strategy:** exercised today through tests/payouts/ and the
+  staging environment; the settlement job has no tests
+
+## Observed surface
+
+- extracted: 2026-10-10 @ 9f3c2ab  (hsdd/scripts/seams/extract-seams.mjs)
+- modules: src/payouts/
+- routes: 2  (GET /v1/payouts, POST /v1/payouts)
+- tables: none found
+- topics: produces payout.settled; consumes kyc.verified
+- owners: @payments-team, @treasury
+- unknown: settlement retry logic (no tests, no docs)
+- unknown: who consumes payout.settled outside this repository
+- unknown: the payouts and payout_batches tables live in db/migrations, outside this module; tooling did not attribute them
+```
+
+The split is per section. The bullet header claims intent and is yours.
+`## Observed surface` claims only what tooling saw: the skill pastes the
+output of `node hsdd/scripts/seams/extract-seams.mjs render --prefix
+src/payouts` verbatim and never edits a bullet by hand. That is why `Owns`
+names the two tables while the surface says `tables: none found`: the
+migrations live under `db/`, outside the module, so the extractor
+attributes no table to it, and the third `unknown:` line says so. The
+`unknown:` lines are yours again, and they are required: a node with none
+is a node nobody looked at. `Isolation strategy` says how the node is
+tested today, not how you wish it were.
+
+### Step 4: Contracts at v0, with what the fixtures do not reach
+
+Each seam between two nodes becomes a contract at `version: v0`: the
+interface as the system already implements it, warts included. The schema
+comes from the code or the OpenAPI file; the fixtures are lifted from
+existing tests or captured payloads, so the contract is `stable` from day
+one and the code gains a validation harness it never had.
+`hsdd/contract/payouts-api.md`:
+
+```markdown
+---
+id: payouts-api
+version: v0
+status: stable
+kind: api
+owner: legacy-pay.payouts
+compatibility: additive-only
+produced_by: [legacy-pay.payouts]      # the as-built node; a phase id once promoted
+consumers: [legacy-pay.merchant]
+external_consumers: [treasury-ledger]
+phase_ids: provisional
+---
+
+# Contract: payouts-api
+
+## Interface
+GET /v1/payouts?merchant_id=   -> 200 [{ id, merchant_id, amount, status }]
+POST /v1/payouts { merchant_id, amount } -> 201 { id, status: "scheduled" }
+Errors use the { error: { code, message } } envelope from src/payouts/openapi.yaml.
+
+## Guarantees / invariants
+- A payout id is never reused.
+- status moves scheduled -> settled -> paid and never backwards.
+
+## Versioning
+- v0 is observed behavior. Additive changes keep v0; a redesign mints v1
+  with a migration note.
+
+## Validation
+- schema: hsdd/contract/schema/payouts-api.schema.json
+- fixture: hsdd/contract/fixture/payouts-api/
+
+## Observed completeness
+- covered by fixtures: happy path, 4xx envelope, pagination
+- NOT exercised: partial-batch failure, idempotency-key replay
+- inferred from code, never observed in traffic: retry-after semantics
+```
+
+Until promotion gives an adopted node phases, `produced_by` and
+`consumers` name node ids and `phase_ids` stays `provisional`; the first
+phase plan on each side confirms them through `hsdd-reconcile` as usual.
+`## Observed completeness` is required on every `v0` contract and is
+maintained: the phase that adds a fixture updates the block in the same
+change, and a block left stale while fixtures arrive is a checkpoint
+finding. `v0` is permanent: extension under `additive-only` never exits
+it; only a genuine redesign mints `v1`.
+
+### Step 5: Prove the tree, and stop
+
+```bash
+node hsdd/scripts/gen-registry.mjs
+```
+
+The registry lists three `v0` contracts; every id in `Consumes` and
+`Produces` resolves; every `## Observed surface` carries the same sha. The
+skill stops here: no phases, no decomposition below what the first change
+needs. What you review at the stop: the tree shape (minutes, it mirrors
+the code you already know), the `unknown:` lines, and each contract's
+`## Observed completeness`. Commit `hsdd/`; not `hsdd/seams.json`.
+
+### Step 6: Route the PRD through intake
+
+```text
+You: "Here's the payout-scheduling PRD, docs/prd-payout-scheduling.md.
+      Where does it go?"
+```
+
+`hsdd-intake` reads every open intake record first (none yet), reads the
+tree, and finds the landing: `legacy-pay.payouts`, which is as-built. That
+is not a routing class of its own; the node is promoted first (Step 7),
+and the change is then `local` to it. The record is written before any
+handoff, at `hsdd/management/2026-10-10-intake-payout-scheduling.md`:
+
+```markdown
+# Intake: Merchant payout scheduling
+
+- **Date:** 2026-10-10
+- **Request:** docs/prd-payout-scheduling.md (draft)
+- **Class:** local
+- **Lands on:** [legacy-pay.payouts] · **Contracts:** [payouts-api@v0]
+- **Promotes:** [legacy-pay.payouts]
+- **Collisions:** none
+- **Status:** open
+
+## Request
+Merchants choose a payout schedule (daily, weekly, on a date). Payouts are
+batched per schedule. Treasury wants a preview of tomorrow's batches.
+
+## Routing
+local, after promoting legacy-pay.payouts. The PRD lands in that node's
+Sources. Handoff: "/hsdd-spec promote legacy-pay.payouts using
+docs/prd-payout-scheduling.md", then "/hsdd-phase-plan legacy-pay.payouts".
+payouts-api@v0 gains an optional schedule field (additive, no bump).
+
+## Produced
+(appended as the handoffs land)
+
+## Change log
+- 2026-10-10: created, routed local
+```
+
+The PRD never becomes a root; the tree stays the system's. The record is
+dated and never superseded; after five change requests there are five
+records, and that is the rule that replaces "wipe `hsdd/` and rebuild".
+A second request touching `payouts-api` would be serialized here, named
+under `**Collisions:**` in both records.
+
+### Step 7: Promote the node, then phase-plan it
+
+`hsdd-spec` runs in promotion mode: the node's `## Observed surface` and
+the PRD are both primary sources, the decomposition is drawn as in Example
+2, and the skill stops for your confirmation before the promoted spec is
+authoritative, the same shape as the "who builds what?" stop. After you
+confirm, the header reads `- **Adopted:** promoted` and the
+`## Observed surface` section stays as provenance. Promotion happens once:
+a later change to the same node consumes the promoted spec.
+
+Then `hsdd-phase-plan`, reconcile, phase context, cycles and gates, exactly
+as Example 2. Phase 1 confirms `payouts-api@v0`'s `produced_by` as
+`legacy-pay.payouts.1`; the contract keeps `v0`. Each appended phase names
+the intake record in its Scope, and the record's `## Produced` ledger
+grows with them. When every listed phase has its verification doc on main,
+the weekly checkpoint ticks the record `**Status:** closed`.
+
+### Step 8: Living with a mixed tree
+
+`payouts` is promoted and governed; `billing` and `merchant` are still
+as-built. That is normal and permanent, not a transitional embarrassment.
+Every `/hsdd-checkpoint` on a tree that has an `## Observed surface`
+re-runs the extractor per node and diffs it against what was recorded
+(`node hsdd/scripts/seams/extract-seams.mjs diff hsdd/spec/legacy-pay.billing.md`);
+a difference such as `routes.count changed 2 -> 3` is a finding with a plan
+step (a backfill, or a reviewed re-render), never an error. A `v0` contract
+whose fixtures grew while its `## Observed completeness` stood still is a
+finding too. The atlas marks each node `(as-built)` or `(promoted)`. A tree
+with no `## Observed surface` never runs the extractor.
+
+### The other way in: a governed tree with unadopted surroundings
+
+A project built with HSDD from day one usually still has code around the
+tree that was never in it. Run `/hsdd-adopt` naming those modules
+(`"Adopt src/legacy and cmd/batch into the tree"`): the same eight steps,
+scoped to those paths, graft as-built nodes beside the governed ones. Where
+an as-built node and a governed node exchange a contract, that is exactly
+where an integration node earns its place.
+
+The "Adopting on a project already underway" section below is a different
+thing: the first checkpoint on a project that already uses HSDD. It adopts
+documents, not code.
 
 ---
 
@@ -830,15 +1122,17 @@ than errors, and the first atlas is generated however messy the tree is.
 Historical documents are never rewritten — conformance starts from the next
 document forward.
 
-Upgrading an existing (≥0.6.1) project to v0.9.0 rides the same run: it is
+Upgrading an existing (≥0.6.1) project to v0.10.0 rides the same run: it is
 additive, nothing is rewritten, and each new rule states its effect in the
 spec's upgrading chapter (absent fields default to the old behavior;
-`Learnings`/`Metrics` apply to future verification docs only). The one rule
-with teeth — `stable` contracts need executable validation — is
-**grandfathered, discharged on touch**: the upgrade checkpoint marks every
-existing fixtureless `stable` contract, the set is closed, and each contract
-must gain fixtures only when a phase next touches it. The remaining count
-appears in every progress report and can only fall.
+`Learnings`/`Metrics` apply to future verification docs only). The one rule with teeth, `stable` contracts need executable
+validation, is
+**grandfathered, discharged on touch**: the upgrade checkpoint lists every
+existing fixtureless `stable` contract and emits one plan step;
+`hsdd-reconcile` marks each `validation: grandfathered`; the set is closed,
+and a contract loses the mark when a phase next touches it and adds its
+schema or fixtures. Every progress report shows the remaining count next to
+the previous one, and a count that rises is a finding.
 
 ---
 
