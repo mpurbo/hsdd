@@ -828,9 +828,9 @@ node hsdd/scripts/gen-registry.mjs
 ```
 
 The registry lists two `v0` contracts, and `kyc-verified-events@v0`
-consumed from outside the tree; every id in `Consumes` and `Produces`
-resolves; every `## Observed surface` written from this repository carries
-its sha. The skill stops here: no phases, no decomposition below what the
+consumed from outside the tree; every other id in `Consumes` and
+`Produces` resolves; every `## Observed surface` written from this
+repository carries its sha. The skill stops here: no phases, no decomposition below what the
 first change needs. What you review at the stop: the tree shape (minutes,
 it mirrors the code you already know), the `unknown:` lines, and each
 contract's `## Observed completeness`. Commit `hsdd/` and the `.gitignore`
