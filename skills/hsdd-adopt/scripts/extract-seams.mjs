@@ -3,7 +3,7 @@ import { realpathSync, readFileSync, writeFileSync, mkdirSync, existsSync, lstat
 import { resolve, relative, dirname, join, isAbsolute, sep } from "node:path";
 import { execFileSync } from "node:child_process";
 import { pathToFileURL } from "node:url";
-import { walk, moduleOf, normalizePrefix } from "./walk.mjs";
+import { walk, moduleOf, normalizePrefix, EXCLUDED_DIRS, EXCLUDED_TOP } from "./walk.mjs";
 import { renderObservedSurface } from "./render.mjs";
 import { parseObservedSurface, diffSurface } from "./diff.mjs";
 import { manifests } from "./manifests.mjs";
@@ -11,7 +11,7 @@ import { routes } from "./routes.mjs";
 import { schemas } from "./schemas.mjs";
 import { migrations } from "./migrations.mjs";
 import { topics } from "./topics.mjs";
-import { owners, ownersFile, ownersOf } from "./owners.mjs";
+import { owners, ownersBase, ownersFile, ownersOf } from "./owners.mjs";
 import { coupling } from "./coupling.mjs";
 
 export function modules(files) {
@@ -23,11 +23,24 @@ export function modules(files) {
   return [...counts].map(([path, n]) => ({ path, files: n })).sort((a, b) => (a.path < b.path ? -1 : a.path > b.path ? 1 : 0));
 }
 
-function shortSha(root) {
+const git = (root, ...args) => execFileSync("git", ["-C", root, ...args], { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] });
+
+// HEAD's short sha, suffixed "-dirty" when the extracted scope has uncommitted
+// changes (tracked or untracked) in files the walk would read; "n/a" outside git.
+function stamp(root, wanted) {
+  let sha;
   try {
-    return execFileSync("git", ["-C", root, "rev-parse", "--short", "HEAD"], { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] }).trim() || "n/a";
+    sha = git(root, "rev-parse", "--short", "HEAD").trim();
   } catch {
     return "n/a";
+  }
+  if (!sha) return "n/a";
+  const scope = wanted.length ? wanted.map((p) => `:(literal)${p}`) : ["."];
+  const skip = [...[...EXCLUDED_TOP].map((d) => `:(exclude,literal)${d}`), ...[...EXCLUDED_DIRS].map((d) => `:(exclude,glob)**/${d}/**`)];
+  try {
+    return git(root, "status", "--porcelain", "--untracked-files=all", "--", ...scope, ...skip).trim() ? `${sha}-dirty` : sha;
+  } catch {
+    return sha;
   }
 }
 
@@ -42,26 +55,36 @@ function scopeOwners(rules, files) {
   return rules.filter((r) => live.has(r));
 }
 
+// The scope the node was extracted from: each prefix with the number of files
+// under it, or "./" (the whole repository) when no prefix was given. This, not
+// `modules`, is what a rendered surface records and what `diff` re-extracts.
+export function scope(files, wanted) {
+  if (wanted.length === 0) return [{ path: "./", files: files.length }];
+  return wanted.map((p) => ({ path: `${p}/`, files: files.filter((f) => f === p || f.startsWith(`${p}/`)).length }));
+}
+
 export function extract(root, { prefixes = [] } = {}) {
   const real = realpathSync(resolve(root));
-  const wanted = prefixes.map(normalizePrefix).filter(Boolean);
+  const wanted = [...new Set(prefixes.map(normalizePrefix).filter(Boolean))].sort();
   const unreadable = [];
   const files = walk(real, { prefixes: wanted, onSkip: (p) => unreadable.push(p) });
+  const base = ownersBase(real);
   return {
     kind: "seams",
     version: 1,
     root: real,
-    sha: shortSha(real),
+    sha: stamp(real, wanted),
     date: new Date().toISOString().slice(0, 10),
     prefixes: wanted,
+    scope: scope(files, wanted),
     modules: modules(files),
     manifests: manifests(files),
     routes: routes(real, files),
     schemas: schemas(files),
     migrations: migrations(real, files),
     topics: topics(real, files),
-    ownersFile: ownersFile(real),
-    owners: scopeOwners(owners(real, files), files),
+    ownersFile: ownersFile(real, base),
+    owners: scopeOwners(owners(real, files, base), files.map((f) => `${base.prefix}${f}`)),
     coupling: coupling(real, { prefixes: wanted }),
     unreadable: unreadable.sort(),
   };
@@ -138,6 +161,7 @@ export function main(argv, cwd = process.cwd()) {
       return 0;
     }
     if (cmd === "render") {
+      if (opts.model && opts.prefixes.length) { fail("render: --prefix cannot be combined with --model (the model already fixes its scope)"); return 2; }
       const model = opts.model ? JSON.parse(readFileSync(resolve(cwd, opts.model), "utf8")) : extract(root, { prefixes: opts.prefixes });
       for (const p of opts.model ? [] : model.unreadable) fail(`skipped unreadable: ${p}`);
       write(renderObservedSurface(model));

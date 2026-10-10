@@ -16,9 +16,11 @@ test("render follows the fixed bullet order and round-trips through parse", () =
   assert.equal(lines[5], "- tables: merchants, payout_batches, payouts");
   assert.equal(lines[6], "- topics: produces invoice.paid, payout.settled; consumes kyc.verified");
   assert.equal(lines[7], "- owners: @payments-team, @platform, @treasury");
+  assert.equal(lines[3], "- modules: ./");
   const p = parseObservedSurface("# x\n\n" + md + "\n\n## Next\n");
   assert.equal(p.extracted.sha, sha);
-  assert.deepEqual(p.modules, ["cmd/server", "db", "src/billing", "src/merchant", "src/payouts"]);
+  assert.deepEqual(p.modules, ["./"]);
+  assert.deepEqual(parseObservedSurface(renderObservedSurface(extract(dir, { prefixes: ["./src/payouts/", "db"] }))).modules, ["db/", "src/payouts/"]);
   assert.equal(p.routes.count, 4);
   assert.deepEqual(p.tables, ["merchants", "payout_batches", "payouts"]);
 });

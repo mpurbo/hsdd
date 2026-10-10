@@ -1,4 +1,13 @@
+import { normalizePrefix } from "./walk.mjs";
+
 const list = (v) => v.split(",").map((s) => s.trim()).filter(Boolean);
+
+// A scope entry as the `modules:` line writes it: "src/payouts/" for a
+// prefix, "./" for the whole repository.
+const scopeKey = (p) => {
+  const n = normalizePrefix(p);
+  return n ? `${n}/` : "./";
+};
 
 // Reads back what render.mjs writes. Returns null when there is no section.
 export function parseObservedSurface(markdown) {
@@ -23,7 +32,7 @@ export function parseObservedSurface(markdown) {
       const e = /^(\S+)\s*@\s*(\S+)/.exec(value);
       if (e) out.extracted = { date: e[1], sha: e[2] };
     } else if (key === "modules") {
-      out.modules = value === "none found" ? [] : list(value).map((s) => s.replace(/\/$/, ""));
+      out.modules = value === "none found" ? [] : list(value).map(scopeKey);
     } else if (key === "routes") {
       const r = /^(\d+)(?:\s*\((.*)\))?/.exec(value);
       if (r) out.routes = { count: Number(r[1]), samples: r[2] ? list(r[2]).filter((s) => s !== "...") : [] };
@@ -54,11 +63,14 @@ function setDiff(field, before, after) {
   ];
 }
 
-// "extracted" and "unknown" are never compared.
+// "extracted" and "unknown" are never compared. `model` is the re-extraction of
+// exactly the recorded scope, so a recorded prefix is reported removed only
+// when no file remains under it.
 export function diffSurface(recorded, model) {
   const count = model.routes.length;
+  const present = (model.scope ?? []).filter((s) => s.files > 0).map((s) => scopeKey(s.path));
   return [
-    ...setDiff("modules", recorded.modules, model.modules.map((m) => m.path)),
+    ...setDiff("modules", recorded.modules, present),
     ...(recorded.routes.count === count ? [] : [{ field: "routes.count", kind: "changed", value: `${recorded.routes.count} -> ${count}` }]),
     ...setDiff("tables", recorded.tables, model.migrations.tables),
     ...setDiff("topics.produces", recorded.topics.produces, model.topics.produces.map((t) => t.topic)),

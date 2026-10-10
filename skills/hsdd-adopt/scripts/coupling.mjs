@@ -1,5 +1,5 @@
 import { execFileSync } from "node:child_process";
-import { EXCLUDED_DIRS, moduleOf, normalizePrefix } from "./walk.mjs";
+import { excludedPath, moduleOf, normalizePrefix } from "./walk.mjs";
 
 export function coupling(root, { depth = 2, commits = 500, min = 2, maxFiles = 50, prefixes = [] } = {}) {
   const specs = prefixes.map(normalizePrefix).filter(Boolean);
@@ -23,7 +23,7 @@ export function coupling(root, { depth = 2, commits = 500, min = 2, maxFiles = 5
     if (paths.length > maxFiles) continue;
     const mods = new Set();
     for (const p of paths) {
-      if (p.split("/").some((s) => EXCLUDED_DIRS.has(s))) continue;
+      if (excludedPath(p)) continue;
       const m = moduleOf(p, depth);
       if (m) mods.add(m);
     }

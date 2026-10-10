@@ -49,7 +49,9 @@ test("topics produced and consumed, dotted names only", () => {
 });
 
 test("owners from CODEOWNERS, comments skipped", () => {
-  assert.deepEqual(owners(root, files), [
+  // A git copy: CODEOWNERS is read from the git top level, and the fixture
+  // itself sits inside this repository's.
+  assert.deepEqual(owners(makeRepo().dir, files), [
     { pattern: "/src/billing/", owners: ["@payments-team"], file: "CODEOWNERS" },
     { pattern: "/src/payouts/", owners: ["@payments-team", "@treasury"], file: "CODEOWNERS" },
     { pattern: "/cmd/", owners: ["@platform"], file: "CODEOWNERS" },

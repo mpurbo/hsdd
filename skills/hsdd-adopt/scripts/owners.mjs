@@ -1,24 +1,41 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
+import { execFileSync } from "node:child_process";
 
-const LOCATIONS = ["CODEOWNERS", ".github/CODEOWNERS", "docs/CODEOWNERS"];
+// GitHub's lookup order. `.gitlab/CODEOWNERS` and backslash-escaped spaces in
+// patterns are out of scope.
+const LOCATIONS = [".github/CODEOWNERS", "CODEOWNERS", "docs/CODEOWNERS"];
 
-// The first CODEOWNERS path that exists under root, or null. Repository
+// Where CODEOWNERS lives: the git top level that contains root, where GitHub
+// reads it, and root's own path inside that top level ("" at the top, e.g.
+// "services/payouts/" for a subproject). Outside git, root itself.
+export function ownersBase(root) {
+  try {
+    const [dir, prefix = ""] = execFileSync("git", ["-C", root, "rev-parse", "--show-toplevel", "--show-prefix"], { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] }).split("\n");
+    return { dir, prefix };
+  } catch {
+    return { dir: root, prefix: "" };
+  }
+}
+
+// The first CODEOWNERS path that exists under the base, or null. Repository
 // metadata: read from disk, not from the walked file list.
-export function ownersFile(root) {
+export function ownersFile(root, base = ownersBase(root)) {
   for (const file of LOCATIONS) {
-    try { readFileSync(join(root, file), "utf8"); return file; } catch { /* next */ }
+    try { readFileSync(join(base.dir, file), "utf8"); return file; } catch { /* next */ }
   }
   return null;
 }
 
 // Every parsed rule in file order. A pattern with no owners is a rule with
-// owners [] (it makes its files unowned). `files` is unused.
-export function owners(root, files) {
-  const file = ownersFile(root);
+// owners [] (it makes its files unowned). Patterns match paths relative to the
+// base, so callers prefix root-relative paths with base.prefix. `files` is
+// unused.
+export function owners(root, files, base = ownersBase(root)) {
+  const file = ownersFile(root, base);
   if (!file) return [];
   const rules = [];
-  for (const raw of readFileSync(join(root, file), "utf8").split("\n")) {
+  for (const raw of readFileSync(join(base.dir, file), "utf8").split("\n")) {
     const line = raw.trim();
     if (!line || line.startsWith("#")) continue;
     const tokens = line.split(/\s+/);
