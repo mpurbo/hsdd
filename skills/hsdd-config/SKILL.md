@@ -53,9 +53,11 @@ use a short form (`api.2`).
 
 ## When to Use
 
-- **New project with OpenSpec:** after `openspec init` (once, at the repo root:
-  the directory that holds `hsdd/`; one HSDD tree has one OpenSpec project), or
-  when `config.yaml` is empty or default. Run Setup.
+- **New project, either method:** run Setup once. For OpenSpec, after
+  `openspec init` (once, at the repo root: the directory that holds `hsdd/`;
+  one HSDD tree has one OpenSpec project) or when `config.yaml` is empty or
+  default. For superpowers, Setup records the method and copies the
+  verification template; there is no `config.yaml` to write.
 - **Starting a phase (critical):** switch BEFORE `opsx:new`, or before starting
   `superpowers:writing-plans`. A session that starts on stale context inherits
   the wrong contracts, the wrong gate and the wrong verification.
@@ -67,9 +69,7 @@ use a short form (`api.2`).
 
 ## Setup
 
-1. **Discover context.** Read `hsdd/conventions.md` (a pre-0.5 project has it
-   at `docs/conventions.md`: honor its layout and offer to migrate),
-   `hsdd/spec/*.md` (by path, not in full), `CLAUDE.md`, and tech-stack files
+1. **Discover context.** Read `hsdd/conventions.md`, `hsdd/spec/*.md` (by path, not in full), `CLAUDE.md`, and tech-stack files
    (`Cargo.toml`, `package.json`). If `conventions.md` declares
    `Profile: standalone-spec-repo`, `hsdd/` is a git submodule of this
    implementation repo. **Paths are unchanged**: the submodule mounts at
@@ -140,15 +140,27 @@ replaced by the plan's default gate command in backticks}
 - {OQ-id} · {status} · {the Question cell, verbatim}
 
 ## Discipline
-- Test-first: write each behaviour's failing test, and see it fail, before
+- Test-first: write each behavior's failing test, and see it fail, before
   the code that makes it pass.
 - Governance freeze: change nothing under hsdd/ except this phase's
   verification doc; contracts, ADRs, specs and conventions change only
   through hsdd-contract, hsdd-adr and hsdd-reconcile.
 - Consume contracts only: build against the Interface and Guarantees above,
   never against another node's internals.
+- Contract wrong mid-phase: pause at a task boundary; record the gap as a
+  request or amend entry in this node's plan; renegotiate at the root through
+  hsdd-contract; re-run the phase switch; resume. Never improvise around the
+  contract.
 - Verification doc: hsdd/verify/{phase-id}.verification.md from
-  hsdd/templates/verification.md at {review tier} depth.
+  hsdd/templates/verification.md at {review tier} depth. Every Learning
+  carries one disposition before sign-off; "- none" is valid, silence is not.
+- Contract replay: the gate validates this phase's real output against the
+  schema and reproduces the fixtures of {each produced contract-id@version}.
+  (one line; omit when the phase produces no contract)
+- Grandfathered: {contract-id@version} carries validation: grandfathered and
+  this phase produces or amends it, so it must gain hsdd/contract/schema/{slug}.schema.json
+  or hsdd/contract/fixture/{slug}/ before the gate passes.
+  (one line per such contract; omit when none)
 
 ## Links (spec {spec-sha})
 - Phase section: hsdd/spec/{node-id}.md, heading "{the phase's heading line as written}"
@@ -180,6 +192,10 @@ replaced by the plan's default gate command in backticks}
 - **Open questions:** only the ids the phase or its contracts cite, with the
   status and question from the owning spec's table. Omit the section when there
   are none.
+- **Contract replay and Grandfathered lines:** read each produced
+  contract's frontmatter. Every produced contract gets a place in the replay
+  line; a contract with `validation: grandfathered` also gets its own
+  Grandfathered line. Omit each line when it has nothing to say.
 - **Spec SHA:** `git -C hsdd rev-parse --short HEAD`. If
   `git -C hsdd status --porcelain -- spec contract adr conventions.md` prints
   anything, append `-dirty` and warn: the file cites text that is not
@@ -251,7 +267,7 @@ rules:
     - "Order tasks for TDD: test first, then implementation."
     - "Each task completable in one red-green-refactor cycle."
     - "Include a gate task that runs the phase gate command."
-    - "After the gate task, add a documentation task that writes the verification doc at hsdd/verify/{phase-id}.verification.md following hsdd/templates/verification.md, at the depth the phase's review tier requires (gate-only: slim; spot-check: short; full-review: full)."
+    - "After the gate task, add a documentation task that writes the verification doc at hsdd/verify/{phase-id}.verification.md following hsdd/templates/verification.md, at the depth the phase's review tier requires (gate-only: slim; spot-check: short; full-review: full), with every Learning dispositioned or '- none'."
     - "Never update hsdd/conventions.md or hsdd/contract/ from a phase; governance changes are made at the root (hsdd-contract / hsdd-reconcile)."
 ```
 
@@ -281,8 +297,8 @@ other id makes OpenSpec reject the config. Quote any rule containing `: `.
    the verification doc's Observed section.
 5. The last task writes hsdd/verify/{phase-id}.verification.md from
    hsdd/templates/verification.md at {review tier} depth, fills every section
-   the template asks for at that depth, and leaves Sign-off for a human
-   reviewer.
+   the template asks for at that depth, writes "- none" or dispositioned
+   entries under Learnings, and leaves Sign-off for a human reviewer.
 6. Nothing under hsdd/ changes except that verification doc. Contracts, ADRs,
    specs and conventions change only through hsdd-contract, hsdd-adr and
    hsdd-reconcile.
@@ -365,11 +381,16 @@ Run this after writing-plans' self-review, before choosing an execution method.
    naming it, warn and recommend `hsdd-reconcile` first. If the phase is listed
    under a request's `contingent phases`, stop and require explicit human
    confirmation before proceeding.
-7. **Write the generic phase context** from the template above.
-8. **Self-contained gate.** Check rule 2 against the file you wrote: list every
+7. **Template check.** If `hsdd/templates/verification.md` is missing, copy
+   `templates/verification.md` verbatim from this skill now, whatever the
+   method, and say so in the report. The context's Links section and the
+   superpowers derivative's constraint 5 both point at it; a switch that
+   leaves it missing hands the coding session a dangling obligation.
+8. **Write the generic phase context** from the template above.
+9. **Self-contained gate.** Check rule 2 against the file you wrote: list every
    `@v`, `ADR-` and `OQ` id in it and confirm each has its subsection or line.
    Fix the file, never the rule.
-9. **Write the derivative** for the method: replace the content between the
+10. **Write the derivative** for the method: replace the content between the
    markers in `openspec/config.yaml`, or write
    `hsdd-context/superpowers/{phase-id}.md`. Do not touch the project-wide
    context or the rules. When `openspec/config.yaml` has no markers (a config
@@ -377,13 +398,13 @@ Run this after writing-plans' self-review, before choosing an execution method.
    `## Contracts from Prior Phases / Nodes`, `## Governing Decisions`, from
    the first of them through the end of the last) with the marked block, keep
    everything else, and say so once in the run report.
-10. **Equality check.** The generic body must equal the text between the
+11. **Equality check.** The generic body must equal the text between the
     markers. For superpowers:
     `diff <(tail -n +2 hsdd-context/{phase-id}.md) <(sed -n '/hsdd-phase-context:begin/,/hsdd-phase-context:end/p' hsdd-context/superpowers/{phase-id}.md | sed '1d;$d')`.
     For OpenSpec:
     `diff <(tail -n +2 hsdd-context/{phase-id}.md) <(sed -n '/hsdd-phase-context:begin/,/hsdd-phase-context:end/p' openspec/config.yaml | sed '1d;$d' | sed 's/^  //')`.
     Both print nothing. Any output is a defect in the derivative: rewrite it.
-11. **Report:** the files written, the method, the spec SHA (and any `-dirty`
+12. **Report:** the files written, the method, the spec SHA (and any `-dirty`
     warning), every warning above, and for superpowers the exact line to start
     the session with:
     `Use superpowers:writing-plans to plan hsdd-context/superpowers/{phase-id}.md`.
@@ -429,6 +450,11 @@ review gate is not passed while an Outstanding item lacks a disposition**
       no braces left.
 - [ ] Every stop (missing ADR, missing default gate, contingent phase) was
       honored; every warning is in the report.
+- [ ] `hsdd/templates/verification.md` exists after the switch (copied in
+      step 7 if it was missing), and the report says whether it was copied.
+- [ ] The Contract replay line names every produced contract, and every
+      produced contract with `validation: grandfathered` has its own
+      Grandfathered line; both omitted only when they have nothing to say.
 
 ## Anti-Rationalization
 
@@ -447,3 +473,4 @@ review gate is not passed while an Outstanding item lacks a disposition**
 | "A design.md can't hurt for this gate-only phase" | It costs a full artifact plus review attention for a phase with nothing to decide. The tier sets the artifact profile; follow it. |
 | "The submodule is a few commits behind; the context is probably fine" | A stale pointer injects governance that may have been amended or retracted on main. Bump the pointer first; it is one command. |
 | "Superpowers will figure out the plan from 'implement this phase'" | A bare build request lands in brainstorming, which re-opens a design HSDD already reviewed. Start at writing-plans with the derivative's path. |
+| "The template is missing but the derivative points at it; the implementer will find it" | They will write their own, and a retyped template drops the Sign-off rule. The switch copies it when missing; that is step 7. |
