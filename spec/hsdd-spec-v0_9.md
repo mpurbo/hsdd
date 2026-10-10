@@ -2425,7 +2425,7 @@ planning carries its own overhead. HSDD bounds the per-session cost; it
 
 The methodology's load-bearing claims are empirical, and the evidence record
 lives in `review/` in this repository: a full field test on a production
-monorepo (GMP-911 — 14 planned phases, two nodes, measured
+monorepo (FT-2 — 14 planned phases, two nodes, measured
 process-to-product ratios), an adversarial pressure campaign with an
 end-to-end regression (the 0.6.0 campaign, GREEN), and the v0.7 acceptance
 run against a live project (microsite). The provenance vocabulary of
@@ -2441,7 +2441,7 @@ to end with HSDD, published with its tree, contracts, verification docs, and
 metrics, including a comparison baseline — the same or a comparable feature
 driven as one monolithic spec: tokens per phase, review minutes per tier,
 defects caught at gates, contract churn. That artifact, not this
-specification, is what makes the methodology defensible. GMP-911 is the
+specification, is what makes the methodology defensible. FT-2 is the
 natural seed; it lacks only the baseline and the write-up.
 
 ## 18. Settled Decisions

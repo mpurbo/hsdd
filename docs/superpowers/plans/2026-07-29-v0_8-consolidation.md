@@ -878,7 +878,7 @@ exclusion. The CLI exclusion and the scripting boundary both appear here.
 
 vNext §14 — the metrics pipeline (cross-reference chapter 10's block rather than
 restating it), and the case study as v1.0 release criteria. Point at the real
-artifacts in `review/` that already exist: the GMP-911 field test and the 0.6.0
+artifacts in `review/` that already exist: the FT-2 field test and the 0.6.0
 pressure campaign.
 
 - [ ] **Step 4: Verify and tick**
@@ -918,7 +918,7 @@ goes in the dropped table with a pointer.
 
 - [ ] **Step 2: Add the provenance column**
 
-Three values only: `field-tested` (GMP-911), `pressure-tested` (the 0.6.0
+Three values only: `field-tested` (FT-2), `pressure-tested` (the 0.6.0
 campaign), `reasoned-only`. Everything from chapters 6, 11, and 14 is
 `reasoned-only`. Add one line above the table saying why the column exists: new
 material must not inherit credibility from tested material.

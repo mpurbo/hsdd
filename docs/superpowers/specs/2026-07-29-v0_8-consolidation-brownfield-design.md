@@ -150,7 +150,7 @@ phase-planning chapter and both feeding the same steady-state loop.
 | 18 | Glossary | merged | — |
 
 **Provenance is a required column** in chapter 17's settled-decisions table:
-`field-tested` (GMP-911), `pressure-tested` (the 0.6.0 campaign), or
+`field-tested` (FT-2), `pressure-tested` (the 0.6.0 campaign), or
 `reasoned-only`. Much of what this release adds is reasoned-only, and the
 document must say so rather than let new material inherit credibility from the
 tested parts.
@@ -609,7 +609,7 @@ reading path, so net legibility improves.
 | Risk | Mitigation |
 |------|------------|
 | Document size — a 1600–2000 line "consolidated" spec is a lot | It replaces six documents read in order; the deltas' restatement-of-context is pure duplication and compresses well. Chapter-level navigation and the settled-decisions table carry the skim path. |
-| Most new material is reasoned-only, not field-tested | The provenance column (§4) makes that visible instead of letting it borrow credibility. GMP-911 or the current brownfield project is the natural first test. |
+| Most new material is reasoned-only, not field-tested | The provenance column (§4) makes that visible instead of letting it borrow credibility. FT-2 or the current brownfield project is the natural first test. |
 | Ten skills is discoverability pressure | Both new skills sit at lifecycle entry points (`adopt` at the start, `intake` at every change), which is where a user is already looking for one. |
 | Dropping the CLI leaves mechanical invariants prose-enforced | Accepted knowingly, on the 0.6.0 pressure-campaign evidence. vNext remains on the shelf as a 0.9 candidate for the mechanization line. |
 | `extract-seams.mjs` becomes a de-facto dependency of existing flows | §3.1's boundary is normative, and the drift check is gated on adopted nodes existing. Worth an acceptance criterion. |

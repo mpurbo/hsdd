@@ -368,7 +368,7 @@ observation on source-document provenance. Delta spec:
 
 ## [0.6.0] - 2026-07-13
 
-Driven by the second field test (GMP-911) and its review
+Driven by the second field test (FT-2) and its review
 (`review/hsdd-process-v0_5_1-review-fable-xhigh.md`). Delta spec:
 `spec/hsdd-spec-v0_6.md`.
 

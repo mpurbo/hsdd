@@ -72,7 +72,7 @@ working code, not a greenfield build.
 | E2 | `hsdd` CLI: registry, context, lint, status, rename, check-scope | Nothing; both verbatim-copy rules still stand (generator since 0.4.1, verification template added by 0.6!) | **Open, strengthened** — 0.6 added a second copy-rule the CLI retires |
 | E3 | Pull-based context, `/hsdd-new`, splice markers | 0.6 declared `config.yaml` ephemeral and added the self-heal warning — mitigation for push-based switching | **Open, meshes:** the CLI is the mechanism behind 0.6's mitigation (§3.4) |
 | E4 | Contract validation wired into both gates; integration nodes | 0.4.2 added the canonical-artifact-path gate (adjacent, not wired); the 0.6.0 E2E test's fixtures-vs-MSW-mocks collision proved the gap | **Open, evidence stronger** |
-| E5 | Learnings + dispositions; mid-phase renegotiation; boundary corrections | 0.4.2 added request/amend (planning-time); 0.6 added Outstanding + dispositions (verification-time); GMP-911 docs grew ad-hoc "Deviations" sections | **Open; rebased to coexist** (§3.7) |
+| E5 | Learnings + dispositions; mid-phase renegotiation; boundary corrections | 0.4.2 added request/amend (planning-time); 0.6 added Outstanding + dispositions (verification-time); FT-2 docs grew ad-hoc "Deviations" sections | **Open; rebased to coexist** (§3.7) |
 | E6 | Derived state; `Phase:` link; `hsdd status` | Nothing equivalent; "where are we?" is still archaeology | **Open** |
 | E7 | Claims rewrite; `Touches` + check-scope | README claims unchanged; 0.4.2 added prose isolation rules that later **held under pressure testing** | **Open, tone updated** (§3.6) |
 | E8 | `hsdd-review` skill; PR-wired sign-off; leverage tier rule | 0.6 built the artifact half (template, Sign-off, Outstanding gate); the sitting still has no skill; leverage rule contradicted by field praise for a gate-only skeleton | **Open; leverage rule narrowed** (§3.5) |
@@ -163,11 +163,11 @@ pressure test observed this property from the prose side), and `hsdd context`
 gains a warning when a colliding phase has an in-flight change — 0.6's
 serialization rule, checked at the moment it matters.
 
-### 3.5 The tier leverage rule vs field evidence (E8 §9.3 vs the GMP-911 review)
+### 3.5 The tier leverage rule vs field evidence (E8 §9.3 vs the FT-2 review)
 
 The exploration: any phase whose outputs feed 2+ later phases gets
 spot-check minimum — aimed at gate-only "types + contracts" first phases.
-The GMP-911 process review then explicitly praised a gate-only skeleton
+The FT-2 process review then explicitly praised a gate-only skeleton
 phase as "exactly the right risk allocation." Direct contradiction if read
 broadly. **Resolution: narrow to the object, not the phase.** What deserves
 eyes is a *produced contract or shared type surface* (highest fan-out, all
@@ -190,7 +190,7 @@ stands unchanged (it was always just true).
 ### 3.7 `Learnings` vs `Outstanding` (E5 vs 0.6 §5)
 
 Overlapping-looking sections with different jobs, and the field already
-demonstrated the difference: GMP-911's docs had both "Outstanding (requires
+demonstrated the difference: FT-2's docs had both "Outstanding (requires
 a real browser)" *and* an ad-hoc "Deviations" section recording a product
 decision (the font-weight registration) that belonged upstream.
 **Resolution: two sections, one gate.** Outstanding = claims about *this
@@ -289,7 +289,7 @@ The whole back half of the lifecycle, still missing from main today:
    templates ship versioned in the npm package.
 9. **`hsdd status` reads pending sections** — "planned, awaiting reconcile"
    becomes a visible state instead of a surprise at `/hsdd-phase` time.
-10. **Metrics gains a product/process ratio line** — the number the GMP-911
+10. **Metrics gains a product/process ratio line** — the number the FT-2
     review had to compute by hand to find the ceremony problem becomes a
     free column in the evidence record.
 11. **Adoption × sources** — as-built nodes point their `Sources` at code
@@ -316,7 +316,7 @@ The whole back half of the lifecycle, still missing from main today:
    reference `npx hsdd`.
 4. **Where fixtures live.** vNext defaults to `hsdd/contract/schema|fixture/`
    with the contract frontmatter authoritative; if you prefer
-   fixtures-next-to-tests as the default (the GMP-911 instinct), flip the
+   fixtures-next-to-tests as the default (the FT-2 instinct), flip the
    default and keep the frontmatter rule — nothing else moves.
 5. **Consolidation timing.** vNext declares itself the last delta. If P3
    (§18) feels too big to gate the release on, split it out — but the

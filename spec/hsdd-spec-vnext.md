@@ -43,7 +43,7 @@ Two lines of work diverged at v0.4.1 and both proved out:
   field: the governance freeze and `hsdd-reconcile` made parallel planning
   conflict-free by construction (0.4.2); one `hsdd/` root (0.5); readable
   templates, proportional ceremony, the execution branch protocol, and the
-  ownership-first axis came out of the GMP-911 field test (0.6); source
+  ownership-first axis came out of the FT-2 field test (0.6); source
   provenance and structural anchors out of the pressure-test campaign (0.6.1).
 - **The exploration line (branch `v0_5`)** answered the v0.4 review's central
   finding — *prose-enforced invariants fail probabilistically* — with a
@@ -566,7 +566,7 @@ entries, drained by reconcile). 0.6 built the honesty channel for
 *verification* (`Outstanding` + dispositions). What is still missing is the
 channel for what a phase *learns while being built* — the contract gap found
 mid-apply, the measured number that invalidates a guess, the boundary that
-turns out wrong. The GMP-911 verification docs grew ad-hoc "Deviations"
+turns out wrong. The FT-2 verification docs grew ad-hoc "Deviations"
 sections for exactly this; vNext gives that emergent behavior its structure,
 the 0.6.1 way.
 
@@ -847,7 +847,7 @@ Outstanding item is not approved, and lint says so.
 
 The exploration proposed "any phase whose outputs feed 2+ later phases gets
 spot-check minimum," which would have re-tiered every first phase. The
-GMP-911 field review then explicitly endorsed a gate-only skeleton phase as
+FT-2 field review then explicitly endorsed a gate-only skeleton phase as
 "exactly the right risk allocation." Both are right about different things:
 the skeleton's *scaffolding* deserved gate-only; a *contract or shared type
 surface* is a different object — highest fan-out in the plan, all signal to
@@ -901,7 +901,7 @@ from a mandate in `hsdd-phase-plan` to a **named policy** selected in
   effects behind interfaces, composition and wiring last. The durable
   principle, stack-agnostic.
 - `fp-progression`: the full FP ordering; the reference policy for FP stacks.
-  This is `interfaces-first` sharpened — and it remains what the GMP-911
+  This is `interfaces-first` sharpened — and it remains what the FT-2
   field review praised ("textbook") where it applied.
 - Projects may define their own (e.g. `walking-skeleton`: one thin end-to-end
   slice first, then widen), documented in the conventions body.
@@ -1002,7 +1002,7 @@ scope: HSDD coordinates artifacts, not organizations (§17).
 
 The methodology's load-bearing claims are empirical. Since the exploration,
 real evidence exists and lives in `review/`: a full field test on a
-production monorepo (GMP-911, 14 planned phases, 2 nodes, measured
+production monorepo (FT-2, 14 planned phases, 2 nodes, measured
 process-to-product ratios) and an adversarial pressure campaign with an
 end-to-end regression (0.6.0/0.6.1, GREEN). vNext formalizes the pipeline
 those produced ad hoc:
@@ -1024,7 +1024,7 @@ the gate while the numbers are fresh:
 
 `hsdd status --write` aggregates whatever metrics exist into `hsdd/STATUS.md`.
 No dashboards; the point is a consistent record. (The product/process line
-ratio is there because the GMP-911 review had to compute it by hand to find
+ratio is there because the FT-2 review had to compute it by hand to find
 the ceremony problem; make the next such finding free.)
 
 ### 14.2 The case study
@@ -1035,7 +1035,7 @@ contracts, verification docs, and metrics, including a comparison baseline
 phase, review minutes per tier, defects caught at gates, contract churn. This
 artifact, not the spec, is what makes the methodology defensible. It is
 release criteria for v1.0, stated here so the requirement is versioned like
-everything else. GMP-911 is the natural seed; it lacks only the baseline and
+everything else. FT-2 is the natural seed; it lacks only the baseline and
 the write-up.
 
 ---
@@ -1103,7 +1103,7 @@ Everything else in the 0.5/0.6 layout stands.
 | Token claim | Rewritten: bounded per-session context; total tokens scale with phase count; planning overhead acknowledged. |
 | Brownfield | `hsdd-adopt`: as-built specs (bullet field `Adopted`), contracts from seams with real fixtures (v1 = current behavior, `stable` from day one), lazy tree, sources point at the code and docs. |
 | Multi-team | Opt-in profile: `Team` field (the durable answer to "who builds what?"), acked cross-team bumps, ADR approvals, lint-enforced. Default claim rescoped to one team with parallel sessions. |
-| Evidence | Metrics block per phase (including product/process ratio); GMP-911 seeds the case study; a published case study with a baseline is release criteria for v1.0. |
+| Evidence | Metrics block per phase (including product/process ratio); FT-2 seeds the case study; a published case study with a baseline is release criteria for v1.0. |
 | Delta stack | **This is the last delta.** The next release consolidates v0.3 through vNext into one current spec; deltas are retired as the format for major revisions (§18). |
 
 ---

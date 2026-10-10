@@ -1,10 +1,10 @@
-# HSDD Process Review — v0.5.1, field-tested on GMP-911
+# HSDD Process Review — v0.5.1, field-tested on FT-2
 
 **Reviewer:** Claude (Fable 5, xhigh effort)
 **Date:** 2026-07-12
 **Subject:** the six HSDD skills at v0.5.1, the spec chain (v0.3 + v0.4 + v0.4.2
 + v0.5 deltas), and the user's guide — as exercised end-to-end on
-`gopay-merchant-react` (MIGPA progressive loading screen, ticket GMP-911).
+`field-testbed` (a progressive loading screen, ticket FT-2).
 **Requested scope:** honest assessment plus improvements suitable for a minor
 version bump; no breaking changes.
 
@@ -47,15 +47,15 @@ breaking. Recommended target: **v0.6.0** (additive, backward compatible).
 
 - Skills repo `~/git/hsdd` at v0.5.1 (`f84b0d7`): all six SKILL.md files,
   commands, templates, spec chain, users guide, changelog.
-- Testbed `~/git/gopay-merchant-react`: root branch `GMP-911`, two node
-  lineages (`GMP-911-shell`, `GMP-911-reporter`), nine phase worktrees.
+- Testbed `~/git/field-testbed`: root branch `FT-2`, two node
+  lineages (`FT-2-shell`, `FT-2-reporter`), nine phase worktrees.
 - Feature shape: 1 root node, 2 leaf-parent nodes, **14 planned phases**
   (shell.1–7, reporter.1–7), 1 contract (`loading-progress-events@v1`),
   2 ADRs. Executed at review time: reporter.1–2, shell.1–3, shell.5–6
   archived; reporter.3–6 in progress in parallel worktrees.
-- Artifacts inspected in depth: `hsdd/spec/migpa-loading.shell.md` (the file
+- Artifacts inspected in depth: `hsdd/spec/web-loading.shell.md` (the file
   you flagged), the shell.6 change end-to-end (product diff vs process
-  artifacts), `hsdd/verify/migpa-loading.shell.6.verification.md`, the
+  artifacts), `hsdd/verify/web-loading.shell.6.verification.md`, the
   config.yaml diffs between lineages and phase branches.
 
 ---
@@ -134,9 +134,9 @@ survives unchanged (wrapped lines become list-item continuations):
 - **Produces:** none
 - **Governed by:** [ADR-001, ADR-002]
 - **Scope:** Replace the `#gma-loader` block (markup + its CSS) with the new
-  shell skeleton under a fresh root id `#migpa-loading-shell` ...
+  shell skeleton under a fresh root id `#web-loading-shell` ...
 - **Size estimate:** ~6 files (~400 lines), <= 7 OpenSpec tasks
-- **Gate:** `pnpm --filter @gma-apps/migpa test && pnpm --filter @gma-apps/migpa build`
+- **Gate:** `pnpm --filter @testbed/web test && pnpm --filter @testbed/web build`
 - **Verification:** open the harness page against statically served
   `index.html` ...
 - **Review tier:** gate-only
@@ -189,7 +189,7 @@ not layout); only newly emitted files change shape.
 
 ### Related nit
 
-Generated node specs duplicate their title: `migpa-loading.shell.md` opens
+Generated node specs duplicate their title: `web-loading.shell.md` opens
 with an H1 and then repeats the same title as the template's `###` heading
 (lines 1 and 3). The templates start at `###` because they're designed for
 embedding; specify the heading levels for a standalone file (H1 title, H2
@@ -204,11 +204,11 @@ sections, drop the duplicate) in the same template pass.
 ### The data
 
 shell.6 ("defer container script, font strategy"), measured across the full
-branch diff (`GMP-911-shell...GMP-911-shell-6`):
+branch diff (`FT-2-shell...FT-2-shell-6`):
 
 | Kind | Artifact | Lines |
 |------|----------|------:|
-| Product | `apps/migpa/index.html` | +30 |
+| Product | `apps/web/index.html` | +30 |
 | Product | 2 font binaries | (bin) |
 | Product | `critical-path.test.ts` | 130 |
 | Process | `proposal.md` | 55 |
@@ -242,7 +242,7 @@ own "ceremony is a cost" principle.
 
 The tell in this very project: the plan itself concluded that phases 2/3/5/6
 "collide textually" in `index.html` and that "parallel worktrees are possible
-but buy little here" (migpa-loading.shell.md:156–160). When parallelism — the
+but buy little here" (web-loading.shell.md:156–160). When parallelism — the
 strongest justification for fine granularity — is void, the case for seven
 phases is mostly gone, yet the skill still produced seven, because nothing in
 it is allowed to weigh that.
@@ -332,11 +332,11 @@ self-heal: warn when the Current Phase block doesn't match a phase that is
 next-runnable per the plan.
 
 **(b) The same node was planned — and reconciled — on two diverged lineages.**
-`GMP-911-reporter` carries `c79796e5 hsdd: phase plan migpa-loading.shell` +
-`5fc46209 hsdd: reconcile`; `GMP-911-shell` carries its own pair (`8513a4fe`,
+`FT-2-reporter` carries `c79796e5 hsdd: phase plan web-loading.shell` +
+`5fc46209 hsdd: reconcile`; `FT-2-shell` carries its own pair (`8513a4fe`,
 `bc4f9f08`) with near-identical content (the shell copy has 8 extra lines —
 the harness-serving note). At final integration that's an add/add conflict on
-`hsdd/spec/migpa-loading.shell.md` and an ambiguity about which reconcile is
+`hsdd/spec/web-loading.shell.md` and an ambiguity about which reconcile is
 authoritative. The skills got the *content* right (the contract is
 byte-identical on both sides — the freeze worked), but the *choreography*
 went wrong, and nothing in the guide flags it. Fix: an execution-stage
