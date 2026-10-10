@@ -145,10 +145,16 @@ export function main(argv, cwd = process.cwd()) {
   }
   const cmd = argv[0];
   const root = resolve(cwd, opts.root ?? ".");
+  // The modules: line is comma-separated, so a prefix holding a comma would
+  // not survive the round trip through diff.
+  const comma = opts.prefixes.find((p) => p.includes(","));
+  if (comma !== undefined) { fail(`--prefix ${comma}: a prefix may not contain a comma`); return 2; }
+  const noFile = (model) => { for (const s of model.scope ?? []) if (s.files === 0) fail(`prefix matches no file: ${s.path}`); };
   try {
     if (cmd === "extract") {
       const model = extract(root, { prefixes: opts.prefixes });
       for (const p of model.unreadable) fail(`skipped unreadable: ${p}`);
+      noFile(model);
       const json = `${JSON.stringify(model, null, 2)}\n`;
       if (opts.out === null) { write(json); return 0; }
       const target = resolve(cwd, opts.out);
@@ -163,7 +169,10 @@ export function main(argv, cwd = process.cwd()) {
     if (cmd === "render") {
       if (opts.model && opts.prefixes.length) { fail("render: --prefix cannot be combined with --model (the model already fixes its scope)"); return 2; }
       const model = opts.model ? JSON.parse(readFileSync(resolve(cwd, opts.model), "utf8")) : extract(root, { prefixes: opts.prefixes });
-      for (const p of opts.model ? [] : model.unreadable) fail(`skipped unreadable: ${p}`);
+      if (!opts.model) {
+        for (const p of model.unreadable) fail(`skipped unreadable: ${p}`);
+        noFile(model);
+      }
       write(renderObservedSurface(model));
       return 0;
     }

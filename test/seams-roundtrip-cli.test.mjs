@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { execFileSync } from "node:child_process";
+import { execFileSync, spawnSync } from "node:child_process";
 import { mkdtempSync, mkdirSync, writeFileSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { tmpdir } from "node:os";
@@ -119,4 +119,30 @@ test("the extraction stamp says -dirty when the scope has uncommitted changes", 
   assert.match(stamp("--prefix", "src/payouts"), new RegExp(`@ ${sha}-dirty  \\(`));
   assert.match(stamp("--prefix", "src/billing"), new RegExp(`@ ${sha}  \\(`));
   assert.match(stamp(), new RegExp(`@ ${sha}-dirty  \\(`));
+});
+
+// stdout and stderr apart, with the exit code.
+const run3 = (cwd, ...args) => {
+  const r = spawnSync("node", [CLI, ...args], { cwd, encoding: "utf8" });
+  return { stdout: r.stdout, stderr: r.stderr, code: r.status };
+};
+
+test("a --prefix containing a comma is rejected: exit 2, one line on stderr", () => {
+  const { dir } = repo({ "lib/a.js": "app.get('/a', h);\n", "x/b.js": "app.get('/b', h);\n" });
+  for (const cmd of ["render", "extract"]) {
+    const r = run3(dir, cmd, "--prefix", "lib,x");
+    assert.equal(r.code, 2);
+    assert.equal(r.stdout, "");
+    assert.equal(r.stderr.trim().split("\n").length, 1);
+    assert.match(r.stderr, /lib,x/);
+  }
+});
+
+test("a prefix that matches no file is named on stderr; the block still renders", () => {
+  const { dir } = repo({ "src/payouts/server.js": "app.get('/v1/payouts', list);\n" });
+  const r = run3(dir, "render", "--prefix", "src/payouts", "--prefix", "src/typo");
+  assert.equal(r.code, 0);
+  assert.match(r.stdout, /- modules: src\/payouts\/, src\/typo\/\n/);
+  assert.equal(r.stderr, "prefix matches no file: src/typo/\n");
+  assert.equal(run3(dir, "render", "--prefix", "src/payouts").stderr, "");
 });
