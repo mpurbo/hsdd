@@ -99,9 +99,10 @@ the live implementations behind them.
 
 ### 1.3 The core invariant
 
-One phase drives exactly one coding cycle (an OpenSpec change, or a superpowers plan) and ends at one human review
-gate. No release of this specification moves that invariant; every other rule
-exists to make it cheap to honor.
+One phase drives exactly one coding cycle (an OpenSpec change, or a
+superpowers plan) and ends at one human review gate. No release of this
+specification moves that invariant; every other rule exists to make it cheap
+to honor.
 
 ### 1.4 Structural anchors, not prose
 
@@ -152,8 +153,8 @@ hsdd-spec        (root)             -> nodes + contracts referenced by id + prop
   hsdd-spec      (recurse internal levels until leaf-parents)
     hsdd-phase-plan (per leaf-parent) -> phases with gates + tiers
       hsdd-reconcile (root lineage)  -> governance drained after parallel branches
-      hsdd-config   (per phase)      -> config.yaml phase context
-        OpenSpec cycle               -> code + verification doc
+      hsdd-config   (per phase)      -> generic phase context + derivative
+        coding cycle (OpenSpec or superpowers) -> code + verification doc
         human review gate            -> approve / iterate
 hsdd-intake      (every change after) -> routes into the tree above
 hsdd-checkpoint  (periodic)          -> progress, plan, atlas
@@ -172,7 +173,7 @@ and the registry regenerates.
 | Structure | one flat spec | recursive node tree, multi-level |
 | Decomposition | none | nodes split until phases fit a window |
 | Coupling | implicit, whole-spec context | explicit, versioned contracts by id |
-| Context per session | the full spec | one phase + consumed contract interfaces + governing ADRs |
+| Context per session | the full spec | one phase + the Interface and Guarantees of its contracts + its governing ADRs' decisions |
 | Parallelism | one cycle at a time | independent phases/nodes run in parallel |
 | Dependency model | implicit | typed DAG (hard, contract, event, shared-model) |
 | Cycle engine | OpenSpec | OpenSpec or superpowers, unchanged, run once per phase |
@@ -540,9 +541,10 @@ a checkpoint finding.**
 
 ### 3.6 Context isolation: the payoff
 
-The OpenSpec session for a phase receives its own phase section plus only the
-**Interface** and **Guarantees** of the contracts it consumes. It never sees
-the producing node's implementation, sibling phases, or the full subsystem
+The coding session for a phase receives its own phase section, the
+**Interface** and **Guarantees** of the contracts it consumes and produces,
+and the Decision and Consequences of its governing ADRs. It never sees the
+producing node's implementation, sibling phases, or the full subsystem
 spec.
 
 ```mermaid
@@ -720,7 +722,7 @@ flowchart TD
     contracts["hsdd-contract<br/>first-class contracts + registry"]
     leaf{"Node small enough<br/>to phase?"}
     phaseplan["hsdd-phase-plan<br/>leaf-parent -> ordered phases<br/>(ordering policy, gates, review tiers)"]
-    config["hsdd-config<br/>set phase context in config.yaml<br/>(inject consumed contracts + ADRs only)"]
+    config["hsdd-config<br/>write the phase context<br/>(phase + its contracts' interfaces + ADR decisions)"]
     cycle["OpenSpec cycle for this phase<br/>new -> proposal/design/tasks/specs -> apply -> archive"]
     verify["Verification doc generated at apply<br/>hsdd/verify/{phase-id}.verification.md"]
     gate{"Human review + manual verify<br/>fits the review sitting?"}
@@ -789,8 +791,10 @@ Each skill has named natural-language triggers:
 | "acme.backend.auth is small enough to phase. Write its phase plan." | `hsdd-phase-plan` | Ordered phases with gates and review tiers. |
 | "Record this as an ADR." | `hsdd-adr` | Materialize the accepted decision as a file. |
 | "Set up OpenSpec config for this project." | `hsdd-config` (init) | `config.yaml` with project context + skill mapping. |
-| "Switch the phase context to acme.backend.auth.2." | `hsdd-config` (switch) | Inject the phase + consumed interfaces + governing ADRs. Run before `opsx: new`. |
+| "Switch the phase context to acme.backend.auth.2." | `hsdd-config` (switch) | Write the generic phase context (the phase, the Interface and Guarantees of its contracts, its ADRs' decisions) and the derivative for the coding method. Run before `opsx: new` or `writing-plans`. |
 | "Reconcile the worktrees." | `hsdd-reconcile` | Drain pending governance updates (chapter 8). |
+| "Start acme.backend.auth.2 with superpowers." | `hsdd-config` (switch, `--method superpowers`) | Generic context plus `hsdd-context/superpowers/acme.backend.auth.2.md`; the session starts at `writing-plans`. |
+| "Render the plan page." | `hsdd-summary` | Extract, fill the unparsed items, validate, write the prose, render `hsdd/summary/summary.html` (chapter 13). |
 | "Adopt this codebase into HSDD." | `hsdd-adopt` | Entry B: as-built tree + `v0` contracts (chapter 6). |
 | "Here's a new PRD — where does it go?" | `hsdd-intake` | Route the change into the tree (chapter 11). |
 | "Run a checkpoint." | `hsdd-checkpoint` | Evidence pass → management documents (chapter 12). |
@@ -1083,13 +1087,13 @@ Each phase is assigned a tier that scales human attention to risk:
 
 ### 7.4 Ordering policy
 
-Phase ordering is a **named policy** selected in conventions frontmatter:
-`interfaces-first` (default — stable interfaces and shared types first,
-effects behind interfaces, composition last), `fp-progression` (types → pure
-functions → effects → composition), or a project-defined policy documented in
-the conventions body. `hsdd-phase-plan` reads the policy and orders phases
-accordingly; sizing, tiers, gates, the summary table, and the floor are
-policy-independent.
+Phase ordering is a **named policy** selected by the `**Ordering policy:**`
+line in `hsdd/conventions.md`: `interfaces-first` (default; stable interfaces
+and shared types first, effects behind interfaces, composition last),
+`fp-progression` (types → pure functions → effects → composition), or a
+project-defined policy documented in the conventions body. `hsdd-phase-plan`
+reads the policy and orders phases accordingly; sizing, tiers, gates, the
+summary table, and the floor are policy-independent.
 
 ### 7.5 The phase plan document
 
@@ -1242,20 +1246,22 @@ project history.
 
 ### 9.2 The phase context switch
 
-`hsdd-config` performs the per-phase context switch. **The switch is
-required before a phase's coding session starts** (`opsx: new` for OpenSpec,
+`hsdd-config` performs the per-phase context switch. **The switch is required
+before a phase's coding session starts** (`opsx: new` for OpenSpec,
 `writing-plans` for superpowers); skip it and the session inherits the
 previous phase's context. The switch writes two files: the **generic phase
 context** (§9.7), method-neutral and self-contained, and the **derivative**
 for the coding method, which wraps the generic body word for word: OpenSpec's
-`config.yaml` (§9.3) or the superpowers spec (§9.8). It is the operational
-form of context isolation: the phase's own section plus the Interface and
-Guarantees of the contracts it consumes and produces and the Decision and
-Consequences of its governing ADRs. Never producer internals, never another
-phase's section, never the full node spec. Phases carry no Sources field and
-no source document is injected, because the planner is the one who read the
-sources (§7.6). The phase block is typically 80 to 150 lines, mostly
-contract text.
+`config.yaml` (§9.3) or the superpowers spec (§9.8). The switch also copies
+the verification-doc template to `hsdd/templates/verification.md` when it is
+missing, whatever the method, so the template exists before the first coding
+session. It is the operational form of context isolation: the phase's own
+section plus the Interface and Guarantees of the contracts it consumes and
+produces and the Decision and Consequences of its governing ADRs. Never
+producer internals, never another phase's section, never the full node spec.
+Phases carry no Sources field and no source document is injected, because the
+planner is the one who read the sources (§7.6). The phase block is typically
+80 to 150 lines, mostly contract text.
 
 The switch **warns on a provisional contract and stops on a phase contingent
 on an open `request`** (§8.2). It **stops when a cited ADR has no file**
@@ -1428,6 +1434,11 @@ The tier also sets the **artifact profile**, not only human attention:
 Never scaled: `tasks.md` and the requirement/scenario deltas — they drive TDD
 and the tests at every tier. Every phase still produces a verification doc;
 only its depth varies.
+For the superpowers method the profile travels as the derivative's tier
+line (§9.8): gate-only, "no design discussion in the plan; slim
+verification doc"; spot-check, "design notes only for a decision this phase
+actually settles; short verification doc"; full-review, "design rationale
+for every non-obvious choice; full verification doc".
 
 ### 10.2 The verification document
 
@@ -1541,6 +1552,15 @@ governance. Input: a change request plus the atlas (chapter 12). Output: an
 intake record at `hsdd/management/YYYY-MM-DD-intake-{slug}.md`, then a
 handoff. **The routing decision is written before the handoff**, so the
 choice is auditable rather than implicit in whatever the next skill did.
+The intake record's header carries, as bullet lines, `**Date:**`,
+`**Request:**` (path or URL, and authority), `**Class:**`, `**Lands on:**`
+with `**Contracts:**`, `**Promotes:**`, `**Collisions:**` and `**Status:**`
+(`open`, or `closed (date)`); its body carries `## Request`, `## Routing`
+(the decision and the exact handoff, written first), `## Produced` (a
+ledger of the nodes, contracts, ADRs and phases the change produced,
+appended as handoffs land) and `## Change log`. The slug never contains
+`progress` or `execution-plan`, so the reading aids never mistake a record
+for a dated report.
 
 | Class | Means | Routes to |
 |-------|-------|-----------|
@@ -1571,12 +1591,13 @@ path (chapter 8) — grafting does not bypass it.
 
 ### 11.5 Intake records accumulate
 
-Intake records are **dated and never superseded**, unlike progress reports
-and execution plans, which supersede by design. After five change requests,
+Intake records are **dated and never superseded**, unlike progress reports and
+execution plans, which supersede by design. After five change requests,
 `hsdd/spec/` holds more nodes and longer phase ledgers; `hsdd/management/`
 holds five intake records. **This is the rule that replaces "wipe `hsdd/` and
 rebuild."** An intake record closes when every phase it produced has a
-verification doc on main — the same admissibility rule as everywhere else.
+verification doc on main, the same admissibility rule as everywhere else;
+`hsdd-checkpoint` ticks it closed (§12.7).
 
 ### 11.6 Node retirement
 
@@ -1693,9 +1714,10 @@ from independent counting. Required sections:
   optional `**Stale summaries:**` line (chapter 13) naming the plan page and
   its prose entries when they are stale, information only; the checkpoint
   page is left off because the same run re-renders it.
-- **Bottom line** — one table: phases planned / code-complete / remaining
+- **Bottom line** is one table: phases planned / code-complete / remaining
   (externally-contingent count broken out), implementation progress %,
-  observed velocity per lane, calibrated remaining effort, calendar outlook.
+  observed velocity per lane, calibrated remaining effort, calendar outlook,
+  and the grandfathered-contract count with the previous report's (§15.2).
 - **Milestone gate status** — one row per milestone (gate items met / total,
   each unmet item's blocker); the persisted input that makes the slip
   trigger's "red across two consecutive checkpoints" checkable.
@@ -1809,21 +1831,21 @@ The stakeholder view. Required structure:
 
 **Milestone documents are per-campaign.** A campaign is the adoption
 bootstrap, one change request's fan-out, or a release train. When every gate
-in a campaign is green, its milestone document is **sealed**:
-`- **Sealed:** YYYY-MM-DD` in the header, the file moves to
-`hsdd/management/archive/`, and `hsdd-checkpoint` stops ticking it; the next
-campaign opens a new one. Admissibility for sealing is the rule that already
-exists — every phase in scope has a verification doc merged to spec-repo
-main. The seal is evidence-backed, never declared.
+in a campaign is green, the checkpoint whose tick made it so **seals** its
+milestone document: `- **Sealed:** YYYY-MM-DD` in the header, the file moves
+to `hsdd/management/archive/`, and later checkpoints stop ticking it; the next
+campaign opens a new one through `hsdd-milestone`. Admissibility for sealing
+is the rule that already exists, namely that every phase in scope has a verification doc
+merged to spec-repo main. The seal is evidence-backed, never declared.
 
 ### 12.6 The atlas
 
 Three parts, behind the required stamp of §12.2:
 
-1. **The tree** — root to phases, every node with its status
-   (`specified / phase-planned`; phases
-   `planned / in-progress / done / contingent (OQ-id)`, `done` pinned).
-   Retired nodes are excluded from the active view (§11.6). Rendered as a
+1. **The tree** runs root to phases, every node with its status (`specified /
+   phase-planned`; phases `planned / in-progress / done / contingent (OQ-id)`,
+   `done` pinned). Retired nodes are excluded from the active view (§11.6). An
+   adopted node shows `(as-built)` or `(promoted)` after its id. Rendered as a
    diagram with a per-node phase-status table beneath.
 2. **The contract graph** — which nodes produce and consume which contracts,
    with status on the edge set. One overview diagram at subsystem level,
@@ -1858,15 +1880,25 @@ One run of `hsdd-checkpoint`:
      statuses coherent, no stale pending-prose on resolved questions),
      undrained pending-reconcile sections, verification-doc audit (every
      claimed-done phase has its doc on main, sign-offs filled, no template
-     residue), management chain integrity.
+     residue), management chain integrity, grandfather audit (the count of
+     `validation: grandfathered` contracts, compared with the previous
+     report's; a rise is a finding), and retired contract versions that
+     still have a live consumer, `external_consumers` included (§3.5).
    - *Code vs plan* (each implementation repo): what phases the code
      actually completes versus what the plans and prior report claim;
      contract-surface drift in both directions; scope creep — code with no
      phase, which post-launch files **backfill** findings (§11.8).
    - *As-built drift* (only when the tree contains adopted nodes — §6, the
      gate that keeps this path from touching greenfield behavior):
-     re-run `extract-seams.mjs` per adopted node and diff against the
-     recorded `## Observed surface`. A diff is a finding, not an error.
+     run `hsdd/scripts/seams/extract-seams.mjs diff` for every node that
+     carries an `## Observed surface` and record each printed difference. A
+     difference is a finding, not an error; a `v0` contract whose fixtures
+     grew while its `## Observed completeness` stood still is one too.
+   - *Intake records:* every record at `**Status:** open` is read; one whose
+     produced phases all have verification docs on spec-repo main is ticked
+     `closed (date)` with a change-log line; an open record whose
+     `## Produced` is still empty two checkpoints after its date is a
+     finding.
 3. **Emits the progress report** (§12.3), findings register included.
 4. **Revises the execution plan** (§12.4): a new dated file superseding the
    previous one, findings compiled into steps per §12.8, guardrail
@@ -1875,7 +1907,8 @@ One run of `hsdd-checkpoint`:
 5. **Regenerates the atlas** (§12.6).
 6. **Ticks the milestone gates** in the current campaign's milestone
    document and evaluates the re-baseline trigger, reporting it loudly if
-   it fires.
+   it fires. When the tick turns the last gate green, the run seals the
+   document (§12.5) and says so.
 7. **Renders the checkpoint page**, only when `hsdd/summary/` exists
    (§13.4). A Plan integrity finding on the page is this run's own quality
    gate failing: the run fixes its plan, renders again, and lands the page
@@ -2042,9 +2075,10 @@ and decisions are a click away.
   40-word notes per audience, a 25-word "delivers" line per phase, a 40-word
   "promise" per contract, and a required glossary phrase per contract id.
 
-It is regenerated after each `hsdd-spec` level and each phase plan, so the
-reviewer opens it in the same merge request, and it is committed with the
-change it summarizes. Under the standalone-spec-repo profile it lives in the
+The author re-renders it with `/hsdd-summary` after each `hsdd-spec` level
+and each phase plan, so the reviewer opens it in the same merge request, and
+it is committed with the change it summarizes; no skill renders it on its
+own. Under the standalone-spec-repo profile it lives in the
 spec repo like the rest of `hsdd/`. On a merge conflict under
 `hsdd/summary/`, take either side of a page (it carries nothing of its own)
 and render again after the merge; merge the prose stores and the glossary
@@ -2105,10 +2139,11 @@ while the page counts register rows. Neither is edited to match the other.
 
 ### 14.1 The default layout
 
-Every HSDD artifact lives under one root directory, `hsdd/` — the ownership
+Every HSDD artifact lives under one root directory, `hsdd/`, and the ownership
 boundary is the point: something on disk must say "this is the methodology's
-output". Directory names are singular (`spec`, `contract`, `adr`, `verify`):
-a directory names the artifact kind, not the collection. Two locations sit outside `hsdd/`. `openspec/`: OpenSpec owns that location
+output". Directory names are singular (`spec`, `contract`, `adr`, `verify`): a
+directory names the artifact kind, not the collection.
+Two locations sit outside `hsdd/`. `openspec/`: OpenSpec owns that location
 and expects its `config.yaml` and `changes/` exactly there, and HSDD does not
 relocate another tool's files. `hsdd-context/`: per-phase execution state in
 the implementation repo (§9.7), which under the standalone-spec-repo profile
@@ -2117,6 +2152,8 @@ must not become a spec-repo push.
 ```text
 hsdd/
   conventions.md                # naming + structure + chosen paths (source of truth)
+  templates/
+    verification.md             # verification-doc template (hsdd-config, copied verbatim)
   spec/
     acme.md                     # root node spec
     acme.backend.md             # internal node spec
@@ -2126,6 +2163,10 @@ hsdd/
   contract/
     INDEX.md                    # generated registry
     auth-token.md               # one file per contract, named for the slug
+    schema/
+      auth-token.schema.json    # executable validation (§3.4)
+    fixture/
+      auth-token/               # executable validation (§3.4)
   adr/
     001-auth-provider.md
     INDEX.md                    # generated, same mechanism
@@ -2139,6 +2180,7 @@ hsdd/
   scripts/
     gen-registry.mjs
     summary/                    # hsdd-summary's scripts, copied verbatim
+    seams/                      # hsdd-adopt's seam extractor, copied verbatim (adopted trees only)
   summary/
     summary.html                # the plan page (hsdd-summary)
     prose.json                  # stamped prose slots
@@ -2180,8 +2222,7 @@ are all layout-independent.
 `hsdd/conventions.md` is root-owned: `hsdd-spec` seeds it and
 `hsdd-reconcile` updates it — never a phase session. Every skill reads it
 first, so a protocol stated there reaches every downstream session without
-new cross-skill references. Its frontmatter selects the ordering policy
-(§7.4) and the profile (§14.4); its body carries:
+new cross-skill references. Its body carries:
 
 - the layout section (the chosen paths);
 - the `## Parallel development protocol` section — the freeze rule, the
@@ -2191,17 +2232,24 @@ new cross-skill references. Its frontmatter selects the ordering policy
   hand-maintained projections drift;
 - the `## Open questions (OQ)` section — the convention and the project's
   prefix set (§4.4).
+- the `**Ordering policy:**` line, `interfaces-first` (default),
+  `fp-progression`, or a project-defined name whose order the body
+  describes (§7.4);
+- the `**Teams:**` line, `single-team` (default) or `multi-team` (§14.5);
 - the `**Coding method:**` line, `openspec` (default) or `superpowers`
   (§9.9).
 
 ### 14.3 Packaging: skills and slash commands
 
 Two invocation surfaces: **skills** (model-invoked on trigger match;
-conversational, auto-discovered, fits the decomposition dialogue) and
-**slash commands** (user-invoked with `$ARGUMENTS`; deterministic, hard to
-forget). Skills are the source of truth; each ships one thin slash-command
-wrapper — a one-line delegator, because the moment a command embeds logic
-the skill also owns, the two drift apart. The highest-value command is the phase-context switch (`/hsdd-phase {phase-id} [--method openspec|superpowers]`), the step easiest to forget and the one that must run before a phase's coding session starts.
+conversational, auto-discovered, fits the decomposition dialogue) and **slash
+commands** (user-invoked with `$ARGUMENTS`; deterministic, hard to forget).
+Skills are the source of truth; each ships one thin slash-command wrapper, a
+one-line delegator, because the moment a command embeds logic the skill also
+owns, the two drift apart. The highest-value command is the phase-context
+switch (`/hsdd-phase {phase-id} [--method openspec|superpowers]`), the step
+easiest to forget and the one that must run before a phase's coding session
+starts.
 
 ### 14.4 The standalone-spec-repo profile
 
@@ -2256,6 +2304,8 @@ question's answer: who builds what, recorded where every later reader finds
 it. A `single-team` project may omit it everywhere; a `multi-team` project
 records it on every node whose ownership differs from its parent's.
 Integration nodes still name exactly one owning team (§3.7).
+`hsdd/conventions.md` declares the mode on its `**Teams:**` line; absent
+means `single-team`.
 
 ---
 
@@ -2349,7 +2399,9 @@ permanent. Three properties give it one, without a deadline:
    a grandfather case: the clause covers history, never new work.
 2. **It discharges on touch, not on a date.** The moment any phase produces,
    amends, or bumps a grandfathered contract, that contract must gain
-   fixtures before the phase's gate passes. The phase context names the obligation (§9.7), and the reconcile that drains the phase's plan removes the mark once the artifacts exist. Obligations attach to work, not
+   fixtures before the phase's gate passes. The phase context names the
+   obligation (§9.7), and the reconcile that drains the phase's plan removes
+   the mark once the artifacts exist. Obligations attach to work, not
    to calendars — the same grain as the lazy tree and depth-on-demand. A
    contract nobody touches needs no fixtures, because nobody is depending on
    new behavior from it.
@@ -2371,12 +2423,13 @@ The artifact formats this document defines are **frozen for the 1.0 line**:
 the node header (§2.1), the contract file (§3.1), the ADR file (§4.2), the
 phase record and phase plan document (§7.1, §7.5), the pending-governance
 section (§8.2), the generic phase context (§9.7), the verification document
-(§10.2), the intake record (§11.2), and the management documents (chapter
-12). A later release may add an optional field whose absence keeps an
-existing artifact conformant; it may not rename, remove, or re-type a field,
-change a heading, or move a section. Tooling outside the skills (the reading aids of chapter 13, and
-whatever reads these files after them) parses these formats, and a format
-that moves under its parsers is the drift this method exists to prevent.
+(§10.2), the intake record (§11.2), and the management documents (chapter 12).
+A later release may add an optional field whose absence keeps an existing
+artifact conformant; it may not rename, remove, or re-type a field, change a
+heading, or move a section. Tooling outside the skills (the reading aids of
+chapter 13, and whatever reads these files after them) parses these formats,
+and a format that moves under its parsers is the drift this method exists to
+prevent.
 
 ---
 
@@ -2387,13 +2440,13 @@ that moves under its parsers is the drift this method exists to prevent.
 This section is the single home for the isolation and token claims (§1.6
 points here; no other chapter restates them).
 
-**Isolation.** Per-phase context shapes attention: a session receives its
-own phase plus only the interfaces of the contracts it consumes, so it is
-unlikely to wander into a sibling's concern or fabricate an interface it was
-never given. The defense is prose and structure, tested under adversarial
-pressure and found to hold — but it is **probabilistic, not enforced**. HSDD
-does not mechanically prevent a session from reading a file outside its
-phase.
+**Isolation.** Per-phase context shapes attention: a session receives its own
+phase, the Interface and Guarantees of the contracts it consumes and produces,
+and the decisions that govern it, so it is unlikely to wander into a sibling's
+concern or fabricate an interface it was never given. The defense is prose and
+structure, tested under adversarial pressure and found to hold, but it is
+**probabilistic, not enforced**. HSDD does not mechanically prevent a session
+from reading a file outside its phase.
 
 **Tokens.** Per-session context is bounded and proportional to the phase,
 not the system. Total tokens across a project scale with phase count, and
@@ -2541,6 +2594,14 @@ credibility from the tested parts: most of what v0.8.0 and v0.10.0 add is
 | Plan-page edges | Derived from the contracts each part consumes and produces; the Mermaid DAG is never parsed (§13.3). | reasoned-only |
 | Checkpoint page | A living reading aid over the newest management documents, first for the lead running the sync; ages, the loop, the delta, gate movement and the plan graph computed by script (§13.4). | reasoned-only |
 | Prose stores | One per page (`prose.json`, `checkpoint-prose.json`), so writing one page's prose never makes another stale (§13.2). | reasoned-only |
+| Who writes the grandfather mark | `hsdd-reconcile`, on the plan step the upgrade checkpoint emits; the checkpoint stays read-only toward governance (§15.2). | reasoned-only |
+| Who seals a milestone document | The checkpoint whose tick turns the last gate green (§12.5). | reasoned-only |
+| Ordering policy selection | A line in the conventions body, not frontmatter; `interfaces-first` default, `fp-progression` the stricter variant (§7.4). | reasoned-only |
+| Append, graft and promotion modes | Shipped in the owning skills; `hsdd-intake` routes to them (chapter 11, §6.4). | reasoned-only |
+| Adoption and intake | Shipped as chapters 6 and 11 specify, with the seam extractor as `hsdd-adopt`'s bundled script; `reasoned-only` until the first field adoption and intake runs (chapter 15). | reasoned-only |
+| Artifact stability | Formats frozen for the 1.0 line; additive optional fields only (§15.3). | reasoned-only |
+| Verification template copy | By the switch when missing, for either method (§9.2). | reasoned-only |
+| v0.8.0 and v0.9.0 | Never released; v0.10.0 follows v0.7.1 and states per rule what the skills implement (chapter 15). | reasoned-only |
 
 ### 18.2 Deliberately dropped
 
@@ -2569,7 +2630,7 @@ the completion of acceptance criterion 1's traceability contract:
 - **Node:** any unit in the spec tree.
 - **Internal node:** a node that decomposes into child nodes.
 - **Leaf-parent:** a node whose children are phases; owns a phase plan.
-- **Leaf phase:** the unit that drives one OpenSpec cycle.
+- **Leaf phase:** the unit that drives one coding cycle (an OpenSpec change or a superpowers plan).
 - **Integration node:** a leaf-parent child with `hard` edges to producing
   siblings, whose phases exercise the real composed behavior (§3.7).
 - **Contract:** a named, versioned interface; the only cross-node knowledge.
@@ -2588,9 +2649,9 @@ the completion of acceptance criterion 1's traceability contract:
   (`interfaces-first` default) (§7.4).
 - **Companion skill:** a general-purpose discipline skill that HSDD composes
   with rather than re-implements.
-- **Context isolation:** injecting only consumed contract interfaces (and
-  governing ADR decisions) into a phase's session — probabilistic, not
-  enforced (§16.1).
+- **Context isolation:** injecting only a phase's own section, the Interface
+  and Guarantees of its contracts, and its governing ADRs' decisions into
+  the phase's session; probabilistic, not enforced (§16.1).
 - **Profile:** an opt-in layout variant declared in conventions; the
   standalone-spec-repo profile mounts the tree as a submodule at `hsdd/`
   (§14.4).
