@@ -49,11 +49,12 @@ it never defines.
    whose surface the request touches, and every contract on those seams.
    Read the request's sources, not the atlas's summary of them.
 3. **Promote first when the landing is as-built.** A node marked
-   `- **Adopted:** as-built` is not a fifth routing class: hand it to
-   `hsdd-spec` promotion mode (its `## Observed surface` is a primary
-   source alongside the request), wait for the human confirmation stop,
-   then reclassify against the promoted node. Record the promotion in this
-   intake's `**Promotes:**` line.
+   `- **Adopted:** as-built` is not a fifth routing class: name it in this
+   intake's `**Promotes:**` line, classify the change against the node as
+   it will be once promoted, and make promotion the first handoff (step 6):
+   `hsdd-spec` promotion mode, with its human confirmation stop, the node's
+   `## Observed surface` a primary source alongside the request. The other
+   handoffs follow only after that confirmation.
 4. **Classify**, one class per intake:
 
    | Class | Means | Routes to |
@@ -68,8 +69,9 @@ it never defines.
    whatever the next skill did. The request's path also lands in
    `## Sources` of every node it governs when those skills run; say so in
    the record.
-6. **Hand off** to the skill the class names, with the exact prompt to run,
-   or stop on `structural`. Under the standalone-spec-repo profile the
+6. **Hand off** to the skill the class names, with the exact prompt to run;
+   when the record names a promotion, that handoff runs first and the rest
+   wait for its confirmation; or stop on `structural`. Under the standalone-spec-repo profile the
    record is committed and pushed inside the submodule like every
    governance-adjacent edit.
 7. **Report:** the record's path, the class, the landing nodes, collisions
@@ -120,7 +122,7 @@ rule as everywhere else. `hsdd-checkpoint` ticks `**Status:** closed
 
 - [ ] Every open intake was read before routing; collisions are named in
       this record and in the colliding record's change log.
-- [ ] An as-built landing was promoted first, once, and recorded.
+- [ ] An as-built landing was recorded under Promotes and promoted as the first handoff, once.
 - [ ] Exactly one class; the record exists before any handoff ran.
 - [ ] The slug contains neither `progress` nor `execution-plan`.
 - [ ] `## Routing` carries the exact handoff prompt; `structural` stopped

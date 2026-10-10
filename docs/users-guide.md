@@ -638,8 +638,8 @@ hsdd/
     gen-registry.mjs
   templates/
     verification.md
-  hsdd-context/
-    acme.backend.auth.1.md  ...  acme.backend.auth.4.md
+hsdd-context/
+  acme.backend.auth.1.md  ...  acme.backend.auth.4.md
 openspec/
   config.yaml  changes/...
 ```
@@ -649,7 +649,7 @@ openspec/
 ## Example 3: A brownfield system (adopt, intake, promote)
 
 You have `legacy-pay`, a production payments service built long before HSDD:
-no specs, some tests, two teams in `CODEOWNERS` (payments and treasury). A
+no specs, some tests, three teams in `CODEOWNERS` (payments, treasury and platform). A
 PRD arrives: merchant payout scheduling. Instead of speccing the PRD as its
 own project, adopt the system once, route the PRD into the tree, and promote
 only the node the change lands on. Cost scales with the number of seams
@@ -692,7 +692,7 @@ legacy-pay                     (root, internal)
   legacy-pay.billing           leaf-parent, as-built   src/billing   @payments-team
   legacy-pay.payouts           leaf-parent, as-built   src/payouts   @payments-team (+ @treasury)
   legacy-pay.merchant          leaf-parent, as-built   src/merchant  (no CODEOWNERS entry)
-  (db/ and cmd/server are shared infrastructure, folded into the nodes that own their tables and entry point)
+  (db/ and cmd/server are shared infrastructure, folded into the nodes that own their tables and entry point; @platform owns cmd/)
 
 unknowns so far: settlement retry logic (no tests); merchant has no owner line
 ```
