@@ -22,17 +22,29 @@ export function moduleOf(path, depth = 2) {
 }
 
 // Files only, repo-relative with "/" separators, sorted. Symbolic links are not
-// followed or listed; files over 2 MB are skipped.
-export function walk(root, { prefixes = [] } = {}) {
+// followed or listed; files over 2 MB are skipped; unreadable directories and
+// files are skipped and reported through onSkip(path).
+export function walk(root, { prefixes = [], onSkip = () => {} } = {}) {
   const wanted = prefixes.map(normalizePrefix).filter(Boolean);
   const out = [];
   const visit = (rel) => {
-    for (const e of readdirSync(rel ? join(root, rel) : root, { withFileTypes: true })) {
+    let entries;
+    try {
+      entries = readdirSync(rel ? join(root, rel) : root, { withFileTypes: true });
+    } catch {
+      onSkip(rel || ".");
+      return;
+    }
+    for (const e of entries) {
       const path = rel ? `${rel}/${e.name}` : e.name;
       if (e.isDirectory()) {
         if (!EXCLUDED_DIRS.has(e.name)) visit(path);
       } else if (e.isFile()) {
-        if (statSync(join(root, path)).size <= MAX_BYTES) out.push(path);
+        try {
+          if (statSync(join(root, path)).size <= MAX_BYTES) out.push(path);
+        } catch {
+          onSkip(path);
+        }
       }
     }
   };

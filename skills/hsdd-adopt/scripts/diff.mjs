@@ -35,7 +35,7 @@ export function parseObservedSurface(markdown) {
         if (t) out.topics[t[1]] = list(t[2]);
       }
     } else if (key === "owners") {
-      out.owners = value === "no CODEOWNERS" ? [] : list(value);
+      out.owners = value === "no CODEOWNERS" || value === "none found" ? [] : list(value);
     } else if (key === "unknown") {
       if (value && !value.startsWith("(fill in")) out.unknown.push(value);
     }

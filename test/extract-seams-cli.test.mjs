@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
-import { readFileSync, writeFileSync, existsSync } from "node:fs";
+import { readFileSync, writeFileSync, existsSync, mkdirSync, chmodSync } from "node:fs";
 import { join } from "node:path";
 import { makeRepo } from "./helpers/brownfield-fixture.mjs";
 
@@ -34,4 +34,27 @@ test("render prints the block; diff finds a drifted route and exits 0; no sectio
   assert.match(d.out, /routes\.count changed 2 -> 3/);
   writeFileSync(join(dir, "plain.md"), "# no surface\n");
   assert.equal(run(dir, "diff", "plain.md").code, 2);
+});
+
+test("diff of a surface with no modules compares nothing and exits 0", () => {
+  const { dir } = makeRepo();
+  writeFileSync(join(dir, "empty.md"), "## Observed surface\n\n- extracted: 2026-01-01 @ abc1234  (x)\n- modules: none found\n- routes: 0\n- tables: none found\n- topics: none found\n- owners: no CODEOWNERS\n");
+  const d = run(dir, "diff", "empty.md");
+  assert.equal(d.code, 0);
+  assert.equal(d.out, "nothing compared: the recorded surface names no modules\n");
+});
+
+test("render skips an unreadable directory and still prints a complete block", () => {
+  const { dir } = makeRepo();
+  const locked = join(dir, "src/locked");
+  mkdirSync(locked);
+  chmodSync(locked, 0o000);
+  try {
+    const r = run(dir, "render");
+    assert.equal(r.code, 0);
+    assert.match(r.out, /^## Observed surface\n/);
+    assert.match(r.out, /- routes: 4 /);
+  } finally {
+    chmodSync(locked, 0o755);
+  }
 });

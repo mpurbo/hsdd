@@ -7,7 +7,7 @@ export function coupling(root, { depth = 2, commits = 500, min = 2, maxFiles = 5
   try {
     log = execFileSync(
       "git",
-      ["-C", root, "-c", "core.quotepath=false", "log", "--numstat", "--no-renames", "--relative", "--format=%H", "-n", String(commits), "--", ...(specs.length ? specs : ["."])],
+      ["-C", root, "-c", "core.quotepath=false", "log", "--numstat", "--no-renames", "--relative", "--format=%H", "-n", String(commits), "--", ...(specs.length ? specs.map((x) => `:(literal)${x}`) : ["."])],
       { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"], maxBuffer: 512 * 1024 * 1024 },
     );
   } catch {

@@ -80,3 +80,41 @@ test("extract assembles the model with sha and date, honoring prefixes", () => {
   assert.equal(m.routes.length, 2);
   assert.deepEqual(m.migrations.tables, []);
 });
+
+// Owners by last matching rule per file, in a scratch repository.
+import { mkdtempSync, mkdirSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
+import { tmpdir } from "node:os";
+import { renderObservedSurface } from "../skills/hsdd-adopt/scripts/render.mjs";
+
+function scratch(codeowners, paths) {
+  const dir = mkdtempSync(join(tmpdir(), "hsdd-owners-"));
+  for (const p of paths) {
+    mkdirSync(join(dir, p, ".."), { recursive: true });
+    writeFileSync(join(dir, p), "x\n");
+  }
+  writeFileSync(join(dir, "CODEOWNERS"), codeowners);
+  return dir;
+}
+const ownersLine = (dir, prefixes) => renderObservedSurface(extract(dir, { prefixes })).split("\n").find((l) => l.startsWith("- owners:"));
+
+test("owners: catch-all and extension rules both apply under a prefix", () => {
+  const dir = scratch("* @org\n*.go @gophers\n", ["src/billing/a.js", "src/billing/b.go"]);
+  assert.equal(ownersLine(dir, ["src/billing"]), "- owners: @gophers, @org");
+});
+
+test("owners: the last matching rule wins, not the union", () => {
+  const dir = scratch("/src/ @a\n/src/billing/ @b\n", ["src/billing/a.js"]);
+  assert.equal(ownersLine(dir, ["src/billing"]), "- owners: @b");
+});
+
+test("owners: a last matching rule without owners leaves the files unowned", () => {
+  const dir = scratch("/src/ @a\n/src/billing/\n", ["src/billing/a.js"]);
+  assert.equal(ownersLine(dir, ["src/billing"]), "- owners: none found");
+});
+
+test("owners: the fixture, prefixed and whole", () => {
+  const { dir } = makeRepo();
+  assert.equal(ownersLine(dir, ["src/payouts"]), "- owners: @payments-team, @treasury");
+  assert.equal(ownersLine(dir, []), "- owners: @payments-team, @platform, @treasury");
+});

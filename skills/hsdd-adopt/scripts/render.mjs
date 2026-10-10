@@ -19,7 +19,7 @@ export function renderObservedSurface(model, { script = "hsdd/scripts/seams/extr
     `- routes: ${model.routes.length}${samples.length ? `  (${samples.join(", ")})` : ""}`,
     `- tables: ${tables.length ? tables.join(", ") : "none found"}`,
     `- topics: ${topicParts.length ? topicParts.join("; ") : "none found"}`,
-    `- owners: ${owners.length ? owners.join(", ") : "no CODEOWNERS"}`,
+    `- owners: ${owners.length ? owners.join(", ") : model.ownersFile ? "none found" : "no CODEOWNERS"}`,
     "- unknown: (fill in, one line per item: what tooling could not see; a node with none is a node nobody looked at)",
     "",
   ].join("\n");

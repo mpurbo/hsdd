@@ -11,7 +11,7 @@ import { routes } from "./routes.mjs";
 import { schemas } from "./schemas.mjs";
 import { migrations } from "./migrations.mjs";
 import { topics } from "./topics.mjs";
-import { owners } from "./owners.mjs";
+import { owners, ownersFile, ownersOf } from "./owners.mjs";
 import { coupling } from "./coupling.mjs";
 
 export function modules(files) {
@@ -31,24 +31,22 @@ function shortSha(root) {
   }
 }
 
-const segs = (p) => p.split("/").filter(Boolean);
-const isPrefixOf = (a, b) => a.length <= b.length && a.every((s, i) => s === b[i]);
-
-// With prefixes, keep a CODEOWNERS rule when its pattern path is a segment-wise
-// ancestor or descendant of some prefix. Without prefixes, keep all.
-function scopeOwners(rules, prefixes) {
-  if (prefixes.length === 0) return rules;
-  const wanted = prefixes.map(segs);
-  return rules.filter((r) => {
-    const p = segs(r.pattern);
-    return wanted.some((w) => isPrefixOf(p, w) || isPrefixOf(w, p));
-  });
+// Keep the rules that are the last match for at least one in-scope file and
+// have owners, in file order.
+function scopeOwners(rules, files) {
+  const live = new Set();
+  for (const f of files) {
+    const hit = ownersOf(rules, f);
+    if (hit && hit.owners.length) live.add(hit);
+  }
+  return rules.filter((r) => live.has(r));
 }
 
 export function extract(root, { prefixes = [] } = {}) {
   const real = realpathSync(resolve(root));
   const wanted = prefixes.map(normalizePrefix).filter(Boolean);
-  const files = walk(real, { prefixes: wanted });
+  const unreadable = [];
+  const files = walk(real, { prefixes: wanted, onSkip: (p) => unreadable.push(p) });
   return {
     kind: "seams",
     version: 1,
@@ -62,8 +60,10 @@ export function extract(root, { prefixes = [] } = {}) {
     schemas: schemas(files),
     migrations: migrations(real, files),
     topics: topics(real, files),
-    owners: scopeOwners(owners(real, files), wanted),
+    ownersFile: ownersFile(real),
+    owners: scopeOwners(owners(real, files), files),
     coupling: coupling(real, { prefixes: wanted }),
+    unreadable: unreadable.sort(),
   };
 }
 
@@ -124,7 +124,9 @@ export function main(argv, cwd = process.cwd()) {
   const root = resolve(cwd, opts.root ?? ".");
   try {
     if (cmd === "extract") {
-      const json = `${JSON.stringify(extract(root, { prefixes: opts.prefixes }), null, 2)}\n`;
+      const model = extract(root, { prefixes: opts.prefixes });
+      for (const p of model.unreadable) fail(`skipped unreadable: ${p}`);
+      const json = `${JSON.stringify(model, null, 2)}\n`;
       if (opts.out === null) { write(json); return 0; }
       const target = resolve(cwd, opts.out);
       if (![cwd, root].some((d) => existsSync(d) && insideDir(d, target))) {
@@ -137,6 +139,7 @@ export function main(argv, cwd = process.cwd()) {
     }
     if (cmd === "render") {
       const model = opts.model ? JSON.parse(readFileSync(resolve(cwd, opts.model), "utf8")) : extract(root, { prefixes: opts.prefixes });
+      for (const p of opts.model ? [] : model.unreadable) fail(`skipped unreadable: ${p}`);
       write(renderObservedSurface(model));
       return 0;
     }
@@ -144,6 +147,7 @@ export function main(argv, cwd = process.cwd()) {
       if (opts.positional.length !== 1) { fail(USAGE); return 1; }
       const recorded = parseObservedSurface(readFileSync(resolve(cwd, opts.positional[0]), "utf8"));
       if (!recorded) { fail(`${opts.positional[0]} has no "## Observed surface" section`); return 2; }
+      if (recorded.modules.length === 0) { write("nothing compared: the recorded surface names no modules\n"); return 0; }
       const diff = diffSurface(recorded, extract(root, { prefixes: recorded.modules }));
       write(diff.length ? diff.map((d) => `${d.field} ${d.kind} ${d.value}\n`).join("") : "nothing changed\n");
       return 0;
