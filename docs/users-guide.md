@@ -1161,8 +1161,10 @@ emits one plan step; `hsdd-reconcile` marks each
 such a contract cannot pass its gate until its schema or fixtures exist,
 written at the root through `hsdd-contract`; the next checkpoint then files
 a discharge finding and reconcile removes the mark. Every progress report
-shows the remaining count next to the previous one, and a count that rises
-is a finding.
+shows the remaining count next to the previous one and cites the upgrade
+step that names the set. A contract carrying the mark that the step does
+not name is a High finding. A checkpoint that runs before anyone has
+executed the marking step carries the step forward unchanged.
 
 ---
 

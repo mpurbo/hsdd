@@ -190,17 +190,25 @@ by the owner's run, never by the implementer.
   `validation: grandfathered`.
 - **Result:**
 
-### D3. Grandfather round trip
+### D3. Grandfather round trip, with a checkpoint before the marking
 
 - **Run:** on the field project, `/hsdd-checkpoint` (its first run after
-  upgrading HSDD), then execute the plan step it emits for
-  `hsdd-reconcile`, then `/hsdd-checkpoint` again.
-- **Expected:** the first report lists the fixtureless `stable` contracts
-  and records their count as the baseline; the plan has one 🤖 step with
-  a prompt and a *Validate:* grep; after reconcile, exactly those contracts carry
-  `validation: grandfathered` and `INDEX.md` is unchanged; the second
-  report shows the same count with the previous count in parentheses.
-- **Fails if:** the checkpoint edited a contract file; the count rose; a
+  upgrading HSDD); then `/hsdd-checkpoint` again **before** executing the
+  marking step; then execute the marking step the second plan carries for
+  `hsdd-reconcile`; then `/hsdd-checkpoint` a third time.
+- **Expected:** the first report lists the fixtureless `stable` contracts,
+  records their count as remaining, and its Bottom line row names the set
+  source (the plan's filename and the step's ID); the plan has one 🤖 step
+  whose prompt names those contracts by id and version with the baseline
+  SHA, and a *Validate:* grep. The second report shows the same remaining
+  count and the same set source, and its plan carries the marking step
+  forward with the same contracts and the same baseline SHA. After
+  reconcile, exactly those contracts carry `validation: grandfathered` and
+  `INDEX.md` is unchanged. The third report shows the same count with the
+  previous count in parentheses and no High finding.
+- **Fails if:** a checkpoint edited a contract file; any report's count
+  rose; the second report counted the contracts as discharged or routed
+  them without the baseline SHA; the third report raised a High finding; a
   `draft` was marked.
 - **Result:**
 

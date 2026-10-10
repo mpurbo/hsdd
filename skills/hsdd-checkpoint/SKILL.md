@@ -111,16 +111,30 @@ be standing in produces a progress report that undercounts the project.
      change log since the last checkpoint — `hsdd-milestone` has no plan of
      its own to write into, so it leaves findings there for this pass to
      fold into the register.
-     Also: the **grandfather audit**, the count of contracts carrying
-     `validation: grandfathered` read from frontmatter, compared with the
-     previous progress report's count; a count that rose is a High finding
-     (the set is closed), and any `stable` contract with neither an artifact
-     at its Validation paths nor the key is a finding routed to
-     `hsdd-reconcile`'s grandfather step (or, for a contract created after
-     the upgrade, to `hsdd-contract` to write its artifact). A contract
-     carrying `validation: grandfathered` whose Validation paths now hold an
-     artifact is a discharge finding; its plan step asks `hsdd-reconcile` to
-     discharge the mark. A `draft` contract with `phase_ids: final`, no open
+     Also: the **grandfather audit**, a membership check against the
+     **grandfather set**, the contracts the upgrade run's marking step
+     names. Read the set through the set source the previous report's
+     Bottom line row cites; a source that does not resolve is a
+     management chain integrity finding. A contract carrying
+     `validation: grandfathered` that the set does not name is a High
+     finding (the set is closed), routed to `hsdd-contract` to write its
+     artifact; once the artifact exists it is a discharge finding like any
+     other. A set member that is `stable`, has no artifact at its
+     Validation paths and no `validation:` key, and whose file history
+     never carried the key (the spec repo's
+     `git log -G 'validation: grandfathered' -- {contract file}` prints
+     nothing) is still waiting for the marking step. Carry that step
+     forward: a finding whose plan step repeats the original prompt for
+     those members, with the same baseline SHA. Never route them afresh.
+     Any other `stable` contract with neither an artifact nor the key
+     (created or flipped after the upgrade, or one that has lost its
+     artifact since) is a finding routed to `hsdd-contract` to write its
+     artifact. A contract carrying `validation: grandfathered` whose
+     Validation paths now hold an artifact is a discharge finding; its plan
+     step asks `hsdd-reconcile` to discharge the mark. The remaining count
+     is the set's members not yet discharged, marked or still waiting for
+     the marking step; it can only fall, and it is a trend, not the
+     closure check. A `draft` contract with `phase_ids: final`, no open
      `request`, and an artifact at its Validation paths is a finding; its
      plan step asks `hsdd-reconcile` to finalize it (step 7). And
      **retirement health**: a
@@ -299,8 +313,11 @@ campaign whose gate includes launch. Backfill findings apply from then on.
   🤖 plan step whose prompt asks `hsdd-reconcile` to mark exactly those
   contracts (by id and version) and gives the spec repo's baseline SHA from
   this report's Repo baselines header, with a *Validate:* line that greps for
-  the key. Record the count in the progress report as the baseline the clause
-  can only fall from. This run writes no contract file.
+  the key. That step's list is the **grandfather set**, closed from here on.
+  Record its size in the progress report as the remaining count, with the
+  set source: this plan's filename and the step's ID. When the list is
+  empty, emit no step and record the set source as `empty`. Every later
+  report copies the set source verbatim. This run writes no contract file.
 
 ## Document Shapes
 
@@ -316,7 +333,8 @@ Required sections, in order:
   (externally-contingent count broken out), implementation progress %,
   observed velocity per lane (PE/manday), calibrated remaining effort,
   calendar outlook, and grandfathered contracts remaining with the previous
-  report's count in parentheses.
+  report's count in parentheses and the set source (the upgrade plan's
+  filename and marking step ID, or `empty`).
 - **Milestone gate status** — one row per milestone: gate items met / total,
   and each unmet item with the phase or external answer it waits on. This is
   the persisted input for the re-baseline slip trigger: comparing this section
@@ -501,11 +519,13 @@ writes live under `hsdd/management/`, plus `hsdd/summary/` through
       squash-merged multi-phase epic (or both reported as findings).
 - [ ] Output landed: management changes committed (and, under the profile,
       pushed inside the submodule with every repo's pointer bumped).
-- [ ] Grandfathered count reported with the previous count; a rise is a
-      High finding; fixtureless `stable` contracts without the key are
-      findings routed to reconcile or to `hsdd-contract`; a grandfathered
+- [ ] Grandfather set read through the previous report's set source, and
+      the source copied forward; a marked contract the set does not name is
+      a High finding; set members still waiting for the marking step carry
+      it forward with its baseline SHA; other fixtureless `stable` contracts
+      without the key are routed to `hsdd-contract`; a grandfathered
       contract whose artifact now exists is a discharge finding routed to
-      reconcile.
+      reconcile; the remaining count reported with the previous count.
 - [ ] Post-launch code with no phase is a backfill finding with a plan step
       that appends a retro phase; a backfill carried two reports escalates.
 - [ ] Retired nodes excluded from the atlas's active view and listed under
@@ -541,3 +561,4 @@ writes live under `hsdd/management/`, plus `hsdd/summary/` through
 | "The checkpoint page shows a Plan integrity finding; I'll mention it in the report" | It is this run's own quality gate failing, read back by a script. Fix the plan, render again, then land. |
 | "Every gate is green; I'll leave the document where it is for the next sync" | A green document that is never sealed gets ticked forever and blocks the next campaign's generation. Seal it now: the evidence is this run's. |
 | "I'll add the grandfathered key myself while I have the contract open" | Checkpoint is read-only toward governance. Emit the plan step; reconcile writes the key. |
+| "Nobody ran the marking step yet; I'll route these contracts to reconcile as new findings" | Carry the upgrade step forward with its list and baseline SHA. A fresh routing drops the SHA reconcile checks against, and a fresh list is how the set drifts from the one decided at upgrade. |

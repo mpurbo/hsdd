@@ -1741,7 +1741,8 @@ from independent counting. Required sections:
 - **Bottom line** is one table: phases planned / code-complete / remaining
   (externally-contingent count broken out), implementation progress %,
   observed velocity per lane, calibrated remaining effort, calendar outlook,
-  and the grandfathered-contract count with the previous report's (§15.2).
+  and the remaining grandfathered count with the previous report's and the
+  grandfather set's source (§15.2).
 - **Milestone gate status** — one row per milestone (gate items met / total,
   each unmet item's blocker); the persisted input that makes the slip
   trigger's "red across two consecutive checkpoints" checkable. With no
@@ -1907,10 +1908,11 @@ One run of `hsdd-checkpoint`:
      statuses coherent, no stale pending-prose on resolved questions),
      undrained pending-reconcile sections, verification-doc audit (every
      claimed-done phase has its doc on main, sign-offs filled, no template
-     residue), management chain integrity, grandfather audit (the count of
-     `validation: grandfathered` contracts, compared with the previous
-     report's; a rise is a finding; a grandfathered contract whose artifact
-     now exists is a discharge finding routed to `hsdd-reconcile`; a
+     residue), management chain integrity, grandfather audit (membership
+     against the upgrade run's marking step: a marked contract the step does
+     not name is a High finding; members still waiting for the step carry
+     it forward; a grandfathered contract whose artifact now exists is a
+     discharge finding routed to `hsdd-reconcile`; a
      `draft` contract with `phase_ids: final`, no open `request` and an
      artifact is a finding routed to `hsdd-reconcile` to finalize it), and
      retired contract versions that still have a live consumer,
@@ -2016,7 +2018,7 @@ that decision lands where decisions land (§12.1).
 The plan step cites the finding, so a reviewer can diff register against
 plan and find nothing orphaned. This is the loop that makes the weekly
 review compile instead of advise — and it is the carrier for backfill
-escalation (§11.8) and grandfather-count regressions (§15.2).
+escalation (§11.8) and grandfather-set violations (§15.2).
 
 ---
 
@@ -2404,7 +2406,7 @@ v0.10.0, or says the rule is specified without a skill.
 | Richer OpenSpec phase block; pre-v0.10 `config.yaml` (§9.3) | The first switch replaces the three earlier phase blocks with the marked block. `rules:` are unchanged: the switch never edits them, Setup writes the new documentation-task rule for new projects, and every project gets the Learnings requirement through the context's Discipline line and the refreshed template. | `hsdd-config` |
 | Verification template copied or refreshed by the switch (§9.2) | A project on either method gets the current `hsdd/templates/verification.md` at its first switch: copied when missing, replaced when it predates `## Learnings`. | `hsdd-config` |
 | `hsdd-summary`, `hsdd/summary/` (chapter 13) | Opt-in. A project without `hsdd/summary/` is unaffected. | `hsdd-summary`; `hsdd-checkpoint` step 7 |
-| Grandfather marking and count (§15.2) | Set once by the upgrade run's plan step; counted every checkpoint. | `hsdd-reconcile` writes; `hsdd-checkpoint` enumerates and counts |
+| Grandfather marking and count (§15.2) | Set once by the upgrade run's plan step; audited by membership and counted every checkpoint. | `hsdd-reconcile` writes; `hsdd-checkpoint` enumerates and counts |
 | `hsdd-adopt`, `@v0`, `## Observed surface`, `## Observed completeness`, promotion (chapter 6) | **Inert** unless the project has unadopted code; nothing in a greenfield tree reaches these rules. | `hsdd-adopt` (bundled seam extractor at `hsdd/scripts/seams/`), `hsdd-contract`, `hsdd-spec` promotion mode |
 | As-built drift and stale caveats at the checkpoint (§6.3, §12.7) | Runs only when the tree has a node with an `## Observed surface`; a tree without one never runs the script. | `hsdd-checkpoint` |
 | `hsdd-intake`, intake records, cross-intake collisions, intake closure (§11.2, §11.5, §11.7) | From the next change request forward; no back-application. | `hsdd-intake`; `hsdd-checkpoint` closes records |
@@ -2439,7 +2441,10 @@ permanent. Three properties give it one, without a deadline:
    one execution-plan step naming them. `hsdd-reconcile` executes that step,
    marking each `validation: grandfathered` in frontmatter; the checkpoint
    itself never writes a contract file (§12.7), and the registry generator
-   passes the key through unchanged. Nothing may join the set afterward. A
+   passes the key through unchanged. That step's list is the set: every
+   later progress report cites it by the plan's filename and the step's
+   ID, so the set is read, never reconstructed. Nothing may join the set
+   afterward. A
    *new* contract flipped `draft → stable` without fixtures is an error, not
    a grandfather case: the clause covers history, never new work.
 2. **It discharges on touch, not on a date.** The moment any phase produces,
@@ -2452,16 +2457,27 @@ permanent. Three properties give it one, without a deadline:
    tree and depth-on-demand. A contract nobody touches needs no fixtures,
    because nobody is depending on new behavior from it.
 3. **The count is reported and can only fall.** Each checkpoint reports the
-   remaining grandfathered count, read from frontmatter, in the progress
-   report's Bottom line, next to the previous report's count. A closed,
-   finite, monotonically decreasing set needs no sunset: it either drains as
-   the system is worked on, or the untouched remainder is precisely the
-   surface that carries no active risk. **A count that rises is a finding**;
-   it means property 1 was violated.
+   remaining grandfathered count, the set's members not yet discharged, in
+   the progress report's Bottom line, next to the previous report's count.
+   A closed, finite, monotonically decreasing set needs no sunset: it either
+   drains as the system is worked on, or the untouched remainder is
+   precisely the surface that carries no active risk. Because the count
+   ranges over the set's members, it cannot rise, so closure is checked by
+   name: **a contract carrying the mark that the set does not name is a
+   High finding**; it means property 1 was violated. Marks are written when
+   someone executes the step, not when the checkpoint emits it, so a
+   checkpoint can run in between. That checkpoint counts the waiting
+   members as remaining and carries the step forward with its list and
+   baseline SHA; it never reads them as discharged and never routes them
+   afresh.
 
 Deliberately rejected: a fixed sunset date (HSDD does not control anyone's
-calendar, and a cliff invites blanket waivers) and permanent unmarked
-grandfathering (invisible, uncountable, never drains).
+calendar, and a cliff invites blanket waivers), permanent unmarked
+grandfathering (invisible, uncountable, never drains), and comparing each
+report's count of marks with the previous report's as the closure check (a
+checkpoint that runs before the marking step records too low a count, the
+next one reads the marks as a rise, and a wrongful mark that coincides with
+a discharge leaves the count flat).
 
 ### 15.3 Artifact stability
 
@@ -2631,7 +2647,7 @@ add is `reasoned-only`, and the table says so instead of letting it borrow.
 | Where an incoming PRD's spec lives | Nowhere — a PRD is never a root; there is one tree and it is the system's (§11.1). | reasoned-only |
 | Post-launch milestones | Per-campaign documents, sealed when green, archived (§12.5). | reasoned-only |
 | Contract compatibility | A declared per-version `compatibility:` policy, fixture-enforced (§3.5). | reasoned-only |
-| The grandfather clause's end | On touch, not on a date: set closed at upgrade; a phase that touches the contract cannot pass its gate until the artifact exists, written at the root through `hsdd-contract`, and the next reconcile after that gate removes the mark on the checkpoint's discharge finding; count reported and falling (§15.2). | reasoned-only |
+| The grandfather clause's end | On touch, not on a date: set closed at upgrade; a phase that touches the contract cannot pass its gate until the artifact exists, written at the root through `hsdd-contract`, and the next reconcile after that gate removes the mark on the checkpoint's discharge finding; count reported and falling, closure checked by membership (§15.2). | reasoned-only |
 | Phase context shape | One generic, method-neutral, self-contained file per phase, selected verbatim, never authored (§9.7). | reasoned-only |
 | Derivatives | Wrap the generic body word for word; a `diff` proves they agree (§9.3, §9.8). | reasoned-only |
 | Coding method | Project default in conventions, per-phase override at the switch (§9.9). | reasoned-only |
@@ -2642,6 +2658,7 @@ add is `reasoned-only`, and the table says so instead of letting it borrow.
 | Prose stores | One per page (`prose.json`, `checkpoint-prose.json`), so writing one page's prose never makes another stale (§13.2). | reasoned-only |
 | Who writes validation artifacts | `hsdd-contract`, when it authors a contract or a new version; phases only replay them, so `stable` stays interface-frozen rather than producer-shipped (§3.4). | reasoned-only |
 | Who writes the grandfather mark | `hsdd-reconcile`, on the plan step the upgrade checkpoint emits; the checkpoint stays read-only toward governance (§15.2). | reasoned-only |
+| How the closed set is audited | By membership against the upgrade checkpoint's marking step, which every later progress report cites; a checkpoint that runs before the step is executed carries it forward (§15.2). | reasoned-only |
 | Who seals a milestone document | The checkpoint whose tick turns the last gate green (§12.5). | reasoned-only |
 | Ordering policy selection | A line in the conventions body, not frontmatter; `interfaces-first` default, `fp-progression` the stricter variant (§7.4). | reasoned-only |
 | Append, graft and promotion modes | Shipped in the owning skills; `hsdd-intake` routes to them (chapter 11, §6.4). | reasoned-only |

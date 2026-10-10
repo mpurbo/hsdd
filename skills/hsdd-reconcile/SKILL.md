@@ -100,13 +100,18 @@ edits governance files); this skill performs the semantic merge.
    purpose: the no-open-request condition is only decidable once requests
    are resolved.
 8. **Grandfather marking and discharge.** When the invoking prompt or an
-   execution-plan step from the upgrade checkpoint names contracts to mark:
+   execution-plan step from the upgrade checkpoint (or a later checkpoint
+   carrying that step forward) names contracts to mark:
    for each that is `stable`, lacks an artifact at its Validation paths, and
    has no `validation:` key, add `validation: grandfathered` to its
    frontmatter and report the count. Never mark a `draft`, and never mark a
    contract whose file was created after the upgrade checkpoint's baseline SHA
    (the plan step carries it, from that progress report's Repo baselines
-   header; invoked without one, ask for it). Discharge: when the invoking
+   header; invoked without one, ask for it). Never re-mark a contract whose
+   file history already carried the key
+   (`git log -G 'validation: grandfathered' -- {contract file}` prints a
+   commit): it was discharged, and a lost artifact is `hsdd-contract`'s to
+   restore. Discharge: when the invoking
    prompt or a checkpoint plan step names a grandfathered contract whose
    artifact now exists at its Validation paths, remove the key and say so.
 9. **Contract retirement.** When the invoking prompt or a checkpoint plan

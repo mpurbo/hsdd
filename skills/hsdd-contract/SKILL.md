@@ -146,7 +146,8 @@ It discharges on touch: the first phase that produces, amends, or bumps a
 grandfathered contract cannot pass its gate until the artifact exists,
 written at the root through this skill. Once it exists, the checkpoint
 files a discharge finding and `hsdd-reconcile` removes the key. The
-checkpoint reports the remaining count every pass.
+checkpoint reports the remaining count every pass and checks every mark
+against the upgrade step's list.
 
 ## Adopted Contracts: `## Observed completeness`
 

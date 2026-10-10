@@ -49,7 +49,9 @@ Specification: `spec/hsdd-spec-v0_10.md`. Basis:
   executable validation artifact at the `draft → stable` flip, marks
   grandfathered contracts and discharges each once `hsdd-contract` has
   written its artifact, and retires contracts; `hsdd-checkpoint` audits
-  the grandfathered count, files backfill findings with retro phases,
+  the grandfather set by membership against the upgrade checkpoint's
+  marking step (carried forward until executed) and reports the remaining
+  count, files backfill findings with retro phases,
   excludes retired nodes from the atlas's active view and seals a milestone
   document when its tick turns the last gate green; `hsdd-milestone` treats
   a sealed document as a closed campaign.
