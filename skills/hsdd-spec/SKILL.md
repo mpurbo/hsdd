@@ -163,6 +163,29 @@ intermediate internal node (a "feature") rather than forcing a fixed tier.
    genuinely new conventions (layout, naming, protocol); contracts are indexed
    by the generated `hsdd/contract/INDEX.md`, never listed here.
 
+## Promotion Mode (an as-built node gets its first change)
+
+Promotion is the recurring operation that turns an adopted stub into a
+governed node, one node at a time, when a change actually lands on it
+(`hsdd-intake` hands it here). It recurs for the life of the system.
+
+1. Take the node's `## Observed surface` as a **primary source** alongside
+   the change request; both go into the promoted spec's `Sources`.
+2. Decompose it as this skill always does: children or phases, contracts by
+   id, the typed DAG. The adopted `v0` contracts on its seams stay `v0`;
+   only a genuine redesign bumps one, through `hsdd-contract`.
+3. **Stop for the human's confirmation** before the promoted spec is
+   authoritative, the same shape as the "who builds what?" stop. Show the
+   as-built header, the proposed decomposition and every `unknown:` line
+   the decomposition resolves or leaves open.
+4. After confirmation, set `- **Adopted:** promoted`. **Keep the
+   `## Observed surface` section** as provenance; never delete it.
+5. Promotion happens once and is shared: a second change needing the same
+   node consumes the promoted spec; it never re-promotes.
+
+The confirmation stop keeps the validated fraction at 100%: a node spec is
+only generated when someone is about to work on it and therefore reads it.
+
 ## Graft Mode (adding a child to an already-decomposed node)
 
 When a change needs a node that does not exist, graft it onto the existing
@@ -218,13 +241,18 @@ retirement). Never delete the spec file, and never reuse its id.
 question). Record it when known. Under `**Teams:** multi-team` in
 conventions, every node whose owning team differs from its parent's carries
 it; under `single-team` it may be omitted everywhere. An integration node
-names exactly one owning team. `- **Adopted:**` is reserved for brownfield
-adoption (specification chapter 6) and is never written by this skill.
+names exactly one owning team. `- **Adopted:** as-built` is written by `hsdd-adopt`; this skill writes
+`promoted` in promotion mode (below) and never writes `as-built`.
 
 **Status field.** An active node has no Status line. A retired node adds
 `- **Status:** retired` directly after its Sources line (see Retiring a
 Node). Template lines carry no trailing comments; never copy guidance text
 into a spec's field values.
+
+**Adopted field.** A greenfield node has no Adopted line. An adopted node
+carries `- **Adopted:** as-built` (written by `hsdd-adopt`) or, after
+promotion, `- **Adopted:** promoted` (written by this skill's promotion
+mode), directly after its Sources line and before any Status line.
 
 **Sources field.** Required whenever the root spec has a `## Sources`
 section; omit it entirely only in a project with no source documents. List
@@ -297,6 +325,9 @@ exist (omit the section only when there are none):
       file, the parent's summaries and the parent's DAG.
 - [ ] A retired node's file is kept; its contracts' retirement went through
       `hsdd-reconcile`.
+- [ ] Promotion: the human confirmed before `- **Adopted:** promoted` was
+      written; `## Observed surface` kept; `v0` contracts unchanged unless
+      redesigned.
 
 ## Anti-Rationalization
 

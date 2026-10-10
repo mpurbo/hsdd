@@ -300,6 +300,9 @@ appends phases to an existing plan. Rules:
 - A **retro phase** (a backfill for code that shipped with no phase) is
   marked `(retro)` in its name, cites the finding id in its Scope, and its
   verification doc is written after the fact and marked retroactive.
+- A phase appended for a change request names the intake record in its
+  Scope (`per hsdd/management/2026-10-10-intake-payout-scheduling.md`), so
+  the checkpoint can close the record when the phase ships.
 - The dependency graph gains the new nodes; existing edges are not redrawn.
 - The pending-governance section is appended to, with a new emission date
   line, and drained by `hsdd-reconcile` as usual.

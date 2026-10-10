@@ -136,6 +136,29 @@ grandfathered contract must add the artifact before its gate passes, and
 the reconcile that drains that phase's plan removes the key. The
 checkpoint reports the remaining count every pass.
 
+## Adopted Contracts: `## Observed completeness`
+
+Every `v0` contract carries one more required body section, the
+contract-level analogue of a node's `unknown:` lines:
+
+```markdown
+## Observed completeness
+
+- covered by fixtures: happy path, 4xx envelope, pagination
+- NOT exercised: partial-batch failure, idempotency-key replay
+- inferred from code, never observed in traffic: retry-after semantics
+```
+
+An adopted contract's guarantees are inferred; recording what the fixtures
+do not reach is what keeps `stable` honest. The caveat is **maintained,
+not write-once**: when a phase closes a gap by adding a fixture, the same
+change updates this block. A `v0` contract whose fixture directory gained
+files while this block stayed unchanged is a stale-caveat finding at the
+next checkpoint. Until promotion gives an adopted node phases, its
+contracts' `produced_by` and `consumers` name node ids with
+`phase_ids: provisional`; the first phase plan on each side confirms them
+through `hsdd-reconcile`, as for any other contract.
+
 ## Versioning Policy
 
 - Versions are `v{n}`, `n >= 0`. No semantic versioning. **`v0` is the
@@ -216,6 +239,8 @@ are authored by `hsdd-adr`, not here; this skill owns `hsdd/contract/` only.
       upgrade).
 - [ ] No version is `retired` while a consumer or an external consumer
       still names it.
+- [ ] A `v0` contract carries `## Observed completeness`, and the block
+      changed in any commit that added fixtures to it.
 
 ## Anti-Rationalization
 

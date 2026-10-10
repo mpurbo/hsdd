@@ -131,6 +131,31 @@ be standing in produces a progress report that undercounts the project.
      squash-merged into a single commit — the latter destroys the per-phase
      history the velocity numbers are computed from, so flag it the week it
      happens, when the branch may still exist.
+   - *As-built drift (only when the tree contains a node with an
+     `## Observed surface` section; a tree with none never runs this
+     script):* for each such node, run
+     `node hsdd/scripts/seams/extract-seams.mjs diff hsdd/spec/{node-id}.md --root {implementation repo}`
+     and record each printed difference as a finding (`routes.count changed
+     2 -> 3`, `tables added payout_batches`); `nothing changed` is a pass.
+     A node whose recorded surface names no modules prints `nothing
+     compared: the recorded surface names no modules`; record that as a
+     finding that its surface cannot be checked.
+     A difference is a finding, not an error, and the fix is a plan step:
+     either the code changed without a phase (a backfill) or the surface
+     needs re-rendering by `hsdd-adopt`'s script after a reviewed change.
+     If `hsdd/scripts/seams/` is missing in a tree that has such nodes,
+     that is itself a finding (run `hsdd-adopt`'s Setup). Also the
+     **stale-caveat check**: a `v0` contract whose
+     `hsdd/contract/fixture/{slug}/` gained files (git log) after the last
+     change to its `## Observed completeness` block is a finding.
+   - *Intake records:* read every `hsdd/management/*-intake-*.md`. For each
+     with `**Status:** open`, compare the phases under `## Produced` with
+     `hsdd/verify/` on spec-repo main; when every listed phase has its
+     verification doc, set `**Status:** closed (YYYY-MM-DD)` and append to
+     the record's change log (a management-document tick, within this
+     skill's write scope). Report the counts of open and closed intakes; an
+     open intake whose `## Produced` is still empty two checkpoints after
+     its date is a finding (the handoff never landed).
 3. **Emit the progress report** (shape below). The only admissible "done"
    is: implemented, gate command green, verification doc merged to the spec
    repo's main branch. Claims without a verification doc are reported as
@@ -219,6 +244,12 @@ be standing in produces a progress report that undercounts the project.
 
 A scoped run answers "new context arrived — what does it break and what do
 we do"; a full run answers "what is true — and what do we do".
+
+**Maintenance mode** is the steady-state inflection, not a third mode:
+after launch the drift question inverts from "is the code behind the plan?"
+to "is the plan behind the code?", and the code-vs-plan pass reads in both
+directions across phases, contract surfaces, and `## Observed surface`
+sections.
 
 ## Adoption Run (first checkpoint on an existing project)
 
@@ -370,7 +401,8 @@ Three parts, regenerated whole every checkpoint:
    nodes, a per-node phase-status table beneath. Nodes at `- **Status:**
    retired` are excluded from the active view and listed once, by id, under
    a `Retired` heading at the end of the tree section, so their ids stay
-   resolvable.
+   resolvable. An as-built node shows `(as-built)` after its id and a
+   promoted node `(promoted)`, so the mixed tree is visible at a glance.
 2. **The contract graph** — producers, consumers, `draft/stable` per
    contract. One overview diagram at subsystem level, then one detail
    diagram per parent node; split any diagram that would exceed ~20 nodes.
@@ -453,6 +485,11 @@ writes live under `hsdd/management/`, plus `hsdd/summary/` through
 - [ ] Sealing performed only when this run's tick turned the last gate
       green, with the Sealed line, the change-log entry and the move to
       `archive/`; no sealed document ticked.
+- [ ] As-built drift run for every node with an `## Observed surface`, and
+      for none when the tree has no such node (no `extract-seams.mjs` run);
+      each difference is a finding with a plan step.
+- [ ] Intake records read; closable ones closed with a change-log line;
+      counts reported.
 
 ## Anti-Rationalization
 
