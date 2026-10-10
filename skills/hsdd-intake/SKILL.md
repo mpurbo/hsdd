@@ -60,7 +60,7 @@ it never defines.
    | Class | Means | Routes to |
    |-------|-------|-----------|
    | `local` | fits inside one existing leaf-parent | `hsdd-phase-plan` on that node (append mode when it already has phases) |
-   | `cross-node` | touches several nodes' surfaces | `hsdd-contract` bump and/or `hsdd-adr`, then `hsdd-phase-plan` append mode on each node |
+   | `cross-node` | touches several nodes' surfaces | `hsdd-contract` bump and/or `hsdd-adr`, then `hsdd-phase-plan` on each node (append mode when it already has phases) |
    | `new-capability` | needs a node that does not exist | `hsdd-spec` graft mode on the **existing parent**, then phase-plan the new child |
    | `structural` | the tree's shape is wrong for this change | **stop**: a human decision, the expensive one; the record states why and what the options are |
 
