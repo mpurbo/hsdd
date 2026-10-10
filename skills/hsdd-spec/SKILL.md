@@ -203,14 +203,13 @@ retirement). Never delete the spec file, and never reuse its id.
 
 - **Kind:** internal | leaf-parent
 - **Purpose:** one coherent responsibility
-- **Team:** {name}                  # optional; required on a node whose team differs from its parent's under multi-team
+- **Team:** {name}
 - **Owns:** ...
 - **Does not own:** ...
 - **Consumes:** [contract-id@version, ...], or "none"
 - **Produces:** [contract-id@version, ...], or "none"
 - **Governed by:** [ADR-NNN, ...]            (omit when empty)
 - **Sources:** [path-or-url (§section), ...], or "none"
-- **Status:** active | retired       # omit when active; see Retiring a Node
 - **Decomposes into:** child node ids, OR "phases (see hsdd-phase-plan)"
 - **Isolation strategy:** how to build/test this node using only consumed contracts
 ```
@@ -221,6 +220,11 @@ conventions, every node whose owning team differs from its parent's carries
 it; under `single-team` it may be omitted everywhere. An integration node
 names exactly one owning team. `- **Adopted:**` is reserved for brownfield
 adoption (specification chapter 6) and is never written by this skill.
+
+**Status field.** An active node has no Status line. A retired node adds
+`- **Status:** retired` directly after its Sources line (see Retiring a
+Node). Template lines carry no trailing comments; never copy guidance text
+into a spec's field values.
 
 **Sources field.** Required whenever the root spec has a `## Sources`
 section; omit it entirely only in a project with no source documents. List
