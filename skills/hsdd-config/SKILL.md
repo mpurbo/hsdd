@@ -69,8 +69,9 @@ use a short form (`api.2`).
 
 ## Setup
 
-1. **Discover context.** Read `hsdd/conventions.md`, `hsdd/spec/*.md` (by path, not in full), `CLAUDE.md`, and tech-stack files
-   (`Cargo.toml`, `package.json`). If `conventions.md` declares
+1. **Discover context.** Read `hsdd/conventions.md`, `hsdd/spec/*.md` (by
+   path, not in full), `CLAUDE.md`, and tech-stack files (`Cargo.toml`,
+   `package.json`). If `conventions.md` declares
    `Profile: standalone-spec-repo`, `hsdd/` is a git submodule of this
    implementation repo. **Paths are unchanged**: the submodule mounts at
    `hsdd/`, so `hsdd/spec/…`, `hsdd/contract/…`, `hsdd/adr/…` resolve as
@@ -156,16 +157,15 @@ replaced by the plan's default gate command in backticks}
   carries one disposition before sign-off; "- none" is valid, silence is not.
 - Contract replay: the gate validates this phase's real output against the
   schema and reproduces the fixtures of {each produced contract-id@version}.
-  (one line; omit when the phase produces no contract)
 - Grandfathered: {contract-id@version} carries validation: grandfathered and
-  this phase produces or amends it, so it must gain hsdd/contract/schema/{slug}.schema.json
-  or hsdd/contract/fixture/{slug}/ before the gate passes.
-  (one line per such contract; omit when none)
+  this phase produces or amends it, so it must gain
+  hsdd/contract/schema/{slug}.schema.json or
+  hsdd/contract/fixture/{slug}/ before the gate passes.
 
 ## Links (spec {spec-sha})
 - Phase section: hsdd/spec/{node-id}.md, heading "{the phase's heading line as written}"
 - Node spec: hsdd/spec/{node-id}.md
-- {contract-id}@{version}: hsdd/contract/{contract-file} (omit this line for an external contract)
+- {contract-id}@{version}: hsdd/contract/{contract-file}
 - ADR-{nnn}: hsdd/adr/{adr-file}
 - Conventions: hsdd/conventions.md
 - Verification template: hsdd/templates/verification.md
@@ -195,7 +195,10 @@ replaced by the plan's default gate command in backticks}
 - **Contract replay and Grandfathered lines:** read each produced
   contract's frontmatter. Every produced contract gets a place in the replay
   line; a contract with `validation: grandfathered` also gets its own
-  Grandfathered line. Omit each line when it has nothing to say.
+  Grandfathered line. Omit each line when it has nothing to say. The emitted
+  lines carry no parenthetical.
+- **Links:** one line per contract with a file in `hsdd/contract/`; an external
+  contract gets no Links line.
 - **Spec SHA:** `git -C hsdd rev-parse --short HEAD`. If
   `git -C hsdd status --porcelain -- spec contract adr conventions.md` prints
   anything, append `-dirty` and warn: the file cites text that is not
@@ -383,9 +386,14 @@ Run this after writing-plans' self-review, before choosing an execution method.
    confirmation before proceeding.
 7. **Template check.** If `hsdd/templates/verification.md` is missing, copy
    `templates/verification.md` verbatim from this skill now, whatever the
-   method, and say so in the report. The context's Links section and the
+   method, and say so in the report. If it exists but has no `## Learnings`
+   heading (a copy from before v0.10), replace it with this skill's template,
+   verbatim, and say so: the project's copy is a verbatim copy, never edited
+   by hand, and verification docs already written are never touched. If it
+   has `## Learnings` and still differs from this skill's template, leave it
+   and report the difference in one line. The context's Links section and the
    superpowers derivative's constraint 5 both point at it; a switch that
-   leaves it missing hands the coding session a dangling obligation.
+   leaves it missing or stale hands the coding session a dangling obligation.
 8. **Write the generic phase context** from the template above.
 9. **Self-contained gate.** Check rule 2 against the file you wrote: list every
    `@v`, `ADR-` and `OQ` id in it and confirm each has its subsection or line.
@@ -450,8 +458,9 @@ review gate is not passed while an Outstanding item lacks a disposition**
       no braces left.
 - [ ] Every stop (missing ADR, missing default gate, contingent phase) was
       honored; every warning is in the report.
-- [ ] `hsdd/templates/verification.md` exists after the switch (copied in
-      step 7 if it was missing), and the report says whether it was copied.
+- [ ] `hsdd/templates/verification.md` exists after the switch and has
+      `## Learnings` (copied in step 7 if missing, replaced if it was a
+      pre-v0.10 copy), and the report says which.
 - [ ] The Contract replay line names every produced contract, and every
       produced contract with `validation: grandfathered` has its own
       Grandfathered line; both omitted only when they have nothing to say.

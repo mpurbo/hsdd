@@ -1254,14 +1254,15 @@ context** (§9.7), method-neutral and self-contained, and the **derivative**
 for the coding method, which wraps the generic body word for word: OpenSpec's
 `config.yaml` (§9.3) or the superpowers spec (§9.8). The switch also copies
 the verification-doc template to `hsdd/templates/verification.md` when it is
-missing, whatever the method, so the template exists before the first coding
-session. It is the operational form of context isolation: the phase's own
-section plus the Interface and Guarantees of the contracts it consumes and
-produces and the Decision and Consequences of its governing ADRs. Never
-producer internals, never another phase's section, never the full node spec.
-Phases carry no Sources field and no source document is injected, because the
-planner is the one who read the sources (§7.6). The phase block is typically
-80 to 150 lines, mostly contract text.
+missing, and replaces a pre-v0.10 copy that has no `## Learnings`, whatever
+the method, so the current template exists before the first coding session. It
+is the operational form of context isolation: the phase's own section plus the
+Interface and Guarantees of the contracts it consumes and produces and the
+Decision and Consequences of its governing ADRs. Never producer internals,
+never another phase's section, never the full node spec. Phases carry no
+Sources field and no source document is injected, because the planner is the
+one who read the sources (§7.6). The phase block is typically 80 to 150 lines,
+mostly contract text.
 
 The switch **warns on a provisional contract and stops on a phase contingent
 on an open `request`** (§8.2). It **stops when a cited ADR has no file**
@@ -2341,7 +2342,7 @@ v0.10.0, or says the rule is specified without a skill.
 
 | Change | Effect on an existing ≥0.6.1 project | Implemented in v0.10.0 by |
 |--------|--------------------------------------|---------------------------|
-| `## Learnings`, `## Metrics` in the verification template (§10.3, §10.5) | Forward-only. Existing verification docs are never rewritten. | `hsdd-config` template; the gate rule in the generic phase context |
+| `## Learnings`, `## Metrics` in the verification template (§10.3, §10.5) | Forward-only: the first v0.10 switch replaces a project's pre-v0.10 template copy; existing verification docs are never rewritten. | `hsdd-config` template; the gate rule in the generic phase context |
 | `Team` node field, `**Teams:**` conventions line (§14.5) | Optional; absent is conformant and means `single-team`. | `hsdd-spec` |
 | `**Ordering policy:**` line in conventions (§7.4) | Absent = `interfaces-first`. No edit needed. Existing phase plans stand. | `hsdd-phase-plan`, `hsdd-spec` conventions template |
 | Unified Phase Equivalent (§7.2) | Applies to future sizing only. | `hsdd-phase-plan` |
@@ -2356,8 +2357,8 @@ v0.10.0, or says the rule is specified without a skill.
 | Execution-plan step details, plan graph, sync sections (§12.4) | Forward-only: the next emitted plan carries them. | `hsdd-checkpoint` (since v0.7.1) |
 | Generic phase context, `hsdd-context/` (§9.7) | Appears on the first switch after upgrading. | `hsdd-config` |
 | Coding method (§9.9) | Absent = `openspec`. | `hsdd-config`, `hsdd-spec` conventions template |
-| Richer OpenSpec phase block; pre-v0.10 `config.yaml` (§9.3) | The first switch replaces the three earlier phase blocks with the marked block; `rules:` unchanged. | `hsdd-config` |
-| Verification template copied by the switch when missing (§9.2) | A project on either method gets `hsdd/templates/verification.md` at its first switch. | `hsdd-config` |
+| Richer OpenSpec phase block; pre-v0.10 `config.yaml` (§9.3) | The first switch replaces the three earlier phase blocks with the marked block. `rules:` are unchanged: the switch never edits them, Setup writes the new documentation-task rule for new projects, and every project gets the Learnings requirement through the context's Discipline line and the refreshed template. | `hsdd-config` |
+| Verification template copied or refreshed by the switch (§9.2) | A project on either method gets the current `hsdd/templates/verification.md` at its first switch: copied when missing, replaced when it predates `## Learnings`. | `hsdd-config` |
 | `hsdd-summary`, `hsdd/summary/` (chapter 13) | Opt-in. A project without `hsdd/summary/` is unaffected. | `hsdd-summary`; `hsdd-checkpoint` step 7 |
 | Grandfather marking and count (§15.2) | Set once by the upgrade run's plan step; counted every checkpoint. | `hsdd-reconcile` writes; `hsdd-checkpoint` enumerates and counts |
 | `hsdd-adopt`, `@v0`, `## Observed surface`, `## Observed completeness`, promotion (chapter 6) | **Inert** unless the project has unadopted code; nothing in a greenfield tree reaches these rules. | `hsdd-adopt` (bundled seam extractor at `hsdd/scripts/seams/`), `hsdd-contract`, `hsdd-spec` promotion mode |
