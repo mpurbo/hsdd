@@ -10,13 +10,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.10.0] - 2026-10-10
 
 The release that follows 0.7.1. The 0.8.0 and 0.9.0 entries below describe
-work that was never tagged; all of it ships here, with every rule either
-implemented by a skill or marked as specified without one.
+work that was never tagged; all of it ships here, with every rule
+implemented by a skill.
 
 Specification: `spec/hsdd-spec-v0_10.md`. Basis:
 `review/2026-10-10-v0.9.0-review-fable-5.1.md` and
 `review/2026-10-10-successor-direction-fable-5.1.md`. Acceptance:
 `review/hsdd-v0_10-acceptance.md`.
+
+### Upgrading from 0.7.1
+
+- Reinstall the eleven skills.
+- The first checkpoint after upgrading runs the upgrade behaviors: it
+  enumerates the fixtureless `stable` contracts and emits the plan step
+  that has `hsdd-reconcile` mark them `validation: grandfathered`.
+- Add `**Ordering policy:** fp-progression` to `hsdd/conventions.md` to
+  keep 0.7.1's ordering, or remove the old `FP ordering:` bullet to take
+  `interfaces-first`. Until you do, the old bullet reads as
+  `fp-progression`.
+- The first phase switch replaces a verification template that has no
+  `## Learnings`.
+- `hsdd-adopt` and `hsdd-intake` do nothing until invoked.
 
 ### Added
 
@@ -24,27 +38,31 @@ Specification: `spec/hsdd-spec-v0_10.md`. Basis:
   verification template gains `## Learnings` (one disposition per entry
   before sign-off) and `## Metrics`; `hsdd-contract` gains `compatibility`,
   `external_consumers`, the `retired` status, the executable-validation
-  rule with canonical paths and the `validation: grandfathered` key;
-  `hsdd-spec` gains the `Team` and `Status` fields, integration nodes,
-  graft mode and node retirement, and its conventions template the
-  `**Ordering policy:**` and `**Teams:**` lines; `hsdd-phase-plan` gains
-  the named ordering policy (`interfaces-first` default, `fp-progression`),
-  the Phase Equivalent, the producer gate replay and append mode;
-  `hsdd-reconcile` asserts an executable validation artifact at the
-  `draft → stable` flip, marks and discharges grandfathered contracts, and
-  retires contracts; `hsdd-checkpoint` audits the grandfathered count,
-  files backfill findings with retro phases, excludes retired nodes from
-  the atlas's active view and seals a milestone document when its tick
-  turns the last gate green; `hsdd-milestone` treats a sealed document as a
-  closed campaign.
+  rule with canonical paths (it writes the schema and fixtures when it
+  authors a contract or a new version; phases only replay them) and the
+  `validation: grandfathered` key; `hsdd-spec` gains the `Team` and
+  `Status` fields, integration nodes, graft mode and node retirement, and
+  its conventions template the `**Ordering policy:**` and `**Teams:**`
+  lines; `hsdd-phase-plan` gains the named ordering policy
+  (`interfaces-first` default, `fp-progression`), the Phase Equivalent, the
+  producer gate replay and append mode; `hsdd-reconcile` asserts an
+  executable validation artifact at the `draft → stable` flip, marks
+  grandfathered contracts and discharges each once `hsdd-contract` has
+  written its artifact, and retires contracts; `hsdd-checkpoint` audits
+  the grandfathered count, files backfill findings with retro phases,
+  excludes retired nodes from the atlas's active view and seals a milestone
+  document when its tick turns the last gate green; `hsdd-milestone` treats
+  a sealed document as a closed campaign.
 - **`hsdd-adopt`**, the brownfield entry point: a bundled, tested seam
   extractor (`hsdd/scripts/seams/`: manifests, routes, schemas, migrations and
   tables, topics, owners, co-change coupling; `render` writes the `## Observed
-  surface` block, `diff` detects drift against it), as-built node specs with
-  required `unknown:` lines, `v0` contracts with `## Observed completeness`, a
-  human confirmation of the tree before any file is written, and never a
-  refactoring proposal. Owners resolve by the last matching `CODEOWNERS` rule
-  per file; unreadable directories are skipped and reported.
+  surface` block, whose `modules:` line records the rendered prefixes, and
+  `diff` re-extracts exactly those to detect drift), as-built node specs
+  with required `unknown:` lines, `v0` contracts with
+  `## Observed completeness`, a human confirmation of the tree before any
+  node spec or contract is written, and never a refactoring proposal.
+  Owners resolve by the last matching `CODEOWNERS` rule per file, read from
+  the git top level; unreadable directories are skipped and reported.
 - **`hsdd-intake`**: routes a change request into the existing tree
   (`local`, `cross-node`, `new-capability`, `structural`), reads every open
   intake first and serializes collisions, promotes an as-built landing

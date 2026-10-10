@@ -179,20 +179,22 @@ by the owner's run, never by the implementer.
 ### D2. Reconcile refuses a fixtureless flip and reports it
 
 - **Run:** in a scratch copy of the field spec tree, author a new contract
-  with `hsdd-contract` (no schema, no fixtures), plan its producing and
-  consuming phases (so its `phase_ids` are final), and run `/hsdd-reconcile`.
+  with `hsdd-contract`, then delete the schema and fixtures it wrote (the
+  state of a contract whose artifact was never written), plan its producing
+  and consuming phases (so its `phase_ids` are final), and run
+  `/hsdd-reconcile`.
 - **Expected:** the contract stays `draft`; the report names it, the path it
-  lacks, and the producing phase whose gate will create it; no
-  `validation:` key was written.
+  lacks, and the `hsdd-contract` step that adds it; no `validation:` key
+  was written.
 - **Fails if:** the contract became `stable`, or acquired
   `validation: grandfathered`.
 - **Result:**
 
 ### D3. Grandfather round trip
 
-- **Run:** on the field project, `/hsdd-checkpoint` (adoption behaviors on,
-  since the project predates v0.10.0), then execute the plan step it emits
-  for `hsdd-reconcile`, then `/hsdd-checkpoint` again.
+- **Run:** on the field project, `/hsdd-checkpoint` (its first run after
+  upgrading HSDD), then execute the plan step it emits for
+  `hsdd-reconcile`, then `/hsdd-checkpoint` again.
 - **Expected:** the first report lists the fixtureless `stable` contracts
   and records their count as the baseline; the plan has one 🤖 step with
   a prompt and a *Validate:* grep; after reconcile, exactly those contracts carry
@@ -254,11 +256,11 @@ by the owner's run, never by the implementer.
   and at least one real `unknown:` line; every adopted contract is `v0`,
   `stable`, `compatibility` declared, with its schema or fixtures present
   at the canonical paths and an `## Observed completeness` block;
-  registries regenerated; no refactoring proposal; `hsdd/seams.json` not
+  registries regenerated; no refactoring proposal; `.hsdd-seams.json` not
   committed.
 - **Fails if:** a node has no `unknown:` line, an `## Observed surface`
   bullet was hand-edited (its content differs from `render` for the same
-  modules at the same sha), or any proposal to restructure the code
+  prefixes at the same sha), or any proposal to restructure the code
   appears.
 - **Result:**
 
@@ -268,11 +270,13 @@ by the owner's run, never by the implementer.
   `/hsdd-checkpoint`; separately, `/hsdd-checkpoint` on a scratch tree with
   no `## Observed surface` and no `hsdd/scripts/seams/`.
 - **Expected:** the first run's register has a drift finding naming the
-  node and `routes.count changed n -> n+1`, with a plan step; the second
-  run's report and transcript show no `extract-seams.mjs` invocation and no
-  finding about the missing directory.
-- **Fails if:** the drift is missing, or the greenfield run ran the script
-  or reported `hsdd/scripts/seams/` as missing.
+  node and `routes.count changed n -> n+1`, with a plan step; a second
+  adopted node with no code change reports `nothing changed`; the
+  greenfield run's report and transcript show no `extract-seams.mjs`
+  invocation and no finding about the missing directory.
+- **Fails if:** the drift is missing, an unchanged adopted node reports a
+  difference, or the greenfield run ran the script or reported
+  `hsdd/scripts/seams/` as missing.
 - **Result:**
 
 ### E3. A change request is routed, recorded first, and collisions are serialized

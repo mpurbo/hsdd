@@ -22,8 +22,8 @@ HSDD applies that decomposition to the spec itself:
 - At the lowest level, a spec is a **phase**: the smallest piece executable on its
   own.
 
-HSDD keeps OpenSpec as the per-phase execution engine and makes the phase its
-**unit of work**:
+HSDD keeps an ordinary coding cycle (OpenSpec or superpowers) as the per-phase
+execution engine and makes the phase its **unit of work**:
 
 > The unit of spec-driven development is not the product. It is the smallest
 > independently verifiable phase with explicit contracts.
@@ -31,7 +31,7 @@ HSDD keeps OpenSpec as the per-phase execution engine and makes the phase its
 We size that unit as one **Phase Equivalent (PE)**: roughly five hours of agentic
 build plus human review and testing for one person, about one JIRA ticket.
 Everything above a PE is decomposition; everything inside one is a single ordinary
-OpenSpec (SDD) cycle.
+coding cycle (OpenSpec or superpowers).
 
 The inputs are whatever you already have for the project: PRD, RFC, architecture
 docs, designs, and any other available context.
@@ -66,8 +66,9 @@ flowchart TD
     style p3 fill:#d1fae5,stroke:#059669,color:#1e293b
 ```
 
-Only the green leaf phases drive OpenSpec cycles. Each one consumes contract
-interfaces by id, never another node's internals, so its session stays small.
+Only the green leaf phases drive coding cycles (OpenSpec or superpowers). Each one
+consumes contract interfaces by id, never another node's internals, so its
+session stays small.
 
 ## Why HSDD
 
@@ -140,7 +141,7 @@ re-implementing them; `hsdd-config` wires them into each phase's coding session,
 | `hsdd-adopt` | Bring an existing codebase into the tree: script-extracted seams, as-built node specs with an `## Observed surface` section, and `v0` contracts describing current behavior. Brownfield's entry point. |
 | `hsdd-intake` | Route an incoming change request (PRD, RFC, ticket, incident) into the existing tree: classify it, detect collisions with open intakes, write the routing record, and hand off. A PRD is never a root. |
 | `hsdd-checkpoint` | Run the weekly (or context-triggered) evidence pass across the spec repo and every implementation repo, emitting a progress report, a revised execution plan, a regenerated atlas, and ticked milestone gates. One pass, four views; every finding becomes a plan step or an explicit waiver. |
-| `hsdd-milestone` | Generate the stakeholder milestone document once every leaf-parent is phase-planned — a demo and a gate per checkpoint, with externally-gated work in a contingent tail outside the launch gate — and re-baseline it when the dates move. |
+| `hsdd-milestone` | Generate a campaign's stakeholder milestone document once every leaf-parent in its scope is phase-planned. Each checkpoint is a demo and a gate; externally-gated work sits in a contingent tail outside the launch gate. Re-baseline the document when the dates move. |
 | `hsdd-summary` | Render offline HTML reading aids: the plan page (root to phase cards, for a reviewer, a stakeholder or an implementer) and the checkpoint page (the newest progress report and execution plan, for the lead running the sync, each lane's executor, and stakeholders). |
 
 ## How it works
@@ -149,9 +150,9 @@ Two entry points build the tree; everything after them is shared. **Greenfield**
 starts from an idea and decomposes (steps 1–3). **Brownfield** starts from an
 existing codebase: `hsdd-adopt` extracts the seams by script, writes a shallow
 as-built tree with `v0` contracts describing current behavior, and stops, with no
-decomposition below what the first change needs. Once launched, every later
-change enters through `hsdd-intake`, which routes it into the same tree: the
-tree does not complete, phases complete.
+decomposition below what the first change needs. From then on, every change
+enters through `hsdd-intake`, which routes it into the same tree: the tree does
+not complete, phases complete.
 
 1. **Decompose** the system into a tree of nodes (`hsdd-spec`), recursing until a
    node is small enough to phase. Cross-cutting decisions become ADRs
