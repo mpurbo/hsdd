@@ -38,6 +38,13 @@ Acceptance: `review/hsdd-v0_9-acceptance.md`.
 - The invariant "one phase = one OpenSpec change" reads "one phase = one
   coding cycle"; the atlas non-goal is narrowed, not reversed.
 
+### Removed
+
+- The README and users guide no longer describe the brownfield entry point or
+  change intake: their skills have not shipped. The specification still
+  defines both (chapters 6 and 11); the skills and their walkthroughs arrive in
+  v0.10.0.
+
 ## [0.8.0] - 2026-08-03
 
 A **consolidation, not a delta.** `spec/hsdd-spec-v0_8.md` is a single

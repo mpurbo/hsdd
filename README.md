@@ -103,7 +103,7 @@ HSDD ships as agent skills, installable with the [`skills`](https://github.com/v
 CLI (works with Claude Code, Cursor, Codex, and 70+ agents):
 
 ```bash
-# All eleven HSDD skills (replace with your repo path)
+# All nine HSDD skills (replace with your repo path)
 npx skills add mpurbo/hsdd
 
 # Or a single skill
@@ -130,21 +130,14 @@ re-implementing them; `hsdd-config` wires them into each phase's coding session,
 | `hsdd-phase-plan` | Break a small-enough node into ordered, independently implementable phases, each sized for one coding cycle and one review window. |
 | `hsdd-reconcile` | Drain the pending governance updates emitted by phase planning: finalize contract phase ids, resolve contract-gap requests with you, and regenerate the registries. Runs on the root lineage after parallel plan branches merge. |
 | `hsdd-config` | Before each phase, write one self-contained phase context (the phase, the text of the contracts it touches, its decisions, pinned links) and wrap it for the project's coding method: OpenSpec's `config.yaml`, or a spec for superpowers' `writing-plans`. |
-| `hsdd-adopt` | Bring an existing codebase into the tree: script-extracted seams, as-built node specs with an `## Observed surface` section, and `v0` contracts describing current behavior. Brownfield's entry point. |
-| `hsdd-intake` | Route an incoming change request (PRD, RFC, ticket, incident) into the existing tree: classify it, detect collisions with open intakes, write the routing record, and hand off. A PRD is never a root. |
 | `hsdd-checkpoint` | Run the weekly (or context-triggered) evidence pass across the spec repo and every implementation repo, emitting a progress report, a revised execution plan, a regenerated atlas, and ticked milestone gates. One pass, four views; every finding becomes a plan step or an explicit waiver. |
 | `hsdd-milestone` | Generate the stakeholder milestone document once every leaf-parent is phase-planned — a demo and a gate per checkpoint, with externally-gated work in a contingent tail outside the launch gate — and re-baseline it when the dates move. |
 | `hsdd-summary` | Render offline HTML reading aids: the plan page (root to phase cards, for a reviewer, a stakeholder or an implementer) and the checkpoint page (the newest progress report and execution plan, for the lead running the sync, each lane's executor, and stakeholders). |
 
 ## How it works
 
-Two entry points build the tree; everything after them is shared. **Greenfield**
-starts from an idea and decomposes (steps 1–3). **Brownfield** starts from an
-existing codebase: `hsdd-adopt` extracts the seams by script, writes a shallow
-as-built tree with `v0` contracts describing current behavior, and stops — no
-decomposition below what the first change needs. Once launched, every later
-change enters through `hsdd-intake`, which routes it into the same tree: the
-tree does not complete, phases complete.
+The tree starts from an idea and is decomposed (steps 1 to 3); everything
+after that is shared. The tree does not complete; phases complete.
 
 1. **Decompose** the system into a tree of nodes (`hsdd-spec`), recursing until a
    node is small enough to phase. Cross-cutting decisions become ADRs
@@ -185,9 +178,9 @@ tokens, time, and quality.
 
 ## Learn more
 
-- [Methodology specification](spec/hsdd-spec-v0_8.md): the single current
-  specification — the full model, both entry points, the steady state, and
-  every settled decision with its provenance. The superseded delta series
+- [Methodology specification](spec/hsdd-spec-v0_9.md): the single current
+  specification, with the full model and every settled decision and its
+  provenance. The superseded delta series
   (v0.3–v0.7.1) remains in `spec/` as history; nothing requires reading it.
 - [User's guide](docs/users-guide.md): worked examples for a simple single-level
   project and a multi-level system, plus running the project week to week.
