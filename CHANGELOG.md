@@ -7,12 +7,85 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-v0.8.0 was never released on its own. Its changes, listed under [0.8.0]
-below, ship for the first time in this release, which follows 0.7.1.
+## [0.10.0] - 2026-10-10
 
-Targets 0.9.0. Design:
+The release that follows 0.7.1. The 0.8.0 and 0.9.0 entries below describe
+work that was never tagged; all of it ships here, with every rule either
+implemented by a skill or marked as specified without one.
+
+Specification: `spec/hsdd-spec-v0_10.md`. Basis:
+`review/2026-10-10-v0.9.0-review-fable-5.1.md` and
+`review/2026-10-10-successor-direction-fable-5.1.md`. Acceptance:
+`review/hsdd-v0_10-acceptance.md`.
+
+### Added
+
+- **The 0.8.0 rules the skills never received.** `hsdd-config`'s
+  verification template gains `## Learnings` (one disposition per entry
+  before sign-off) and `## Metrics`; `hsdd-contract` gains `compatibility`,
+  `external_consumers`, the `retired` status, the executable-validation
+  rule with canonical paths and the `validation: grandfathered` key;
+  `hsdd-spec` gains the `Team` and `Status` fields, integration nodes,
+  graft mode and node retirement, and its conventions template the
+  `**Ordering policy:**` and `**Teams:**` lines; `hsdd-phase-plan` gains
+  the named ordering policy (`interfaces-first` default, `fp-progression`),
+  the Phase Equivalent, the producer gate replay and append mode;
+  `hsdd-reconcile` asserts an executable validation artifact at the
+  `draft → stable` flip, marks and discharges grandfathered contracts, and
+  retires contracts; `hsdd-checkpoint` audits the grandfathered count,
+  files backfill findings with retro phases, excludes retired nodes from
+  the atlas's active view and seals a milestone document when its tick
+  turns the last gate green; `hsdd-milestone` treats a sealed document as a
+  closed campaign.
+- **`hsdd-adopt`**, the brownfield entry point: a bundled, tested seam
+  extractor (`hsdd/scripts/seams/`: manifests, routes, schemas, migrations and
+  tables, topics, owners, co-change coupling; `render` writes the `## Observed
+  surface` block, `diff` detects drift against it); owners resolve by the last
+  matching `CODEOWNERS` rule per file, and unreadable directories are skipped
+  and reported, as-built node specs with required `unknown:` lines, `v0`
+  contracts with `## Observed completeness`, a human confirmation of the tree
+  before any file is written, and never a refactoring proposal.
+- **`hsdd-intake`**: routes a change request into the existing tree
+  (`local`, `cross-node`, `new-capability`, `structural`), reads every open
+  intake first and serializes collisions, promotes an as-built landing
+  first, and writes the dated, never-superseded intake record before any
+  handoff. A PRD is never a root.
+- **Promotion mode** in `hsdd-spec`; **as-built drift**, stale-caveat and
+  intake-closure checks in `hsdd-checkpoint`, the drift check gated on the
+  tree having an `## Observed surface`.
+- **Chapter 15, rule by rule.** One table states, for every rule since
+  0.7.1, its effect on an existing project and the skill that implements
+  it. Nothing in the specification is specified without a skill.
+- **§15.3 Artifact stability.** The artifact formats are frozen for the
+  1.0 line; later changes are additive optional fields only.
+- Everything 0.9.0 added (below): the generic phase context and its two
+  derivatives, the coding method, `hsdd-summary` and chapter 13.
+
+### Changed
+
+- `hsdd-config`'s switch copies the verification template when it is missing,
+  for either method, and replaces a pre-0.10 copy that has no `## Learnings`;
+  a superpowers-only project previously never got it, and an upgrading project
+  kept its old copy.
+- The specification describes the phase context once: a session receives
+  its phase, the Interface and Guarantees of the contracts it consumes and
+  produces, and its ADRs' decisions (six places that still said "consumes
+  only" were corrected).
+- Ordering policy and teams mode are lines in the conventions body, not
+  frontmatter.
+- README leads with the review sitting as the rationale; bounded context is
+  a consequence.
+- Skills no longer mention pre-0.5 layouts; the specification supports
+  0.6.1 and later.
+
+### Removed
+
+- The claim that 0.8.0's consolidation "ships for the first time" in 0.9.0.
+
+## [0.9.0] - 2026-10-10 (never released; ships in 0.10.0)
+
+Design:
 `docs/superpowers/specs/2026-10-09-v0_9-phase-context-and-summaries-design.md`.
-Acceptance: `review/hsdd-v0_9-acceptance.md`.
 
 ### Added
 
@@ -48,7 +121,7 @@ Acceptance: `review/hsdd-v0_9-acceptance.md`.
   defines both (chapters 6 and 11); the skills and their walkthroughs arrive in
   v0.10.0.
 
-## [0.8.0] - 2026-08-03
+## [0.8.0] - 2026-08-03 (never released; ships in 0.10.0)
 
 A **consolidation, not a delta.** `spec/hsdd-spec-v0_8.md` is a single
 standalone specification absorbing v0.3 through v0.7.1 and the tool-free half
@@ -85,7 +158,7 @@ Acceptance record: `review/hsdd-v0_8-acceptance.md` (13/13 criteria PASS).
   node retirement, collision serialization across open intakes, and a
   **legal bypass** for production incidents (hotfix → backfill finding →
   retro phase, escalating if unclosed across two checkpoints).
-- **Chapter 14 — Upgrading and Compatibility.** v0.8.0 is additive; the
+- **Chapter 14 (chapter 15 in the current specification) — Upgrading and Compatibility.** v0.8.0 is additive; the
   vehicle is checkpoint's existing adoption run. The one rule with teeth —
   `stable` contracts need executable validation — is **grandfathered and
   discharged on touch**: the set closes at upgrade, each contract gains
@@ -108,7 +181,7 @@ Acceptance record: `review/hsdd-v0_8-acceptance.md` (13/13 criteria PASS).
 
 ### Changed
 
-- **Honest claims** (chapter 15, mirrored in the README): context isolation
+- **Honest claims** (chapter 15, now chapter 16, mirrored in the README): context isolation
   is *probabilistic, not enforced* — the defense is prose and structure,
   pressure-tested and holding, not a mechanism. HSDD bounds per-session token
   cost; it *does not reduce the total*.
