@@ -60,10 +60,14 @@ progress reporting, or phase planning.
    before implementation started), use the phase plans' assumed rate and a
    wider stated uncertainty band. Either way, the document states which of
    the two it used.
-3. **Adopt, don't duplicate.** If a milestone document already exists, it
-   is the current baseline: generation is only legal if none exists;
-   otherwise you are here for a re-baseline (step 6). Never mint a second
-   parallel milestone chain.
+3. **Adopt, don't duplicate; one unsealed document at a time.** Milestone
+   documents are per campaign: the adoption bootstrap, one change request's
+   fan-out, or a release train. A document carrying `- **Sealed:**` in its
+   header (it lives under `hsdd/management/archive/`) is a closed campaign,
+   never the current baseline. If an unsealed milestone document exists, it
+   is the current baseline: generation is illegal; you are here for a
+   re-baseline (step 6). If none exists, generate, naming the campaign in the
+   header. Never mint a second unsealed chain.
 4. **Derive milestones from the dependency structure** — what becomes
    demonstrable when — not from the org chart or the node list. Each
    milestone gets:
@@ -118,7 +122,8 @@ its own to write into; the checkpoint does.
 
 Required sections, in order:
 
-- Header block: date, audience, `**Basis:**` (the progress report these numbers
+- Header block: date, audience, `**Campaign:**` (one line naming the campaign),
+  `**Basis:**` (the progress report these numbers
   came from — it carries the repo baselines, which this document does not
   restate — or an explicit statement that no progress report exists yet and the
   phase plans' assumed rate was used), `**Companion docs:**` (same-date
@@ -132,9 +137,12 @@ Required sections, in order:
   if `mermaid-pastel-style` is installed, follow it.
 - **Contingent tail** — the table from step 5 with degradation paths.
 - **Tracking** — who ticks (the weekly checkpoint); the re-baseline trigger,
-  which is a gate red across two consecutive checkpoints — read from the two
-  most recent progress reports' Milestone gate status sections — or totals
-  moved; and the single source of truth for "done".
+  which is a gate red across two consecutive checkpoints, read from the two
+  most recent progress reports' Milestone gate status sections, or totals
+  moved; the single source of truth for "done"; and sealing: the checkpoint
+  whose tick turns the last gate green adds `- **Sealed:** YYYY-MM-DD`,
+  appends to the change log, and moves this file to
+  `hsdd/management/archive/`. The next campaign opens a new document here.
 - **Change log.**
 
 ## Quality Gates
@@ -152,8 +160,8 @@ Required sections, in order:
       filename; absorb-vs-re-baseline choice justified in the change log.
 - [ ] No decision recorded here that is not also landed (or scheduled to
       land) in a governance artifact.
-- [ ] No second milestone chain: an existing document was adopted or
-      superseded, never duplicated.
+- [ ] No second unsealed chain: an existing unsealed document was adopted or
+      superseded, never duplicated; sealed documents were left untouched.
 
 ## Anti-Rationalization
 
