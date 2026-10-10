@@ -35,8 +35,10 @@ checkpoint ends in a revised execution plan.
 - **On a context drop (scoped mode):** a PRD revision, design drop, or
   decision landed ("new context in commit X and commit Y") and the specs
   must be re-checked against it.
-- **First run on an existing project (adoption):** same pass, with the
-  adoption behaviors below.
+- **First run on an existing project, or the first run after upgrading
+  HSDD (the newest progress report's Bottom line has no
+  grandfathered-contracts row):** same pass, with the adoption behaviors
+  below.
 
 **Do NOT use for** milestone generation or re-baselining (`hsdd-milestone` —
 this skill only *ticks* existing gates), authoring fixes (route findings to
@@ -55,6 +57,9 @@ Point-in-time documents are dated and chained; the atlas is living:
 - `hsdd/management/YYYY-MM-DD-milestones.md` — `hsdd-milestone` writes it; this
   skill ticks its gates
 - `hsdd/management/atlas.md` — this skill regenerates it whole
+- `hsdd/management/YYYY-MM-DD-intake-{slug}.md`: `hsdd-intake` writes it;
+  dated, never superseded, outside the chain rules below; this skill only
+  appends phase ids to its `## Produced` and closes it
 
 Chain rules (enforced here, checked every pass):
 
@@ -112,7 +117,10 @@ be standing in produces a progress report that undercounts the project.
      (the set is closed), and any `stable` contract with neither an artifact
      at its Validation paths nor the key is a finding routed to
      `hsdd-reconcile`'s grandfather step (or, for a contract created after
-     the upgrade, to its producing phase). And **retirement health**: a
+     the upgrade, to `hsdd-contract` to write its artifact). A contract
+     carrying `validation: grandfathered` whose Validation paths now hold an
+     artifact is a discharge finding; its plan step asks `hsdd-reconcile` to
+     discharge the mark. And **retirement health**: a
      contract version at `retired` that a consumer or an `external_consumers`
      entry still names, and a node at `- **Status:** retired` whose
      solely-produced contracts are not retired, are findings.
@@ -137,25 +145,33 @@ be standing in produces a progress report that undercounts the project.
      `node hsdd/scripts/seams/extract-seams.mjs diff hsdd/spec/{node-id}.md --root {implementation repo}`
      and record each printed difference as a finding (`routes.count changed
      2 -> 3`, `tables added payout_batches`); `nothing changed` is a pass.
+     Under the profile, run each node's diff with `--root` set to the
+     implementation repo whose history contains the node's recorded sha
+     (`git -C {repo} cat-file -e {sha}^{commit}`, the sha without any
+     `-dirty` suffix); a sha no repo contains is a finding.
      A node whose recorded surface names no modules prints `nothing
      compared: the recorded surface names no modules`; record that as a
      finding that its surface cannot be checked.
      A difference is a finding, not an error, and the fix is a plan step:
-     either the code changed without a phase (a backfill) or the surface
-     needs re-rendering by `hsdd-adopt`'s script after a reviewed change.
+     on an as-built node, drift resolves by a reviewed re-render
+     (`hsdd-adopt`, "Re-render a node's surface"); on a promoted or
+     governed node, code with no phase is a backfill, and a difference that
+     shipped phases explain resolves by the same reviewed re-render.
      If `hsdd/scripts/seams/` is missing in a tree that has such nodes,
      that is itself a finding (run `hsdd-adopt`'s Setup). Also the
      **stale-caveat check**: a `v0` contract whose
      `hsdd/contract/fixture/{slug}/` gained files (git log) after the last
      change to its `## Observed completeness` block is a finding.
    - *Intake records:* read every `hsdd/management/*-intake-*.md`. For each
-     with `**Status:** open`, compare the phases under `## Produced` with
-     `hsdd/verify/` on spec-repo main; when every listed phase has its
-     verification doc, set `**Status:** closed (YYYY-MM-DD)` and append to
-     the record's change log (a management-document tick, within this
-     skill's write scope). Report the counts of open and closed intakes; an
-     open intake whose `## Produced` is still empty two checkpoints after
-     its date is a finding (the handoff never landed).
+     open record, find the phase sections whose Scope cites the record's
+     path, append any missing phase ids to its `## Produced`, and tick it
+     `closed (date)` when the list names at least one phase and every listed
+     phase has its verification doc on spec-repo main: set
+     `**Status:** closed (YYYY-MM-DD)` and append to the record's change log
+     (management-document edits, within this skill's write scope). Report
+     the counts of open and closed intakes; an open intake whose
+     `## Produced` is still empty two checkpoints after its date is a
+     finding (the handoff never landed).
 3. **Emit the progress report** (shape below). The only admissible "done"
    is: implemented, gate command green, verification doc merged to the spec
    repo's main branch. Claims without a verification doc are reported as
@@ -184,7 +200,10 @@ be standing in produces a progress report that undercounts the project.
    loudly and hand off to `hsdd-milestone`; do not re-baseline here. Record
    the resulting gate status in the progress report's Milestone gate status
    section and compare it against the previous report's; two consecutive
-   reds fire the trigger. **Sealing:** when this tick turns the last gate
+   reds fire the trigger. With no current document (after a seal, or before
+   any milestone document exists), keep the section with one line, e.g.
+   "no current milestone document (last campaign sealed YYYY-MM-DD)".
+   **Sealing:** when this tick turns the last gate
    green, add `- **Sealed:** {YYYY-MM-DD}` to the document's header, append a
    change-log line, move the file to `hsdd/management/archive/` with `git
    mv`, and state in the progress report that the campaign closed and that
@@ -249,9 +268,11 @@ we do"; a full run answers "what is true — and what do we do".
 after launch the drift question inverts from "is the code behind the plan?"
 to "is the plan behind the code?", and the code-vs-plan pass reads in both
 directions across phases, contract surfaces, and `## Observed surface`
-sections.
+sections. A project is launched once its system runs in production: an
+adopted tree from adoption, a greenfield tree from the sealing of the
+campaign whose gate includes launch. Backfill findings apply from then on.
 
-## Adoption Run (first checkpoint on an existing project)
+## Adoption Run (first checkpoint on an existing project, or after upgrading HSDD)
 
 - **Nonconformances are findings, not errors.** Pre-convention OQ formats,
   a missing atlas, broken supersedes links, blank sign-offs: each becomes
@@ -267,7 +288,9 @@ sections.
   atlas of a messy tree is precisely the map the cleanup needs.
 - **A missing milestone document is normal at adoption**, not a finding: tick
   nothing, note in the progress report that no milestone baseline exists, and
-  recommend `hsdd-milestone` once every leaf-parent is phase-planned.
+  recommend `hsdd-milestone` once every leaf-parent in the campaign's scope
+  is phase-planned. The Milestone gate status section stays, with that one
+  line.
 - **Grandfather enumeration.** List every contract that is `stable`, has no
   artifact at its Validation paths, and has no `validation:` key. Emit one
   🤖 plan step whose prompt asks `hsdd-reconcile` to mark exactly those
@@ -477,7 +500,9 @@ writes live under `hsdd/management/`, plus `hsdd/summary/` through
       pushed inside the submodule with every repo's pointer bumped).
 - [ ] Grandfathered count reported with the previous count; a rise is a
       High finding; fixtureless `stable` contracts without the key are
-      findings routed to reconcile or to their producing phase.
+      findings routed to reconcile or to `hsdd-contract`; a grandfathered
+      contract whose artifact now exists is a discharge finding routed to
+      reconcile.
 - [ ] Post-launch code with no phase is a backfill finding with a plan step
       that appends a retro phase; a backfill carried two reports escalates.
 - [ ] Retired nodes excluded from the atlas's active view and listed under
@@ -488,8 +513,9 @@ writes live under `hsdd/management/`, plus `hsdd/summary/` through
 - [ ] As-built drift run for every node with an `## Observed surface`, and
       for none when the tree has no such node (no `extract-seams.mjs` run);
       each difference is a finding with a plan step.
-- [ ] Intake records read; closable ones closed with a change-log line;
-      counts reported.
+- [ ] Intake records read; phases citing each open record appended to its
+      `## Produced`; closable ones closed with a change-log line; counts
+      reported.
 
 ## Anti-Rationalization
 

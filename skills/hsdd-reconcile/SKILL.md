@@ -32,7 +32,12 @@ one place. Collisions are design decisions and belong to the human.
   sections need draining.
 - A phase plan just finished in a serial flow (one node: reconcile is fast).
 - `hsdd-config` warned that a consumed contract is still
-  `phase_ids: provisional` or that a phase is contingent on an open `request`.
+  `phase_ids: provisional` or `status: draft`, or that a phase is contingent
+  on an open `request`.
+- A checkpoint plan step names contracts to mark or discharge as
+  grandfathered, a retired node, or a `draft` contract whose artifact now
+  exists. These invocations usually find no pending section; step 2 still
+  runs the steps they name.
 
 **Do NOT use for** authoring or versioning contract bodies (`hsdd-contract`),
 recording decisions (`hsdd-adr`), or phase planning (`hsdd-phase-plan`).
@@ -51,9 +56,10 @@ edits governance files); this skill performs the semantic merge.
    the default layout (plan files under `hsdd/spec/`) and states the parallel
    development protocol this skill completes.
 2. **Scan.** Find every `## Governance updates (pending reconcile)` section in
-   `hsdd/spec/*.md`. If none exist, say so — then still run the
-   resolved-question sweep below if this run was asked to sweep a specific OQ
-   (an ADR or contract may have resolved one without any pending section),
+   `hsdd/spec/*.md`. If none exist, say so; then still run, in order, the
+   steps this invocation names (step 7 for a `draft` contract with
+   `phase_ids: final` whose artifact now exists, step 8's grandfather
+   marking or discharge, step 9's retirement, the resolved-question sweep),
    and stop. Entries may carry rationale sub-bullets, and `contingent phases:
    none` means nothing blocks; read both accordingly.
 3. **Detect collisions before applying anything.** Group entries by contract
@@ -82,7 +88,7 @@ edits governance files); this skill performs the semantic merge.
    disk (defaults `hsdd/contract/schema/{slug}.schema.json`,
    `hsdd/contract/fixture/{slug}/`). A contract that qualifies on phase ids
    and requests but has no artifact stays `draft`; report it by name with
-   the path it lacks, and say which producing phase's gate will create it.
+   the path it lacks, and emit the `hsdd-contract` step that adds it.
    Never flip without the artifact, and never write `validation:
    grandfathered` to get past this check: the grandfather set is closed
    (step 8). Contracts that were already `stable` before this run are not
@@ -99,16 +105,15 @@ edits governance files); this skill performs the semantic merge.
    frontmatter and report the count. Never mark a `draft`, and never mark a
    contract whose file was created after the upgrade checkpoint's baseline SHA
    (the plan step carries it, from that progress report's Repo baselines
-   header; invoked without one, ask for it). Discharge: when a drained entry
-   shows a phase produced, amended or bumped a grandfathered contract and the
-   artifact now exists at the Validation paths, remove the key and say so; if
-   the artifact does not exist, leave the key and report the phase by id,
-   because its gate must not have passed.
-9. **Contract retirement.** When a drained entry or the invoking prompt
-   retires a node (`- **Status:** retired`), set each contract that node
-   solely produced to `status: retired` **unless** a consumer or an
-   `external_consumers` entry still names the version; in that case leave
-   the status, and report the live consumer as a finding for the checkpoint.
+   header; invoked without one, ask for it). Discharge: when the invoking
+   prompt or a checkpoint plan step names a grandfathered contract whose
+   artifact now exists at its Validation paths, remove the key and say so.
+9. **Contract retirement.** When the invoking prompt or a checkpoint plan
+   step names a retired node (`- **Status:** retired`), set each contract
+   that node solely produced to `status: retired` **unless** a consumer or
+   an `external_consumers` entry still names the version; in that case
+   leave the status, and report the live consumer as a finding for the
+   checkpoint.
 10. **Apply `note` entries** to `hsdd/conventions.md` only when they change a
    convention. Drop notes that duplicate derived data; the registry already
    projects contract facts.
@@ -133,7 +138,7 @@ edits governance files); this skill performs the semantic merge.
 | `request` | contract body (or a new ADR) | human resolves; skill applies; contingent phases unblock |
 | `amend` | contract body | producer-side enrichment; backward-compatible keeps the version, breaking goes to the human and bumps it |
 | `note` | `hsdd/conventions.md` | apply only if it changes a convention; drop derived facts |
-| grandfather step (from the upgrade checkpoint's plan) | contract frontmatter | add `validation: grandfathered` to listed `stable` contracts without artifacts; never to a `draft`, never to a new contract |
+| grandfather step (from a checkpoint plan step) | contract frontmatter | mark: add `validation: grandfathered` to listed `stable` contracts without artifacts, never to a `draft`, never to a new contract; discharge: remove the key from a listed contract whose artifact now exists |
 | retire (node retired) | contract frontmatter | `status: retired` for solely-produced contracts with no live consumer; otherwise a finding |
 
 ## Quality Gates
@@ -158,5 +163,5 @@ edits governance files); this skill performs the semantic merge.
 | "Skip the registry regen, frontmatter barely changed" | The registry is derived data. Any frontmatter change without a regen makes INDEX.md lie. |
 | "Leave the drained entries in place for history" | Git history already keeps them. A stale pending section gets re-drained and double-applied. |
 | "The OQ row says RESOLVED — done" | Citations elsewhere still gate phases on it and justify contract prose with it. Grep the id; sweep every stale citation. |
-| "The fixtures will come in the next phase; flip it to stable now" | Stable means a consumer can build against fixtures today. Leave it draft, name the phase whose gate creates the artifact, and let hsdd-config warn consumers it is provisional. |
+| "The fixtures will come in the next phase; flip it to stable now" | Stable means a consumer can build against fixtures today. Leave it draft, name the hsdd-contract step that adds the artifact, and let hsdd-config warn consumers that it is draft. |
 | "This new contract has no fixtures; mark it grandfathered" | The set closed at upgrade. A new contract without an artifact is an error, not history. |
