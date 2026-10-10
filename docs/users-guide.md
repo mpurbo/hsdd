@@ -676,7 +676,7 @@ You: "Adopt this codebase into HSDD."
 
 `hsdd-adopt` first copies its scripts verbatim into `hsdd/scripts/seams/`
 (the same precedent as the registry generator) and adds `.hsdd-seams.json`
-to `.gitignore`, then runs the extractor:
+to `.gitignore` and commits that line, then runs the extractor:
 
 ```bash
 node hsdd/scripts/seams/extract-seams.mjs extract -o .hsdd-seams.json
@@ -830,11 +830,11 @@ node hsdd/scripts/gen-registry.mjs
 The registry lists two `v0` contracts, and `kyc-verified-events@v0`
 consumed from outside the tree; every other id in `Consumes` and
 `Produces` resolves; every `## Observed surface` written from this
-repository carries its sha. The skill stops here: no phases, no decomposition below what the
-first change needs. What you review at the stop: the tree shape (minutes,
-it mirrors the code you already know), the `unknown:` lines, and each
-contract's `## Observed completeness`. Commit `hsdd/` and the `.gitignore`
-line; `.hsdd-seams.json` stays uncommitted.
+repository carries its sha. The skill stops here: no phases, no
+decomposition below what the first change needs. What you review at the
+stop: the tree shape (minutes, it mirrors the code you already know), the
+`unknown:` lines, and each contract's `## Observed completeness`. Commit
+`hsdd/`; `.hsdd-seams.json` stays uncommitted.
 
 ### Step 6: Route the PRD through intake
 
@@ -867,7 +867,8 @@ batched per schedule. Treasury wants a preview of tomorrow's batches.
 ## Routing
 local, after promoting legacy-pay.payouts. The PRD lands in that node's
 Sources. Handoff: "/hsdd-spec promote legacy-pay.payouts using
-docs/prd-payout-scheduling.md", then "/hsdd-phase-plan legacy-pay.payouts".
+docs/prd-payout-scheduling.md", then "/hsdd-phase-plan legacy-pay.payouts per
+hsdd/management/2026-10-10-intake-payout-scheduling.md".
 payouts-api@v0 gains an optional schedule field (additive, no bump).
 
 ## Produced
@@ -896,8 +897,8 @@ a later change to the same node consumes the promoted spec.
 
 Then `hsdd-phase-plan`, reconcile, phase context, cycles and gates, exactly
 as Example 2. Phase 1 confirms `payouts-api@v0`'s `produced_by` as
-`legacy-pay.payouts.1`; the contract keeps `v0`. Each appended phase names
-the intake record in its Scope, and the PRD stays in the node's Sources.
+`legacy-pay.payouts.1`; the contract keeps `v0`. Each phase names the
+intake record in its Scope, and the PRD stays in the node's Sources.
 The weekly checkpoint finds those Scope citations and appends the phases to
 the record's `## Produced` ledger; when every listed phase has its
 verification doc on main, it ticks the record `**Status:** closed`.

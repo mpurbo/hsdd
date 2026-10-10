@@ -1596,9 +1596,9 @@ then reclassify.**
   it.
 - Shipped-ness is *not authored*: it derives from the verification doc on the
   spec repo's main branch — the only admissible "done" (chapter 12).
-- A phase appended for a change request names the intake record in its
-  Scope, and the request's path joins the node's `Sources` field (appended,
-  never replacing an entry).
+- A phase planned for a change request, in a new plan or an appended one,
+  names the intake record in its Scope, and the request's path joins the
+  node's `Sources` field (appended, never replacing an entry).
 
 ### 11.4 `hsdd-spec` graft mode
 
@@ -1910,7 +1910,9 @@ One run of `hsdd-checkpoint`:
      residue), management chain integrity, grandfather audit (the count of
      `validation: grandfathered` contracts, compared with the previous
      report's; a rise is a finding; a grandfathered contract whose artifact
-     now exists is a discharge finding routed to `hsdd-reconcile`), and
+     now exists is a discharge finding routed to `hsdd-reconcile`; a
+     `draft` contract with `phase_ids: final`, no open `request` and an
+     artifact is a finding routed to `hsdd-reconcile` to finalize it), and
      retired contract versions that still have a live consumer,
      `external_consumers` included (§3.5).
    - *Code vs plan* (each implementation repo): what phases the code
@@ -2629,7 +2631,7 @@ add is `reasoned-only`, and the table says so instead of letting it borrow.
 | Where an incoming PRD's spec lives | Nowhere — a PRD is never a root; there is one tree and it is the system's (§11.1). | reasoned-only |
 | Post-launch milestones | Per-campaign documents, sealed when green, archived (§12.5). | reasoned-only |
 | Contract compatibility | A declared per-version `compatibility:` policy, fixture-enforced (§3.5). | reasoned-only |
-| The grandfather clause's end | On touch, not on a date: set closed at upgrade, discharged when a phase touches the contract, count reported and falling (§15.2). | reasoned-only |
+| The grandfather clause's end | On touch, not on a date: set closed at upgrade; a phase that touches the contract cannot pass its gate until the artifact exists, written at the root through `hsdd-contract`, and the next reconcile after that gate removes the mark on the checkpoint's discharge finding; count reported and falling (§15.2). | reasoned-only |
 | Phase context shape | One generic, method-neutral, self-contained file per phase, selected verbatim, never authored (§9.7). | reasoned-only |
 | Derivatives | Wrap the generic body word for word; a `diff` proves they agree (§9.3, §9.8). | reasoned-only |
 | Coding method | Project default in conventions, per-phase override at the switch (§9.9). | reasoned-only |

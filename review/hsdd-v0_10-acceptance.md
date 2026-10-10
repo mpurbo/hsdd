@@ -207,8 +207,8 @@ by the owner's run, never by the implementer.
 ### D4. Ordering policy is read, not assumed
 
 - **Run:** set `**Ordering policy:** fp-progression` in a scratch copy's
-  conventions and write a phase plan for one leaf-parent; then remove the
-  line and plan another.
+  conventions and write a phase plan for one leaf-parent; then remove that
+  line and any pre-v0.10 `FP ordering:` bullet, and plan another.
 - **Expected:** each plan names the policy it followed after its summary
   table; the second says `interfaces-first`.
 - **Fails if:** either plan names the wrong policy or none.
@@ -288,7 +288,8 @@ by the owner's run, never by the implementer.
   spec or plan change, and under the standalone-spec-repo profile its commit
   comes first in `git log`); exactly one class; the planted record is named
   under `**Collisions:**` and both change logs say which waits, or that the
-  two were merged; the slug contains neither `progress` nor `execution-plan`;
+  two were merged; the slug contains none of `progress`, `execution-plan`,
+  `milestones` or `atlas`;
   no spec, contract or ADR was written by the intake.
 - **Fails if:** a handoff ran before the record existed, or the collision
   went unrecorded.

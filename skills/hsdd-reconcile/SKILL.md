@@ -60,8 +60,9 @@ edits governance files); this skill performs the semantic merge.
    steps this invocation names (step 7 for a `draft` contract with
    `phase_ids: final` whose artifact now exists, step 8's grandfather
    marking or discharge, step 9's retirement, the resolved-question sweep),
-   and stop. Entries may carry rationale sub-bullets, and `contingent phases:
-   none` means nothing blocks; read both accordingly.
+   then step 12 when any of them changed a contract, and stop. Entries may
+   carry rationale sub-bullets, and `contingent phases: none` means nothing
+   blocks; read both accordingly.
 3. **Detect collisions before applying anything.** Group entries by contract
    id. A collision is: two nodes claiming the same artifact or package,
    contradictory `confirm` entries, an `amend` conflicting with another node's

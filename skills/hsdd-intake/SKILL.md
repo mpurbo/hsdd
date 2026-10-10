@@ -59,7 +59,7 @@ it never defines.
 
    | Class | Means | Routes to |
    |-------|-------|-----------|
-   | `local` | fits inside one existing leaf-parent | `hsdd-phase-plan` append mode on that node |
+   | `local` | fits inside one existing leaf-parent | `hsdd-phase-plan` on that node (append mode when it already has phases) |
    | `cross-node` | touches several nodes' surfaces | `hsdd-contract` bump and/or `hsdd-adr`, then `hsdd-phase-plan` append mode on each node |
    | `new-capability` | needs a node that does not exist | `hsdd-spec` graft mode on the **existing parent**, then phase-plan the new child |
    | `structural` | the tree's shape is wrong for this change | **stop**: a human decision, the expensive one; the record states why and what the options are |
@@ -71,9 +71,11 @@ it never defines.
    the record.
 6. **Hand off** to the skill the class names, with the exact prompt to run;
    when the record names a promotion, that handoff runs first and the rest
-   wait for its confirmation; or stop on `structural`. Under the standalone-spec-repo profile the
-   record is committed and pushed inside the submodule like every
-   governance-adjacent edit.
+   wait for its confirmation; or stop on `structural`. Under the
+   standalone-spec-repo profile the record is committed and pushed inside
+   the submodule like every governance-adjacent edit. A phase-plan handoff
+   prompt names the record's path:
+   `/hsdd-phase-plan {node} per hsdd/management/{record}.md`.
 7. **Report:** the record's path, the class, the landing nodes, collisions
    found and how they were serialized, and the handoff prompt.
 

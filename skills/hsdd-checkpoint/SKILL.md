@@ -120,7 +120,10 @@ be standing in produces a progress report that undercounts the project.
      the upgrade, to `hsdd-contract` to write its artifact). A contract
      carrying `validation: grandfathered` whose Validation paths now hold an
      artifact is a discharge finding; its plan step asks `hsdd-reconcile` to
-     discharge the mark. And **retirement health**: a
+     discharge the mark. A `draft` contract with `phase_ids: final`, no open
+     `request`, and an artifact at its Validation paths is a finding; its
+     plan step asks `hsdd-reconcile` to finalize it (step 7). And
+     **retirement health**: a
      contract version at `retired` that a consumer or an `external_consumers`
      entry still names, and a node at `- **Status:** retired` whose
      solely-produced contracts are not retired, are findings.

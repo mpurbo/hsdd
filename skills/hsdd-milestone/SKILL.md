@@ -51,11 +51,11 @@ progress reporting, or phase planning.
 ## Process
 
 1. **Verify the precondition.** Walk the spec tree under `hsdd/spec/`; every
-   leaf-parent in the campaign's scope must have a `## Phase Plan` section. Missing plans: stop,
-   list them, done. (Run from an implementation repo — under the
-   standalone-spec-repo profile, never from a standalone clone of the spec
-   repo. This skill needs no other repo's code: it reads the tree and the
-   latest progress report, both under `hsdd/`.)
+   leaf-parent in the campaign's scope must have a `## Phase Plan` section.
+   Missing plans: stop, list them, done. (Run from an implementation repo,
+   and under the standalone-spec-repo profile never from a standalone clone
+   of the spec repo. This skill needs no other repo's code: it reads the
+   tree and the latest progress report, both under `hsdd/`.)
 2. **Take calibration.** Velocity comes from the latest progress report's
    calibrated rates. If no progress report exists yet (planning finished
    before implementation started), use the phase plans' assumed rate and a

@@ -9,9 +9,9 @@ description: >
   "subsystem dependencies", "dependency map", "parallel development order",
   "multi-level spec". Also "promote X", "graft a child under X", "retire node
   X" (promotion, graft and retirement modes). This is the recursive
-  decomposition step of HSDD, at the root or any internal level. To break a node that is ALREADY a leaf-parent into
-  implementation phases use hsdd-phase-plan; to author contract bodies use
-  hsdd-contract.
+  decomposition step of HSDD, at the root or any internal level. To break a
+  node that is ALREADY a leaf-parent into implementation phases use
+  hsdd-phase-plan; to author contract bodies use hsdd-contract.
 ---
 
 # HSDD Spec: Recursive Node Decomposition
@@ -161,9 +161,10 @@ intermediate internal node (a "feature") rather than forcing a fixed tier.
 8. **Seed conventions.** At the root, create `hsdd/conventions.md` from the
    bundled template (`templates/conventions.md`): default layout, id scheme,
    companion-skill recommendation. (`hsdd-adopt` seeds it from the same
-   template when adoption creates the tree.) At deeper levels, refresh it only for
-   genuinely new conventions (layout, naming, protocol); contracts are indexed
-   by the generated `hsdd/contract/INDEX.md`, never listed here.
+   template when adoption creates the tree.) At deeper levels, refresh it
+   only for genuinely new conventions (layout, naming, protocol); contracts
+   are indexed by the generated `hsdd/contract/INDEX.md`, never listed
+   here.
 
 ## Promotion Mode (an as-built node gets its first change)
 

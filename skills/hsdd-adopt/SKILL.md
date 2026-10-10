@@ -35,8 +35,9 @@ in the project (this skill's base directory is printed when the skill loads),
 the same precedent as `gen-registry.mjs` and `hsdd/scripts/summary/`. Never
 retype a file: the diff `hsdd-checkpoint` runs later is pinned to the bundled
 code. Every command below runs from the implementation repo's root. Add
-`.hsdd-seams.json` to that repo's `.gitignore`: it is the scratch model
-step 2 writes.
+`.hsdd-seams.json` (the scratch model step 2 writes) to that repo's
+`.gitignore` and commit that line before step 2; an uncommitted
+`.gitignore` stamps an unprefixed extraction `-dirty`.
 
 If `hsdd/conventions.md` does not exist, seed it from `hsdd-spec`'s
 `templates/conventions.md` after the human confirms the tree (step 3). If
@@ -117,8 +118,10 @@ loads); never retype it.
    else remains an as-built stub. Depth on demand; the first change that
    lands on a node promotes it (`hsdd-spec`, promotion mode).
 7. **Prove the tree.** `node hsdd/scripts/gen-registry.mjs`; every id in
-   `Consumes` and `Produces` resolves; every `## Observed surface` written
-   from one implementation repo carries that repo's sha.
+   `Consumes` and `Produces` resolves, except a contract produced outside
+   the tree, which the report names as external; every
+   `## Observed surface` written from one implementation repo carries that
+   repo's sha.
 8. **Report:** the tree, the modules behind each node, the contract count,
    every `unknown:` line, and the extraction sha. Say what you did not
    adopt and why.

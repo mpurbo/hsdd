@@ -289,6 +289,15 @@ When a merge-candidate pair is kept split, record the reason in one line —
 in the kept phase's section or a short note under the summary table. A plan
 with no merge-candidate pairs records nothing.
 
+## Change Requests
+
+When the invoking prompt names an intake record, every phase planned for
+that request, in a new plan or an appended one, names the record in its
+Scope (`per hsdd/management/2026-10-10-intake-payout-scheduling.md`), so
+the checkpoint can append it to the record's `## Produced` and close the
+record when the phase ships, and the request's path joins the node's
+`- **Sources:**` field (appended, never replacing an entry).
+
 ## Append Mode (a plan that already has phases)
 
 A change routed to this node, or a backfill finding from `hsdd-checkpoint`,
@@ -303,11 +312,7 @@ appends phases to an existing plan. Rules:
 - A **retro phase** (a backfill for code that shipped with no phase) is
   marked `(retro)` in its name, cites the finding id in its Scope, and its
   verification doc is written after the fact and marked retroactive.
-- A phase appended for a change request names the intake record in its
-  Scope (`per hsdd/management/2026-10-10-intake-payout-scheduling.md`), so
-  the checkpoint can append it to the record's `## Produced` and close the
-  record when the phase ships, and the request's path joins the node's
-  `- **Sources:**` field (appended, never replacing an entry).
+- A phase appended for a change request follows Change Requests above.
 - The dependency graph gains the new nodes; existing edges are not redrawn.
 - The pending-governance section is appended to, with a new emission date
   line, and drained by `hsdd-reconcile` as usual.
@@ -328,14 +333,14 @@ flowchart TD
     P3["{node}.3<br/>Component B"]
     P4["{node}.4<br/>Orchestration"]
     P5["{node}.5<br/>Wiring"]
-    X1["{sibling}.1<br/>canonical fixtures"]
+    X1["{producer}.2<br/>produces {contract}"]
 
     P1 --> P2
     P1 --> P3
     P2 --> P4
     P3 --> P4
     P4 --> P5
-    X1 -. "fixtures@v1" .-> P5
+    X1 -. "{contract}@v1" .-> P5
 ```
 
 ## Phase Design Checklist

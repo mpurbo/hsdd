@@ -132,9 +132,11 @@ fixtures and consumer tests fail loudly instead of drifting.
 
 **Authoring writes the artifact.** When this skill creates a contract or a
 new version, it also writes `hsdd/contract/schema/{slug}.schema.json` from
-the Interface and, for `api` and `event`, example payloads under
-`hsdd/contract/fixture/{slug}/`. A phase never writes them; the producing
-phase's gate replays them.
+the Interface and the kind's fixtures under `hsdd/contract/fixture/{slug}/`
+(the table above): example payloads for `api` and `event`, edge cases for
+`schema` and `shared-model`, a sample tree for `file`, recorded invocations
+for `cli`. A phase never writes them; the producing phase's gate replays
+them.
 
 **Grandfathered contracts.** A contract that was already `stable` without
 an artifact when the project upgraded carries `validation: grandfathered` in
@@ -240,8 +242,8 @@ are authored by `hsdd-adr`, not here; this skill owns `hsdd/contract/` only.
 - [ ] The registry was regenerated.
 - [ ] `phase_ids` is present (`provisional` until `hsdd-reconcile` finalizes it).
 - [ ] Every code-level artifact both sides consume (types file, fixtures, shared package) names its canonical path and its owner in the Interface or Validation section: the owning phase for code, `hsdd-contract` for validation artifacts.
-- [ ] A contract or version created by this run has its schema (and, for
-      `api` and `event`, example payloads) written at the canonical paths.
+- [ ] A contract or version created by this run has its schema and its
+      kind's fixtures written at the canonical paths.
 - [ ] Open questions are cited by ID only — never defined here; prose
       justifying behavior as "pending OQ-x" is swept when the OQ resolves
       (hsdd-reconcile).
