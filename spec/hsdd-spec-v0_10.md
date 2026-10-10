@@ -1741,8 +1741,8 @@ from independent counting. Required sections:
 - **Bottom line** is one table: phases planned / code-complete / remaining
   (externally-contingent count broken out), implementation progress %,
   observed velocity per lane, calibrated remaining effort, calendar outlook,
-  and the remaining grandfathered count with the previous report's and the
-  grandfather set's source (§15.2).
+  and a grandfathered-contracts row: the remaining count with the previous
+  report's, and the set source (§15.2).
 - **Milestone gate status** — one row per milestone (gate items met / total,
   each unmet item's blocker); the persisted input that makes the slip
   trigger's "red across two consecutive checkpoints" checkable. With no
@@ -2443,7 +2443,8 @@ permanent. Three properties give it one, without a deadline:
    itself never writes a contract file (§12.7), and the registry generator
    passes the key through unchanged. That step's list is the set: every
    later progress report cites it by the plan's filename and the step's
-   ID, so the set is read, never reconstructed. Nothing may join the set
+   ID (the set source, or `empty` when the enumeration found nothing), so
+   the set is read, never reconstructed. Nothing may join the set
    afterward. A
    *new* contract flipped `draft → stable` without fixtures is an error, not
    a grandfather case: the clause covers history, never new work.
@@ -2457,8 +2458,9 @@ permanent. Three properties give it one, without a deadline:
    tree and depth-on-demand. A contract nobody touches needs no fixtures,
    because nobody is depending on new behavior from it.
 3. **The count is reported and can only fall.** Each checkpoint reports the
-   remaining grandfathered count, the set's members not yet discharged, in
-   the progress report's Bottom line, next to the previous report's count.
+   remaining count, the set's members that still carry the mark or are
+   still waiting for the marking step, in the progress report's Bottom
+   line, next to the previous report's count.
    A closed, finite, monotonically decreasing set needs no sunset: it either
    drains as the system is worked on, or the untouched remainder is
    precisely the surface that carries no active risk. Because the count

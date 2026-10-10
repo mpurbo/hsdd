@@ -94,8 +94,10 @@ edits governance files); this skill performs the semantic merge.
    grandfathered` to get past this check: the grandfather set is closed
    (step 8). Contracts that were already `stable` before this run are not
    re-examined here; a pre-existing fixtureless `stable` contract without
-   the `validation:` key is reported once as a grandfather candidate for the
-   next checkpoint, never un-flipped. Stable means interface-frozen, safe to
+   the `validation:` key is reported once for the checkpoint's grandfather
+   audit (the upgrade run enumerates it; after that, the grandfather set
+   decides whether it is waiting for the marking step or `hsdd-contract`'s
+   to give an artifact), never un-flipped. Stable means interface-frozen, safe to
    build against, not producer-shipped. This step runs after steps 5-6 on
    purpose: the no-open-request condition is only decidable once requests
    are resolved.
@@ -108,10 +110,14 @@ edits governance files); this skill performs the semantic merge.
    contract whose file was created after the upgrade checkpoint's baseline SHA
    (the plan step carries it, from that progress report's Repo baselines
    header; invoked without one, ask for it). Never re-mark a contract whose
-   file history already carried the key
-   (`git log -G 'validation: grandfathered' -- {contract file}` prints a
-   commit): it was discharged, and a lost artifact is `hsdd-contract`'s to
-   restore. Discharge: when the invoking
+   file history in the spec repo already carried the key
+   (`git -C hsdd log -G 'validation: grandfathered' -- contract/{file}`
+   prints a commit): it was discharged, and a lost artifact is
+   `hsdd-contract`'s to restore. Read that history inside the spec repo,
+   never from the implementation repo, where `hsdd/` is a submodule and the
+   log shows nothing; in a shallow clone, fetch the full history first, and
+   history that cannot be read is reported, never taken as "never
+   carried". Discharge: when the invoking
    prompt or a checkpoint plan step names a grandfathered contract whose
    artifact now exists at its Validation paths, remove the key and say so.
 9. **Contract retirement.** When the invoking prompt or a checkpoint plan
@@ -144,14 +150,14 @@ edits governance files); this skill performs the semantic merge.
 | `request` | contract body (or a new ADR) | human resolves; skill applies; contingent phases unblock |
 | `amend` | contract body | producer-side enrichment; backward-compatible keeps the version, breaking goes to the human and bumps it |
 | `note` | `hsdd/conventions.md` | apply only if it changes a convention; drop derived facts |
-| grandfather step (from a checkpoint plan step) | contract frontmatter | mark: add `validation: grandfathered` to listed `stable` contracts without artifacts, never to a `draft`, never to a new contract; discharge: remove the key from a listed contract whose artifact now exists |
+| grandfather step (from a checkpoint plan step) | contract frontmatter | mark: add `validation: grandfathered` to listed `stable` contracts without artifacts, never to a `draft`, never to a new contract, never to one whose history carried the key; discharge: remove the key from a listed contract whose artifact now exists |
 | retire (node retired) | contract frontmatter | `status: retired` for solely-produced contracts with no live consumer; otherwise a finding |
 
 ## Quality Gates
 
 - [ ] Every pending section drained, or explicitly deferred with a reason.
 - [ ] No contract with both sides fully planned remains `phase_ids: provisional`; none with `phase_ids: final`, no open request and an existing validation artifact remains `status: draft`; none was flipped without its artifact.
-- [ ] Grandfather marks were added only to pre-existing fixtureless `stable` contracts named by the plan step, and removed wherever the artifact now exists.
+- [ ] Grandfather marks were added only to pre-existing fixtureless `stable` contracts named by the plan step (the upgrade step or one carrying it forward), none re-marked after a discharge, and removed wherever the artifact now exists.
 - [ ] No contract was retired while a consumer or external consumer still names it.
 - [ ] Every collision was decided by the human, and the losing plan was updated to match.
 - [ ] Contract edits follow hsdd-contract versioning (breaking change = new version + migration note).
