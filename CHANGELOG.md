@@ -40,11 +40,11 @@ Specification: `spec/hsdd-spec-v0_10.md`. Basis:
 - **`hsdd-adopt`**, the brownfield entry point: a bundled, tested seam
   extractor (`hsdd/scripts/seams/`: manifests, routes, schemas, migrations and
   tables, topics, owners, co-change coupling; `render` writes the `## Observed
-  surface` block, `diff` detects drift against it); owners resolve by the last
-  matching `CODEOWNERS` rule per file, and unreadable directories are skipped
-  and reported, as-built node specs with required `unknown:` lines, `v0`
-  contracts with `## Observed completeness`, a human confirmation of the tree
-  before any file is written, and never a refactoring proposal.
+  surface` block, `diff` detects drift against it), as-built node specs with
+  required `unknown:` lines, `v0` contracts with `## Observed completeness`, a
+  human confirmation of the tree before any file is written, and never a
+  refactoring proposal. Owners resolve by the last matching `CODEOWNERS` rule
+  per file; unreadable directories are skipped and reported.
 - **`hsdd-intake`**: routes a change request into the existing tree
   (`local`, `cross-node`, `new-capability`, `structural`), reads every open
   intake first and serializes collisions, promotes an as-built landing
