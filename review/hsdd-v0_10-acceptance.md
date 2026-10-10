@@ -8,9 +8,9 @@ repos. Nothing from that project is committed here beyond the identifiers this
 record names.
 **Spec:** `spec/hsdd-spec-v0_10.md` chapter 15;
 `docs/superpowers/plans/2026-10-10-v0_10-release.md` (this release's plan).
-Criteria A1 to C3 are carried from the v0.9 record unchanged; A5, D1 to
-D7 and E1 to E5 cover what v0.10.0 adds. Every `Result:` is filled by the owner's run,
-never by the implementer.
+Criteria A1 to A4 and B1 to C3 are carried from the v0.9 record unchanged;
+A5, D1 to D7 and E1 to E5 cover what v0.10.0 adds. Every `Result:` is filled
+by the owner's run, never by the implementer.
 
 ## A. Phase context and coding methods
 
@@ -171,8 +171,7 @@ never by the implementer.
 - **Run:** complete one gate-only phase end to end on the field project
   (any method) and open its verification doc.
 - **Expected:** `## Learnings` present with `- none` or dispositioned
-  entries; `## Metrics` present (may be empty); Sign-off lists the Learning
-  dispositions line.
+  entries; Sign-off lists the Learning dispositions line.
 - **Fails if:** Learnings absent, or an entry without a disposition passed
   the gate.
 - **Result:**
@@ -180,8 +179,8 @@ never by the implementer.
 ### D2. Reconcile refuses a fixtureless flip and reports it
 
 - **Run:** in a scratch copy of the field spec tree, author a new contract
-  with `hsdd-contract` (no schema, no fixtures), plan a producing phase, and
-  run `/hsdd-reconcile`.
+  with `hsdd-contract` (no schema, no fixtures), plan its producing and
+  consuming phases (so its `phase_ids` are final), and run `/hsdd-reconcile`.
 - **Expected:** the contract stays `draft`; the report names it, the path it
   lacks, and the producing phase whose gate will create it; no
   `validation:` key was written.
@@ -195,8 +194,8 @@ never by the implementer.
   since the project predates v0.10.0), then execute the plan step it emits
   for `hsdd-reconcile`, then `/hsdd-checkpoint` again.
 - **Expected:** the first report lists the fixtureless `stable` contracts
-  and a baseline count; the plan has one 🤖 step with a prompt and a
-  *Validate:* grep; after reconcile, exactly those contracts carry
+  and records their count as the baseline; the plan has one 🤖 step with
+  a prompt and a *Validate:* grep; after reconcile, exactly those contracts carry
   `validation: grandfathered` and `INDEX.md` is unchanged; the second
   report shows the same count with the previous count in parentheses.
 - **Fails if:** the checkpoint edited a contract file; the count rose; a
@@ -224,8 +223,9 @@ never by the implementer.
 
 ### D6. Backfill finding on a planted commit
 
-- **Run:** in a scratch copy of an implementation repo, commit a small code
-  change that no phase covers, then `/hsdd-checkpoint`.
+- **Run:** in a scratch copy of an implementation repo of a launched project
+  (say in the run that it is post-launch: backfill applies only then), commit
+  a small code change that no phase covers, then `/hsdd-checkpoint`.
 - **Expected:** a backfill finding in the register; a plan step that
   appends a retro phase through `hsdd-phase-plan` append mode; no existing
   phase renumbered when that step is executed.
@@ -247,7 +247,8 @@ never by the implementer.
 - **Run:** in the field project's implementation repo, `/hsdd-adopt` on
   the code the governed tree sits inside (the owner names the modules).
 - **Expected:** `hsdd/scripts/seams/` byte-identical to the skill's
-  `scripts/`; the tree was shown and confirmed before any file was written;
+  `scripts/`; the tree was shown and confirmed before any node spec or
+  contract was written;
   every new node spec carries `- **Adopted:** as-built`, an
   `## Observed surface` in the script's bullet order stamped with one sha,
   and at least one real `unknown:` line; every adopted contract is `v0`,
@@ -279,10 +280,11 @@ never by the implementer.
 - **Run:** plant an open intake record touching node X; then `/hsdd-intake`
   on a real change request that also touches X.
 - **Expected:** the new record exists before any handoff ran (its
-  `## Routing` carries the handoff prompt; `git log` shows the record's
-  commit precedes any spec or plan change); exactly one class; the
-  planted record is named under `**Collisions:**` and both change logs say
-  which waits; the slug contains neither `progress` nor `execution-plan`;
+  `## Routing` carries the handoff prompt; the record was written before any
+  spec or plan change, and under the standalone-spec-repo profile its commit
+  comes first in `git log`); exactly one class; the planted record is named
+  under `**Collisions:**` and both change logs say which waits, or that the
+  two were merged; the slug contains neither `progress` nor `execution-plan`;
   no spec, contract or ADR was written by the intake.
 - **Fails if:** a handoff ran before the record existed, or the collision
   went unrecorded.
