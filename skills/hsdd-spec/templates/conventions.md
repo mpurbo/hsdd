@@ -14,12 +14,15 @@ and per-phase contexts stay in each implementation repo (`hsdd-context/`).
 - `hsdd/spec/{node-id}.md`                    node specs and leaf-parent phase plans
 - `hsdd/verify/{phase-id}.verification.md`    per-phase verification docs
 - `hsdd/contract/{slug}.md` + `hsdd/contract/INDEX.md`  first-class contracts (registry generated)
+- `hsdd/contract/schema/{slug}.schema.json`, `hsdd/contract/fixture/{slug}/`  executable validation for `stable` contracts
 - `hsdd/adr/{nnn}-{title}.md` + `hsdd/adr/INDEX.md`     cross-cutting decisions (authored by hsdd-adr, registry generated)
 - `hsdd/scripts/gen-registry.mjs`             registry generator (copied verbatim from hsdd-contract)
 - `hsdd/templates/verification.md`            verification-doc template, copied from hsdd-config
 - `openspec/config.yaml` + `openspec/changes/` config and one change per phase
 - `hsdd-context/{phase-id}.md` (+ `hsdd-context/superpowers/{phase-id}.md`)  generic phase context and its superpowers derivative, written by hsdd-config in the implementation repo
 - `hsdd/management/`                          management layer (progress, execution plans, milestones, atlas) — written only by hsdd-checkpoint / hsdd-milestone
+- `hsdd/management/archive/`                  sealed milestone documents (closed campaigns)
+- `hsdd/summary/`                             optional reading aids (hsdd-summary); absent means none are rendered
 
 **Standalone-spec-repo profile (opt-in, multi-repo projects):** declare it
 here with a line `Profile: standalone-spec-repo`. The HSDD tree is its own
@@ -95,9 +98,25 @@ Obra's superpowers (github.com/obra/superpowers), wired into OpenSpec by hsdd-co
 Stack skills (optional): `mermaid-pastel-style`, `fp-rust`, `fp-kstream-*`.
 
 ## Phase design
-- FP ordering: types -> pure functions -> effects -> composition
-- <= 8 OpenSpec tasks per phase; each phase fits one ~5h review window
+**Ordering policy:** interfaces-first
+
+`interfaces-first` (default): stable interfaces and shared types first,
+effects behind interfaces, composition last. `fp-progression`: types ->
+pure functions -> effects -> composition, the stricter variant. A
+project-defined policy names itself on the line above and describes its
+order here. `hsdd-phase-plan` reads this line; sizing, tiers, gates and the
+summary table do not depend on it.
+
+- One Phase Equivalent (PE) per phase: <= 8 OpenSpec tasks, roughly <= 400
+  changed lines of non-generated code, one review sitting (~5h) end to end
 - Review tiers: gate-only | spot-check | full-review
+
+## Teams
+**Teams:** single-team
+
+`single-team` (default) or `multi-team`. Under `multi-team`, every node
+whose owning team differs from its parent's records `- **Team:**` in its
+spec; an integration node names exactly one owning team.
 
 ## Contracts
 `hsdd/contract/INDEX.md` (generated) is the single index of established contracts.
