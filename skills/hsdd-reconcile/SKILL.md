@@ -6,7 +6,9 @@ description: >
   Triggers: "reconcile the worktrees", "drain pending governance updates",
   "merge the phase plans", "apply governance updates", "resolve contract
   requests", "finalize phase ids", "the contract is still provisional", "sweep
-  the resolved open question". Runs at the root lineage after branches are
+  the resolved open question". Also "mark the grandfathered contracts",
+  "discharge the grandfather mark", "retire the contracts of {node}". Runs at
+  the root lineage after branches are
   merged — from an implementation repo under the standalone-spec-repo profile,
   never from a standalone clone of the spec repo. Do NOT use for authoring
   contract bodies (use hsdd-contract), recording cross-cutting decisions (use
@@ -47,8 +49,7 @@ edits governance files); this skill performs the semantic merge.
 
 1. **Load conventions.** Read `hsdd/conventions.md` first; it may override
    the default layout (plan files under `hsdd/spec/`) and states the parallel
-   development protocol this skill completes. A pre-0.5 project has it at
-   `docs/conventions.md`: honor its layout and offer to migrate.
+   development protocol this skill completes.
 2. **Scan.** Find every `## Governance updates (pending reconcile)` section in
    `hsdd/spec/*.md`. If none exist, say so — then still run the
    resolved-question sweep below if this run was asked to sweep a specific OQ
@@ -76,18 +77,44 @@ edits governance files); this skill performs the semantic merge.
    and bumps the version.
 7. **Finalize contract status.** Now that requests and amends are settled:
    for every contract with `phase_ids: final` and no `request` left
-   unresolved, flip `status: draft` to `stable`. Stable means
-   interface-frozen, safe to build against (the hsdd-contract lifecycle
-   rule), not producer-shipped. This step runs after steps 5-6 on purpose:
-   the no-open-request condition is only decidable once requests are
-   resolved.
-8. **Apply `note` entries** to `hsdd/conventions.md` only when they change a
+   unresolved, flip `status: draft` to `stable` **only if** its `## Validation`
+   section names a schema or a fixtures directory and that path exists on
+   disk (defaults `hsdd/contract/schema/{slug}.schema.json`,
+   `hsdd/contract/fixture/{slug}/`). A contract that qualifies on phase ids
+   and requests but has no artifact stays `draft`; report it by name with
+   the path it lacks, and say which producing phase's gate will create it.
+   Never flip without the artifact, and never write `validation:
+   grandfathered` to get past this check: the grandfather set is closed
+   (step 8). Contracts that were already `stable` before this run are not
+   re-examined here; a pre-existing fixtureless `stable` contract without
+   the `validation:` key is reported once as a grandfather candidate for the
+   next checkpoint, never un-flipped. Stable means interface-frozen, safe to
+   build against, not producer-shipped. This step runs after steps 5-6 on
+   purpose: the no-open-request condition is only decidable once requests
+   are resolved.
+8. **Grandfather marking and discharge.** When the invoking prompt or an
+   execution-plan step from the upgrade checkpoint names contracts to mark:
+   for each that is `stable`, lacks an artifact at its Validation paths, and
+   has no `validation:` key, add `validation: grandfathered` to its
+   frontmatter and report the count. Never mark a `draft`, and never mark a
+   contract whose file was created after the upgrade checkpoint's baseline
+   SHA. Discharge: when a drained entry shows a phase produced, amended or
+   bumped a grandfathered contract and the artifact now exists at the
+   Validation paths, remove the key and say so; if the artifact does not
+   exist, leave the key and report the phase by id, because its gate must
+   not have passed.
+9. **Contract retirement.** When a drained entry or the invoking prompt
+   retires a node (`- **Status:** retired`), set each contract that node
+   solely produced to `status: retired` **unless** a consumer or an
+   `external_consumers` entry still names the version; in that case leave
+   the status, and report the live consumer as a finding for the checkpoint.
+10. **Apply `note` entries**
    convention. Drop notes that duplicate derived data; the registry already
    projects contract facts.
-9. **Stamp each drained section**, replacing its entries with one line:
+11. **Stamp each drained section**, replacing its entries with one line:
    `> Reconciled {YYYY-MM-DD} by hsdd-reconcile. Drained entries are in git history.`
-10. **Regenerate the registries:** `node hsdd/scripts/gen-registry.mjs`.
-11. **Sweep resolved questions.** This step also runs standalone: "sweep
+12. **Regenerate the registries:** `node hsdd/scripts/gen-registry.mjs`.
+13. **Sweep resolved questions.** This step also runs standalone: "sweep
     OQ-B7, resolved by ADR-021" is a valid invocation with no pending
     sections present. When a drained entry (or a human arbitration during
     this run) resolves an open question: update the row
@@ -105,11 +132,15 @@ edits governance files); this skill performs the semantic merge.
 | `request` | contract body (or a new ADR) | human resolves; skill applies; contingent phases unblock |
 | `amend` | contract body | producer-side enrichment; backward-compatible keeps the version, breaking goes to the human and bumps it |
 | `note` | `hsdd/conventions.md` | apply only if it changes a convention; drop derived facts |
+| grandfather step (from the upgrade checkpoint's plan) | contract frontmatter | add `validation: grandfathered` to listed `stable` contracts without artifacts; never to a `draft`, never to a new contract |
+| retire (node retired) | contract frontmatter | `status: retired` for solely-produced contracts with no live consumer; otherwise a finding |
 
 ## Quality Gates
 
 - [ ] Every pending section drained, or explicitly deferred with a reason.
-- [ ] No contract with both sides fully planned remains `phase_ids: provisional`, and none with `phase_ids: final` and no open request remains `status: draft`.
+- [ ] No contract with both sides fully planned remains `phase_ids: provisional`; none with `phase_ids: final`, no open request and an existing validation artifact remains `status: draft`; none was flipped without its artifact.
+- [ ] Grandfather marks were added only to pre-existing fixtureless `stable` contracts named by the plan step, and removed wherever the artifact now exists.
+- [ ] No contract was retired while a consumer or external consumer still names it.
 - [ ] Every collision was decided by the human, and the losing plan was updated to match.
 - [ ] Contract edits follow hsdd-contract versioning (breaking change = new version + migration note).
 - [ ] `node hsdd/scripts/gen-registry.mjs` ran after the last contract edit.
@@ -126,3 +157,5 @@ edits governance files); this skill performs the semantic merge.
 | "Skip the registry regen, frontmatter barely changed" | The registry is derived data. Any frontmatter change without a regen makes INDEX.md lie. |
 | "Leave the drained entries in place for history" | Git history already keeps them. A stale pending section gets re-drained and double-applied. |
 | "The OQ row says RESOLVED — done" | Citations elsewhere still gate phases on it and justify contract prose with it. Grep the id; sweep every stale citation. |
+| "The fixtures will come in the next phase; flip it to stable now" | Stable means a consumer can build against fixtures today. Leave it draft, name the phase whose gate creates the artifact, and let hsdd-config warn consumers it is provisional. |
+| "This new contract has no fixtures; mark it grandfathered" | The set closed at upgrade. A new contract without an artifact is an error, not history. |
