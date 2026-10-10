@@ -74,28 +74,35 @@ interfaces by id, never another node's internals, so its session stays small.
 HSDD applies established software engineering practice to the specification itself,
 and to how an AI agent works against it.
 
-- **Modularity and loose coupling in the spec.** Principles that are routine for
-  code (single responsibility, information hiding, explicit interfaces) rarely reach
-  the spec. HSDD structures the spec as a tree of nodes coupled only through named,
-  versioned contracts, with a typed dependency graph in place of implicit
-  whole-spec coupling.
-- **Bounded context per session.** Each phase's session receives its own spec plus
-  only the interfaces of the contracts it consumes. Per-session context is bounded
-  and proportional to the phase, not the system; total tokens across a project
-  still scale with phase count, and planning carries its own overhead. HSDD bounds
-  the per-session cost — it does not reduce the total.
-- **Less drift and hallucination.** Per-phase context shapes attention: a session
-  is unlikely to wander into a sibling's concern or fabricate an interface it was
-  never given. The defense is prose and structure, tested under adversarial
-  pressure and found to hold — but it is probabilistic, not enforced.
-- **Human review by construction.** Every leaf phase ends at a human review gate,
-  sized so review and manual verification fit one working window (one PE). Review
-  depth scales to risk through tiers. The human owns correctness; the agent owns
-  throughput.
-- **A functional model underneath.** Each node is a function with typed inputs and
-  outputs (its consumed and produced contracts), the dependency DAG is the
-  composition, and internals are private. Nodes are built against contract values,
-  not live implementations.
+- **Human review is the pacing unit.** Agents produce faster than people can
+  read. HSDD sizes every phase to one review sitting (one PE): the AI run
+  plus a human's review and manual verification. Review depth scales to risk
+  through tiers, and "done" means a verification doc a human signed. The
+  human owns correctness; the agent owns throughput. This is the rationale
+  that survives every model improvement, because the reviewer does not get a
+  bigger context window.
+- **Modularity and loose coupling in the spec.** Principles that are routine
+  for code (single responsibility, information hiding, explicit interfaces)
+  rarely reach the spec. HSDD structures the spec as a tree of nodes coupled
+  only through named, versioned contracts, with a typed dependency graph in
+  place of implicit whole-spec coupling, and splits the tree where ownership
+  splits.
+- **A functional model underneath.** Each node is a function with typed
+  inputs and outputs (its consumed and produced contracts), the dependency
+  DAG is the composition, and internals are private. Nodes are built against
+  contract fixtures, not live implementations.
+- **Bounded context per session, as a consequence.** Each phase's session
+  receives its own phase, the Interface and Guarantees of the contracts it
+  consumes and produces, and the decisions that govern it. Per-session
+  context is bounded and proportional to the phase, not the system; total
+  tokens across a project still scale with phase count, and planning carries
+  its own overhead. HSDD bounds the per-session cost; it does not reduce the
+  total.
+- **Less drift and hallucination, probabilistically.** Per-phase context
+  shapes attention: a session is unlikely to wander into a sibling's concern
+  or fabricate an interface it was never given. The defense is prose and
+  structure, tested under adversarial pressure and found to hold; it is not
+  enforced by a mechanism.
 
 ## Install
 
@@ -103,7 +110,7 @@ HSDD ships as agent skills, installable with the [`skills`](https://github.com/v
 CLI (works with Claude Code, Cursor, Codex, and 70+ agents):
 
 ```bash
-# All nine HSDD skills (replace with your repo path)
+# All eleven HSDD skills (replace with your repo path)
 npx skills add mpurbo/hsdd
 
 # Or a single skill
@@ -130,14 +137,21 @@ re-implementing them; `hsdd-config` wires them into each phase's coding session,
 | `hsdd-phase-plan` | Break a small-enough node into ordered, independently implementable phases, each sized for one coding cycle and one review window. |
 | `hsdd-reconcile` | Drain the pending governance updates emitted by phase planning: finalize contract phase ids, resolve contract-gap requests with you, and regenerate the registries. Runs on the root lineage after parallel plan branches merge. |
 | `hsdd-config` | Before each phase, write one self-contained phase context (the phase, the text of the contracts it touches, its decisions, pinned links) and wrap it for the project's coding method: OpenSpec's `config.yaml`, or a spec for superpowers' `writing-plans`. |
+| `hsdd-adopt` | Bring an existing codebase into the tree: script-extracted seams, as-built node specs with an `## Observed surface` section, and `v0` contracts describing current behavior. Brownfield's entry point. |
+| `hsdd-intake` | Route an incoming change request (PRD, RFC, ticket, incident) into the existing tree: classify it, detect collisions with open intakes, write the routing record, and hand off. A PRD is never a root. |
 | `hsdd-checkpoint` | Run the weekly (or context-triggered) evidence pass across the spec repo and every implementation repo, emitting a progress report, a revised execution plan, a regenerated atlas, and ticked milestone gates. One pass, four views; every finding becomes a plan step or an explicit waiver. |
 | `hsdd-milestone` | Generate the stakeholder milestone document once every leaf-parent is phase-planned — a demo and a gate per checkpoint, with externally-gated work in a contingent tail outside the launch gate — and re-baseline it when the dates move. |
 | `hsdd-summary` | Render offline HTML reading aids: the plan page (root to phase cards, for a reviewer, a stakeholder or an implementer) and the checkpoint page (the newest progress report and execution plan, for the lead running the sync, each lane's executor, and stakeholders). |
 
 ## How it works
 
-The tree starts from an idea and is decomposed (steps 1 to 3); everything
-after that is shared. The tree does not complete; phases complete.
+Two entry points build the tree; everything after them is shared. **Greenfield**
+starts from an idea and decomposes (steps 1–3). **Brownfield** starts from an
+existing codebase: `hsdd-adopt` extracts the seams by script, writes a shallow
+as-built tree with `v0` contracts describing current behavior, and stops, with no
+decomposition below what the first change needs. Once launched, every later
+change enters through `hsdd-intake`, which routes it into the same tree: the
+tree does not complete, phases complete.
 
 1. **Decompose** the system into a tree of nodes (`hsdd-spec`), recursing until a
    node is small enough to phase. Cross-cutting decisions become ADRs
@@ -150,8 +164,9 @@ after that is shared. The tree does not complete; phases complete.
    pending governance sections, finalize contract phase ids, and regenerate the
    registry. With parallel worktrees, merge the plan branches first; the merge
    is clean by construction because planning never edits shared files.
-5. **Configure** the per-phase context (`hsdd-config`), then run one OpenSpec
-   cycle per phase. Each `apply` produces a verification doc.
+5. **Configure** the per-phase context (`hsdd-config`), then run one coding cycle
+   per phase, with OpenSpec or with superpowers. Each cycle ends by writing the
+   phase's verification doc.
 6. **Review** every phase: a human reads the diff and runs the verification, at a
    depth set by the phase's review tier. Then move to the next phase.
 
@@ -178,7 +193,7 @@ tokens, time, and quality.
 
 ## Learn more
 
-- [Methodology specification](spec/hsdd-spec-v0_9.md): the single current
+- [Methodology specification](spec/hsdd-spec-v0_10.md): the single current
   specification, with the full model and every settled decision and its
   provenance. The superseded delta series
   (v0.3–v0.7.1) remains in `spec/` as history; nothing requires reading it.
