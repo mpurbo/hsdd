@@ -34,7 +34,15 @@ Copy this skill's `scripts/` directory **verbatim** to `hsdd/scripts/seams/`
 in the project (this skill's base directory is printed when the skill loads),
 the same precedent as `gen-registry.mjs` and `hsdd/scripts/summary/`. Never
 retype a file: the diff `hsdd-checkpoint` runs later is pinned to the bundled
-code. Every command below runs from the implementation repo's root.
+code. Every command below runs from the implementation repo's root. Add
+`.hsdd-seams.json` to that repo's `.gitignore`: it is the scratch model
+step 2 writes.
+
+If `hsdd/conventions.md` does not exist, seed it from `hsdd-spec`'s
+`templates/conventions.md` after the human confirms the tree (step 3). If
+`hsdd/scripts/gen-registry.mjs` is missing, copy it verbatim from
+`hsdd-contract`'s `scripts/` (each skill's base directory is printed when it
+loads); never retype it.
 
 ## Process
 
@@ -47,14 +55,17 @@ code. Every command below runs from the implementation repo's root.
 2. **Seam archaeology, by script.**
 
    ```bash
-   node hsdd/scripts/seams/extract-seams.mjs extract -o hsdd/seams.json
+   node hsdd/scripts/seams/extract-seams.mjs extract -o .hsdd-seams.json
    ```
 
    Read the model: modules, manifests, routes, schemas, migrations and
    their tables, topics produced and consumed, owners, coupling pairs. The
+   walk skips `hsdd/`, `hsdd-context/` and `openspec/` at the top level. The
    routes and topics are regex candidates; the model says where each came
    from (`file:line`). Record the `sha` and `date`; they stamp every
-   section you write. Never commit `hsdd/seams.json`.
+   section you write. A `sha` suffixed `-dirty` means the scope had
+   uncommitted changes: commit or stash them, then extract again. Never
+   commit `.hsdd-seams.json`.
 3. **Propose a shallow tree (depth 1 to 2) on the seams that exist**, not
    the ones anyone wishes existed. Deployables, packages and owner
    boundaries first (the ownership-first axis of `hsdd-spec`); `CODEOWNERS`
@@ -69,7 +80,9 @@ code. Every command below runs from the implementation repo's root.
    and, when known from owners, `- **Team:**`. `Isolation strategy` records
    how the node is exercised **today** (existing tests, staging), never an
    aspiration. Then the `## Observed surface` section, rendered by the
-   script for that node's modules and pasted verbatim:
+   script for the paths that back the node (one `--prefix` per path, any
+   depth; none for a node that is the whole repository) and pasted
+   verbatim:
 
    ```bash
    node hsdd/scripts/seams/extract-seams.mjs render --prefix src/payouts
@@ -78,7 +91,11 @@ code. Every command below runs from the implementation repo's root.
    Replace the rendered `- unknown:` placeholder with **at least one real
    `unknown:` line** per node: what tooling could not see (retry logic with
    no tests, a cron nobody documented, a flag of unclear provenance). A node
-   with no unknowns is a node nobody looked at.
+   with no unknowns is a node nobody looked at. The owners line reads
+   `CODEOWNERS` from the git top level in GitHub's order (`.github/`, the
+   root, `docs/`); a `.gitlab/CODEOWNERS` file and patterns with
+   backslash-escaped spaces are out of scope, so name such owners in an
+   `unknown:` line.
 5. **Contracts from seams.** For each seam between two nodes (a route one
    calls, a topic one produces and another consumes, a table two share), a
    contract through `hsdd-contract`'s format at **`version: v0`**,
@@ -100,8 +117,8 @@ code. Every command below runs from the implementation repo's root.
    else remains an as-built stub. Depth on demand; the first change that
    lands on a node promotes it (`hsdd-spec`, promotion mode).
 7. **Prove the tree.** `node hsdd/scripts/gen-registry.mjs`; every id in
-   `Consumes` and `Produces` resolves; every `## Observed surface` carries
-   the same `sha`.
+   `Consumes` and `Produces` resolves; every `## Observed surface` written
+   from one implementation repo carries that repo's sha.
 8. **Report:** the tree, the modules behind each node, the contract count,
    every `unknown:` line, and the extraction sha. Say what you did not
    adopt and why.
@@ -115,6 +132,23 @@ tables, topics, owners, unknown); `hsdd-checkpoint` parses it to detect
 drift. It is seam-level, never file-level: the pointer scales, the summary
 thins.
 
+The `modules:` line records the node's scope: the prefixes it was rendered
+from, each with a trailing slash, or `./` for an unprefixed render of the
+whole repository. `diff` re-extracts exactly those prefixes, so an
+unchanged tree reports `nothing changed`, and a prefix is reported
+`removed` only when no file remains under it.
+
+## Re-render a node's surface
+
+When a checkpoint plan step asks for a reviewed re-render (drift on an
+as-built node, or on a promoted node whose shipped phases explain it), run
+`render` at the root lineage with the same prefixes the node's `modules:`
+line names (none when it says `./`), replace the extracted bullets, and keep
+every `unknown:` line, editing one only when the human confirms it no
+longer holds. The new stamp records the sha the re-render looked at; under
+the standalone-spec-repo profile, render from the implementation repo whose
+history holds the node's code. A re-render describes; it never redesigns.
+
 ## Rules
 
 - **The tree fits the system.** Never propose refactoring to fit a nicer
@@ -124,10 +158,11 @@ thins.
 - **Contracts describe observed behavior.** `v0` is a permanent property:
   extension under `additive-only` never exits `v0`; only a genuine
   redesign mints `v1`, through `hsdd-contract`.
-- **The human confirms the tree before any file is written** (step 3), and
-  reads the `unknown:` lines at the end. That is the review this run asks
-  for: minutes, not days.
-- **Never commit the scratch model** (`hsdd/seams.json`).
+- **The human confirms the tree before any node spec or contract is
+  written** (step 3), and reads the `unknown:` lines at the end. That is the
+  review this run asks for: minutes, not days.
+- **Never commit the scratch model** (`.hsdd-seams.json`, git-ignored at
+  Setup).
 
 ## Quality Gates
 
@@ -142,8 +177,10 @@ thins.
       fixtures at the canonical paths with the files present, declares
       `compatibility`, and carries `## Observed completeness`.
 - [ ] No refactoring proposal anywhere in the output.
-- [ ] Registries regenerated; no dangling contract id.
-- [ ] The human confirmed the tree before files were written.
+- [ ] Registries regenerated; no dangling contract id; `hsdd/conventions.md`
+      exists.
+- [ ] The human confirmed the tree before any node spec or contract was
+      written.
 
 ## Anti-Rationalization
 

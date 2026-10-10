@@ -131,8 +131,11 @@ are not.
 ## Phase Ordering (a named policy)
 
 Read the `**Ordering policy:**` line in `hsdd/conventions.md`. Absent means
-`interfaces-first`. Sizing, tiers, gates, the summary table and the floor
-do not depend on the policy; only the order does.
+`interfaces-first`, except that a conventions file whose Phase design
+section still carries the pre-v0.10 `FP ordering:` bullet reads as
+`fp-progression`; say so in the plan and recommend adding the line.
+Sizing, tiers, gates, the summary table and the floor do not depend on the
+policy; only the order does.
 
 **`interfaces-first` (default).**
 1. **First phase (always):** the stable interfaces: domain types, the
@@ -302,7 +305,9 @@ appends phases to an existing plan. Rules:
   verification doc is written after the fact and marked retroactive.
 - A phase appended for a change request names the intake record in its
   Scope (`per hsdd/management/2026-10-10-intake-payout-scheduling.md`), so
-  the checkpoint can close the record when the phase ships.
+  the checkpoint can append it to the record's `## Produced` and close the
+  record when the phase ships, and the request's path joins the node's
+  `- **Sources:**` field (appended, never replacing an entry).
 - The dependency graph gains the new nodes; existing edges are not redrawn.
 - The pending-governance section is appended to, with a new emission date
   line, and drained by `hsdd-reconcile` as usual.
@@ -342,7 +347,8 @@ flowchart TD
       merge candidate kept separate names its reason (tier boundary,
       parallel lane, isolated risk).
 - [ ] Contract ids are defined before the phase that implements them.
-- [ ] Phase N is testable with mocks even if Phase N-1 is not implemented.
+- [ ] Phase N is testable against contract fixtures even if Phase N-1 is
+      not implemented.
 - [ ] No phase couples to another phase's internals.
 - [ ] Each phase has a concrete gate, a verification description, and a review tier.
 - [ ] The phase dependency graph is included as a Mermaid flowchart and matches the Dependencies fields.
@@ -351,7 +357,8 @@ flowchart TD
 - [ ] Every contingent phase names the OQ id it waits on; no contingency
             without a minted OQ.
 - [ ] The plan names the ordering policy it followed, matching the
-      conventions line (or `interfaces-first` when absent).
+      conventions line (or `interfaces-first` when absent, `fp-progression`
+      when only the pre-v0.10 `FP ordering:` bullet is present).
 - [ ] Every producing phase's Gate includes the contract replay for each
       contract it produces.
 - [ ] In append mode: no existing id changed, no shipped phase edited,

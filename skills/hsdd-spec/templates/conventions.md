@@ -1,8 +1,9 @@
 # Project Conventions
 
 > Single source of truth for HSDD naming, layout, and process conventions.
-> Seeded by hsdd-spec at the root; updated only at the root (hsdd-spec or
-> hsdd-reconcile). Phase planning treats this file as read-only.
+> Seeded by hsdd-spec at the root, or by hsdd-adopt; updated only at the
+> root (hsdd-spec or hsdd-reconcile). Phase planning treats this file as
+> read-only.
 > Override any default below and every skill honors it.
 
 ## Layout (default)
@@ -21,7 +22,7 @@ and per-phase contexts stay in each implementation repo (`hsdd-context/`).
 - `hsdd/templates/verification.md`            verification-doc template, copied from hsdd-config
 - `openspec/config.yaml` + `openspec/changes/` config and one change per phase
 - `hsdd-context/{phase-id}.md` (+ `hsdd-context/superpowers/{phase-id}.md`)  generic phase context and its superpowers derivative, written by hsdd-config in the implementation repo
-- `hsdd/management/`                          management layer (progress, execution plans, milestones, atlas) — written only by hsdd-checkpoint / hsdd-milestone
+- `hsdd/management/`                          management layer (progress, execution plans, milestones, intake records, atlas), written only by hsdd-checkpoint, hsdd-milestone and hsdd-intake (intake records)
 - `hsdd/management/archive/`                  sealed milestone documents (closed campaigns)
 - `hsdd/summary/`                             optional reading aids (hsdd-summary); absent means none are rendered
 

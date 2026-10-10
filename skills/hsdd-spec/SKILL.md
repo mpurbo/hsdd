@@ -7,8 +7,9 @@ description: >
   @hsdd/spec/foo.md into backend and frontend", "decompose X into subsystems", "break
   X into parts or pieces", "identify subsystems", "contract boundaries",
   "subsystem dependencies", "dependency map", "parallel development order",
-  "multi-level spec". This is the recursive decomposition step of HSDD, at the
-  root or any internal level. To break a node that is ALREADY a leaf-parent into
+  "multi-level spec". Also "promote X", "graft a child under X", "retire node
+  X" (promotion, graft and retirement modes). This is the recursive
+  decomposition step of HSDD, at the root or any internal level. To break a node that is ALREADY a leaf-parent into
   implementation phases use hsdd-phase-plan; to author contract bodies use
   hsdd-contract.
 ---
@@ -159,7 +160,8 @@ intermediate internal node (a "feature") rather than forcing a fixed tier.
    follow it.
 8. **Seed conventions.** At the root, create `hsdd/conventions.md` from the
    bundled template (`templates/conventions.md`): default layout, id scheme,
-   companion-skill recommendation. At deeper levels, refresh it only for
+   companion-skill recommendation. (`hsdd-adopt` seeds it from the same
+   template when adoption creates the tree.) At deeper levels, refresh it only for
    genuinely new conventions (layout, naming, protocol); contracts are indexed
    by the generated `hsdd/contract/INDEX.md`, never listed here.
 

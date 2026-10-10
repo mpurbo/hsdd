@@ -80,11 +80,11 @@ it never defines.
 ## The intake record
 
 `hsdd/management/YYYY-MM-DD-intake-{slug}.md`. The slug is the request's
-short name in kebab case and **never contains `progress` or
-`execution-plan`**, so the reading aids do not mistake the record for a
-dated report. Dated and **never superseded**; records accumulate, one per
-change request, and that is the rule that replaces "wipe `hsdd/` and
-rebuild".
+short name in kebab case and **never contains `progress`,
+`execution-plan`, `milestones` or `atlas`**, so the reading aids do not
+mistake the record for a dated report. Dated and **never superseded**;
+records accumulate, one per change request, and that is the rule that
+replaces "wipe `hsdd/` and rebuild".
 
 ```markdown
 # Intake: {Change request title}
@@ -106,17 +106,19 @@ nodes, what each receiving skill will do, the exact handoff prompt; for
 structural, the options and what the human must decide}
 
 ## Produced
-{a ledger, appended as the handoffs land: nodes grafted, contracts bumped
-(id@v), ADRs proposed, phases appended (ids). hsdd-checkpoint reads it.}
+{a ledger: nodes grafted, contracts bumped (id@v), ADRs proposed, phases
+appended (ids). hsdd-checkpoint appends phases from Scope citations; grafts
+and bumps may be appended by hand}
 
 ## Change log
 - YYYY-MM-DD: created, routed {class}
 ```
 
-A record **closes** when every phase listed under `## Produced` has a
-verification doc on the spec repo's main branch, the same admissibility
-rule as everywhere else. `hsdd-checkpoint` ticks `**Status:** closed
-(date)` and appends to the change log; this skill never closes a record.
+A record **closes** when `## Produced` names at least one phase and every
+listed phase has a verification doc on the spec repo's main branch, the
+same admissibility rule as everywhere else. `hsdd-checkpoint` appends the
+phases whose Scope cites the record, ticks `**Status:** closed (date)` and
+appends to the change log; this skill never closes a record.
 
 ## Quality Gates
 
@@ -124,7 +126,8 @@ rule as everywhere else. `hsdd-checkpoint` ticks `**Status:** closed
       this record and in the colliding record's change log.
 - [ ] An as-built landing was recorded under Promotes and promoted as the first handoff, once.
 - [ ] Exactly one class; the record exists before any handoff ran.
-- [ ] The slug contains neither `progress` nor `execution-plan`.
+- [ ] The slug contains none of `progress`, `execution-plan`, `milestones`
+      or `atlas`.
 - [ ] `## Routing` carries the exact handoff prompt; `structural` stopped
       with options written, not a question asked.
 - [ ] No spec, contract or ADR was written by this skill.

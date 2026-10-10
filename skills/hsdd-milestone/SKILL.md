@@ -6,10 +6,11 @@ description: >
   tail. Triggers: "generate the milestone document", "stakeholder
   checkpoints", "when can we launch", "re-baseline the milestones", "the
   milestone slipped two weeks", "scope changed, do the dates hold". Runs once
-  all leaf-parents are phase-planned, and again only on the slip or scope
-  trigger. Do NOT use for weekly gate ticking or progress reporting
-  (hsdd-checkpoint), phase planning (hsdd-phase-plan), or recording the
-  decisions a re-baseline produces (hsdd-adr / the owning spec).
+  every leaf-parent in the campaign's scope is phase-planned, and again only
+  on the slip or scope trigger. Do NOT use for weekly gate ticking or
+  progress reporting (hsdd-checkpoint), phase planning (hsdd-phase-plan), or
+  recording the decisions a re-baseline produces (hsdd-adr / the owning
+  spec).
 ---
 
 # HSDD Milestone: Stakeholder Checkpoints With Demos and Gates
@@ -27,8 +28,8 @@ the latest progress report.
 
 ## When to Use
 
-- **Generation:** every leaf-parent node has a phase plan — the first moment
-  total scope is computable.
+- **Generation:** every leaf-parent in the campaign's scope has a phase
+  plan, which is the first moment total scope is computable.
 - **Re-baseline:** the slip trigger (a gate red across two consecutive
   checkpoints) or the scope trigger (a change moved the phase totals and
   the dates cannot absorb it).
@@ -42,15 +43,15 @@ the latest progress report.
 **Do NOT use for** weekly gate ticking (that is `hsdd-checkpoint`'s step),
 progress reporting, or phase planning.
 
-> **Precondition (hard stop):** every leaf-parent node has a phase plan. A
-> milestone document generated before that is guesswork wearing a suit. If
-> any leaf-parent lacks a phase plan, **stop and name the missing plans**
-> instead of generating.
+> **Precondition (hard stop):** every leaf-parent in the campaign's scope
+> has a phase plan. A milestone document generated before that is
+> guesswork wearing a suit. If any leaf-parent in scope lacks a phase plan,
+> **stop and name the missing plans** instead of generating.
 
 ## Process
 
 1. **Verify the precondition.** Walk the spec tree under `hsdd/spec/`; every
-   leaf-parent must have a `## Phase Plan` section. Missing plans: stop,
+   leaf-parent in the campaign's scope must have a `## Phase Plan` section. Missing plans: stop,
    list them, done. (Run from an implementation repo — under the
    standalone-spec-repo profile, never from a standalone clone of the spec
    repo. This skill needs no other repo's code: it reads the tree and the
@@ -122,7 +123,8 @@ its own to write into; the checkpoint does.
 
 Required sections, in order:
 
-- Header block: date, audience, `**Campaign:**` (one line naming the campaign),
+- Header block: date, audience, `**Campaign:**` (one line naming the
+  campaign; optional in the format, always written by this skill),
   `**Basis:**` (the progress report these numbers
   came from — it carries the repo baselines, which this document does not
   restate — or an explicit statement that no progress report exists yet and the
