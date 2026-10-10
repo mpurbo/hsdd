@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+v0.8.0 was never released on its own. Its changes, listed under [0.8.0]
+below, ship for the first time in this release, which follows 0.7.1.
+
 Targets 0.9.0. Design:
 `docs/superpowers/specs/2026-10-09-v0_9-phase-context-and-summaries-design.md`.
 Acceptance: `review/hsdd-v0_9-acceptance.md`.

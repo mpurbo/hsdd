@@ -6,8 +6,10 @@
 **Owner:** Purbo Mohamad
 
 This is the complete specification. It supersedes v0.8.0, which
-consolidated the delta series v0.3 through v0.7.1; every earlier version
-remains in `spec/` as history. Nothing here requires reading them.
+consolidated the delta series v0.3 through v0.7.1. v0.8.0 was never released
+on its own: its consolidation ships for the first time in this release, so
+v0.9.0 is the release that follows v0.7.1. Every earlier version remains in
+`spec/` as history. Nothing here requires reading them.
 
 ---
 
@@ -109,10 +111,11 @@ follow apply this principle throughout.
 
 ### 1.5 The skill set
 
-Eleven skills, one per artifact with its own lifecycle. **One artifact, one
-skill:** an artifact with status transitions, superseding, or a registry
-projection gets its own skill rather than a branch of another. Each skill has
-a matching slash command.
+Eleven skills, one per artifact with its own lifecycle. Nine ship in v0.9.0;
+`hsdd-adopt` and `hsdd-intake` are specified here and ship in v0.10.0. **One
+artifact, one skill:** an artifact with status transitions, superseding, or a
+registry projection gets its own skill rather than a branch of another. Each
+skill has a matching slash command.
 
 | Skill | Role | Key outputs |
 |-------|------|-------------|
@@ -122,8 +125,8 @@ a matching slash command.
 | `hsdd-phase-plan` | Turn a leaf-parent into ordered, OpenSpec-sized phases with gates, verification, review tiers, and a phase DAG. | leaf-parent phase plan |
 | `hsdd-reconcile` | The single writer for governance effects: drain the pending updates parallel phase planning emits, resolve contract requests, finalize phase ids. | updated governance files |
 | `hsdd-config` | Per-phase context switch: write one self-contained, method-neutral phase context (the phase, the full text of the contracts it consumes and produces, its governing decisions, links), then wrap it for the project's coding method: OpenSpec's `config.yaml` or a superpowers spec. | `hsdd-context/{phase-id}.md`, `openspec/config.yaml` or `hsdd-context/superpowers/{phase-id}.md` |
-| `hsdd-adopt` | Bring an existing codebase into the tree: seam extraction by bundled script, as-built node specs, `v0` contracts (chapter 6). | as-built specs, `v0` contracts |
-| `hsdd-intake` | Route an incoming change request into the existing tree and record the routing (chapter 11). | intake record, handoff |
+| `hsdd-adopt` | Bring an existing codebase into the tree: seam extraction by bundled script, as-built node specs, `v0` contracts (chapter 6). Specified; ships in v0.10.0. | as-built specs, `v0` contracts |
+| `hsdd-intake` | Route an incoming change request into the existing tree and record the routing (chapter 11). Specified; ships in v0.10.0. | intake record, handoff |
 | `hsdd-checkpoint` | One evidence pass across the spec repo and every implementation repo, compiled into the management documents (chapter 12). | progress report, execution plan, atlas |
 | `hsdd-milestone` | Generate and re-baseline the per-campaign stakeholder milestone document (chapter 12). | milestone document |
 | `hsdd-summary` | Render optional reading aids over the canonical artifacts: the plan page, an offline HTML view of the tree from the root down to the phase cards, and the checkpoint page, over the newest progress report and execution plan (chapter 13). | `hsdd/summary/*.html` |
@@ -837,6 +840,9 @@ complete, and chapter 7 governs every phase from here on.
 
 ## 6. Entry B: Brownfield Adoption
 
+**Status in v0.9.0:** specified, not shipped. The `hsdd-adopt` skill arrives
+in v0.10.0; this chapter is the design it implements.
+
 **Entry B** builds the tree from a system that already exists. Its
 precondition: a codebase built without HSDD — or the unadopted surface around
 a governed tree (chapter 15). Its input is the code and its observable seams;
@@ -1496,6 +1502,9 @@ dashboards; the point is a consistent record (chapter 17).
 ---
 
 ## 11. Steady State: Change Intake
+
+**Status in v0.9.0:** specified, not shipped. The `hsdd-intake` skill
+arrives in v0.10.0; this chapter is the design it implements.
 
 The tree does not complete. Phases complete. After the first change, every
 project is brownfield — greenfield is a bootstrap; the rest of a system's
@@ -2260,7 +2269,9 @@ Integration nodes still name exactly one owning team (§3.7).
 anything.** A release
 states its compatibility contract explicitly — which artifacts stay
 conformant, what is opt-in, what applies forward only — and this section is
-that statement for projects on 0.6.1 or later.
+that statement for projects on 0.6.1 or later. v0.8.0 was never released,
+so a project on 0.7.1 upgrades straight to v0.9.0 and takes both tables
+below.
 
 The upgrade vehicle is `hsdd-checkpoint`'s **adoption run**: the first
 checkpoint on an existing project treats nonconformances as findings, not
@@ -2277,8 +2288,8 @@ recognized as the current campaign's baseline, never duplicated. A newly
 required stop binds only artifacts authored by the run that hits it;
 pre-existing nonconforming artifacts are reported, never blocked.
 
-The full table — the effect of each v0.8.0 change on an existing ≥0.6.1
-project:
+The first table gives the effect of each change v0.8.0 made, shipping for
+the first time in v0.9.0, on an existing ≥0.6.1 project:
 
 | Change | Effect on an existing ≥0.6.1 project |
 |--------|--------------------------------------|
@@ -2287,29 +2298,29 @@ project:
 | Ordering policy in conventions frontmatter (§7.4) | Absent = `interfaces-first`. No edit needed. |
 | Unified PE definition (§7.2) | Applies to future sizing only. Existing phase plans stand. |
 | `stable` requires executable validation (§3.4) | **Grandfathered, discharged on touch.** See §15.2. |
-| `compatibility:` field (§3.5) | Absent = `versioned`, which is the pre-0.8 behavior. |
+| `compatibility:` field (§3.5) | Absent = `versioned`, which is the behavior of 0.7.1 and earlier. |
 | `retired` status; deprecation lifecycle (§3.5, §11.6) | Additive to the existing `draft \| stable \| deprecated` lifecycle. |
 | Per-campaign milestones; sealing (§12.5) | The existing milestone document becomes the current campaign's. Seal it when green, or leave it open. |
-| `hsdd-intake`, append mode, graft mode (chapter 11) | Used from the next change forward. No back-application. |
-| `hsdd-adopt`, `@v0`, `## Observed surface` (chapter 6) | **Inert** unless the project has unadopted code. |
+| `hsdd-intake`, append mode, graft mode (chapter 11) | Not shipped in v0.9.0; the skill arrives in v0.10.0. Once it ships, used from the next change forward, with no back-application. |
+| `hsdd-adopt`, `@v0`, `## Observed surface` (chapter 6) | Not shipped in v0.9.0; the skill arrives in v0.10.0. Once it ships, **inert** unless the project has unadopted code. |
 | Execution-plan step details, plan graph, sync sections (§12.4) | Forward-only: the next emitted plan carries them; prior plans are never rewritten. |
 
 **The one case worth calling out:** a fully-governed ≥0.6.1 project usually
-still has system surface that was never in the tree — the code the
-HSDD-built part sits inside. `hsdd-adopt` runs on *that*, grafting as-built
-nodes alongside governed ones. The result is the same mixed tree as §6.6,
-reached from the other direction, and it is the normal end state rather than
-a transitional one.
+still has system surface that was never in the tree, namely the code the
+HSDD-built part sits inside. Once `hsdd-adopt` ships (v0.10.0), it runs on
+*that*, grafting as-built nodes alongside governed ones. The result is the
+same mixed tree as §6.6, reached from the other direction, and it is the
+normal end state rather than a transitional one.
 
-**v0.9.0 is additive as well.** The effect of each v0.9.0 change on an
-existing ≥0.6.1 project:
+**The changes v0.9.0 itself makes are additive as well.** The effect of each
+on an existing ≥0.6.1 project:
 
 | Change | Effect on an existing ≥0.6.1 project |
 |--------|--------------------------------------|
 | Generic phase context, `hsdd-context/` (§9.7) | Appears on the first switch after upgrading. Nothing earlier is rewritten. |
 | Coding method (§9.9) | Absent = `openspec`. No edit needed. |
 | Richer OpenSpec phase block (§9.3) | A superset of what earlier releases injected; `rules:` unchanged. |
-| `openspec/config.yaml` from v0.8 | The first switch replaces the three v0.8 phase blocks with the marked block; nothing else in the file changes. |
+| An `openspec/config.yaml` written before v0.9.0 | The first switch replaces its three earlier phase blocks with the marked block; nothing else in the file changes. |
 | `hsdd-summary`, `hsdd/summary/` (chapter 13) | Opt-in. A project without `hsdd/summary/` is unaffected. |
 
 Projects below 0.6.1 are out of scope: upgrade to 0.6.1 first, per the
@@ -2524,9 +2535,9 @@ the completion of acceptance criterion 1's traceability contract:
 
 | Dropped rule | Reason |
 |--------------|--------|
-| The pre-0.3 `S1` / `S1.2` id compatibility note | A pre-0.3 claim; v0.8.0 supports ≥0.6.1 only (chapter 15). |
+| The pre-0.3 `S1` / `S1.2` id compatibility note | A pre-0.3 claim; this specification supports ≥0.6.1 only (chapter 15). |
 | The v0.3 ADR body example (bold fields, no frontmatter) | Superseded by the registry-compatible frontmatter form (§4.2); the old shape is invisible to the generator. |
-| Pre-0.5 layout detection and the `git mv` migration recipe | v0.8.0 supports ≥0.6.1 only; the pre-0.5 rename is history. |
+| Pre-0.5 layout detection and the `git mv` migration recipe | This specification supports ≥0.6.1 only; the pre-0.5 rename is history. |
 | Post-migration conventions/generator update steps | Same reason. |
 | v0.7's "relationship to the 0.8 candidate" section | This document resolves the relationship: the tool-free half of vNext is absorbed, the CLI is not. |
 | The vNext normative grammar | It only mattered as parser input; the 0.6.1 bullet templates already stand as the authored format. |
@@ -2589,8 +2600,9 @@ the completion of acceptance criterion 1's traceability contract:
   green: stamped, archived, no longer ticked (§12.5).
 - **Backfill:** the finding filed when code ships with no phase; it becomes
   a retro phase with a retroactive verification doc (§11.8).
-- **Grandfathered contract:** a contract `stable` before v0.8.0 without
-  executable validation, marked and discharged on touch (§15.2).
+- **Grandfathered contract:** a contract `stable` before the project
+  upgraded to v0.9.0 (the first release with the rule) without executable
+  validation, marked and discharged on touch (§15.2).
 - **Learning:** a gate-time finding about the tree, dispositioned before
   sign-off (§10.3).
 - **Atlas:** the regenerated, derived-only bird's-eye view in

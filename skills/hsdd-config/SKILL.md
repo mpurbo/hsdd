@@ -372,8 +372,8 @@ Run this after writing-plans' self-review, before choosing an execution method.
 9. **Write the derivative** for the method: replace the content between the
    markers in `openspec/config.yaml`, or write
    `hsdd-context/superpowers/{phase-id}.md`. Do not touch the project-wide
-   context or the rules. When `openspec/config.yaml` has no markers (a v0.8
-   config), replace v0.8's phase blocks (`## Current Phase`,
+   context or the rules. When `openspec/config.yaml` has no markers (a config
+   written before v0.9.0), replace its earlier phase blocks (`## Current Phase`,
    `## Contracts from Prior Phases / Nodes`, `## Governing Decisions`, from
    the first of them through the end of the last) with the marked block, keep
    everything else, and say so once in the run report.
