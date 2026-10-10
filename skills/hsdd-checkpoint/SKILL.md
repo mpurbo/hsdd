@@ -106,11 +106,26 @@ be standing in produces a progress report that undercounts the project.
      change log since the last checkpoint — `hsdd-milestone` has no plan of
      its own to write into, so it leaves findings there for this pass to
      fold into the register.
+     Also: the **grandfather audit**, the count of contracts carrying
+     `validation: grandfathered` read from frontmatter, compared with the
+     previous progress report's count; a count that rose is a High finding
+     (the set is closed), and any `stable` contract with neither an artifact
+     at its Validation paths nor the key is a finding routed to
+     `hsdd-reconcile`'s grandfather step (or, for a contract created after
+     the upgrade, to its producing phase). And **retirement health**: a
+     contract version at `retired` that a consumer or an `external_consumers`
+     entry still names, and a node at `- **Status:** retired` whose
+     solely-produced contracts are not retired, are findings.
    - *Code vs plan (each implementation repo):* which phases the code
      actually completes versus what plans and the prior progress report
      claim; contract-surface drift in both directions (code behavior the
      contract does not promise, contract promises the code abandoned);
-     scope creep (code with no phase). Also audit the profile's history
+     scope creep (code with no phase), which post-launch files a **backfill**
+     finding: its plan step appends a retro phase to the owning node's plan
+     (`hsdd-phase-plan` append mode), with a verification doc written after
+     the fact and marked retroactive. A backfill unclosed across two
+     consecutive checkpoints escalates in the register, the same shape as
+     two consecutive reds on a milestone gate. Also audit the profile's history
      rules: a branch pair spanning this repo and the spec repo that landed
      (or was deleted) on one side only, and any multi-phase epic
      squash-merged into a single commit — the latter destroys the per-phase
@@ -135,13 +150,23 @@ be standing in produces a progress report that undercounts the project.
    lessons — proposed, the human accepts or rejects each; guardrails are
    append-only and never renumbered.
 5. **Regenerate the atlas** (shape below), whole-file.
-6. **Tick the milestone gates** in the current milestone document and
-   evaluate the re-baseline trigger (a gate red across two consecutive
-   checkpoints, or totals moved). If it fires, say so loudly and hand off
-   to `hsdd-milestone` — do not re-baseline here. Record the resulting gate
-   status in the progress report's Milestone gate status section, and
-   compare it against the previous report's — two consecutive reds fire the
-   trigger.
+6. **Tick the milestone gates** in the current, unsealed milestone document
+   (a document with a `- **Sealed:**` line, or any file under
+   `hsdd/management/archive/`, is a closed campaign: never ticked; no
+   current document is normal at adoption and before `hsdd-milestone` has
+   run, and is not a finding). Evaluate the re-baseline trigger (a gate red
+   across two consecutive checkpoints, or totals moved). If it fires, say so
+   loudly and hand off to `hsdd-milestone`; do not re-baseline here. Record
+   the resulting gate status in the progress report's Milestone gate status
+   section and compare it against the previous report's; two consecutive
+   reds fire the trigger. **Sealing:** when this tick turns the last gate
+   green, add `- **Sealed:** {YYYY-MM-DD}` to the document's header, append a
+   change-log line, move the file to `hsdd/management/archive/` with `git
+   mv`, and state in the progress report that the campaign closed and that
+   the next campaign opens a new document through `hsdd-milestone`.
+   Admissibility is the existing rule: every phase in scope has a
+   verification doc on spec-repo main; a seal is evidence-backed, never
+   declared.
 7. **Render the checkpoint page (only when `hsdd/summary/` exists).** Invoke
    `hsdd-summary` and follow its Process (checkpoint page) over the documents
    this run just wrote. If the page reports a Plan integrity finding (a
@@ -212,6 +237,13 @@ we do"; a full run answers "what is true — and what do we do".
 - **A missing milestone document is normal at adoption**, not a finding: tick
   nothing, note in the progress report that no milestone baseline exists, and
   recommend `hsdd-milestone` once every leaf-parent is phase-planned.
+- **Grandfather enumeration.** List every contract that is `stable`, has no
+  artifact at its Validation paths, and has no `validation:` key. Emit one
+  🤖 plan step whose prompt asks `hsdd-reconcile` to mark exactly those
+  contracts (by id and version) and gives the spec repo's baseline SHA from
+  this report's Repo baselines header, with a *Validate:* line that greps for
+  the key. Record the count in the progress report as the baseline the clause
+  can only fall from. This run writes no contract file.
 
 ## Document Shapes
 
@@ -226,7 +258,8 @@ Required sections, in order:
 - **Bottom line** — one table: phases planned / code-complete / remaining
   (externally-contingent count broken out), implementation progress %,
   observed velocity per lane (PE/manday), calibrated remaining effort,
-  calendar outlook.
+  calendar outlook, and grandfathered contracts remaining with the previous
+  report's count in parentheses.
 - **Milestone gate status** — one row per milestone: gate items met / total,
   and each unmet item with the phase or external answer it waits on. This is
   the persisted input for the re-baseline slip trigger: comparing this section
@@ -334,7 +367,10 @@ Three parts, regenerated whole every checkpoint:
 1. **The tree** — root to phases. Node status: `specified |
    phase-planned`; phase status: `planned | in-progress | done |
    contingent (OQ-id)` with the pinned done definition. A diagram down to
-   nodes, a per-node phase-status table beneath.
+   nodes, a per-node phase-status table beneath. Nodes at `- **Status:**
+   retired` are excluded from the active view and listed once, by id, under
+   a `Retired` heading at the end of the tree section, so their ids stay
+   resolvable.
 2. **The contract graph** — producers, consumers, `draft/stable` per
    contract. One overview diagram at subsystem level, then one detail
    diagram per parent node; split any diagram that would exceed ~20 nodes.
@@ -354,7 +390,7 @@ artifacts, the atlas is wrong by definition; the fix is regeneration. If
 ## Read-Only Toward Governance
 
 Checkpoint *finds* the stale ADR note, the undrained reconcile section,
-the contract drift — it does not fix them. Fixes become plan steps routed
+the contract drift — it does not fix them. The grandfather mark is a governance write, so even the upgrade run routes it to `hsdd-reconcile` as a plan step rather than editing a contract. Fixes become plan steps routed
 to the owning skill and the owning human. The only files this skill
 writes live under `hsdd/management/`, plus `hsdd/summary/` through
 `hsdd-summary` when that directory exists (step 7).
@@ -407,6 +443,16 @@ writes live under `hsdd/management/`, plus `hsdd/summary/` through
       squash-merged multi-phase epic (or both reported as findings).
 - [ ] Output landed: management changes committed (and, under the profile,
       pushed inside the submodule with every repo's pointer bumped).
+- [ ] Grandfathered count reported with the previous count; a rise is a
+      High finding; fixtureless `stable` contracts without the key are
+      findings routed to reconcile or to their producing phase.
+- [ ] Post-launch code with no phase is a backfill finding with a plan step
+      that appends a retro phase; a backfill carried two reports escalates.
+- [ ] Retired nodes excluded from the atlas's active view and listed under
+      Retired; retired versions with live consumers reported.
+- [ ] Sealing performed only when this run's tick turned the last gate
+      green, with the Sealed line, the change-log entry and the move to
+      `archive/`; no sealed document ticked.
 
 ## Anti-Rationalization
 
@@ -427,3 +473,5 @@ writes live under `hsdd/management/`, plus `hsdd/summary/` through
 | "The Depends column already encodes the graph" | Rows are read one at a time; parallelism and funnels are shapes, invisible until drawn. The first thing the field asked for back was the diagram. Derive it from the tables and draw it. |
 | "The sync has an agenda row in the table — that's the checklist" | An agenda names topics; a gate needs entry criteria, exit criteria, and what they unblock. Steps depend on this sync: if nothing defines its discharge, every one of them inherits an undefined dependency. |
 | "The checkpoint page shows a Plan integrity finding; I'll mention it in the report" | It is this run's own quality gate failing, read back by a script. Fix the plan, render again, then land. |
+| "Every gate is green; I'll leave the document where it is for the next sync" | A green document that is never sealed gets ticked forever and blocks the next campaign's generation. Seal it now: the evidence is this run's. |
+| "I'll add the grandfathered key myself while I have the contract open" | Checkpoint is read-only toward governance. Emit the plan step; reconcile writes the key. |
