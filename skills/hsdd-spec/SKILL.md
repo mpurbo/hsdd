@@ -7,10 +7,11 @@ description: >
   @hsdd/spec/foo.md into backend and frontend", "decompose X into subsystems", "break
   X into parts or pieces", "identify subsystems", "contract boundaries",
   "subsystem dependencies", "dependency map", "parallel development order",
-  "multi-level spec". This is the recursive decomposition step of HSDD, at the
-  root or any internal level. To break a node that is ALREADY a leaf-parent into
-  implementation phases use hsdd-phase-plan; to author contract bodies use
-  hsdd-contract.
+  "multi-level spec". Also "promote X", "graft a child under X", "retire node
+  X" (promotion, graft and retirement modes). This is the recursive
+  decomposition step of HSDD, at the root or any internal level. To break a
+  node that is ALREADY a leaf-parent into implementation phases use
+  hsdd-phase-plan; to author contract bodies use hsdd-contract.
 ---
 
 # HSDD Spec: Recursive Node Decomposition
@@ -118,6 +119,17 @@ intermediate internal node (a "feature") rather than forcing a fixed tier.
    > the whole stack (a solo developer, one full-stack squad): there the
    > feature boundary *is* the ownership boundary.
 
+   **Integration nodes.** Node-local wiring exercises nothing across
+   siblings. When an internal node's children exchange contracts, add a
+   child leaf-parent named `{node}.integration` with `hard` edges to each
+   producing sibling; its phases replay contract fixtures against live
+   components and run end-to-end slices of the primary flows, and default to
+   `full-review`. Because its edges are `hard`, the DAG schedules it after
+   the producers ship. A tree that is one leaf-parent needs none; its final
+   composition phase already covers it. An integration node spanning two
+   teams' outputs still has exactly one owning team: whoever owns the
+   composed, user-facing behavior.
+
    Split when too broad; merge (or add a shared contract node) when two nodes
    cannot be tested independently.
 3. **Name contracts by id.** Each node lists `Consumes` and `Produces` as
@@ -148,9 +160,58 @@ intermediate internal node (a "feature") rather than forcing a fixed tier.
    follow it.
 8. **Seed conventions.** At the root, create `hsdd/conventions.md` from the
    bundled template (`templates/conventions.md`): default layout, id scheme,
-   companion-skill recommendation. At deeper levels, refresh it only for
-   genuinely new conventions (layout, naming, protocol); contracts are indexed
-   by the generated `hsdd/contract/INDEX.md`, never listed here.
+   companion-skill recommendation. (`hsdd-adopt` seeds it from the same
+   template when adoption creates the tree.) At deeper levels, refresh it
+   only for genuinely new conventions (layout, naming, protocol); contracts
+   are indexed by the generated `hsdd/contract/INDEX.md`, never listed
+   here.
+
+## Promotion Mode (an as-built node gets its first change)
+
+Promotion is the recurring operation that turns an adopted stub into a
+governed node, one node at a time, when a change actually lands on it
+(`hsdd-intake` hands it here). It recurs for the life of the system.
+
+1. Take the node's `## Observed surface` as a **primary source** alongside
+   the change request; both go into the promoted spec's `Sources`.
+2. Decompose it as this skill always does: children or phases, contracts by
+   id, the typed DAG. The adopted `v0` contracts on its seams stay `v0`;
+   only a genuine redesign bumps one, through `hsdd-contract`.
+3. **Stop for the human's confirmation** before the promoted spec is
+   authoritative, the same shape as the "who builds what?" stop. Show the
+   as-built header, the proposed decomposition and every `unknown:` line
+   the decomposition resolves or leaves open.
+4. After confirmation, set `- **Adopted:** promoted`. **Keep the
+   `## Observed surface` section** as provenance; never delete it.
+5. Promotion happens once and is shared: a second change needing the same
+   node consumes the promoted spec; it never re-promotes.
+
+The confirmation stop keeps the validated fraction at 100%: a node spec is
+only generated when someone is about to work on it and therefore reads it.
+
+## Graft Mode (adding a child to an already-decomposed node)
+
+When a change needs a node that does not exist, graft it onto the existing
+parent; never start a second tree, and never give a change request a spec
+of its own. Rules:
+
+- Existing children's ids are stable; the new child takes the next slug.
+- The parent's embedded child summaries and its Mermaid DAG gain the new
+  node; nothing else in the parent is rewritten.
+- The new child's `Sources` names the change request that caused it.
+- Any contract the new child consumes from a sibling goes through the normal
+  `request` path at phase planning and the governance freeze; grafting does
+  not bypass it.
+
+## Retiring a Node
+
+Features get deleted. A retired node takes `- **Status:** retired` in its
+own spec and in the parent's embedded summary. The file is **kept in
+place** so ids stay resolvable for history; `hsdd-checkpoint` excludes it
+from the atlas's active view. Contracts the node solely produced go to
+`retired` through `hsdd-reconcile`, where the live-consumer rule applies
+(a version with a remaining consumer is a checkpoint finding, not a
+retirement). Never delete the spec file, and never reuse its id.
 
 ## Dependency Types
 
@@ -168,6 +229,7 @@ intermediate internal node (a "feature") rather than forcing a fixed tier.
 
 - **Kind:** internal | leaf-parent
 - **Purpose:** one coherent responsibility
+- **Team:** {name}
 - **Owns:** ...
 - **Does not own:** ...
 - **Consumes:** [contract-id@version, ...], or "none"
@@ -177,6 +239,23 @@ intermediate internal node (a "feature") rather than forcing a fixed tier.
 - **Decomposes into:** child node ids, OR "phases (see hsdd-phase-plan)"
 - **Isolation strategy:** how to build/test this node using only consumed contracts
 ```
+
+**Team field.** The durable answer to "who builds what?" (the axis
+question). Record it when known. Under `**Teams:** multi-team` in
+conventions, every node whose owning team differs from its parent's carries
+it; under `single-team` it may be omitted everywhere. An integration node
+names exactly one owning team. `- **Adopted:** as-built` is written by `hsdd-adopt`; this skill writes
+`promoted` in promotion mode (below) and never writes `as-built`.
+
+**Status field.** An active node has no Status line. A retired node adds
+`- **Status:** retired` directly after its Sources line (see Retiring a
+Node). Template lines carry no trailing comments; never copy guidance text
+into a spec's field values.
+
+**Adopted field.** A greenfield node has no Adopted line. An adopted node
+carries `- **Adopted:** as-built` (written by `hsdd-adopt`) or, after
+promotion, `- **Adopted:** promoted` (written by this skill's promotion
+mode), directly after its Sources line and before any Status line.
 
 **Sources field.** Required whenever the root spec has a `## Sources`
 section; omit it entirely only in a project with no source documents. List
@@ -241,6 +320,17 @@ exist (omit the section only when there are none):
       row and a `### {ID}` detail subsection; child views carry
       `[inherits …]`; no cited ID lacks a definition.
 - [ ] OQ prefixes used by node specs are declared in `conventions.md`.
+- [ ] Under `multi-team`, every node whose team differs from its parent's
+      carries `- **Team:**`; no node is owned by two teams.
+- [ ] Where children exchange contracts, an integration node exists or the
+      decision not to add one is stated in the parent (one line).
+- [ ] A graft kept every existing child id and touched only the new child's
+      file, the parent's summaries and the parent's DAG.
+- [ ] A retired node's file is kept; its contracts' retirement went through
+      `hsdd-reconcile`.
+- [ ] Promotion: the human confirmed before `- **Adopted:** promoted` was
+      written; `## Observed surface` kept; `v0` contracts unchanged unless
+      redesigned.
 
 ## Anti-Rationalization
 

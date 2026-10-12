@@ -1,0 +1,4 @@
+# payments
+/src/billing/   @payments-team
+/src/payouts/   @payments-team @treasury
+/cmd/           @platform

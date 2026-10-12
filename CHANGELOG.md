@@ -5,6 +5,228 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+## [0.10.0] - 2026-10-10
+
+The release that follows 0.7.1. The 0.8.0 and 0.9.0 entries below describe
+work that was never tagged; all of it ships here, with every rule
+implemented by a skill.
+
+Specification: `spec/hsdd-spec-v0_10.md`. Basis:
+`review/2026-10-10-v0.9.0-review-fable-5.1.md` and
+`review/2026-10-10-successor-direction-fable-5.1.md`. Acceptance:
+`review/hsdd-v0_10-acceptance.md`.
+
+### Upgrading from 0.7.1
+
+- Reinstall the eleven skills.
+- The first checkpoint after upgrading runs the upgrade behaviors: it
+  enumerates the fixtureless `stable` contracts and emits the plan step
+  that has `hsdd-reconcile` mark them `validation: grandfathered`.
+- Add `**Ordering policy:** fp-progression` to `hsdd/conventions.md` to
+  keep 0.7.1's ordering, or remove the old `FP ordering:` bullet to take
+  `interfaces-first`. Until you do, the old bullet reads as
+  `fp-progression`.
+- The first phase switch replaces a verification template that has no
+  `## Learnings`.
+- `hsdd-adopt` and `hsdd-intake` do nothing until invoked.
+
+### Added
+
+- **The 0.8.0 rules the skills never received.** `hsdd-config`'s
+  verification template gains `## Learnings` (one disposition per entry
+  before sign-off) and `## Metrics`; `hsdd-contract` gains `compatibility`,
+  `external_consumers`, the `retired` status, the executable-validation
+  rule with canonical paths (it writes the schema and fixtures when it
+  authors a contract or a new version; phases only replay them) and the
+  `validation: grandfathered` key; `hsdd-spec` gains the `Team` and
+  `Status` fields, integration nodes, graft mode and node retirement, and
+  its conventions template the `**Ordering policy:**` and `**Teams:**`
+  lines; `hsdd-phase-plan` gains the named ordering policy
+  (`interfaces-first` default, `fp-progression`), the Phase Equivalent, the
+  producer gate replay and append mode; `hsdd-reconcile` asserts an
+  executable validation artifact at the `draft → stable` flip, marks
+  grandfathered contracts and discharges each once `hsdd-contract` has
+  written its artifact, and retires contracts; `hsdd-checkpoint` audits
+  the grandfather set by membership against the upgrade checkpoint's
+  marking step (carried forward until executed) and reports the remaining
+  count, files backfill findings with retro phases,
+  excludes retired nodes from the atlas's active view and seals a milestone
+  document when its tick turns the last gate green; `hsdd-milestone` treats
+  a sealed document as a closed campaign.
+- **`hsdd-adopt`**, the brownfield entry point: a bundled, tested seam
+  extractor (`hsdd/scripts/seams/`: manifests, routes, schemas, migrations and
+  tables, topics, owners, co-change coupling; `render` writes the `## Observed
+  surface` block, whose `modules:` line records the rendered prefixes, and
+  `diff` re-extracts exactly those to detect drift), as-built node specs
+  with required `unknown:` lines, `v0` contracts with
+  `## Observed completeness`, a human confirmation of the tree before any
+  node spec or contract is written, and never a refactoring proposal.
+  Owners resolve by the last matching `CODEOWNERS` rule per file, read from
+  the git top level; unreadable directories are skipped and reported.
+- **`hsdd-intake`**: routes a change request into the existing tree
+  (`local`, `cross-node`, `new-capability`, `structural`), reads every open
+  intake first and serializes collisions, promotes an as-built landing
+  first, and writes the dated, never-superseded intake record before any
+  handoff. A PRD is never a root.
+- **Promotion mode** in `hsdd-spec`; **as-built drift**, stale-caveat and
+  intake-closure checks in `hsdd-checkpoint`, the drift check gated on the
+  tree having an `## Observed surface`.
+- **Chapter 15, rule by rule.** One table states, for every rule since
+  0.7.1, its effect on an existing project and the skill that implements
+  it. Nothing in the specification is specified without a skill.
+- **§15.3 Artifact stability.** The artifact formats are frozen for the
+  1.0 line; later changes are additive optional fields only.
+- Everything 0.9.0 added (below): the generic phase context and its two
+  derivatives, the coding method, `hsdd-summary` and chapter 13.
+
+### Changed
+
+- `hsdd-config`'s switch copies the verification template when it is missing,
+  for either method, and replaces a pre-0.10 copy that has no `## Learnings`;
+  a superpowers-only project previously never got it, and an upgrading project
+  kept its old copy.
+- The specification describes the phase context once: a session receives
+  its phase, the Interface and Guarantees of the contracts it consumes and
+  produces, and its ADRs' decisions (six places that still said "consumes
+  only" were corrected).
+- Ordering policy and teams mode are lines in the conventions body, not
+  frontmatter.
+- README leads with the review sitting as the rationale; bounded context is
+  a consequence.
+- Skills no longer mention pre-0.5 layouts; the specification supports
+  0.6.1 and later.
+
+### Removed
+
+- The claim that 0.8.0's consolidation "ships for the first time" in 0.9.0.
+
+## [0.9.0] - 2026-10-10 (never released; ships in 0.10.0)
+
+Design:
+`docs/superpowers/specs/2026-10-09-v0_9-phase-context-and-summaries-design.md`.
+
+### Added
+
+- **The generic phase context.** Before each phase, `hsdd-config` writes
+  `hsdd-context/{phase-id}.md` in the implementation repo: the phase, the
+  Interface and Guarantees of every contract it consumes and produces, the
+  Decision and Consequences of its ADRs, its open questions, and pinned
+  links. Every line is copied from a governance file or is fixed text.
+- **Coding methods.** The phase context is wrapped, word for word, for
+  OpenSpec (`openspec/config.yaml`) or for superpowers
+  (`hsdd-context/superpowers/{phase-id}.md`, a spec for `writing-plans`
+  whose Global Constraints carry test-first, the task cap, the gate and the
+  verification doc). `**Coding method:**` in conventions sets the default;
+  `/hsdd-phase {id} --method` overrides it.
+- **`hsdd-summary`**, a new skill with zero-dependency scripts: the plan
+  page and the checkpoint page, offline HTML reading aids with three
+  audiences each, stamped against their inputs.
+- **Chapter 13, Reading Aids**, in `spec/hsdd-spec-v0_9.md`.
+
+### Changed
+
+- `hsdd-config`: no longer OpenSpec-only. OpenSpec's phase block is now a
+  superset of what earlier releases injected; `rules:` are unchanged.
+- `hsdd-checkpoint`: `hsdd-context/` counts as in-progress evidence; when
+  `hsdd/summary/` exists, its step 7 renders the checkpoint page.
+- The invariant "one phase = one OpenSpec change" reads "one phase = one
+  coding cycle"; the atlas non-goal is narrowed, not reversed.
+
+### Removed
+
+- The README and users guide no longer describe the brownfield entry point or
+  change intake: their skills have not shipped. The specification still
+  defines both (chapters 6 and 11); the skills and their walkthroughs arrive in
+  v0.10.0.
+
+## [0.8.0] - 2026-08-03 (never released; ships in 0.10.0)
+
+A **consolidation, not a delta.** `spec/hsdd-spec-v0_8.md` is a single
+standalone specification absorbing v0.3 through v0.7.1 and the tool-free half
+of the shelved vNext exploration. The delta series remains in `spec/` as
+history; nothing requires reading it. The delta format is retired for major
+revisions.
+
+Two new chapters carry the release's substance, both from one observation:
+**the tree does not complete — phases complete, so after the first change
+every project is brownfield.** Greenfield is a three-month bootstrap; the
+rest of a system's life is the steady state.
+
+Design: `docs/superpowers/specs/2026-07-29-v0_8-consolidation-brownfield-design.md`.
+Acceptance record: `review/hsdd-v0_8-acceptance.md` (13/13 criteria PASS).
+
+### Added
+
+- **Chapter 6 — Entry B: Brownfield Adoption.** A codebase that already
+  exists becomes a structural peer of the greenfield entry, not a special
+  case. `hsdd-adopt` (forthcoming skill) extracts seams by bundled script,
+  proposes a shallow tree on the seams that exist, and writes as-built node
+  specs carrying an `## Observed surface` section stamped with the extraction
+  SHA — with `unknown:` lines required, because a node with no unknowns is a
+  node nobody looked at. It stops there: no decomposition below what the
+  first change needs, and never a proposal to refactor the system into a
+  nicer tree. Adoption cost scales with **seam count, not LOC**.
+- **Chapter 11 — Steady State: Change Intake.** `hsdd-intake` (forthcoming
+  skill) routes an incoming change request into the existing tree —
+  `local` / `cross-node` / `new-capability` / `structural` — and writes the
+  routing decision before the handoff. The load-bearing rule: **a PRD is
+  never a root; there is one tree and it is the system's.** Intake records
+  accumulate, dated and never superseded — the rule that replaces "wipe
+  `hsdd/` and rebuild." Includes phase-plan append mode, spec graft mode,
+  node retirement, collision serialization across open intakes, and a
+  **legal bypass** for production incidents (hotfix → backfill finding →
+  retro phase, escalating if unclosed across two checkpoints).
+- **Chapter 14 (chapter 15 in the current specification) — Upgrading and Compatibility.** v0.8.0 is additive; the
+  vehicle is checkpoint's existing adoption run. The one rule with teeth —
+  `stable` contracts need executable validation — is **grandfathered and
+  discharged on touch**: the set closes at upgrade, each contract gains
+  fixtures only when a phase next touches it, and the remaining count is
+  reported every checkpoint and can only fall.
+- Adopted contracts start at **`v0`** with a required `## Observed
+  completeness` caveat. `v0` is a permanent property, not a waypoint;
+  `v0 → v1` is the contract-level adoption exit, taken only on redesign.
+- Per-contract-version **`compatibility:` policy** — `additive-only` (the
+  Protobuf discipline, claimable only if existing fixtures still pass),
+  `versioned` (default), `frozen` — plus the `retired` status,
+  `external_consumers`, and a live-consumer retirement finding.
+- **Per-campaign milestone documents**, sealed when every gate is green and
+  moved to `management/archive/`; sealing is evidence-backed, never declared.
+- From vNext: executable validation for `stable`, both gates running the
+  contract, integration nodes, the `## Learnings` loop dispositioned at the
+  gate, mid-phase contract renegotiation, the unified **Phase Equivalent**,
+  phase ordering as a named policy (`interfaces-first` default), the `Team`
+  field, and the `## Metrics` block.
+
+### Changed
+
+- **Honest claims** (chapter 15, now chapter 16, mirrored in the README): context isolation
+  is *probabilistic, not enforced* — the defense is prose and structure,
+  pressure-tested and holding, not a mechanism. HSDD bounds per-session token
+  cost; it *does not reduce the total*.
+- The settled-decisions table gains a required **provenance column**
+  (`field-tested` / `pressure-tested` / `reasoned-only`) so new material
+  cannot inherit credibility from tested material. Most of what this release
+  adds is `reasoned-only`, and the document says so.
+- README and users guide: the reading path collapses to one specification,
+  the skill table grows to ten, and the guide gains a brownfield walkthrough
+  (adopt → intake → promote).
+
+### Not included
+
+- **No `hsdd` CLI.** No `context`, `lint`, `status`, `rename`, `check-scope`,
+  or `template`. Mechanical invariants stay prose- and structure-enforced, on
+  the 0.6.0 pressure-campaign evidence. Scripts are permitted only under one
+  boundary: **bundled with a new skill, never changing how an existing skill
+  behaves.** The mechanization line stays on the shelf as a later candidate.
+- No `hsdd-review` skill, no multi-team enforcement, no back-application of
+  v0.8.0 rules to existing artifacts, and no support for projects below
+  0.6.1 (upgrade to 0.6.1 first).
+- **Skill files are unchanged in this release.** `hsdd-adopt` and
+  `hsdd-intake` and the amendments to the existing eight follow in a separate
+  cycle, after this specification is approved.
+
 ## [0.7.1] - 2026-08-01
 
 Driven by the first real-world `hsdd-checkpoint` run (the moka-microsite
@@ -148,7 +370,7 @@ observation on source-document provenance. Delta spec:
 
 ## [0.6.0] - 2026-07-13
 
-Driven by the second field test (GMP-911) and its review
+Driven by the second field test (FT-2) and its review
 (`review/hsdd-process-v0_5_1-review-fable-xhigh.md`). Delta spec:
 `spec/hsdd-spec-v0_6.md`.
 

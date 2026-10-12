@@ -12,7 +12,7 @@
 **Status:** For review
 **Date:** 2026-07-12
 **Author:** Purbo Mohamad
-**Drafted from:** the second field test (GMP-911) and its review,
+**Drafted from:** the second field test (FT-2) and its review,
 `review/hsdd-process-v0_5_1-review-fable-xhigh.md`, plus a decomposition
 observation from a second project running the same skills.
 **Supersedes (in part):** the field-block shape of the node-header and phase
@@ -29,7 +29,7 @@ unchanged.
 ## 1. What 0.6 Changes and Why
 
 The second field test ran the whole loop on a production React monorepo
-(GMP-911: one root node, two leaf-parents, fourteen planned phases, one
+(FT-2: one root node, two leaf-parents, fourteen planned phases, one
 contract, two ADRs, nine execution worktrees). The methodology's central bet
 paid off — the two nodes were built in genuine isolation against a contract
 that stayed byte-identical across both lineages — but the field surfaced four
@@ -187,7 +187,7 @@ alongside "Sizing to the Review Window":
 > deltas + tasks + verification doc) exceed its predicted diff, it is a merge
 > candidate by default.
 
-Field calibration: applying the floor to the GMP-911 plans merges 14 phases
+Field calibration: applying the floor to the FT-2 plans merges 14 phases
 into 10 with no isolation lost where isolation was doing work — the pure
 core, the effects layer, and the integrations keep their own cycles and
 their full-review tiers.
@@ -234,7 +234,7 @@ motive:
 A phase plan may state one default gate command above the summary table:
 
 ```markdown
-**Default gate:** `pnpm --filter @gma-apps/migpa test && pnpm --filter @gma-apps/migpa build`
+**Default gate:** `pnpm --filter @testbed/web test && pnpm --filter @testbed/web build`
 ```
 
 A phase's `- **Gate:**` field then reads `node default` unless it overrides.
