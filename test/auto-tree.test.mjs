@@ -400,3 +400,25 @@ test("open-question definitions need a separator or the end of the heading", () 
   assert.deepEqual(t.oqDefs.map((d) => d.id), ["OQ1", "OQ-W1", "OQ-W2"]);
   assert.deepEqual(t.oqCites.filter((c) => c.file === "hsdd/spec/shop.web.md").map((c) => c.id), ["OQ-W1", "OQ-W2", "OQ-W4", "OQ9"]);
 });
+
+test("phase headings count only inside the Phase Plan section", () => {
+  const n = parseNodeSpec([
+    "# a.b: B", "", "- **Kind:** leaf-parent", "",
+    "## Phase Plan", "", "### a.b.1: Inside", "", "- **Scope:** x", "",
+    "## Notes", "", "### a.b.2: Outside the plan", "", "- **Scope:** y", "",
+  ].join("\n"), "hsdd/spec/a.b.md");
+  assert.deepEqual(n.phases.map((p) => p.id), ["a.b.1"]);
+});
+test("mention order: a leaf-parent's spec does not contribute", () => {
+  const dir = makeRepo({ stage: "01-root", files: {
+    "hsdd/spec/shop.api.md": "# shop.api: API\n\n- **Kind:** leaf-parent\n- **Decomposes into:** phases\n\nSee hsdd/spec/shop.zeta.md.\n",
+    "hsdd/spec/shop.zeta.md": "# shop.zeta: Z\n\n- **Kind:** leaf-parent\n",
+    "hsdd/spec/shop.alpha.md": "# shop.alpha: A\n\n- **Kind:** leaf-parent\n",
+  } });
+  const t = loadTree(dir, LAYOUT, { root: "shop" });
+  assert.deepEqual(t.mentionOrder, ["shop.api", "shop.web", "shop.alpha", "shop.zeta"]);
+});
+test("from stage 04 the root's embedded shop.web block names shop.web.app", () => {
+  assert.deepEqual(tree("04-mid").nodes.get("shop").decomposesInto, ["shop.api", "shop.web"]);
+  assert.match(readFileSync(join(repo("04-mid"), "hsdd/spec/shop.md"), "utf8"), /\*\*Decomposes into:\*\* shop\.web\.app/);
+});

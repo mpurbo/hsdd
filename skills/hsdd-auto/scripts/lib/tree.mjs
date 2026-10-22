@@ -213,7 +213,8 @@ const tableHeaders = (ls, from, to, mask) => {
 
 const phasesOf = (ls, hs, mask, nodeId, plan) => {
   if (!plan) return [];
-  return hs.filter((h) => h.level === 3 && h.line > plan.line).flatMap((h) => {
+  const end = sectionEnd(hs, plan, ls.length);
+  return hs.filter((h) => h.level === 3 && h.line > plan.line && h.line < end).flatMap((h) => {
     const text = plain(h.text);
     const t = splitTitle(text);
     const short = t.id ?? text;
@@ -407,15 +408,17 @@ const mentions = (text, known) => [...text.matchAll(MENTION)].flatMap((m) => {
   return [];
 });
 
-// First mention in the root spec, then in the specs of the nodes in that order; nodes
-// never mentioned follow in file name order. The root itself is not listed.
+// First mention in the root spec, then in the specs of the parent nodes (those that decompose
+// into nodes) in that order; a leaf-parent's spec does not contribute. Nodes never mentioned
+// follow in file name order. The root itself is not listed.
 const mentionOrderOf = (nodes, textOf, root) => {
   const known = new Set(nodes.keys());
   const order = [];
   const add = (id) => { if (id !== root && !order.includes(id)) order.push(id); };
   const visit = (id) => mentions(textOf(id), known).forEach(add);
   if (root !== null && nodes.has(root)) visit(root);
-  for (let i = 0; i < order.length; i++) visit(order[i]);
+  const isParent = (id) => (nodes.get(id)?.decomposesInto ?? []).length > 0;
+  for (let i = 0; i < order.length; i++) if (isParent(order[i])) visit(order[i]);
   const rest = [...nodes.values()].sort((a, b) => (a.file < b.file ? -1 : a.file > b.file ? 1 : 0))
     .map((n) => n.id).filter((id) => id !== root && !order.includes(id));
   return [...order, ...rest];

@@ -27,7 +27,7 @@ defined in the root spec).
 | Phase | Name | Tier | Size | Depends on |
 |------:|------|------|------|------------|
 | shop.api.1 | Order types and store | gate-only | ~4 files, <= 4 OpenSpec tasks | none |
-| shop.api.2 | Order endpoints | full-review | ~6 files, <= 7 OpenSpec tasks | 1 |
+| shop.api.2 | Order endpoints | full-review | ~6 files, <= 7 OpenSpec tasks | shop.api.1 |
 
 Ordering policy: interfaces-first. Types and the store come first; the
 endpoints that produce the contract come last.

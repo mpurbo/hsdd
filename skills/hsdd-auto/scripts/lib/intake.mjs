@@ -40,7 +40,11 @@ export const parseHandoffBlock = (routingText) => {
   const [b] = blocks;
   if (!b.closed) return { block: null, error: "the hsdd-handoffs block has no closing fence" };
   try {
-    return { block: JSON.parse(ls.slice(b.start + 1, b.end).join("\n")), error: null };
+    const block = JSON.parse(ls.slice(b.start + 1, b.end).join("\n"));
+    if (block === null || typeof block !== "object" || Array.isArray(block)) {
+      return { block: null, error: "the hsdd-handoffs block is not a JSON object" };
+    }
+    return { block, error: null };
   } catch (e) {
     return { block: null, error: `the hsdd-handoffs block is not valid JSON: ${e.message}` };
   }
@@ -69,8 +73,6 @@ const promptErrors = (routing, handoffs) => {
   return errors;
 };
 
-const EMPTY_TREE = Object.freeze({ nodes: new Map(), contracts: new Map() });
-
 const expectedSkill = (h, tree) => {
   try {
     return { skill: skillFor(h.kind, h.target, tree) };
@@ -83,7 +85,8 @@ const expectedSkill = (h, tree) => {
 // structural record has nothing else (spec 12.2); ids are unique; every `after` id names an
 // earlier handoff; `skill` is the one 7.1 gives the kind; each prompt is quoted verbatim in
 // the ## Routing prose, in block order. An absent block has no errors: C8 decides when it is required.
-export const blockErrors = (record, tree = EMPTY_TREE) => {
+export const blockErrors = (record, tree) => {
+  if (tree == null) throw new TypeError("blockErrors: tree is required");
   if (record.blockError) return [record.blockError];
   if (record.block == null) return [];
   const schema = validate("handoffs", record.block);

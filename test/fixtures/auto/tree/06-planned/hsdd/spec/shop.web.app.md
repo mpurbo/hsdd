@@ -26,7 +26,7 @@ shown from `total_cents` and never recomputed.
 | Phase | Name | Tier | Size | Depends on |
 |------:|------|------|------|------------|
 | shop.web.app.1 | Order client and order history | spot-check | ~5 files, <= 5 OpenSpec tasks | none |
-| shop.web.app.2 | Cart and checkout | full-review | ~6 files, <= 7 OpenSpec tasks | 1 |
+| shop.web.app.2 | Cart and checkout | full-review | ~6 files, <= 7 OpenSpec tasks | shop.web.app.1 |
 
 Ordering policy: interfaces-first. The order API client comes first, tested
 against the contract's fixtures; the screens that compose it come after.

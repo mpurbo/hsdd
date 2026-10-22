@@ -17,6 +17,8 @@ const INTAKE = join(HERE, "fixtures", "auto", "intake");
 const LAYOUT = parseLayout("");
 const fixture = (name) => readFileSync(join(INTAKE, name), "utf8");
 const record = (name, path = `hsdd/management/${name}`) => parseIntakeRecord(fixture(name), path);
+const NO_TREE = { nodes: new Map(), contracts: new Map() };
+const blockErrs = (r, tree = NO_TREE) => blockErrors(r, tree);
 const withBlock = (rec, edit) => {
   const block = structuredClone(rec.block);
   edit(block);
@@ -43,39 +45,39 @@ test("reads the header and the handoff block", () => {
   assert.equal(r.block.handoffs[1].when, "cites-superseded");
   assert.deepEqual(r.block.handoffs[1].after, ["H1"]);
   assert.match(r.block.insert_rule, /^A contract change/);
-  assert.deepEqual(blockErrors(r), []);
+  assert.deepEqual(blockErrs(r), []);
 });
 test("blockErrors: prompts out of order, unknown after, wrong skill, duplicate id", () => {
   const bad = record("bad-block.md");
   assert.equal(bad.slug, "bad-block");
-  const errors = blockErrors(bad);
+  const errors = blockErrs(bad);
   assert.equal(errors.length, 1);
   assert.match(errors[0], /H2a/);
   assert.match(errors[0], /order/);
 
   const good = record("2026-10-22-intake-order-v2.md");
-  const unknownAfter = blockErrors(withBlock(good, (b) => { b.handoffs[1].after = ["H9"]; }));
+  const unknownAfter = blockErrs(withBlock(good, (b) => { b.handoffs[1].after = ["H9"]; }));
   assert.equal(unknownAfter.length, 1);
   assert.match(unknownAfter[0], /H2a.*after.*H9/);
-  const laterAfter = blockErrors(withBlock(good, (b) => { b.handoffs[0].after = ["H2a"]; }));
+  const laterAfter = blockErrs(withBlock(good, (b) => { b.handoffs[0].after = ["H2a"]; }));
   assert.match(laterAfter.join("\n"), /H1.*after.*H2a/);
 
-  const wrongSkill = blockErrors(withBlock(good, (b) => { b.handoffs[0].skill = "hsdd-spec"; }));
+  const wrongSkill = blockErrs(withBlock(good, (b) => { b.handoffs[0].skill = "hsdd-spec"; }));
   assert.equal(wrongSkill.length, 1);
   assert.match(wrongSkill[0], /H1.*contract-touch.*hsdd-contract/);
-  const citationSkill = blockErrors(withBlock(good, (b) => { b.handoffs[1].skill = "hsdd-contract"; }));
+  const citationSkill = blockErrs(withBlock(good, (b) => { b.handoffs[1].skill = "hsdd-contract"; }));
   assert.match(citationSkill.join("\n"), /H2a.*hsdd-spec/);
 
-  const duplicate = blockErrors(withBlock(good, (b) => { b.handoffs[1].id = "H1"; b.handoffs[1].after = []; }));
+  const duplicate = blockErrs(withBlock(good, (b) => { b.handoffs[1].id = "H1"; b.handoffs[1].after = []; }));
   assert.match(duplicate.join("\n"), /duplicate.*H1/);
 
-  const missingPrompt = blockErrors(withBlock(good, (b) => { b.handoffs[0].prompt = "Touch order-api: something the prose never says"; }));
+  const missingPrompt = blockErrs(withBlock(good, (b) => { b.handoffs[0].prompt = "Touch order-api: something the prose never says"; }));
   assert.match(missingPrompt.join("\n"), /H1.*verbatim/);
 
-  const schema = blockErrors(withBlock(good, (b) => { b.handoffs[0].kind = "intake"; }));
+  const schema = blockErrs(withBlock(good, (b) => { b.handoffs[0].kind = "intake"; }));
   assert.ok(schema.length > 0);
   assert.match(schema.join("\n"), /kind/);
-  assert.deepEqual(blockErrors({ ...good, block: { version: 1, handoffs: "x" } }).length > 0, true);
+  assert.deepEqual(blockErrs({ ...good, block: { version: 1, handoffs: "x" } }).length > 0, true);
 });
 test("structural record may have an empty block", () => {
   const s = record("structural.md");
@@ -83,12 +85,12 @@ test("structural record may have an empty block", () => {
   assert.deepEqual(s.landsOn, ["shop"]);
   assert.deepEqual(s.contracts, []);
   assert.deepEqual(s.block, { version: 1, handoffs: [] });
-  assert.deepEqual(blockErrors(s), []);
-  const crossNode = blockErrors({ ...s, cls: "cross-node" });
+  assert.deepEqual(blockErrs(s), []);
+  const crossNode = blockErrs({ ...s, cls: "cross-node" });
   assert.equal(crossNode.length, 1);
   assert.match(crossNode[0], /structural/);
   const good = record("2026-10-22-intake-order-v2.md");
-  assert.match(blockErrors({ ...good, cls: "structural" }).join("\n"), /structural/);
+  assert.match(blockErrs({ ...good, cls: "structural" }).join("\n"), /structural/);
 });
 test("cites-superseded both ways", () => {
   const dir = makeRepo({ stage: "06-planned", files: {
@@ -170,8 +172,8 @@ test("parseHandoffBlock: absent, invalid JSON, unterminated, two blocks, other f
   assert.match(parseHandoffBlock(two).error, /more than one/);
   assert.deepEqual(parseHandoffBlock("~~~~ hsdd-handoffs\n{\"version\": 1, \"handoffs\": []}\n~~~~\n").block, { version: 1, handoffs: [] });
   const r = { ...record("structural.md"), block: null, blockError: "the hsdd-handoffs block is not valid JSON: x" };
-  assert.deepEqual(blockErrors(r), ["the hsdd-handoffs block is not valid JSON: x"]);
-  assert.deepEqual(blockErrors({ ...r, blockError: null }), []);
+  assert.deepEqual(blockErrs(r), ["the hsdd-handoffs block is not valid JSON: x"]);
+  assert.deepEqual(blockErrs({ ...r, blockError: null }), []);
 });
 test("parseIntakeRecord is lenient about header forms", () => {
   const r = parseIntakeRecord([
@@ -222,4 +224,29 @@ test("loadIntakeRecords lists management intake records newest first; segmentRec
   assert.equal(segmentRecord(records, "ref/marketplace.md").slug, "marketplace");
   assert.equal(segmentRecord(records, "ref/nothing.md"), null);
   assert.deepEqual(loadIntakeRecords(makeRepo({ stage: "01-root" }), LAYOUT), []);
+});
+
+test("parseHandoffBlock: a closed block whose JSON is not an object is an error", () => {
+  for (const body of ["null", "[1, 2]", "42", "\"text\""]) {
+    const r = parseHandoffBlock(`\`\`\`hsdd-handoffs\n${body}\n\`\`\`\n`);
+    assert.equal(r.block, null);
+    assert.match(r.error, /not a JSON object/);
+  }
+});
+test("blockErrors requires the tree", () => {
+  assert.throws(() => blockErrors(record("structural.md")), /tree is required/);
+  assert.deepEqual(blockErrors(record("structural.md"), NO_TREE), []);
+});
+test("cites-superseded with a multi-dot baseline version", () => {
+  const dir = makeRepo({ files: {
+    "notes/exact.md": "Per Spec v0.15.1 \u00a73, orders carry a status.\n",
+    "notes/longer.md": "Per Spec v0.15.10 \u00a73, orders carry a status.\n",
+  } });
+  const config = withDefaults(baseConfig({ sources: {
+    normative: [{ path: "ref/spec-v2.md", cite: "Spec", version: "v0.16.0" }],
+    baseline: [{ path: "ref/old.md", cite: "Spec", version: "v0.15.1" }],
+  } }));
+  const strings = supersededStrings(config, { contracts: new Map() });
+  assert.equal(citesSuperseded(dir, ["notes/exact.md"], strings), true);
+  assert.equal(citesSuperseded(dir, ["notes/longer.md"], strings), false);
 });
