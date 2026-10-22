@@ -4,7 +4,7 @@
 import { spawnSync } from "node:child_process";
 import { cpSync, existsSync, mkdtempSync, readFileSync, readdirSync, rmSync, statSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { basename, join } from "node:path";
 import { P } from "./paths.mjs";
 
 const GENERATOR_TIMEOUT_MS = 30_000;
@@ -24,12 +24,13 @@ const readOrNull = (path) => (isFile(path) ? readFileSync(path) : null);
 
 const REGISTRIES = ["contract/INDEX.md", "adr/INDEX.md"];
 
-// Copies the generator and the two directories it reads to `tmp`, runs it there, compares the registries.
-const regenerationFindings = (repoRoot) => {
-  const tmp = mkdtempSync(join(tmpdir(), "hsdd-registry-"));
+// Copies the generator and the two directories it reads (without their INDEX.md files, so a stale registry
+// cannot survive in the copy) to a fresh directory under `tmpRoot`, runs it there, compares the registries.
+const regenerationFindings = (repoRoot, tmpRoot) => {
+  const tmp = mkdtempSync(join(tmpRoot, "hsdd-registry-"));
   try {
     for (const sub of ["contract", "adr"]) {
-      if (existsSync(join(repoRoot, "hsdd", sub))) cpSync(join(repoRoot, "hsdd", sub), join(tmp, sub), { recursive: true });
+      if (existsSync(join(repoRoot, "hsdd", sub))) cpSync(join(repoRoot, "hsdd", sub), join(tmp, sub), { recursive: true, filter: (src) => basename(src).toUpperCase() !== "INDEX.MD" });
     }
     cpSync(join(repoRoot, P.genRegistry), join(tmp, "scripts", "gen-registry.mjs"));
     const r = spawnSync(process.execPath, [join(tmp, "scripts", "gen-registry.mjs"), "--root", tmp], {
@@ -54,7 +55,7 @@ const regenerationFindings = (repoRoot) => {
 };
 
 // { c0, c1, skipped }; `skipped` is true when C1 did not run because the layout is relocated (spec 4.2).
-export const checkRegistries = (repoRoot, layout) => {
+export const checkRegistries = (repoRoot, layout, { tmpRoot = tmpdir() } = {}) => {
   const generator = isFile(join(repoRoot, P.genRegistry));
   const c0 = !generator && contractFiles(repoRoot, layout).length > 0
     ? [finding("C0", "error", `contract files exist and ${P.genRegistry} does not; copy it from hsdd-contract`, P.genRegistry)]
@@ -67,5 +68,5 @@ export const checkRegistries = (repoRoot, layout) => {
       skipped: true,
     };
   }
-  return { c0, c1: regenerationFindings(repoRoot), skipped: false };
+  return { c0, c1: regenerationFindings(repoRoot, tmpRoot), skipped: false };
 };

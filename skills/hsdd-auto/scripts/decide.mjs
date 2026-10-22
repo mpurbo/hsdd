@@ -2,7 +2,7 @@
 // The id is minted, the line validated and the append done inside the lock file, so two
 // concurrent calls never share an id.
 import {
-  closeSync, existsSync, mkdirSync, openSync, readFileSync, readdirSync, realpathSync, renameSync, statSync, unlinkSync, writeSync,
+  closeSync, existsSync, linkSync, mkdirSync, openSync, readFileSync, readdirSync, realpathSync, renameSync, statSync, unlinkSync, writeSync,
 } from "node:fs";
 import { randomBytes } from "node:crypto";
 import { dirname, join, resolve } from "node:path";
@@ -65,9 +65,10 @@ const LOCK_STALE_MS = 60_000;
 const sleep = (ms) => Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
 
 // A lock older than LOCK_STALE_MS is replaced: it is renamed to a unique name, and the renamed file
-// is judged by its inode. When the inode is the one judged stale it is deleted; when it differs, the
-// rename moved a lock another process had just taken, which is therefore live: nothing is put back and
-// nothing deleted, and the caller keeps waiting. Returns "replaced", "live" or "none".
+// is compared with the stat taken when it was judged stale (inode and mtime). When it is that file it
+// is deleted. When it differs, the rename moved a lock another process had just taken: it is restored
+// with a no-clobber hard link (EEXIST means the path was already re-taken, which is fine), the moved
+// name is removed in both outcomes, and the caller keeps waiting. Returns "replaced", "live" or "none".
 export const replaceIfStale = (file, { staleMs = LOCK_STALE_MS, beforeRename = () => {} } = {}) => {
   try {
     const seen = statSync(file);
@@ -75,9 +76,18 @@ export const replaceIfStale = (file, { staleMs = LOCK_STALE_MS, beforeRename = (
     beforeRename();
     const moved = `${file}.stale.${process.pid}.${randomBytes(4).toString("hex")}`;
     renameSync(file, moved);
-    if (statSync(moved).ino !== seen.ino) return "live";
+    const now = statSync(moved);
+    if (now.ino === seen.ino && now.mtimeMs === seen.mtimeMs) {
+      unlinkSync(moved);
+      return "replaced";
+    }
+    try {
+      linkSync(moved, file);
+    } catch (e) {
+      if (e.code !== "EEXIST") throw e;
+    }
     unlinkSync(moved);
-    return "replaced";
+    return "live";
   } catch {
     return "none"; // gone already, or someone else replaced it: the caller retries
   }

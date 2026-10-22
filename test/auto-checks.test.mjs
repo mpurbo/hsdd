@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
-import { mkdirSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { tmpdir } from "node:os";
 import { c2, c3, c4, c5, c6, c7, c8, treeChecks } from "../skills/hsdd-auto/scripts/lib/checks.mjs";
@@ -73,11 +73,20 @@ test("C1 writes nothing into the tree", () => {
     const dir = repo("03-contracts");
     if (dirty) edit(dir, CONTRACT, "status: draft", "status: stable");
     const before = hashTree(dir);
-    const tmpBefore = readdirSync(tmpdir()).filter((n) => n.startsWith("hsdd-registry-"));
-    checkRegistries(dir, resolveLayout(dir));
+    const tmpRoot = mkdtempSync(join(tmpdir(), "hsdd-checks-test-"));
+    checkRegistries(dir, resolveLayout(dir), { tmpRoot });
     assert.deepEqual(hashTree(dir), before);
-    assert.deepEqual(readdirSync(tmpdir()).filter((n) => n.startsWith("hsdd-registry-")), tmpBefore, "the temporary copy is removed");
+    assert.deepEqual(readdirSync(tmpRoot), [], "the temporary copy is removed");
+    rmSync(tmpRoot, { recursive: true });
   }
+});
+
+test("C1 catches a stale registry left after every contract and ADR was removed", () => {
+  const dir = repo("03-contracts");
+  rmSync(join(dir, CONTRACT));
+  rmSync(join(dir, ADR));
+  const { c1 } = checkRegistries(dir, resolveLayout(dir));
+  assert.deepEqual(c1.map((f) => f.file).sort(), ["hsdd/adr/INDEX.md", "hsdd/contract/INDEX.md"]);
 });
 
 test("C1 is skipped with a warning when the layout is relocated", () => {

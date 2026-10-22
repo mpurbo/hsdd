@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
-import { existsSync, mkdirSync, readFileSync, readdirSync, unlinkSync, utimesSync, writeFileSync } from "node:fs";
+import { existsSync, linkSync, mkdirSync, readFileSync, readdirSync, unlinkSync, utimesSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { decide, nextDecisionId, replaceIfStale, withLock } from "../skills/hsdd-auto/scripts/decide.mjs";
 import { readJsonl } from "../skills/hsdd-auto/scripts/lib/records.mjs";
@@ -189,7 +189,23 @@ const lockFile = (dir) => join(dir, P.decideLock);
 const age = (file) => { const old = new Date(Date.now() - 120_000); utimesSync(file, old, old); };
 const strays = (dir) => readdirSync(join(dir, "hsdd/auto")).filter((n) => n.startsWith(".decide.lock.stale."));
 
-test("a stale lock replaced by a live one between the check and the rename is left alone", () => {
+test("a stale lock replaced by a live one between the check and the rename is restored", () => {
+  const dir = repo();
+  put(dir, P.decideLock, "99999\n");
+  age(lockFile(dir));
+  const result = replaceIfStale(lockFile(dir), {
+    beforeRename: () => {
+      linkSync(lockFile(dir), join(dir, "hsdd/auto/side")); // keeps the old inode allocated, so it cannot be reused
+      unlinkSync(lockFile(dir));
+      put(dir, P.decideLock, "4242\n");
+    },
+  });
+  assert.equal(result, "live");
+  assert.equal(readFileSync(lockFile(dir), "utf8"), "4242\n", "the live lock is back at the lock path");
+  assert.deepEqual(strays(dir), []);
+});
+
+test("a restore that finds the path re-taken leaves the new lock and no stray file", () => {
   const dir = repo();
   put(dir, P.decideLock, "99999\n");
   age(lockFile(dir));
@@ -197,8 +213,8 @@ test("a stale lock replaced by a live one between the check and the rename is le
     beforeRename: () => { unlinkSync(lockFile(dir)); put(dir, P.decideLock, "4242\n"); },
   });
   assert.equal(result, "live");
-  assert.equal(strays(dir).length, 1, "the moved file is not deleted");
-  assert.equal(readFileSync(join(dir, "hsdd/auto", strays(dir)[0]), "utf8"), "4242\n");
+  assert.equal(readFileSync(lockFile(dir), "utf8"), "4242\n");
+  assert.deepEqual(strays(dir), []);
 });
 
 test("a stale lock that is still the judged one is deleted", () => {
