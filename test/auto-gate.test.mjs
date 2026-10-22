@@ -151,6 +151,17 @@ test("A2 fails when owner files have no snapshot", () => {
   assert.match(fs[0].message, /owner-files\.json/);
 });
 
+test("an owner file is protected by its exact path, and nothing beside it is", () => {
+  const config = baseConfig({ owner_files: ["notes/owner.md"] });
+  const dir = touched({ config, files: { "notes/owner.md": "mine\n", "notes/other.md": "x\n", [P.ownerFiles]: JSON.stringify({ "notes/owner.md": sha256("mine\n") }) } });
+  put(dir, "notes/owner.md", "changed\n");
+  put(dir, "notes/other.md", "changed too\n");
+  const fs = gate(dir);
+  assert.deepEqual(of(fs, "A1").map((f) => f.file), ["notes/other.md"], show(fs));
+  assert.match(of(fs, "A1")[0].message, /outside the write set/);
+  assert.deepEqual(of(fs, "A2").map((f) => [f.level, f.file]), [["error", "notes/owner.md"]]);
+});
+
 test("A3 fails a stale copy of the scripts and a changed generator", () => {
   assert.deepEqual(of(gate(touched()), "A3"), []);
   const dir = begun({
@@ -175,6 +186,18 @@ test("A3 fails a stale copy of the scripts and a changed generator", () => {
   const gone = gate(missing, "S02", { checks: ["A3"] });
   assert.equal(gone.length, 1);
   assert.match(gone[0].message, /does not exist/);
+});
+
+test("A3 is a warning on a stopped setup step, and an error otherwise", () => {
+  const dir = begun({ prepare: (d) => rmSync(join(d, P.scriptsAuto), { recursive: true }) });
+  open(dir, "setup", SEG);
+  const level = (opts) => gate(dir, "S02", { ...opts, checks: ["A3"] }).map((f) => `${f.id}:${f.level}`);
+  assert.deepEqual(level({ status: "stopped" }), ["A3:warn"]);
+  assert.deepEqual(level({ status: "completed" }), ["A3:error"]);
+  open(dir, "spec-touch", "shop.api", "S03");
+  assert.deepEqual(gate(dir, "S03", { status: "stopped", checks: ["A3"] }).map((f) => `${f.id}:${f.level}`), ["A3:error"], "only a setup step may stop before the copy");
+  installScripts(dir);
+  assert.deepEqual(gate(dir, "S02", { status: "stopped", checks: ["A3"] }), [], "a current copy passes");
 });
 
 test("A4 fails when the step staged or committed", () => {
@@ -331,20 +354,37 @@ test("B3 requires every matching item open at rendered_at to be closed", () => {
   assert.deepEqual(of(gate(dir), "B3"), [], "the union of the series closes both");
 });
 
-test("B3 reports a closes entry that conflicts with an earlier close as an error naming the item", () => {
+// A closes entry routed.mjs ingest would refuse: a conflicting outcome (Q-001) and an id with no open line (Q-099).
+const refused = (status = "completed") => {
   const dir = begun();
   queueLine(dir, item("Q-001", "must-address", "shop.api"));
   queueLine(dir, { id: "Q-001", at: "2026-01-01T00:00:01Z", status: "explained", by: "S01", note: "out of scope" });
   commitAll(dir, "queue");
   open(dir, "spec-touch", "shop.api");
   edit(dir, API, ...TOUCH);
-  writeReport(dir, "S02", touchReport({ closes: [{ id: "Q-001", outcome: "addressed", note: "done" }, { id: "Q-099", outcome: "addressed", note: "?" }] }));
-  const fs = of(gate(dir), "B3");
-  assert.equal(fs.length, 2, show(fs));
-  assert.ok(fs.every((f) => f.level === "error"));
-  assert.match(fs[0].message, /Q-001/);
-  assert.match(fs[0].message, /already explained/);
-  assert.match(fs[1].message, /Q-099/);
+  const closes = [{ id: "Q-001", outcome: "addressed", note: "done" }, { id: "Q-099", outcome: "addressed", note: "?" }];
+  writeReport(dir, "S02", touchReport(status === "completed" ? { closes } : { closes, status: "stopped", stop: STOP }));
+  return dir;
+};
+
+test("a closes entry ingest would refuse is a B1 error naming the item, printed once", () => {
+  const fs = gate(refused());
+  const b1 = of(fs, "B1");
+  assert.equal(b1.length, 2, show(fs));
+  assert.ok(b1.every((f) => f.level === "error"));
+  assert.match(b1[0].message, /Q-001/);
+  assert.match(b1[0].message, /already explained/);
+  assert.match(b1[1].message, /Q-099/);
+  assert.ok(!of(fs, "B3").some((f) => /Q-0(01|99)/.test(f.message)), "not printed again under B3");
+  const b3 = gate(refused(), "S02", { checks: ["B3"] });
+  assert.deepEqual(b3.map((f) => [f.id, f.level, f.message.slice(0, 5)]), [["B3", "error", "Q-001"], ["B3", "error", "Q-099"]], show(b3));
+});
+
+test("a stopped step whose report closes an unknown item fails B1", () => {
+  const dir = refused("stopped");
+  const fs = gate(dir, "S02", { status: "stopped" });
+  assert.ok(of(fs, "B1").some((f) => f.level === "error" && /Q-099 has no open line/.test(f.message)), show(fs));
+  assert.deepEqual(gate(dir, "S02", { status: "stopped", noReport: true }), [], "under --no-report the series is renamed and the check is moot");
 });
 
 test("B4 warns on reads outside the read set", () => {
@@ -365,6 +405,22 @@ test("B5 compares the latest report's read check with the dispatch file's", () =
   addLaunch(dir, "S02", "resume-answer");
   writeReport(dir, "S02", touchReport({ artifacts: [] }), 1);
   assert.deepEqual(of(gate(dir), "B5"), [], "the newest report decides");
+});
+
+test("B3 and B5 read the expected series, never a file no launch accounts for", () => {
+  const dir = begun();
+  queueLine(dir, item("Q-001", "must-address", "shop.api"));
+  commitAll(dir, "queue");
+  open(dir, "spec-touch", "shop.api");
+  edit(dir, API, ...TOUCH);
+  writeReport(dir, "S02", touchReport({ read_check: "deadbeef" }));
+  addLaunch(dir, "S02", "resume-finding");
+  put(dir, reportPath("S02", 2), `${JSON.stringify(touchReport({ closes: [{ id: "Q-001", outcome: "addressed", note: "done" }] }))}\n`);
+  const fs = gate(dir);
+  assert.deepEqual(of(fs, "B5").map((f) => f.message.split(" ")[0]), ["hsdd/auto/steps/S02.r1.json"], show(fs));
+  assert.match(of(fs, "B5")[0].message, /does not exist/);
+  assert.deepEqual(of(fs, "B3").map((f) => f.message.slice(0, 5)), ["Q-001"], "the stray file's closes do not count");
+  assert.ok(of(fs, "B1").some((f) => /S02\.r2\.json has no launch/.test(f.message)), show(fs));
 });
 
 test("B6 warns on a dispatch file above 32 KiB", () => {
@@ -399,12 +455,16 @@ test("a stopped orchestrator step runs A1 to A3 only", () => {
   open(dir, "plan", SEG);
   put(dir, P.plan, "# Run plan: shop \u2014 draft\n");
   put(dir, "stray.txt", "x\n");
+  gitIn(dir, "add", "stray.txt");
+  oq9(dir);
   const stopped = gate(dir, "S02", { status: "stopped" });
   assert.ok(stopped.every((f) => ["A1", "A2", "A3"].includes(f.id)), show(stopped));
-  assert.deepEqual(of(stopped, "A1").map((f) => f.file), ["stray.txt"]);
+  assert.deepEqual(of(stopped, "A1").map((f) => f.file), [API, "stray.txt"]);
   const completed = gate(dir, "S02", { status: "completed" });
   assert.ok(of(completed, "D1").length > 0, show(completed));
-  assert.ok(!completed.some((f) => /^[B]/.test(f.id)), "an orchestrator step has no B checks");
+  assert.deepEqual(of(completed, "C6").map((f) => [f.level, f.file]), [["error", API]], "C runs on a completed step, so the fixture would show it");
+  assert.ok(!completed.some((f) => /^[B]/.test(f.id) || f.id === "A4"), "an orchestrator step has no A4 and no B checks");
+  assert.ok(of(gate(dir, "S02", { checks: ["A4"] }), "A4").length > 0, "the staged path would fail A4");
 });
 
 test("a stopped subagent step runs A1 to A4, B1 and B5; --no-report drops B1 and B5", () => {
@@ -671,6 +731,21 @@ test("formatFindings prints one line per finding, then the summary", () => {
     `warn  C6 OQ9 is cited and defined nowhere (${API})`,
     "gate: 1 error(s), 1 warning(s), 3 changed file(s)",
   ].join("\n"));
+});
+
+test("the CLI tells a refusal before any check from an unexpected failure", () => {
+  const broken = touched();
+  put(broken, P.runYaml, `${read(broken, P.runYaml)}rework_limit: lots\n`);
+  const config = run(broken, "gate.mjs", ["--step", "S02"]);
+  assert.equal(config.code, 1);
+  assert.match(config.stdout, /rework_limit/);
+  assert.match(config.stdout, /\ngate: failed before any check could run\n$/);
+  const odd = touched();
+  put(odd, P.runLog, "{not json\n");
+  const r = run(odd, "gate.mjs", ["--step", "S02"]);
+  assert.equal(r.code, 1);
+  assert.match(r.stdout, /^gate: failed unexpectedly: hsdd\/judgement\/run\.jsonl:1: not valid JSON/);
+  assert.doesNotMatch(r.stdout + r.stderr, /\n\s+at /, "no stack trace");
 });
 
 test("the CLI exits 0 without an error, 1 with one, and 2 on a usage error", () => {

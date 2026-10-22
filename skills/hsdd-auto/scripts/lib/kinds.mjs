@@ -1,6 +1,6 @@
 // Step kinds (spec 7.1), write sets and the never list (7.3), target types,
 // stop classes and their "Raised when" text (8.2). The single definition of the 7.3 table (A-8).
-import { P } from "./paths.mjs";
+import { P, ownerPath } from "./paths.mjs";
 
 const k = (skill, mode, type, orchestrator = false) => ({
   skill, mode, type, orchestrator, template: null,
@@ -159,12 +159,14 @@ const dirForms = (p) => {
 const insideRepo = (p) => !p.startsWith("/") && !p.startsWith("~") && !/^\.\.(\/|$)/.test(p);
 
 // 7.3 "Never" for a subagent step, as glob patterns. Git state is not a path and is not listed.
+// An owner file is listed as its exact path: lib/config.mjs refuses an entry with a trailing `/` or a
+// glob character, so the pattern matches that one file.
 export const neverPatterns = (config, _layout) => [
   "hsdd/judgement/",
   "hsdd/auto/",
   `${P.scriptsAuto}/`,
   ".claude/",
   ...(config.read_only ?? []).flatMap(dirForms),
-  ...(config.owner_files ?? []).flatMap(dirForms),
+  ...(config.owner_files ?? []).map(ownerPath),
   ...(insideRepo(config.skills_dir ?? "/") ? dirForms(config.skills_dir) : []),
 ];

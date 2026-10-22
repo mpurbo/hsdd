@@ -1,9 +1,10 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import { mkdtempSync, mkdirSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { P, stepPaths, reportPath, resolveLayout, parseLayout, globToRegExp, matchesAny, judgementSet, expandHome } from "../skills/hsdd-auto/scripts/lib/paths.mjs";
+import { P, stepPaths, reportPath, resolveLayout, parseLayout, globToRegExp, matchesAny, judgementSet, expandHome, ownerFileHash, ownerMatcher } from "../skills/hsdd-auto/scripts/lib/paths.mjs";
 import {
   KINDS, ORCHESTRATOR_KINDS, SUBAGENT_KINDS, INSERTABLE_KINDS, STOP_CLASSES, STOPPABLE, RAISED_WHEN,
   targetType, skillFor, decisionTypeFor, writeSet, neverPatterns,
@@ -133,9 +134,22 @@ test("never patterns", () => {
     assert.ok(matchesAny(p, inside), p);
   }
   assert.ok(!matchesAny("hsdd/spec/shop.md", inside));
+  assert.ok(!matchesAny("CLAUDE.md/notes.md", inside), "an owner file is its exact path, never a directory");
+  assert.ok(matchesAny("notes/owner.md", neverPatterns(cfg({ owner_files: ["./notes/owner.md"] }), layout)));
   const outside = neverPatterns(cfg({ skills_dir: "/abs/skills" }), layout);
   assert.ok(!matchesAny("/abs/skills/x", outside));
   assert.ok(!neverPatterns(cfg({ skills_dir: "~/.claude/skills" }), layout).some((p) => p.includes("claude/skills")));
+});
+test("ownerMatcher and ownerFileHash take each owner file by its exact path", () => {
+  const owner = ownerMatcher(["./notes/owner.md", "CLAUDE.md"]);
+  assert.ok(owner("notes/owner.md") && owner("CLAUDE.md"));
+  for (const p of ["notes/owner.md/x", "notes/owner.mdx", "notes/other.md", "CLAUDE.md.bak"]) assert.ok(!owner(p), p);
+  const dir = mkdtempSync(join(tmpdir(), "hsdd-owner-"));
+  writeFileSync(join(dir, "owner.md"), "mine\n");
+  assert.equal(ownerFileHash(dir, "./owner.md"), createHash("sha256").update("mine\n").digest("hex"));
+  assert.equal(ownerFileHash(dir, "absent.md"), null);
+  mkdirSync(join(dir, "adir"));
+  assert.equal(ownerFileHash(dir, "adir"), null, "a directory is not an owner file");
 });
 test("decision types follow 7.1", () => {
   assert.equal(decisionTypeFor("spec-touch", "shop", tree, "shop"), "root-spec");

@@ -34,6 +34,10 @@ const codeRules = (raw) => {
       if (s.authority === undefined) errors.push(`segments: intake segment ${s.id} has no authority`);
     }
   }
+  // owner_files entries are plain file paths, hashed one by one (6.10): no directory, no glob.
+  for (const entry of raw.owner_files ?? []) {
+    if (/\/$/.test(entry) || /[*?[]/.test(entry)) errors.push(`owner_files: ${entry} is not a plain file path (no trailing /, no *, ? or [); list each owner file by its path`);
+  }
   if ((raw.sources.baseline ?? []).length > 0) {
     for (const kind of SOURCE_KINDS) {
       for (const src of raw.sources[kind] ?? []) {

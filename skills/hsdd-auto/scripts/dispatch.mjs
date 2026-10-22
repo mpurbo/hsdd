@@ -16,7 +16,7 @@ import { RenderError, renderTemplate, slotNames } from "./lib/render.mjs";
 import { nowStamp } from "./lib/time.mjs";
 import { changedPaths, headSha } from "./lib/git.mjs";
 import {
-  dispatchErrors, dispatchText, judgementCommitted, nextFreeStep, readDispatch, reportSeries, seriesOf, writeDispatch,
+  MAX_BYTES, WARN_BYTES, dispatchErrors, dispatchText, judgementCommitted, nextFreeStep, readDispatch, reportSeries, seriesOf, writeDispatch,
 } from "./lib/records.mjs";
 import { targetFiles } from "./lib/intake.mjs";
 import { leafParentsOf } from "./lib/tree.mjs";
@@ -27,8 +27,8 @@ import { openMatching, queueItems } from "./routed.mjs";
 
 export { factLines };
 
-export const WARN_BYTES = 32768;
-export const MAX_BYTES = 65536;
+// The size limits live in lib/records.mjs beside the dispatch file's reader; re-exported here.
+export { MAX_BYTES, WARN_BYTES };
 
 export class DispatchError extends Error {
   constructor(errors) {

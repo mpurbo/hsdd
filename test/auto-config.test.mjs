@@ -65,6 +65,14 @@ test("loadConfig code rules", () => {
   assert.match(errorsOf({ sources: { normative: [{ path: "ref/new.md", cite: "Spec", version: "v1" }], baseline: [{ path: "ref/old.md", cite: "Spec" }] } }), /ref\/old\.md/);
   assert.equal(errorsOf({ sources: { normative: [{ path: "ref/new.md", cite: "Spec" }] } }), null);
 });
+test("owner_files entries are plain file paths", () => {
+  for (const entry of ["notes/", "notes/*.md", "notes/a?.md", "notes/[ab].md"]) {
+    const msg = errorsOf({ owner_files: ["CLAUDE.md", entry] });
+    assert.ok(msg?.includes(`owner_files: ${entry} is not a plain file path`), `${entry}: ${msg}`);
+    assert.ok(!msg.includes("CLAUDE.md is"), "a plain path is not named");
+  }
+  assert.equal(errorsOf({ owner_files: ["CLAUDE.md", "./notes/owner.md"] }), null);
+});
 test("loadConfig reads a hand-written block-style run.yaml with comments", () => {
   const text = [
     "# Run configuration, written by hand.",

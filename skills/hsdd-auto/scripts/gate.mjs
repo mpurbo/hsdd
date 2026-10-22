@@ -4,25 +4,24 @@
 // file or changes git state. A check returns findings { id, level, message, file?, related? }; the
 // CLI prints them, one line each, then the summary, and exits 0 when none is an error.
 // Usage: see USAGE.
-import { createHash } from "node:crypto";
 import { existsSync, readFileSync, readdirSync, realpathSync, statSync } from "node:fs";
 import { isAbsolute, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
 import { loadContext } from "./lib/context.mjs";
+import { ConfigError } from "./lib/config.mjs";
 import { inScope, treeChecks } from "./lib/checks.mjs";
 import { validate } from "./lib/schema.mjs";
 import { STAMP_RE, nowStamp, stampMs } from "./lib/time.mjs";
 import { KINDS, RAISED_WHEN, neverPatterns } from "./lib/kinds.mjs";
-import { P, expandHome, judgementSet, matchesAny, ownerMatcher, reportPath, stepPaths } from "./lib/paths.mjs";
+import { P, expandHome, judgementSet, matchesAny, ownerFileHash, ownerMatcher, ownerPath, reportPath, stepPaths } from "./lib/paths.mjs";
 import { git, headSha } from "./lib/git.mjs";
-import { dispatchErrors, idNum, readReports } from "./lib/records.mjs";
-import { leafParentsOf } from "./lib/tree.mjs";
+import { WARN_BYTES, dispatchErrors, idNum, readReports } from "./lib/records.mjs";
+import { CONTRACT_REF, leafParentsOf } from "./lib/tree.mjs";
 import { decisionRuleErrors } from "./decide.mjs";
 import { validateLedger } from "./ledger.mjs";
 import { intakeHandoffTargets, unmetDone, willCreate } from "./next.mjs";
 import { lineErrors, openMatching, planIngest, queueItems } from "./routed.mjs";
-import { WARN_BYTES } from "./dispatch.mjs";
 
 export class GateError extends Error {
   constructor(errors) {
@@ -89,12 +88,8 @@ const textOf = (repoRoot, rel) => {
   return buf.includes(0) ? null : buf.toString("utf8");
 };
 
-// The sha256 of an owner file's bytes, or null when it is absent (6.10); state.mjs snapshot agrees.
-export const ownerFileHash = (repoRoot, rel) => {
-  const full = join(repoRoot, rel);
-  return isFile(full) ? createHash("sha256").update(readFileSync(full)).digest("hex") : null;
-};
-
+// The owner-file snapshot and the current hash of each listed owner file (lib/paths.mjs ownerFileHash,
+// the rule state.mjs snapshot records with).
 const ownerState = (repoRoot, ownerFiles) => {
   const file = join(repoRoot, P.ownerFiles);
   if (!existsSync(file)) return { present: false };
@@ -106,8 +101,7 @@ const ownerState = (repoRoot, ownerFiles) => {
   }
   const errs = validate("owner-files", snapshot);
   if (errs.length > 0) return { present: true, error: errs.join("; ") };
-  const paths = unique([...Object.keys(snapshot), ...ownerFiles]);
-  return { present: true, error: null, snapshot, hashes: new Map(paths.map((p) => [p, ownerFileHash(repoRoot, p)])) };
+  return { present: true, error: null, snapshot, hashes: new Map(ownerFiles.map((o) => [o, ownerFileHash(repoRoot, o)])) };
 };
 
 const skillsRoot = (repoRoot, skillsDir) => {
@@ -145,7 +139,7 @@ const copyState = (repoRoot, config) => {
 
 const headState = (repoRoot) => ({
   head: headSha(repoRoot, { short: false }),
-  staged: (git(repoRoot, ["diff", "--cached", "--name-only", "-z"], { allowFail: true }) ?? "").split("\0").filter(Boolean),
+  staged: git(repoRoot, ["diff", "--cached", "--name-only", "-z"]).split("\0").filter(Boolean),
 });
 
 // Each non-blank line of the step's sidecar, parsed: { n, value, error }.
@@ -184,16 +178,21 @@ export const a2 = (state, ownerFiles, level) => {
     return ownerFiles.length === 0 ? [] : [finding("A2", level, `${P.ownerFiles} does not exist, so the owner files (${names(ownerFiles)}) cannot be checked; the segment's setup step takes the snapshot (spec 6.10)`)];
   }
   if (state.error) return [finding("A2", level, `${P.ownerFiles}: ${state.error}`, { file: P.ownerFiles })];
-  const changed = Object.entries(state.snapshot)
-    .filter(([path, hash]) => state.hashes.get(path) !== hash)
-    .map(([path, hash]) => finding("A2", level, `owner file ${path} ${state.hashes.get(path) === null ? "is gone" : hash === null ? "now exists" : "changed"} since the snapshot in ${P.ownerFiles}; only the owner restores it`, { file: path }));
-  const unhashed = ownerFiles.filter((o) => !Object.hasOwn(state.snapshot, o))
-    .map((o) => finding("A2", level, `owner file ${o} has no hash in ${P.ownerFiles}; the segment's setup step takes the snapshot`, { file: o }));
-  return [...changed, ...unhashed];
+  // Each listed owner file (a plain path, lib/config.mjs) against its snapshot entry, keyed as listed.
+  return ownerFiles.flatMap((o) => {
+    const file = ownerPath(o);
+    const key = [o, file].find((k) => Object.hasOwn(state.snapshot, k));
+    if (key === undefined) return [finding("A2", level, `owner file ${file} has no hash in ${P.ownerFiles}; the segment's setup step takes the snapshot`, { file })];
+    const was = state.snapshot[key];
+    const now = state.hashes.get(o);
+    return now === was ? [] : [finding("A2", level, `owner file ${file} ${now === null ? "is gone" : was === null ? "now exists" : "changed"} since the snapshot in ${P.ownerFiles}; only the owner restores it`, { file })];
+  });
 };
 
-export const a3 = (s) => {
+// A3's level is the caller's: a warning for a stopped setup step (which may stop before it copies), else an error.
+export const a3 = (s, level = "error") => {
   const out = [];
+  const error = (id, message, extra) => finding(id, level, message, extra);
   if (s.srcFiles === null) {
     out.push(error("A3", `the installed skill's scripts directory ${s.src} does not exist; check skills_dir in ${P.runYaml}`));
   } else if (s.dstFiles === null) {
@@ -264,10 +263,11 @@ export const reportRuleErrors = (r, front, step) => {
   return errs;
 };
 
-// B1. `reports` is readReports' result; `exists` tells whether a repository path exists.
-export const b1 = ({ step, front, subagent, reports, sidecar, exists }) => {
+// B1. `reports` is readReports' result; `exists` tells whether a repository path exists; `refusals`
+// are the closes entries routed.mjs ingest would refuse (closeRefusals), so a stopped step fails here too.
+export const b1 = ({ step, front, subagent, reports, sidecar, exists, refusals = [] }) => {
   const out = [];
-  const add = (file, message) => out.push(error("B1", message, { file }));
+  const add = (file, message) => out.push(error("B1", message, file ? { file } : {}));
   if (subagent) {
     const expected = expectedReports(step, front.launches);
     expected.filter((p) => !reports.some((r) => r.path === p)).forEach((p) => add(p, `${p} does not exist: the step's report for that launch is missing`));
@@ -282,6 +282,7 @@ export const b1 = ({ step, front, subagent, reports, sidecar, exists }) => {
       ];
       errs.forEach((m) => add(path, `${path}: ${m}`));
     }
+    refusals.forEach((m) => add(null, m));
   }
   for (const { n, value, error: e } of sidecar.entries) {
     const where = `${sidecar.rel}:${n}`;
@@ -313,41 +314,45 @@ export const b2 = ({ sidecar, renderedAt, now }) => {
     .map(({ n, value: d }) => error("B2", `${d.id ?? `line ${n}`}: at ${d.at} is outside the step's window, ${fmtMs(low)} to ${fmtMs(high)} (rendered_at minus 60 seconds to now plus 60 seconds)`, { file: sidecar.rel }));
 };
 
-const entriesOf = (reports, field) => reports.flatMap(({ path, report }) =>
+// The entries of one list field over the series' readable reports, each with the report it came from.
+const entriesOf = (series, field) => series.flatMap(({ path, report }) =>
   (report !== null && Array.isArray(report[field]) ? report[field] : []).filter((e) => e !== null && typeof e === "object").map((e) => ({ ...e, from: path })));
 
 const CLOSE_OUTCOMES = new Set(["addressed", "explained"]);
 
 // The close lines routed.mjs ingest would write for the series' `closes`, checked against the queue as
 // it would stand: a conflict with an earlier close, or an id with no open line, is a refusal there.
-const closeRefusals = (queueLines, closes, { step, front, segmentOf, now }) => {
+// One message per refusal; B1 reports them, and B3 when B1 is not part of the run.
+export const closeRefusals = (queueLines, closes, { step, front, segmentOf, now }) => {
   const valid = closes.filter((c) => typeof c.id === "string" && CLOSE_OUTCOMES.has(c.outcome) && typeof c.note === "string" && c.note !== "")
     .map(({ id, outcome, note }) => ({ id, outcome, note }));
   const { lines } = planIngest(queueLines, { step, kind: front.kind, segment: front.segment, segmentOf, routed: [], closes: valid }, now);
   const refusals = [];
   lines.reduce((acc, line) => {
-    lineErrors(acc, line).forEach((m) => refusals.push(error("B3", `${m} (a closes entry marking ${line.id} ${line.status}; routed.mjs ingest would refuse it)`)));
+    lineErrors(acc, line).forEach((m) => refusals.push(`${m} (a closes entry marking ${line.id} ${line.status}; routed.mjs ingest would refuse it)`));
     return [...acc, line];
   }, queueLines);
   return refusals;
 };
 
-// B3: `open` are the items that matched the step and were open at rendered_at (the prompt's list).
-export const b3 = ({ open, closes, refusals }) => {
+// B3: `open` are the items that matched the step and were open at rendered_at (the prompt's list);
+// `refusals` are closeRefusals' messages when this run does not report them under B1.
+export const b3 = ({ open, closes, refusals = [] }) => {
   const closed = new Set(closes.map((c) => c.id));
   return [
     ...open.filter((it) => !closed.has(it.id)).map((it) => finding("B3", it.kind === "must-address" ? "error" : "warn",
       `${it.id} ${it.kind} from ${it.from} on ${it.target} was listed for the step and is not in the closes of its reports: ${it.text}`)),
-    ...refusals,
+    ...refusals.map((m) => error("B3", m)),
   ];
 };
 
 export const b4 = (readsOutside) => readsOutside.map((r) => warning("B4", `${r.path} was read outside the step's read set: ${r.why} (${r.from})`, { file: r.from }));
 
-export const b5 = ({ reports, readCheck, dispatchPath }) => {
+// B5 over the step view's expected series: its last entry is the newest launch's report.
+export const b5 = ({ series, readCheck, dispatchPath }) => {
   if (readCheck === null) return [error("B5", `${dispatchPath} does not end in a read_check line`, { file: dispatchPath })];
-  const latest = reports.at(-1);
-  if (latest === undefined) return [error("B5", `no report of the current series to compare with the read_check of ${dispatchPath}`)];
+  const latest = series.at(-1);
+  if (latest.missing) return [error("B5", `${latest.path} does not exist, so its read_check cannot be compared with the one ${dispatchPath} ends in`, { file: latest.path })];
   if (latest.report === null) return [error("B5", `${latest.path} cannot be read, so its read_check cannot be compared (${latest.error})`, { file: latest.path })];
   return latest.report.read_check === readCheck ? [] : [error("B5",
     `${latest.path} has read_check ${JSON.stringify(latest.report.read_check)}, but ${dispatchPath} ends in ${readCheck}: the subagent did not read the whole file`, { file: latest.path })];
@@ -390,7 +395,8 @@ const cFindings = (ctx, { ids, extras, changed, where }) => {
 
 // ---------- D1: prose rules ----------
 
-const reportDirOf = (config) => (config.report_dir ?? "hsdd/auto/report").replace(/\/+$/, "");
+// lib/config.mjs gives report_dir its default.
+const reportDirOf = (config) => config.report_dir.replace(/\/+$/, "");
 
 // Every `<!-- slot:{name} -->` ... `<!-- /slot -->` of a segment report (10.9): { name, text, start, closed }.
 export const slotsOf = (text) => [...text.matchAll(/<!--\s*slot:([A-Za-z0-9_-]+)\s*-->/g)].map((m) => {
@@ -444,14 +450,13 @@ const d1 = (v) => {
 
 // ---------- F: the final checks ----------
 
-const REF = /(?<![A-Za-z0-9_-])([a-z0-9][a-z0-9-]*)@(v\d+)(?![A-Za-z_])/g;
 const versionNumber = (v) => Number(/^v(\d+)$/.exec(v ?? "")?.[1] ?? NaN);
 
 // F2 over [{ file, text }]: per file and version, how often a contract is cited below its current
 // version, outside that contract's own file.
 export const staleVersionRefs = (files, contracts) => files.flatMap(({ file, text }) => {
   const counts = new Map();
-  for (const m of text.matchAll(REF)) {
+  for (const m of text.matchAll(CONTRACT_REF)) {
     const c = contracts.get(m[1]);
     if (!c || c.file === file || !(versionNumber(m[2]) < versionNumber(c.version))) continue;
     const key = `${m[1]}@${m[2]}`;
@@ -525,7 +530,11 @@ const finalChecks = (ctx, ids) => {
 
 // ---------- the step gate ----------
 
-// The step's dispatch file and lazy readers for everything else the step gate reads.
+const segmentOfStep = (ctx) => (s) => ctx.dispatches.get(s)?.front?.segment ?? ctx.runLines.find((l) => l.step_ref === s)?.segment ?? null;
+
+// The step's dispatch file and lazy readers for everything else the step gate reads. `series` is the
+// expected report series (one entry per launch, `missing` when its file is absent), which B3 to B5 and
+// the close refusals read; B1 alone also looks at series files no launch accounts for.
 const stepView = (ctx, step, { status, noReport }) => {
   const dispatchPath = stepPaths(step).dispatch;
   const entry = ctx.dispatches.get(step);
@@ -534,23 +543,28 @@ const stepView = (ctx, step, { status, noReport }) => {
   const errs = dispatchErrors(entry.front, step);
   if (errs.length > 0) throw new GateError(errs.map((e) => `${dispatchPath}: ${e}`));
   const { repoRoot } = ctx;
+  const front = entry.front;
+  const now = nowStamp();
+  const reports = memo(() => readReports(repoRoot, step));
+  const series = memo(() => expectedReports(step, front.launches)
+    .map((path) => reports().find((r) => r.path === path) ?? { path, report: null, error: null, missing: true }));
   return {
     ctx,
     step,
-    front: entry.front,
+    front,
     status,
     noReport,
     subagent: !KINDS[entry.front.kind].orchestrator,
     dispatchPath,
     readCheck: entry.readCheck,
-    now: nowStamp(),
+    now,
     changed: memo(() => ctx.uncommitted().filter((p) => p !== P.decideLock)),
-    reports: memo(() => readReports(repoRoot, step)),
+    reports,
+    series,
     sidecar: memo(() => sidecarOf(repoRoot, step)),
+    refusals: memo(() => closeRefusals(ctx.queueLines, entriesOf(series(), "closes"), { step, front, segmentOf: segmentOfStep(ctx), now })),
   };
 };
-
-const segmentOfStep = (ctx) => (s) => ctx.dispatches.get(s)?.front?.segment ?? ctx.runLines.find((l) => l.step_ref === s)?.segment ?? null;
 
 const STEP_CHECKS = {
   A1: (v) => a1({
@@ -564,22 +578,23 @@ const STEP_CHECKS = {
   }),
   // 10.6: only the owner can restore an owner file, so on a stopped step A2 is a warning.
   A2: (v) => a2(ownerState(v.ctx.repoRoot, v.ctx.config.owner_files), v.ctx.config.owner_files, v.status === "stopped" ? "warn" : "error"),
-  A3: (v) => a3(copyState(v.ctx.repoRoot, v.ctx.config)),
+  // A setup step may stop before it makes the copy (4.3), so a stopped setup step's A3 is a warning.
+  A3: (v) => a3(copyState(v.ctx.repoRoot, v.ctx.config), v.front.kind === "setup" && v.status === "stopped" ? "warn" : "error"),
   A4: (v) => a4(v.front.head, headState(v.ctx.repoRoot)),
+  // The close refusals are B1's for every status, so a stopped step's bad closes entry fails before ingest.
   B1: (v) => b1({
     step: v.step, front: v.front, subagent: v.subagent, reports: v.subagent ? v.reports() : [], sidecar: v.sidecar(),
-    exists: (p) => existsSync(join(v.ctx.repoRoot, p)),
+    exists: (p) => existsSync(join(v.ctx.repoRoot, p)), refusals: v.subagent ? v.refusals() : [],
   }),
   B2: (v) => b2({ sidecar: v.sidecar(), renderedAt: v.front.rendered_at, now: v.now }),
   B3: (v) => {
     if (!v.subagent) return [];
     const { ctx, front } = v;
     const open = openMatching(ctx.queueLines, { target: front.target, handoff: front.handoff ?? null }, leafParentsOf(ctx.tree), front.rendered_at, intakeHandoffTargets(ctx));
-    const closes = entriesOf(v.reports(), "closes");
-    return b3({ open, closes, refusals: closeRefusals(ctx.queueLines, closes, { step: v.step, front, segmentOf: segmentOfStep(ctx), now: v.now }) });
+    return b3({ open, closes: entriesOf(v.series(), "closes"), refusals: v.ids.has("B1") ? [] : v.refusals() });
   },
-  B4: (v) => (v.subagent ? b4(entriesOf(v.reports(), "reads_outside")) : []),
-  B5: (v) => (v.subagent ? b5({ reports: v.reports(), readCheck: v.readCheck, dispatchPath: v.dispatchPath }) : []),
+  B4: (v) => (v.subagent ? b4(entriesOf(v.series(), "reads_outside")) : []),
+  B5: (v) => (v.subagent ? b5({ series: v.series(), readCheck: v.readCheck, dispatchPath: v.dispatchPath }) : []),
   B6: (v) => b6(v.dispatchPath, statSync(join(v.ctx.repoRoot, v.dispatchPath)).size),
   D1: d1,
 };
@@ -602,8 +617,9 @@ const checkArguments = (status, checks) => {
 // the final scope, which holds every error the step scope would, and it runs F1 to F6.
 export const stepGate = (ctx, step, { status = "completed", checks, noReport = false } = {}) => {
   checkArguments(status, checks);
-  const v = stepView(ctx, step, { status, noReport });
-  const ids = new Set(checkList(v, checks));
+  const view = stepView(ctx, step, { status, noReport });
+  const ids = new Set(checkList(view, checks));
+  const v = { ...view, ids };
   const report = v.front.kind === "report";
   const own = [...A, ...B, "D1"].filter((id) => ids.has(id)).flatMap((id) => STEP_CHECKS[id](v));
   const tree = C.some((id) => ids.has(id))
@@ -689,8 +705,12 @@ export const main = (argv, repoRoot = process.cwd(), out = { log: console.log })
     out.log(formatFindings(findings, changed));
     return findings.some(isError) ? 1 : 0;
   } catch (e) {
-    (Array.isArray(e?.errors) ? e.errors : [e?.message ?? String(e)]).forEach((m) => out.log(m));
-    out.log("gate: failed before any check could run");
+    if (e instanceof GateError || e instanceof ConfigError) {
+      e.errors.forEach((m) => out.log(m));
+      out.log("gate: failed before any check could run");
+    } else {
+      out.log(`gate: failed unexpectedly: ${e?.message ?? String(e)}`);
+    }
     return 1;
   }
 };

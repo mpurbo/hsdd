@@ -155,10 +155,14 @@ const ownBlock = (ls, hs, mask, id) => {
 
 // ---------- ids and references ----------
 
+// A `{slug}@v{n}` contract reference: group 1 the slug, group 2 the version. Global; use it with
+// matchAll only, which never moves this object's lastIndex.
+export const CONTRACT_REF = /(?<![A-Za-z0-9_-])([a-z0-9][a-z0-9-]*)@(v\d+)(?![A-Za-z_])/g;
+
 // `{slug}@v{n}` references in order, each once; `(ext)` after one marks it external.
 export const contractRefs = (value) => {
   const text = value == null ? "" : String(value);
-  const matches = [...text.matchAll(/(?<![A-Za-z0-9_-])([a-z0-9][a-z0-9-]*)@(v\d+)(?![A-Za-z_])/g)];
+  const matches = [...text.matchAll(CONTRACT_REF)];
   const out = [];
   matches.forEach((m, k) => {
     const end = m.index + m[0].length;

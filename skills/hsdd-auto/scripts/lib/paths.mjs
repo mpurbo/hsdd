@@ -1,5 +1,6 @@
 // Fixed record paths, layout resolution (spec 4.2), globs and the judgement set (spec 6.11).
-import { existsSync, readFileSync } from "node:fs";
+import { createHash } from "node:crypto";
+import { existsSync, readFileSync, statSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
 
@@ -104,15 +105,20 @@ export const globToRegExp = (pattern) =>
 
 export const matchesAny = (path, patterns) => patterns.some((p) => globToRegExp(p).test(path));
 
-// An owner_files entry is a glob when it has a star, else a file or a directory: a predicate on
-// repository-relative paths (the done definition's clean tree, the gate's A1).
+// An owner_files entry is one file's path (lib/config.mjs refuses directories and globs); a leading
+// `./` is dropped. A predicate on repository-relative paths that matches exactly those files (the
+// done definition's clean tree, the gate's A1).
+export const ownerPath = (entry) => entry.replace(/^\.\//, "");
 export const ownerMatcher = (ownerFiles) => {
-  const tests = ownerFiles.map((o) => o.replace(/^\.\//, "")).map((o) => {
-    if (o.includes("*")) { const re = globToRegExp(o); return (p) => re.test(p); }
-    const bare = o.replace(/\/+$/, "");
-    return (p) => p === bare || p.startsWith(`${bare}/`);
-  });
-  return (path) => tests.some((t) => t(path));
+  const files = new Set(ownerFiles.map(ownerPath));
+  return (path) => files.has(path);
+};
+
+// The sha256 of an owner file's bytes, or null when it is absent or not a regular file (6.10): what
+// state.mjs snapshot records and the gate's A2 compares.
+export const ownerFileHash = (repoRoot, entry) => {
+  const full = join(repoRoot, ownerPath(entry));
+  return existsSync(full) && statSync(full).isFile() ? createHash("sha256").update(readFileSync(full)).digest("hex") : null;
 };
 
 export const expandHome = (p) => (p === "~" ? homedir() : p.startsWith("~/") ? join(homedir(), p.slice(2)) : p);

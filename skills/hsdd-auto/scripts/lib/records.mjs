@@ -71,6 +71,11 @@ export const nextFreeStep = (repoRoot) => {
 
 // ---------- dispatch files (6.6) ----------
 
+// 10.3: a dispatch file above WARN_BYTES gets a warning (dispatch.mjs, the gate's B6); above
+// MAX_BYTES dispatch.mjs writes nothing.
+export const WARN_BYTES = 32768;
+export const MAX_BYTES = 65536;
+
 const READ_CHECK = /^read_check: ([0-9a-f]{8})$/;
 
 // The value of the file's last line `read_check: {8 hex}`; trailing blank lines do not count as text.
