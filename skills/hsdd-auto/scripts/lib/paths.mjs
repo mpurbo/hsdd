@@ -104,6 +104,17 @@ export const globToRegExp = (pattern) =>
 
 export const matchesAny = (path, patterns) => patterns.some((p) => globToRegExp(p).test(path));
 
+// An owner_files entry is a glob when it has a star, else a file or a directory: a predicate on
+// repository-relative paths (the done definition's clean tree, the gate's A1).
+export const ownerMatcher = (ownerFiles) => {
+  const tests = ownerFiles.map((o) => o.replace(/^\.\//, "")).map((o) => {
+    if (o.includes("*")) { const re = globToRegExp(o); return (p) => re.test(p); }
+    const bare = o.replace(/\/+$/, "");
+    return (p) => p === bare || p.startsWith(`${bare}/`);
+  });
+  return (path) => tests.some((t) => t(path));
+};
+
 export const expandHome = (p) => (p === "~" ? homedir() : p.startsWith("~/") ? join(homedir(), p.slice(2)) : p);
 
 // 6.11: what the judgement commit may hold for a step.

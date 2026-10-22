@@ -10,7 +10,7 @@ import { loadContext } from "./lib/context.mjs";
 import { KINDS, skillFor, targetType, writeSet } from "./lib/kinds.mjs";
 import { c3Cited, c5, c6, c7, inScope } from "./lib/checks.mjs";
 import { blockErrors, citesSuperseded, guardedHandoffTargets, supersededStrings, targetFiles } from "./lib/intake.mjs";
-import { P, globToRegExp } from "./lib/paths.mjs";
+import { P, ownerMatcher } from "./lib/paths.mjs";
 import { contractOrder, contractRoles, firstCited, nodeFiles, ordered, producerOrder } from "./lib/order.mjs";
 import { idNum, stepNum } from "./lib/records.mjs";
 import { leafParentsOf, matches, queueItems } from "./routed.mjs";
@@ -637,16 +637,6 @@ const contractLines = (tree) => [...tree.contracts.values()]
     ...(c.status === "stable" ? [] : [`contract ${c.slug} is ${c.status ?? "without a status"}`]),
     ...(c.phaseIds === "final" ? [] : [`contract ${c.slug} has phase_ids ${c.phaseIds ?? "missing"}`]),
   ]);
-
-// An owner_files entry is a glob when it has a star, else a file or a directory.
-const ownerMatcher = (ownerFiles) => {
-  const tests = ownerFiles.map((o) => o.replace(/^\.\//, "")).map((o) => {
-    if (o.includes("*")) { const re = globToRegExp(o); return (p) => re.test(p); }
-    const bare = o.replace(/\/+$/, "");
-    return (p) => p === bare || p.startsWith(`${bare}/`);
-  });
-  return (path) => tests.some((t) => t(path));
-};
 
 const cleanTreeLines = (ctx) => {
   const owner = ownerMatcher(ctx.config.owner_files);
