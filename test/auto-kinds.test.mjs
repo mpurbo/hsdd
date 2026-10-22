@@ -1,0 +1,172 @@
+import { test } from "node:test";
+import assert from "node:assert/strict";
+import { mkdtempSync, mkdirSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { P, stepPaths, reportPath, resolveLayout, parseLayout, globToRegExp, matchesAny, judgementSet, expandHome } from "../skills/hsdd-auto/scripts/lib/paths.mjs";
+import {
+  KINDS, ORCHESTRATOR_KINDS, SUBAGENT_KINDS, INSERTABLE_KINDS, STOP_CLASSES, STOPPABLE, RAISED_WHEN,
+  targetType, skillFor, decisionTypeFor, writeSet, neverPatterns,
+} from "../skills/hsdd-auto/scripts/lib/kinds.mjs";
+import { withDefaults } from "../skills/hsdd-auto/scripts/lib/config.mjs";
+import { baseConfig } from "./helpers/auto-repo.mjs";
+import { validate, loadSchema } from "../skills/hsdd-auto/scripts/lib/schema.mjs";
+
+const layout = resolveLayout(mkdtempSync(join(tmpdir(), "hsdd-auto-layout-")));
+const tree = {
+  nodes: new Map([["shop", {}], ["shop.api", {}], ["checkout", {}]]),
+  contracts: new Map([["order-api", {}]]),
+};
+const cfg = (o = {}) => withDefaults(baseConfig(o));
+const ctx = { layout, config: cfg(), segmentId: "2026-10-22-plan", record: null, tree };
+const ctxWith = (o) => ({ ...ctx, config: cfg(o) });
+
+test("resolveLayout reads a relocated layout", () => {
+  const dir = mkdtempSync(join(tmpdir(), "hsdd-auto-layout-"));
+  assert.deepEqual(resolveLayout(dir), {
+    spec: "hsdd/spec", contract: "hsdd/contract", adr: "hsdd/adr", management: "hsdd/management", verify: "hsdd/verify", relocated: false,
+  });
+  mkdirSync(join(dir, "hsdd"));
+  writeFileSync(join(dir, P.conventions), [
+    "# Conventions", "", "## Layout (custom)", "intro text with `ignored/path.md`",
+    "- `docs/arch/{node-id}.md`  nodes",
+    "- `docs/contracts/{slug}.md` + `docs/contracts/INDEX.md`",
+    "- `docs/contracts/schema/{slug}.schema.json`",
+    "- `docs/decisions/{nnn}-{title}.md`",
+    "- `docs/verify/{phase-id}.verification.md`",
+    "- `docs/management/`", "- `docs/management/archive/`", "", "## Other", "- `elsewhere/{node-id}.md`", "",
+  ].join("\n"));
+  assert.deepEqual(resolveLayout(dir), {
+    spec: "docs/arch", contract: "docs/contracts", adr: "docs/decisions", management: "docs/management", verify: "docs/verify", relocated: true,
+  });
+});
+test("resolveLayout keeps a default for a missing bullet, and only spec relocated is not relocated", () => {
+  const l = parseLayout("## Layout (default)\n- `docs/arch/{node-id}.md`\n");
+  assert.equal(l.spec, "docs/arch");
+  assert.equal(l.contract, "hsdd/contract");
+  assert.equal(l.relocated, false);
+});
+test("fixed paths and step paths", () => {
+  assert.equal(P.runYaml, "hsdd/auto/run.yaml");
+  assert.deepEqual(stepPaths("S07"), { dispatch: "hsdd/auto/dispatch/S07.md", report: "hsdd/auto/steps/S07.json", decisions: "hsdd/auto/steps/S07.decisions.jsonl" });
+  assert.equal(reportPath("S07", 0), "hsdd/auto/steps/S07.json");
+  assert.equal(reportPath("S07", 2), "hsdd/auto/steps/S07.r2.json");
+});
+test("globs", () => {
+  assert.ok(matchesAny("hsdd/contract/fixture/a/x/y.json", ["hsdd/contract/**"]));
+  assert.ok(!matchesAny("hsdd/spec/sub/a.md", ["hsdd/spec/*.md"]));
+  assert.ok(matchesAny("hsdd/spec/a.md", ["hsdd/spec/*.md"]));
+  assert.ok(matchesAny("ref/docs/a.md", ["ref/"]));
+  assert.ok(!matchesAny("ref", ["ref/"]));
+  assert.ok(matchesAny("a/b.md", ["a/**/b.md"]));
+  assert.ok(matchesAny("a/x/y/b.md", ["a/**/b.md"]));
+  assert.ok(!matchesAny("a/b.mdx", ["a/b.md"]));
+  assert.ok(!matchesAny("aXb.md", ["a.b.md"]));
+  assert.ok(globToRegExp("x(1).md").test("x(1).md"));
+  assert.ok(!matchesAny("hsdd/contract", ["hsdd/contract/**"]));
+});
+test("expandHome", () => {
+  assert.ok(!expandHome("~/x").startsWith("~"));
+  assert.equal(expandHome("rel/x"), "rel/x");
+});
+test("judgementSet", () => {
+  const set = judgementSet("S07");
+  for (const p of ["hsdd/judgement/decisions.jsonl", "hsdd/judgement/run.jsonl", "hsdd/auto/dispatch/S07.md", "hsdd/auto/queue.jsonl", "hsdd/auto/handoffs.jsonl", "hsdd/auto/plan.md", "hsdd/judgement/STOP.md"]) {
+    assert.ok(matchesAny(p, set), p);
+  }
+  for (const p of ["hsdd/auto/steps/S07.json", "hsdd/auto/steps/S07.r1.json", "hsdd/auto/steps/S07.decisions.jsonl", "hsdd/auto/steps/S07.lost1.json", "hsdd/auto/steps/S07.invalid2.r1.json"]) {
+    assert.ok(matchesAny(p, set), p);
+  }
+  assert.ok(!matchesAny("hsdd/auto/steps/S08.json", set));
+  assert.ok(!matchesAny("hsdd/judgement/decision-reviews.jsonl", set));
+});
+test("kinds table", () => {
+  assert.equal(Object.keys(KINDS).length, 18);
+  assert.deepEqual([...ORCHESTRATOR_KINDS], ["setup", "plan", "report"]);
+  assert.equal(SUBAGENT_KINDS.length, 15);
+  assert.equal(INSERTABLE_KINDS.length, 14);
+  assert.ok(!INSERTABLE_KINDS.includes("intake"));
+  const enumIn = loadSchema("run-line").$defs;
+  assert.deepEqual([...INSERTABLE_KINDS], enumIn.insertableKind.enum);
+  assert.deepEqual(Object.keys(KINDS), enumIn.kind.enum);
+  assert.equal(KINDS.graft.template, "graft.md");
+  assert.equal(KINDS.setup.template, null);
+  assert.equal(KINDS.align.skill, "hsdd-reconcile");
+  assert.equal(KINDS.report.type, "plan");
+});
+test("write sets follow 7.3", () => {
+  assert.deepEqual(writeSet("phase-plan", "shop.api", ctx), ["hsdd/spec/shop.api.md"]);
+  assert.deepEqual(writeSet("phase-plan-append", "shop.api", ctx), ["hsdd/spec/shop.api.md"]);
+  assert.ok(writeSet("citation-touch", "order-api", ctx).includes("hsdd/contract/fixture/order-api/**"));
+  assert.ok(writeSet("citation-touch", "order-api", ctx).includes("hsdd/contract/schema/order-api.schema.json"));
+  assert.ok(writeSet("citation-touch", "ADR-003", ctx).includes("hsdd/adr/003-*.md"));
+  assert.ok(writeSet("citation-touch", "shop.api", ctx).includes("hsdd/spec/shop.api.md"));
+  assert.ok(writeSet("citation-touch", "shop.api", ctx).includes("hsdd/adr/INDEX.md"));
+  assert.ok(writeSet("setup", "2026-10-22-plan", ctxWith({ orchestrator_files: ["CLAUDE.md"] })).includes("CLAUDE.md"));
+  assert.ok(writeSet("setup", "2026-10-22-plan", ctx).includes("hsdd/scripts/auto/**"));
+  assert.ok(writeSet("report", "2026-10-22-intake-x", { ...ctx, segmentId: "2026-10-22-intake-x" }).includes("hsdd/management/2026-10-22-intake-x.md"));
+  assert.ok(writeSet("report", "2026-10-22-intake-x", { ...ctx, record: "hsdd/management/2026-10-22-intake-x.md" }).includes("hsdd/auto/report/2026-10-22-intake-x.md"));
+  assert.deepEqual(writeSet("report", "2026-10-22-plan", ctx), ["hsdd/auto/report/2026-10-22-plan.md"]);
+  assert.deepEqual(writeSet("report", "2026-10-22-plan", ctxWith({ report_dir: "out/r/" })), ["out/r/2026-10-22-plan.md"]);
+  assert.deepEqual(writeSet("intake", "ref/x.md", ctx), ["hsdd/management/*-intake-*.md"]);
+  assert.ok(writeSet("reconcile", "all", ctx).includes("hsdd/conventions.md"));
+  assert.ok(writeSet("contract", "order-api", ctx).includes("hsdd/scripts/gen-registry.mjs"));
+  assert.ok(writeSet("plan", "2026-10-22-plan", ctx).includes("hsdd/auto/plan.md"));
+  const moved = { ...ctx, layout: { ...layout, spec: "docs/arch", contract: "docs/c", adr: "docs/d" } };
+  assert.deepEqual(writeSet("phase-plan", "shop.api", moved), ["docs/arch/shop.api.md"]);
+  assert.ok(writeSet("adr", "ADR-001", moved).includes("docs/d/**"));
+  assert.throws(() => writeSet("nope", "x", ctx));
+});
+test("never patterns", () => {
+  const inside = neverPatterns(cfg({ skills_dir: ".agents/skills", owner_files: ["CLAUDE.md"], read_only: ["ref/"] }), layout);
+  for (const p of ["hsdd/judgement/STOP.md", "hsdd/auto/run.yaml", "hsdd/scripts/auto/lib/x.mjs", ".claude/settings.json", "ref/a.md", "CLAUDE.md", ".agents/skills/hsdd-spec/SKILL.md"]) {
+    assert.ok(matchesAny(p, inside), p);
+  }
+  assert.ok(!matchesAny("hsdd/spec/shop.md", inside));
+  const outside = neverPatterns(cfg({ skills_dir: "/abs/skills" }), layout);
+  assert.ok(!matchesAny("/abs/skills/x", outside));
+  assert.ok(!neverPatterns(cfg({ skills_dir: "~/.claude/skills" }), layout).some((p) => p.includes("claude/skills")));
+});
+test("decision types follow 7.1", () => {
+  assert.equal(decisionTypeFor("spec-touch", "shop", tree, "shop"), "root-spec");
+  assert.equal(decisionTypeFor("spec-touch", "shop.api", tree, "shop"), "mid-level-spec");
+  assert.equal(decisionTypeFor("citation-touch", "ADR-001", tree, "shop"), "adr");
+  assert.equal(decisionTypeFor("citation-touch", "order-api", tree, "shop"), "contract");
+  assert.equal(decisionTypeFor("citation-touch", "shop.api", tree, "shop"), "mid-level-spec");
+  assert.equal(decisionTypeFor("citation-touch", "shop", tree, "shop"), "root-spec");
+  assert.equal(decisionTypeFor("graft", "shop", tree, "shop"), "mid-level-spec");
+  assert.equal(decisionTypeFor("report", "2026-10-22-plan", tree, "shop"), "plan");
+  assert.equal(decisionTypeFor("setup", "2026-10-22-plan", tree, "shop"), "setup");
+  assert.equal(decisionTypeFor("align", "all", tree, "shop"), "reconcile");
+});
+test("skillFor", () => {
+  assert.equal(skillFor("setup", "x", tree), "none");
+  assert.equal(skillFor("report", "x", tree), "none");
+  assert.equal(skillFor("citation-touch", "ADR-001", tree), "hsdd-adr");
+  assert.equal(skillFor("citation-touch", "order-api", tree), "hsdd-contract");
+  assert.equal(skillFor("citation-touch", "shop.api", tree), "hsdd-spec");
+  assert.equal(skillFor("promote", "shop.api", tree), "hsdd-spec");
+  assert.throws(() => skillFor("citation-touch", "all", tree));
+});
+test("targetType", () => {
+  assert.equal(targetType("ADR-003", tree), "adr");
+  assert.equal(targetType("H7a", tree), "handoff");
+  assert.equal(targetType("run", tree), "run");
+  assert.equal(targetType("all", tree), "all");
+  assert.equal(targetType("a,b", tree), "list");
+  assert.equal(targetType("ref/x.md", tree), "request");
+  assert.equal(targetType("shop", tree), "node");
+  assert.equal(targetType("order-api", tree), "contract");
+  assert.equal(targetType("unknown.node", tree), "node");
+  assert.equal(targetType("unknown-slug", tree), "contract");
+  assert.equal(targetType("docs/my request.md", tree), "request");
+});
+test("RAISED_WHEN quotes 8.2", () => {
+  assert.equal(RAISED_WHEN.collision, "Two nodes' entries conflict at reconcile.");
+  assert.equal(STOP_CLASSES.length, 10);
+  assert.equal(STOPPABLE.length, 7);
+  assert.deepEqual(Object.keys(RAISED_WHEN), [...STOP_CLASSES]);
+  assert.deepEqual([...STOPPABLE], loadSchema("run-config").$defs.stoppable.enum);
+  assert.ok(RAISED_WHEN["breaking-amend"].endsWith("(`hsdd-contract`'s versioning policy)."));
+  assert.ok(validate("run-config", baseConfig()).length === 0);
+});

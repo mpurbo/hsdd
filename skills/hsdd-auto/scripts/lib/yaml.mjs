@@ -305,7 +305,7 @@ const quoteDouble = (s) => {
 const needsQuote = (s, flow) =>
   s === "" ||
   s.startsWith(" ") || s.endsWith(" ") || s.endsWith(":") ||
-  s.includes(": ") || s.includes(" #") ||
+  s.includes(": ") || s.includes("#") ||
   QUOTE_START.includes(s[0]) ||
   /[\u0000-\u001f\u007f]/.test(s) ||
   INT_RE.test(s) || s === "true" || s === "false" || s === "null" ||
@@ -353,12 +353,14 @@ export const appendSegmentEntry = (text, entry) => {
   const lines = text.split("\n");
   const at = lines.findIndex((l) => /^segments:(\s|$)/.test(l));
   if (at < 0) fail(lines.length, "no top-level 'segments:' key");
-  const rest = lines[at].slice("segments:".length);
+  const cr = (i) => (lines[i].endsWith("\r") ? "\r" : "");
+  const eolAt = cr(at);
+  const rest = lines[at].replace(/\r$/, "").slice("segments:".length);
   const cm = /(^|\s)#/.exec(rest);
   const value = (cm ? rest.slice(0, cm.index) : rest).trim();
   const comment = cm ? rest.slice(cm.index).trimStart() : "";
   if (value !== "" && value !== "[]") fail(at + 1, "'segments' must be a block sequence to append to");
-  if (value === "[]") lines[at] = comment ? `segments: ${comment}` : "segments:";
+  if (value === "[]") lines[at] = (comment ? `segments: ${comment}` : "segments:") + eolAt;
   let last = at;
   let indent = null;
   for (let j = at + 1; j < lines.length; j++) {
@@ -370,6 +372,7 @@ export const appendSegmentEntry = (text, entry) => {
       if (indent === null) indent = lead;
     } else break;
   }
-  lines.splice(last + 1, 0, `${" ".repeat(indent ?? 2)}- ${formatFlow(entry)}`);
+  const eol = last === at ? eolAt : cr(last);
+  lines.splice(last + 1, 0, `${" ".repeat(indent ?? 2)}- ${formatFlow(entry)}${eol}`);
   return lines.join("\n");
 };

@@ -215,3 +215,19 @@ test("stampMs and dateOf read a stamp", () => {
   assert.throws(() => stampMs("2026-10-17"));
   assert.throws(() => dateOf("nope"));
 });
+
+test("formatScalar quotes a string with # anywhere and round-trips it", () => {
+  assert.equal(formatScalar("x#y"), "\"x#y\"");
+  assert.equal(parseYaml(`k: ${formatScalar("x#y")}\n`).k, "x#y");
+  assert.equal(parseYaml(`k: ${formatScalar("a#")}\n`).k, "a#");
+});
+test("CRLF files parse and keep one line-ending style on append", () => {
+  const crlf = "version: 1\r\nrun: shop\r\nsegments:\r\n  - { id: a }\r\nafter: 1\r\n";
+  assert.deepEqual(parseYaml(crlf), { version: 1, run: "shop", segments: [{ id: "a" }], after: 1 });
+  const out = appendSegmentEntry(crlf, { id: "b" });
+  assert.equal(out, "version: 1\r\nrun: shop\r\nsegments:\r\n  - { id: a }\r\n  - { id: b }\r\nafter: 1\r\n");
+  assert.ok(!/[^\r]\n/.test(out));
+  const empty = appendSegmentEntry("run: shop\r\nsegments: []\r\n", { id: "b" });
+  assert.equal(empty, "run: shop\r\nsegments:\r\n  - { id: b }\r\n");
+  assert.equal(appendSegmentEntry("segments:\n  - { id: x }\n", { id: "y" }), "segments:\n  - { id: x }\n  - { id: y }\n");
+});

@@ -103,12 +103,18 @@ test("type list, enum with null, minimum, minLength", () => {
   assert.deepEqual(validate("adapter", { version: 1, added: [{ file: "f", pointer: "/p", value: null }], created: [] }), []);
   assert.equal(validate("adapter", { version: 2, added: [], created: [] }).length, 1);
 });
-test("minLength counts code points; pattern skips non-strings; root type", () => {
+test("minLength counts code points; root type", () => {
   const s = (reason) => ({ segment: "s", handoff: "H1", at: "2026-10-20T16:04:30Z", status: "skipped", reason });
   assert.deepEqual(validate("handoff-skip", s("\u{1F600}")), []);
   assert.deepEqual(validate("handoff-skip", s("")).length, 1);
   assert.deepEqual(validate("handoff-skip", [1]), ["$: expected type object"]);
   assert.deepEqual(validate("handoff-skip", null), ["$: expected type object"]);
+});
+test("pattern skips non-strings when the type list admits them", () => {
+  const h = "a".repeat(64);
+  assert.deepEqual(validate("owner-files", { "a.md": null, "b.md": h }), []);
+  assert.equal(validate("owner-files", { "a.md": "nothex" }).length, 1);
+  assert.equal(validate("owner-files", { "a.md": 5 }).length, 1);
 });
 test("unknown schema or def throws", () => {
   assert.throws(() => loadSchema("nope"));
