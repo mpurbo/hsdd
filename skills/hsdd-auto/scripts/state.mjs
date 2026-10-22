@@ -4,7 +4,8 @@
 // `open-segment` changes git state; `snapshot` and `install-scripts` write files and never touch git.
 // Usage: see USAGE.
 import { copyFileSync, existsSync, mkdirSync, readFileSync, readdirSync, realpathSync, rmSync, rmdirSync, writeFileSync } from "node:fs";
-import { dirname, join, parse } from "node:path";
+import { homedir } from "node:os";
+import { basename, dirname, join, parse } from "node:path";
 import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
 import { loadContext } from "./lib/context.mjs";
@@ -13,7 +14,7 @@ import { P, filesUnder, judgementSet, matchesAny, ownerFileHash, ownerMatcher, r
 import { branchExists, changedPaths, currentBranch, git } from "./lib/git.mjs";
 import { dateOf, nowStamp } from "./lib/time.mjs";
 import { appendSegmentEntry, parseYaml } from "./lib/yaml.mjs";
-import { validate } from "./lib/schema.mjs";
+import { loadSchema, validate } from "./lib/schema.mjs";
 import { idNum, nextFreeStep, reportSeries } from "./lib/records.mjs";
 import { queueItems } from "./routed.mjs";
 import { contractsNotFinal, findingLine, handoffStates, idFindings, leafParentsToPlan, selectNext, unmetDone, willCreate } from "./next.mjs";
@@ -21,7 +22,7 @@ import { artifactPrefix } from "./commit.mjs";
 
 const USAGE = [
   "usage: state.mjs [--json]",
-  "       state.mjs done | goal | upstream | preflight | snapshot | install-scripts",
+  "       state.mjs done | goal | upstream | defaults | preflight | snapshot | install-scripts",
   "       state.mjs open-segment --mode plan|intake --instruction-file f.md [--request <path> --authority <a>] [--stop-policy <p>]",
 ].join("\n");
 
@@ -151,7 +152,7 @@ const oneLine = (s) => String(s).replace(/\s+/g, " ").trim();
 export const upstreamLines = (ctx) => ctx.decisions
   .filter((d) => d.would_upstream === true)
   .sort((a, b) => idNum(a.id) - idNum(b.id))
-  .map((d) => `${d.id} ${d.step_ref} ${oneLine(d.question)} -> ${d.chosen}`);
+  .map((d) => `${d.id} ${d.step} (${d.step_ref}) ${oneLine(d.question)} -> ${d.chosen}`);
 
 // ---------- segment ids (5.5) ----------
 
@@ -217,6 +218,24 @@ export const snapshotOwnerFiles = (repoRoot, config) => {
 
 // 5.3 item 8: every path `git status` shows as modified or untracked, files only.
 export const defaultOwnerFiles = (repoRoot) => changedPaths(repoRoot);
+
+// 5.3's proposed defaults, readable before run.yaml exists.
+const kebab = (name) => name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+
+export const defaults = (repoRoot, { home = homedir() } = {}) => {
+  const run = kebab(basename(repoRoot)) || "run";
+  const candidates = [join(repoRoot, ".agents/skills"), join(repoRoot, ".claude/skills"), join(home, ".claude/skills")];
+  const labels = [".agents/skills", ".claude/skills", "~/.claude/skills"];
+  const at = candidates.findIndex((d) => existsSync(join(d, "hsdd-auto")));
+  return {
+    run,
+    root: run,
+    branch: `auto/${run}`,
+    base: currentBranch(repoRoot),
+    skills_dir: at < 0 ? null : labels[at],
+    owner_files: defaultOwnerFiles(repoRoot),
+  };
+};
 
 // ---------- install-scripts (4.3) ----------
 
@@ -291,25 +310,41 @@ const stripOneNewline = (s) => s.replace(/\r?\n$/, "");
 
 const refuse = (reasons, closing) => { throw new StateError([...reasons.map((r) => `refused: ${r}`), closing]); };
 
+// Checks out the run branch (creating it from base when missing). Returns null when HEAD is already
+// on it, else `undo()`, which restores the starting HEAD and deletes the branch when this call made it.
 const checkoutBranch = (repoRoot, config) => {
-  if (currentBranch(repoRoot) === config.branch) return false;
-  if (branchExists(repoRoot, config.branch)) git(repoRoot, ["checkout", "-q", config.branch]);
+  const previous = currentBranch(repoRoot);
+  if (previous === config.branch) return null;
+  const startedAt = git(repoRoot, ["rev-parse", "HEAD"], { allowFail: true });
+  const created = !branchExists(repoRoot, config.branch);
+  if (!created) git(repoRoot, ["checkout", "-q", config.branch]);
   else if (branchExists(repoRoot, config.base)) git(repoRoot, ["checkout", "-q", "-b", config.branch, config.base]);
   else throw new StateError([`neither branch ${config.branch} nor its base ${config.base} exists`]);
-  return true;
+  return () => {
+    git(repoRoot, previous === null ? ["checkout", "-q", "--detach", startedAt] : ["checkout", "-q", previous]);
+    if (created) git(repoRoot, ["branch", "-D", config.branch]);
+  };
 };
 
 // The entry to append (5.5): a segment that continues a stopped or ended one of the same mode copies
 // its `request` and `authority` when the flags are absent. Throws a usage error when it cannot be formed.
+const choices = (def) => loadSchema("run-config").$defs[def].enum;
+const AUTHORITIES = loadSchema("run-config").properties.segments.items.properties.authority.enum;
+
 const entryFor = (ctx, { mode, request, authority, stopPolicy }, instruction, openedAt) => {
+  const usage = (m) => { throw new StateError([m], { usage: true }); };
+  if (mode !== undefined && !["plan", "intake"].includes(mode)) usage("--mode is plan or intake");
+  if (stopPolicy !== undefined && !choices("stopPolicy").includes(stopPolicy)) usage(`--stop-policy is one of ${choices("stopPolicy").join(", ")}`);
+  if (authority !== undefined && !AUTHORITIES.includes(authority)) usage(`--authority is one of ${AUTHORITIES.join(", ")}`);
   const prev = ctx.segment;
   const continues = prev !== null && (isEnded(ctx) || isStopped(ctx)) && (mode === undefined || mode === prev.mode);
   const useMode = mode ?? (continues ? prev.mode : undefined);
   if (useMode === undefined) throw new StateError(["--mode is required unless the segment continues a stopped or ended one"], { usage: true });
   const useRequest = request ?? (continues ? prev.request : undefined);
   const useAuthority = authority ?? (continues ? prev.authority : undefined);
+  if (useMode === "plan" && (request !== undefined || authority !== undefined)) usage("--request and --authority belong to an intake segment");
   if (useMode === "intake" && (useRequest === undefined || useAuthority === undefined)) {
-    throw new StateError(["an intake segment needs --request and --authority"], { usage: true });
+    usage("an intake segment needs --request and --authority");
   }
   return {
     id: segmentId(useMode, dateOf(openedAt), useRequest, ctx.segments.map((s) => s.id)),
@@ -334,21 +369,26 @@ export const openSegment = (repoRoot, opts) => {
   if (early.length > 0) refuse(early, "open-segment changed nothing");
   // Everything that can fail on the flags fails before git changes.
   entryFor(before, opts, instruction, openedAt);
-  const moved = checkoutBranch(repoRoot, config);
-  // The run branch may hold segments the base does not: build the entry from the branch that is written.
-  const ctx = moved ? loadContext(repoRoot) : before;
-  if (moved) {
-    const late = openRefusals(ctx, { instruction });
-    if (late.length > 0) refuse(late, `open-segment checked out ${config.branch}, found this there, and changed nothing else`);
+  const undo = checkoutBranch(repoRoot, config);
+  try {
+    // The run branch may hold segments the base does not: build the entry from the branch that is written.
+    const ctx = undo === null ? before : loadContext(repoRoot);
+    if (undo !== null) {
+      const late = openRefusals(ctx, { instruction });
+      if (late.length > 0) refuse(late, "open-segment changed nothing");
+    }
+    const entry = entryFor(ctx, opts, instruction, openedAt);
+    const file = join(repoRoot, P.runYaml);
+    const text = appendSegmentEntry(readFileSync(file, "utf8"), entry);
+    const parsed = parseYaml(text);
+    const errors = validate("run-config", parsed.segments === null ? { ...parsed, segments: [] } : parsed);
+    if (errors.length > 0) throw new StateError(errors.map((e) => `${P.runYaml}: ${e}`));
+    writeFileSync(file, text);
+    return entry;
+  } catch (e) {
+    if (undo !== null) undo();
+    throw e;
   }
-  const entry = entryFor(ctx, opts, instruction, openedAt);
-  const file = join(repoRoot, P.runYaml);
-  const text = appendSegmentEntry(readFileSync(file, "utf8"), entry);
-  const parsed = parseYaml(text);
-  const errors = validate("run-config", parsed.segments === null ? { ...parsed, segments: [] } : parsed);
-  if (errors.length > 0) throw new StateError(errors.map((e) => `${P.runYaml}: ${e}`));
-  writeFileSync(file, text);
-  return entry;
 };
 
 const readInstruction = (file) => {
@@ -396,6 +436,10 @@ const subcommands = {
   upstream: (repoRoot, out) => {
     const lines = upstreamLines(loadContext(repoRoot));
     (lines.length === 0 ? ["no decision has would_upstream: true"] : lines).forEach((l) => out.log(l));
+    return 0;
+  },
+  defaults: (repoRoot, out) => {
+    out.log(JSON.stringify(defaults(repoRoot)));
     return 0;
   },
   preflight: (repoRoot, out) => {

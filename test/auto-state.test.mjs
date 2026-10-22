@@ -5,7 +5,7 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
-  StateError, defaultOwnerFiles, doneResult, formatState, goalText, installScripts, main, openRefusals, openSegment, preflight, requestSlug,
+  StateError, defaultOwnerFiles, defaults, doneResult, formatState, goalText, installScripts, main, openRefusals, openSegment, preflight, requestSlug,
   segmentId, snapshotOwnerFiles, stateView, upstreamLines,
 } from "../skills/hsdd-auto/scripts/state.mjs";
 import { loadContext } from "../skills/hsdd-auto/scripts/lib/context.mjs";
@@ -56,6 +56,7 @@ const branchOf = (dir) => gitIn(dir, "symbolic-ref", "--short", "HEAD");
 const branches = (dir) => gitIn(dir, "branch", "--format=%(refname:short)").split("\n").filter(Boolean);
 const ctxOf = (dir) => loadContext(dir);
 const open = (dir, over = {}) => openSegment(dir, { mode: "plan", instructionFile: instruction(), ...over });
+const defaultsOf = (dir, home) => defaults(dir, { home });
 const refusal = (fn) => {
   try { fn(); } catch (e) { assert.ok(e instanceof StateError, String(e?.stack)); return e.message; }
   return assert.fail("expected a refusal");
@@ -206,10 +207,10 @@ test("upstream lists exactly the would_upstream decisions in id order", () => {
   appendJsonl(dir, P.ledger, decision("DEC-010", true, { question: "Two\nlines?" }));
   appendJsonl(dir, P.ledger, decision("DEC-003", false));
   appendJsonl(dir, P.ledger, decision("DEC-002", true));
-  assert.deepEqual(upstreamLines(ctxOf(dir)), ["DEC-002 S01 Question DEC-002? -> a", "DEC-010 S01 Two lines? -> a"]);
+  assert.deepEqual(upstreamLines(ctxOf(dir)), ["DEC-002 plan (S01) Question DEC-002? -> a", "DEC-010 plan (S01) Two lines? -> a"]);
   const r = run(dir, "state.mjs", ["upstream"]);
   assert.equal(r.code, 0);
-  assert.equal(r.stdout, "DEC-002 S01 Question DEC-002? -> a\nDEC-010 S01 Two lines? -> a\n");
+  assert.equal(r.stdout, "DEC-002 plan (S01) Question DEC-002? -> a\nDEC-010 plan (S01) Two lines? -> a\n");
   assert.equal(readJsonl(dir, P.ledger).length, 3);
 });
 
@@ -427,15 +428,108 @@ test("defaultOwnerFiles lists files, never directories", () => {
 });
 
 test("an intake segment's view lists each handoff as executed, skipped or pending", () => {
-  const record = readFileSync(join(dirname(fileURLToPath(import.meta.url)), "fixtures", "auto", "intake", "2026-10-22-intake-order-v2.md"), "utf8");
+  const original = readFileSync(join(dirname(fileURLToPath(import.meta.url)), "fixtures", "auto", "intake", "2026-10-22-intake-order-v2.md"), "utf8");
+  const extra = '    { "id": "H2b", "kind": "citation-touch", "skill": "hsdd-spec", "target": "shop.web.app",\n      "prompt": "citation touch again", "when": null, "after": ["H1"] }\n';
+  const record = original
+    .replace('"after": ["H1"] }\n  ],', '"after": ["H1"] },\n' + extra + "  ],")
+    .replace("\n\nInsert rule:", "\n3. H2b, hsdd-spec: `citation touch again`\n\nInsert rule:");
+  assert.notEqual(record, original);
   const dir = makeRepo({ stage: "06-planned", config: cfg(), files: { [REQUEST]: "# Spec v2\n\nVersion: v2.\n" } });
   addSegment(dir, intakeSegment());
   fakeStep(dir, { step: "S00", segment: INTAKE, kind: "setup", target: INTAKE });
   fakeStep(dir, { step: "S01", segment: INTAKE, kind: "plan", target: INTAKE });
   fakeStep(dir, { step: "S02", segment: INTAKE, kind: "intake", target: REQUEST, files: { "hsdd/management/2026-10-22-intake-order-v2.md": record } });
+  fakeStep(dir, { step: "S03", segment: INTAKE, kind: "contract-touch", target: "order-api", handoff: "H1" });
+  const line = { segment: INTAKE, handoff: "H2a", at: nowStamp(), status: "skipped", reason: "H2a cites no superseded version" };
+  assert.deepEqual(validate("handoff-skip", line), []);
+  appendJsonl(dir, P.handoffs, line);
+  commitAll(dir, "auto: skip H2a: test");
   const { intake } = stateView(ctxOf(dir));
   assert.equal(intake.record, "hsdd/management/2026-10-22-intake-order-v2.md");
-  assert.ok(intake.handoffs.length > 0);
-  assert.ok(intake.handoffs.every((h) => h.state === "pending"), JSON.stringify(intake.handoffs));
-  assert.match(formatState(stateView(ctxOf(dir))), /^  H1 \S+ \S+: pending$/m);
+  assert.deepEqual(intake.handoffs.map((h) => [h.id, h.state]), [["H1", "executed"], ["H2a", "skipped"], ["H2b", "pending"]]);
+  assert.match(formatState(stateView(ctxOf(dir))), /^  H2a citation-touch shop\.web\.app: skipped$/m);
+});
+
+// A repository whose run branch already holds an unfinished segment while main holds none.
+const branchAhead = () => {
+  const dir = makeRepo({ stage: "06-planned", config: cfg() });
+  const first = open(dir);
+  fakeStep(dir, { step: "S00", segment: first.id, kind: "setup", target: first.id });
+  commitAll(dir, "run branch has the segment");
+  gitIn(dir, "checkout", "-q", "main");
+  return { dir, first };
+};
+
+test("open-segment checks out an existing run branch and builds the entry from it", () => {
+  const dir = makeRepo({ stage: "06-planned", config: cfg() });
+  const first = open(dir);
+  fakeStep(dir, { step: "S00", segment: first.id, kind: "setup", target: first.id });
+  fakeStep(dir, { step: "S01", segment: first.id, kind: "report", target: first.id });
+  commitAll(dir, "run branch has a finished segment");
+  gitIn(dir, "checkout", "-q", "main");
+  assert.deepEqual(loadConfig(dir).segments, [], "main knows no segment");
+  const second = open(dir);
+  assert.equal(branchOf(dir), "auto/shop");
+  assert.equal(second.id, `${first.id}-2`, "the id is taken on the branch");
+  assert.equal(second.first_step, "S02");
+});
+
+test("a late refusal restores HEAD and leaves the branches as they were", () => {
+  const { dir } = branchAhead();
+  const before = branches(dir);
+  const message = refusal(() => open(dir));
+  assert.match(message, /is unfinished/);
+  assert.ok(!/checked out/.test(message), message);
+  assert.equal(branchOf(dir), "main");
+  assert.deepEqual(branches(dir), before);
+});
+
+test("a late refusal deletes a run branch this call created", () => {
+  const dir = makeRepo({ stage: "06-planned", config: cfg() });
+  gitIn(dir, "branch", "other");
+  addSegment(dir, planSegment());
+  fakeStep(dir, { step: "S00", segment: SEG, kind: "setup", target: SEG });
+  gitIn(dir, "checkout", "-q", "other");
+  assert.deepEqual(branches(dir), ["main", "other"]);
+  // On `other` no segment is open; the run branch would be created from base (main), which has an unfinished one.
+  assert.match(refusal(() => open(dir)), /is unfinished/);
+  assert.equal(branchOf(dir), "other");
+  assert.deepEqual(branches(dir), ["main", "other"]);
+});
+
+test("an invalid --stop-policy, --authority or plan --request is a usage error before any git change", () => {
+  const dir = makeRepo({ stage: "06-planned", config: cfg() });
+  const heads = gitIn(dir, "rev-parse", "HEAD");
+  for (const args of [
+    ["--mode", "plan", "--stop-policy", "never"],
+    ["--mode", "intake", "--request", REQUEST, "--authority", "hunch"],
+    ["--mode", "plan", "--request", REQUEST],
+    ["--mode", "plan", "--authority", "draft"],
+  ]) {
+    const r = run(dir, "state.mjs", ["open-segment", "--instruction-file", instruction(), ...args]);
+    assert.equal(r.code, 2, `${args.join(" ")}: ${r.stderr}`);
+    assert.equal(branchOf(dir), "main");
+    assert.deepEqual(branches(dir), ["main"]);
+    assert.equal(gitIn(dir, "rev-parse", "HEAD"), heads);
+  }
+  assert.equal(gitIn(dir, "status", "--porcelain"), "");
+});
+
+test("defaults proposes run, branch, base, skills_dir and owner files without run.yaml", () => {
+  const dir = mkdtempSync(join(tmpdir(), "My Shop_App-"));
+  gitIn(dir, "init", "-q", "-b", "trunk");
+  put(dir, "notes/a.md", "a\n");
+  const home = mkdtempSync(join(tmpdir(), "hsdd-auto-home-"));
+  const name = defaultsOf(dir, home).run;
+  assert.match(name, /^my-shop-app-[a-z0-9]+$/);
+  const d = defaultsOf(dir, home);
+  assert.deepEqual(d, { run: name, root: name, branch: `auto/${name}`, base: "trunk", skills_dir: null, owner_files: ["notes/a.md"] });
+  mkdirSync(join(home, ".claude/skills/hsdd-auto"), { recursive: true });
+  assert.equal(defaultsOf(dir, home).skills_dir, "~/.claude/skills");
+  mkdirSync(join(dir, ".agents/skills/hsdd-auto"), { recursive: true });
+  assert.equal(defaultsOf(dir, home).skills_dir, ".agents/skills");
+  const cli = run(dir, "state.mjs", ["defaults"]);
+  assert.equal(cli.code, 0, cli.stderr);
+  assert.equal(cli.stdout.trimEnd().split("\n").length, 1);
+  assert.equal(JSON.parse(cli.stdout).branch, `auto/${name}`);
 });
