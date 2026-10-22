@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `docs/guide/`: an interactive, offline HTML guide for newcomers. A start
+  page and nine short chapters, from the problem HSDD solves to running a
+  project, using the user's guide's examples, with brownfield adoption and
+  change intake as chapters of their own.
+
 ## [0.10.0] - 2026-10-10
 
 The release that follows 0.7.1. The 0.8.0 and 0.9.0 entries below describe
