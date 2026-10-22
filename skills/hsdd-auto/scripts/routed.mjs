@@ -167,11 +167,6 @@ const appendLines = (repoRoot, newLines) => {
 const entriesOf = (reports, field) =>
   reports.flatMap(({ report }) => (report !== null && Array.isArray(report[field]) ? report[field] : []));
 
-// Opens one item per `routed` entry of the step's current report series and records each `closes`
-// entry. The queue is read afresh, so a rerun after a crash writes nothing twice.
-// It reads only what it needs (the step's dispatch file, other steps' dispatch files for the
-// segment check, the run lines, the report series, the queue), so a defect in the tree, the
-// config or an intake record never blocks crash recovery. `ctx` is optional and only a test shortcut.
 const readFront = (repoRoot, step) => {
   try {
     return readDispatch(repoRoot, step)?.front ?? null;
@@ -180,19 +175,29 @@ const readFront = (repoRoot, step) => {
   }
 };
 
-export const ingest = (repoRoot, step, ctx) => {
+// What `ingest` would write now, without writing it: planIngest's { lines, skipped } over the files
+// ingest reads. commit.mjs uses it to refuse a step whose report routes an insert-step item the
+// review never ingested.
+export const wouldIngest = (repoRoot, step, ctx) => {
   const front = ctx ? (ctx.dispatches.get(step)?.front ?? null) : readFront(repoRoot, step);
   if (front === null) throw new QueueError([`${step} has no readable dispatch file`]);
-  const dispatch = { front };
   const runLines = ctx ? ctx.runLines : readJsonl(repoRoot, P.runLog);
   const segmentOf = (s) => (ctx ? ctx.dispatches.get(s)?.front : readFront(repoRoot, s))?.segment
     ?? runLines.find((l) => l.step_ref === s)?.segment ?? null;
   const reports = readReports(repoRoot, step);
-  const lines = readJsonl(repoRoot, P.queue);
-  const plan = planIngest(lines, {
-    step, kind: dispatch.front.kind, segment: dispatch.front.segment, segmentOf,
+  return planIngest(readJsonl(repoRoot, P.queue), {
+    step, kind: front.kind, segment: front.segment, segmentOf,
     routed: entriesOf(reports, "routed"), closes: entriesOf(reports, "closes"),
   }, nowStamp());
+};
+
+// Opens one item per `routed` entry of the step's current report series and records each `closes`
+// entry. The queue is read afresh, so a rerun after a crash writes nothing twice.
+// It reads only what it needs (the step's dispatch file, other steps' dispatch files for the
+// segment check, the run lines, the report series, the queue), so a defect in the tree, the
+// config or an intake record never blocks crash recovery. `ctx` is optional and only a test shortcut.
+export const ingest = (repoRoot, step, ctx) => {
+  const plan = wouldIngest(repoRoot, step, ctx);
   appendLines(repoRoot, plan.lines);
   return {
     opened: plan.lines.filter((l) => l.status === "open").map((l) => l.id),

@@ -5,21 +5,23 @@
 // step log and the section rewrite are pure; the phases are the edge. With `state.mjs open-segment`
 // this is the only script that changes git state. Usage: see USAGE.
 import { existsSync, lstatSync, mkdirSync, readFileSync, readdirSync, realpathSync, renameSync, rmSync, writeFileSync } from "node:fs";
-import { dirname, join, resolve } from "node:path";
+import { basename, dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
 import { loadContext } from "./lib/context.mjs";
 import { ConfigError, loadConfig } from "./lib/config.mjs";
 import { KINDS } from "./lib/kinds.mjs";
-import { P, judgementSet, matchesAny, ownerFileHash, ownerMatcher, ownerPath, stepPaths } from "./lib/paths.mjs";
+import { P, judgementSet, matchesAny, ownerMatcher, stepPaths } from "./lib/paths.mjs";
 import { changedPaths, currentBranch, git, headSha, headSubject, indexEmpty } from "./lib/git.mjs";
-import { appendJsonl, dispatchErrors, judgementCommitted, readDispatch, readJsonl, readReports, seriesOf } from "./lib/records.mjs";
+import {
+  appendJsonl, committedJsonl, dispatchErrors, judgementCommitted, readDispatch, readJsonl, readReports, seriesOf, sidecarEntries,
+} from "./lib/records.mjs";
 import { validate } from "./lib/schema.mjs";
 import { nowStamp } from "./lib/time.mjs";
 import { citesSuperseded, supersededStrings, targetFiles } from "./lib/intake.mjs";
-import { CHECK_IDS, GateError, b1, formatFindings, stepGate } from "./gate.mjs";
+import { CHECK_IDS, GateError, admissionOf, b1, formatFindings, ownerProblems, ownerState, stepGate } from "./gate.mjs";
 import { appendDecisions, appendRunLine } from "./ledger.mjs";
-import { ingest, markAddressed, planIngest, queueItems } from "./routed.mjs";
+import { ingest, markAddressed, queueItems, wouldIngest } from "./routed.mjs";
 import { handoffStates } from "./next.mjs";
 
 export class CommitError extends Error {
@@ -55,8 +57,15 @@ export const artifactPrefix = (commit, front) => (isOrchestrator(front)
   ? `${commit.orchestrator}: ${front.step_ref} ${front.kind}: `
   : `${commit.artifact}: ${front.step_ref} ${front.kind} ${front.target}: `);
 
+// The suffix ` (stopped)` belongs to the status, and resume detection reads it (10.7 step 1), so a
+// summary never ends in `(stopped)`; a summary left empty by that becomes `no summary`.
+const subjectSummary = (summary) => {
+  const s = oneLine(summary).replace(/(?:\s*\(stopped\))+$/, "").trim();
+  return s === "" ? "no summary" : s;
+};
+
 export const artifactSubject = (commit, front, summary, status) =>
-  `${artifactPrefix(commit, front)}${summary}${status === "stopped" ? STOPPED : ""}`;
+  `${artifactPrefix(commit, front)}${subjectSummary(summary)}${status === "stopped" ? STOPPED : ""}`;
 
 export const judgementSubject = (commit, step) => `${commit.judgement}: ${step}`;
 
@@ -66,23 +75,27 @@ export const skipSubject = (commit, handoff, reason) => `${commit.orchestrator}:
 export const commitMessage = (subject, trailers = []) => (trailers.length > 0 ? `${subject}\n\n${trailers.join("\n")}\n` : `${subject}\n`);
 
 // 10.7: --summary when given, else the report's first notes entry cut to 72 characters, else
-// `no summary`; an orchestrator step without --summary takes its segment id. `reports` is the current series.
+// `no summary`; an orchestrator step without --summary takes its segment id. The report is the latest
+// of the current series (`reports`, in launch order), the one B5 reads.
 export const summaryOf = ({ summary, front, reports }) => {
   if (summary !== undefined) return oneLine(summary);
   if (isOrchestrator(front)) return front.segment;
-  const note = reports.flatMap((r) => (Array.isArray(r.report?.notes) ? r.report.notes : []))
-    .filter((n) => typeof n === "string").map(oneLine).find((n) => n !== "");
+  const notes = reports.at(-1)?.report?.notes;
+  const note = (Array.isArray(notes) ? notes : []).filter((n) => typeof n === "string").map(oneLine).find((n) => n !== "");
   return note === undefined ? "no summary" : cut(note, SUMMARY_CHARS);
 };
 
 // The run line's one-line note (6.3): the orchestrator's --note first, so that a note starting
 // `ended:` still reads as a segment's end (8.11), then what the commit itself must tell a reader.
+// `ownerLeftOut` is the gate's A2 verdict, [{ file, problem }].
 export const runNote = ({ note, noReport = false, discarded = [], ownerLeftOut = [], empty = false }) => {
   const parts = [
     note,
     noReport ? "no valid report" : null,
     discarded.length > 0 ? `discarded: ${discarded.join(", ")}` : null,
-    ownerLeftOut.length > 0 ? `owner file${ownerLeftOut.length === 1 ? "" : "s"} ${ownerLeftOut.join(", ")} changed and left out of the commit` : null,
+    ownerLeftOut.length > 0
+      ? `owner file${ownerLeftOut.length === 1 ? "" : "s"} flagged by A2, left in place and out of the commit: ${ownerLeftOut.map((o) => `${o.file} (${o.problem})`).join(", ")}`
+      : null,
     empty ? "no artifact changed; empty artifact commit" : null,
   ].filter((p) => typeof p === "string" && p !== "");
   return parts.length > 0 ? parts.join("; ") : undefined;
@@ -100,21 +113,32 @@ const row = (cells) => `| ${cells.map(cell).join(" | ")} |`;
 const runRow = (l) => row([l.step_ref, l.segment, l.kind, l.skill, l.target, l.status, typeof l.commit === "string" ? short(l.commit) : null]);
 const skipRow = (l) => row(["-", l.segment, "skip", "none", l.handoff, `skipped: ${oneLine(l.reason)}`, "-"]);
 
-// Each line with the time it sorts by; a line without a readable time keeps its predecessor's.
-const timed = (lines, field) => lines.reduce((acc, l, i) => {
+// Each line's row with the time it merges by; a line without a readable time keeps its predecessor's.
+const timed = (lines, field, toRow) => lines.reduce((acc, l) => {
   const ms = Date.parse(l?.[field] ?? "");
-  return [...acc, { l, i, t: Number.isNaN(ms) ? (acc.at(-1)?.t ?? -Infinity) : ms }];
+  return [...acc, { text: toRow(l), t: Number.isNaN(ms) ? (acc.at(-1)?.t ?? -Infinity) : ms }];
 }, []);
 
-// The step log: one row per run line and per skip line, by time (a run line's `finished`, a skip's
-// `at`); in the same second a run line comes first, since a skip follows the step before it.
-export const stepLogTable = (runLines, skipLines) => {
-  const rows = [
-    ...timed(runLines, "finished").map((e) => ({ ...e, type: 0, text: runRow(e.l) })),
-    ...timed(skipLines, "at").map((e) => ({ ...e, type: 1, text: skipRow(e.l) })),
-  ].sort((a, b) => (a.t - b.t) || (a.type - b.type) || (a.i - b.i));
-  return [row(HEADER), `|${HEADER.map((h) => "-".repeat(h.length + 2)).join("|")}|`, ...rows.map((r) => r.text)].join("\n");
+// A stable merge of two sequences, each kept in its own order: the next skip goes first only when it is
+// earlier than the next run line, so a run line ties ahead (a skip follows the step before it).
+const merge = (runs, skips) => {
+  const out = [];
+  let i = 0;
+  let j = 0;
+  while (i < runs.length || j < skips.length) {
+    if (j < skips.length && (i >= runs.length || skips[j].t < runs[i].t)) out.push(skips[j++]);
+    else out.push(runs[i++]);
+  }
+  return out;
 };
+
+// The step log: one row per run line, in run-log order, and per skip line, in handoffs.jsonl order,
+// interleaved by time (a run line's `finished`, a skip's `at`), so a skewed clock never reorders the run.
+export const stepLogTable = (runLines, skipLines) => [
+  row(HEADER),
+  `|${HEADER.map((h) => "-".repeat(h.length + 2)).join("|")}|`,
+  ...merge(timed(runLines, "finished", runRow), timed(skipLines, "at", skipRow)).map((r) => r.text),
+].join("\n");
 
 const FENCE = /^\s*(```|~~~)/;
 
@@ -142,20 +166,26 @@ export const replaceSection = (markdown, heading, content) => {
 
 export const planSkeleton = (run) => `# Run plan: ${run}\n\n## Segments\n\n## Step log\n\n## Change log\n`;
 
+// A whole-file write that a reader never sees half done: a temporary file beside it, then a rename. The
+// temporary name is fixed, so a write that dies before the rename is overwritten by the rerun's.
+const writeAtomic = (file, text) => {
+  mkdirSync(dirname(file), { recursive: true });
+  const tmp = join(dirname(file), `.${basename(file)}.tmp`);
+  writeFileSync(tmp, text);
+  renameSync(tmp, file);
+};
+
 // S-6: the skeleton when plan.md is missing (the first setup step commits before any plan step).
 export const ensurePlan = (repoRoot, config) => {
   const file = join(repoRoot, P.plan);
-  if (!existsSync(file)) {
-    mkdirSync(dirname(file), { recursive: true });
-    writeFileSync(file, planSkeleton(config.run));
-  }
+  if (!existsSync(file)) writeAtomic(file, planSkeleton(config.run));
   return readFileSync(file, "utf8");
 };
 
 const writeStepLog = (repoRoot, config) => {
   const text = ensurePlan(repoRoot, config);
   const next = replaceSection(text, "Step log", stepLogTable(readJsonl(repoRoot, P.runLog), readJsonl(repoRoot, P.handoffs)));
-  if (next !== text) writeFileSync(join(repoRoot, P.plan), next);
+  if (next !== text) writeAtomic(join(repoRoot, P.plan), next);
 };
 
 // ---------- git at the edge ----------
@@ -232,67 +262,33 @@ const runLineErrors = (front, { status, model, usage }) => validate("run-line", 
   ...(usage !== undefined ? { usage } : {}),
 }).map((e) => `the run line would not validate (--model, --usage-file): ${e}`);
 
-// Owner files whose bytes differ from the segment's snapshot (6.10): left in place and out of the commit.
-const changedOwnerFiles = (repoRoot, config) => {
-  if (config.owner_files.length === 0) return [];
-  let snapshot;
-  try {
-    snapshot = JSON.parse(readFileSync(join(repoRoot, P.ownerFiles), "utf8"));
-  } catch {
-    return [];
-  }
-  if (snapshot === null || typeof snapshot !== "object") return [];
-  return config.owner_files.flatMap((o) => {
-    const key = [o, ownerPath(o)].find((k) => Object.hasOwn(snapshot, k));
-    return key !== undefined && snapshot[key] !== ownerFileHash(repoRoot, o) ? [ownerPath(o)] : [];
-  });
-};
+// The owner files the gate's A2 flags (6.10), each with its problem: left in place and out of the
+// commit, and named in the run line's note.
+const flaggedOwnerFiles = (repoRoot, config) => ownerProblems(ownerState(repoRoot, config.owner_files), config.owner_files);
 
-// Each non-blank sidecar line, parsed, in the shape the gate's B1 reads.
-const sidecarEntries = (repoRoot, step) => {
-  const rel = stepPaths(step).decisions;
-  const full = join(repoRoot, rel);
-  if (!existsSync(full)) return { rel, entries: [] };
-  const entries = readFileSync(full, "utf8").split("\n").flatMap((raw, i) => {
-    const line = raw.replace(/\r$/, "");
-    if (line.trim() === "") return [];
-    try {
-      return [{ n: i + 1, value: JSON.parse(line), error: null }];
-    } catch (e) {
-      return [{ n: i + 1, value: null, error: e.message }];
-    }
-  });
-  return { rel, entries };
-};
-
-// The segment of a step, from its dispatch file or its run line (the align repeat rule, S-8).
-const segmentOf = (repoRoot) => {
-  const runLines = readJsonl(repoRoot, P.runLog);
-  return (s) => {
-    try {
-      return readDispatch(repoRoot, s)?.front?.segment ?? runLines.find((l) => l.step_ref === s)?.segment ?? null;
-    } catch {
-      return runLines.find((l) => l.step_ref === s)?.segment ?? null;
-    }
-  };
-};
+// 6.1: handoffs.jsonl is append-only, so its lines beyond HEAD's are the uncommitted ones.
+const uncommittedSkips = (repoRoot) => readJsonl(repoRoot, P.handoffs).slice(committedJsonl(repoRoot, P.handoffs).length);
 
 // ---------- refusals that read the records (10.7) ----------
 
-// An insert-step item the step's report opened that is still `open` (8.5), or that routed.mjs ingest
-// would open now because the review never ingested it.
-const insertStepErrors = (repoRoot, front, { reports }) => {
+// An insert-step item the step's report opened that is still `open` (8.5), or one `routed.mjs ingest`
+// would open now because the review never ingested it (`ingestable` false: the series is renamed under
+// --no-report and never ingested).
+const insertStepErrors = (repoRoot, front, { ingestable }) => {
   const step = front.step_ref;
-  const lines = readJsonl(repoRoot, P.queue);
-  const open = [...queueItems(lines).values()]
+  const open = [...queueItems(readJsonl(repoRoot, P.queue)).values()]
     .filter((it) => it.kind === "insert-step" && it.from === step && it.status === "open")
     .map((it) => `${it.id} insert-step (${it.step_kind} on ${it.step_target}) from ${step} is still open: ${it.text}; accept or reject it with a plan decision in ${step}'s sidecar and routed.mjs decide before the commit (spec 8.5)`);
-  const routed = reports.flatMap((r) => (Array.isArray(r.report?.routed) ? r.report.routed : [])).filter((e) => e !== null && typeof e === "object");
-  const { lines: fresh } = planIngest(lines, { step, kind: front.kind, segment: front.segment, segmentOf: segmentOf(repoRoot), routed, closes: [] }, nowStamp());
-  const unopened = fresh.filter((l) => l.kind === "insert-step")
+  const unopened = (ingestable ? wouldIngest(repoRoot, step).lines : [])
+    .filter((l) => l.status === "open" && l.kind === "insert-step")
     .map((l) => `${step}'s report routes an insert-step (${l.step_kind} on ${l.step_target}) that routed.mjs ingest has not opened: ${l.text}; run routed.mjs ingest --step ${step}, then accept or reject it (spec 8.5)`);
   return [...open, ...unopened];
 };
+
+// A skip line appended by a `--skip` that stopped before its commit: the step's judgement commit would
+// carry it, so the skip is finished first.
+const pendingSkipErrors = (repoRoot, step) => uncommittedSkips(repoRoot).map((l) =>
+  `${P.handoffs} has an uncommitted skip line for ${l.handoff} (segment ${l.segment}), from a skip that stopped before its commit; finish it with commit.mjs --skip ${l.handoff} --reason "..." before committing ${step}`);
 
 // A completed inserted step marks its accepted item addressed (6.5); a rerun finds it addressed.
 const queueItemErrors = (repoRoot, front, status) => {
@@ -355,10 +351,8 @@ export const discardPath = (arg) => String(arg).replace(/^(\.\/)+/, "").replace(
 // Each --discard argument with the changed files it covers; refused when it names a path outside the
 // repository, an owner file, or a path the step's write set, records or experiments_dir admit.
 const planDiscard = (repoRoot, config, front, args) => {
-  const step = front.step_ref;
   const owner = ownerMatcher(config.owner_files);
-  const experiments = `${config.experiments_dir.replace(/\/+$/, "")}/**`;
-  const admitted = (p) => p === P.decideLock || owner(p) || matchesAny(p, front.write_set) || matchesAny(p, judgementSet(step)) || matchesAny(p, [experiments]);
+  const admitted = admissionOf(config, front);
   const changed = changedPaths(repoRoot);
   const plans = args.map((arg) => {
     const path = discardPath(arg);
@@ -405,7 +399,7 @@ const runGate = (repoRoot, front, { status, noReport }) => {
     throw e;
   }
   const sidecar = isOrchestrator(front) || noReport
-    ? b1({ step, front, subagent: false, reports: [], sidecar: sidecarEntries(repoRoot, step), exists: () => true })
+    ? b1({ step, front, subagent: false, reports: [], sidecar: sidecarEntries(repoRoot, step), exists: () => true, status: null })
     : [];
   return { findings: [...findings, ...sidecar].sort(byCheck), changed: ctx.uncommitted().filter((p) => p !== P.decideLock).length };
 };
@@ -425,24 +419,43 @@ const judgementPaths = (repoRoot, config, step) => {
 
 // ---------- a step ----------
 
-const stepOptions = (opts) => {
+// ---------- options: one check, one wording, for the CLI (exit 2) and for callers (CommitError) ----------
+
+// A one-line text option: whitespace runs become one space; given but empty is an error.
+const textOption = (name, v, errors) => {
+  if (v === undefined) return undefined;
+  const t = oneLine(v);
+  if (t === "") errors.push(`--${name} is one line of text, not empty`);
+  return t;
+};
+
+// { value, errors }: a step commit's options, normalized, and every way they are wrong.
+export const stepOptions = (opts) => {
   const { step, status, summary, model, usageFile, note, discard = [], noReport = false } = opts ?? {};
   const errors = [];
-  if (!STEP_ID.test(String(step))) errors.push(`not a step id: ${String(step)}`);
-  if (!STATUSES.includes(status)) errors.push(`status is completed or stopped, not ${String(status)}`);
+  if (!STEP_ID.test(String(step))) errors.push(`--step takes a step id (S07), not ${String(step)}`);
+  if (!STATUSES.includes(status)) errors.push(`--status is completed or stopped, not ${status === undefined ? "missing" : String(status)}`);
   if (noReport && status !== "stopped") errors.push("--no-report goes with --status stopped (a gate-twice raised by B1 or B5, spec 8.6)");
-  const text = (name, v) => {
-    if (v === undefined) return undefined;
-    const s = oneLine(v);
-    if (s === "") errors.push(`${name} is one line of text, not empty`);
-    return s;
+  const value = {
+    step, status, summary: textOption("summary", summary, errors), model: textOption("model", model, errors), usageFile,
+    note: textOption("note", note, errors), discard: [...discard], noReport: Boolean(noReport),
   };
-  const parsed = {
-    step, status, summary: text("summary", summary), model: text("model", model), usageFile, note: text("note", note),
-    discard: [...discard], noReport: Boolean(noReport),
-  };
+  return { value, errors };
+};
+
+// { value, errors } for --skip.
+export const skipOptions = (opts) => {
+  const errors = [];
+  const handoff = opts?.handoff;
+  if (!HANDOFF_ID.test(String(handoff))) errors.push(`--skip takes a handoff id (H7, H7c), not ${String(handoff)}`);
+  const reason = textOption("reason", opts?.reason, errors);
+  if (reason === undefined) errors.push("--skip needs --reason");
+  return { value: { handoff, reason }, errors };
+};
+
+const valid = ({ value, errors }) => {
   refuseIf(errors);
-  return parsed;
+  return value;
 };
 
 // Attaches what the run did before a failure, so the CLI can print it above the error.
@@ -455,11 +468,9 @@ const withProgress = (lines, fn) => {
   }
 };
 
-// 10.7 for one step. `stopAfter` names a phase of PHASES after which the run returns as if it had
-// crashed there ({ stoppedAfter, ... }); tests use it, the CLI never does.
-export const commitStepPhases = (repoRoot, opts, { stopAfter = null } = {}) => {
-  if (stopAfter !== null && !PHASES.includes(stopAfter)) throw new TypeError(`unknown phase ${stopAfter}; the phases are ${PHASES.join(", ")}`);
-  const o = stepOptions(opts);
+// 10.7 for one step, over options `stepOptions` accepted. `stopAfter` names a phase of PHASES after
+// which the run returns as if it had crashed there ({ stoppedAfter, ... }); tests use it, the CLI never does.
+const stepPhases = (repoRoot, o, { stopAfter = null } = {}) => {
   const lines = [];
   return withProgress(lines, () => {
     const config = loadConfig(repoRoot);
@@ -471,6 +482,7 @@ export const commitStepPhases = (repoRoot, opts, { stopAfter = null } = {}) => {
     if (o.noReport && isOrchestrator(front)) {
       throw new CommitError([`--no-report renames a subagent step's report series; ${o.step} is an orchestrator step (${front.kind}) with no report`]);
     }
+    refuseIf(pendingSkipErrors(repoRoot, o.step));
     const usage = readUsage(repoRoot, o.usageFile);
     refuseIf(runLineErrors(front, { status: o.status, model: o.model, usage }));
 
@@ -486,10 +498,9 @@ export const commitStepPhases = (repoRoot, opts, { stopAfter = null } = {}) => {
       }
       refuseIf([
         ...queueItemErrors(repoRoot, front, o.status),
-        ...insertStepErrors(repoRoot, front, { reports: o.noReport ? [] : readReports(repoRoot, o.step) }),
+        ...insertStepErrors(repoRoot, front, { ingestable: !o.noReport }),
       ]);
       const discards = planDiscard(repoRoot, config, front, o.discard);
-      if (o.noReport) lines.push(...renameInvalid(repoRoot, o.step));
       lines.push(...discards.flatMap((d) => d.files.map((f) => restore(repoRoot, f))));
 
       const gate = runGate(repoRoot, front, o);
@@ -498,6 +509,9 @@ export const commitStepPhases = (repoRoot, opts, { stopAfter = null } = {}) => {
         throw new CommitError([`${o.step}: the gate failed (spec 10.6)`], { findings, changed: gate.changed });
       }
       lines.push(formatFindings(findings, gate.changed));
+      // Under --no-report the gate skips B1 and B5 and reads the series nowhere else, so the series is
+      // renamed only once the gate passed, and a refused run leaves it in place.
+      if (o.noReport) lines.push(...renameInvalid(repoRoot, o.step));
 
       if (!indexEmpty(repoRoot)) unstageAll(repoRoot);
       stage(repoRoot, artifactPaths(repoRoot, config, front));
@@ -511,7 +525,7 @@ export const commitStepPhases = (repoRoot, opts, { stopAfter = null } = {}) => {
     } else {
       refuseIf([
         ...queueItemErrors(repoRoot, front, o.status),
-        ...insertStepErrors(repoRoot, front, { reports: readReports(repoRoot, o.step) }),
+        ...insertStepErrors(repoRoot, front, { ingestable: !o.noReport }),
       ]);
     }
 
@@ -528,7 +542,7 @@ export const commitStepPhases = (repoRoot, opts, { stopAfter = null } = {}) => {
       if (s5) return s5;
       const note = runNote({
         note: o.note, noReport: o.noReport, discarded: o.discard.map(discardPath),
-        ownerLeftOut: changedOwnerFiles(repoRoot, config), empty: emptyCommit(repoRoot, artifact),
+        ownerLeftOut: flaggedOwnerFiles(repoRoot, config), empty: emptyCommit(repoRoot, artifact),
       });
       appendRunLine(repoRoot, { step: o.step, commit: artifact, status: o.status, model: o.model, usage, note });
       const s6 = stop("run", { artifact });
@@ -553,6 +567,11 @@ export const commitStepPhases = (repoRoot, opts, { stopAfter = null } = {}) => {
   });
 };
 
+export const commitStepPhases = (repoRoot, opts, { stopAfter = null } = {}) => {
+  if (stopAfter !== null && !PHASES.includes(stopAfter)) throw new TypeError(`unknown phase ${stopAfter}; the phases are ${PHASES.join(", ")}`);
+  return stepPhases(repoRoot, valid(stepOptions(opts)), { stopAfter });
+};
+
 export const commitStep = (repoRoot, opts) => commitStepPhases(repoRoot, opts);
 
 // ---------- a skipped handoff (6.12) ----------
@@ -570,15 +589,8 @@ const conditionOf = (ctx, entry) => {
   };
 };
 
-// 10.7 --skip. `stopAfter` names a phase of SKIP_PHASES, as for commitStepPhases.
-export const skipHandoffPhases = (repoRoot, opts, { stopAfter = null } = {}) => {
-  if (stopAfter !== null && !SKIP_PHASES.includes(stopAfter)) throw new TypeError(`unknown phase ${stopAfter}; the phases are ${SKIP_PHASES.join(", ")}`);
-  const handoff = opts?.handoff;
-  const reason = oneLine(opts?.reason);
-  refuseIf([
-    ...(HANDOFF_ID.test(String(handoff)) ? [] : [`not a handoff id: ${String(handoff)}`]),
-    ...(reason === "" ? ["the reason is one line of text, not empty"] : []),
-  ]);
+// 10.7 --skip over options `skipOptions` accepted; `stopAfter` names a phase of SKIP_PHASES.
+const skipPhases = (repoRoot, { handoff, reason }, { stopAfter = null } = {}) => {
   const lines = [];
   return withProgress(lines, () => {
     const config = loadConfig(repoRoot);
@@ -594,12 +606,10 @@ export const skipHandoffPhases = (repoRoot, opts, { stopAfter = null } = {}) => 
     if (!state) throw new CommitError([`${handoff} is not a handoff of segment ${seg.id}'s intake record; its handoffs are ${states.map((h) => h.id).join(", ") || "none yet"}`]);
     if (state.state === "skipped") throw new CommitError([`${handoff} is already skipped by a committed skip line in ${P.handoffs}`]);
     if (state.state === "executed" || state.step !== null) throw new CommitError([`${handoff} already has a step, ${state.step}; a handoff with a step is never skipped`]);
-    const entry = ctx.intake.record.block.handoffs.find((h) => h.id === handoff);
-    const condition = conditionOf(ctx, entry);
-    if (condition.holds) throw new CommitError([condition.why]);
 
-    // 6.1: handoffs.jsonl is append-only, so its lines beyond HEAD's are the uncommitted ones.
-    const pending = ctx.handoffLines.slice(ctx.committedHandoffLines.length);
+    // Its own uncommitted line first: a skip that stopped after the append already found the condition
+    // false, and the rerun only makes the commit (10.7).
+    const pending = uncommittedSkips(repoRoot);
     const isMine = (l) => l.handoff === handoff && l.segment === seg.id;
     const mine = pending.filter(isMine);
     const stray = [...pending.filter((l) => !isMine(l)), ...mine.slice(1)];
@@ -611,6 +621,8 @@ export const skipHandoffPhases = (repoRoot, opts, { stopAfter = null } = {}) => 
     if (resumed) {
       lines.push(`resuming the skip of ${handoff}: its line is in ${P.handoffs} without a commit (spec 10.7)`);
     } else {
+      const condition = conditionOf(ctx, ctx.intake.record.block.handoffs.find((h) => h.id === handoff));
+      if (condition.holds) throw new CommitError([condition.why]);
       refuseIf(validate("handoff-skip", line).map((e) => `the skip line would not validate: ${e}`));
       appendJsonl(repoRoot, P.handoffs, line);
       lines.push(`appended the skip line of ${handoff} to ${P.handoffs}`);
@@ -632,6 +644,11 @@ export const skipHandoffPhases = (repoRoot, opts, { stopAfter = null } = {}) => 
     lines.push(`skip ${commit} ${subject}`);
     return { commit, line, lines, resumed };
   });
+};
+
+export const skipHandoffPhases = (repoRoot, opts, { stopAfter = null } = {}) => {
+  if (stopAfter !== null && !SKIP_PHASES.includes(stopAfter)) throw new TypeError(`unknown phase ${stopAfter}; the phases are ${SKIP_PHASES.join(", ")}`);
+  return skipPhases(repoRoot, valid(skipOptions(opts)), { stopAfter });
 };
 
 export const skipHandoff = (repoRoot, opts) => skipHandoffPhases(repoRoot, opts);
@@ -664,39 +681,24 @@ const parse = (argv) => {
   const mode = values.step !== undefined ? "step" : "skip";
   const stray = Object.keys(values).find((k) => !MODE_OPTIONS[mode].includes(k));
   if (stray) throw new UsageError(`--${stray} does not go with --${mode}`);
-  const text = (name) => {
-    if (values[name] === undefined) return undefined;
-    const v = oneLine(values[name]);
-    if (v === "") throw new UsageError(`--${name} is one line of text, not empty`);
-    return v;
-  };
-  if (mode === "skip") {
-    if (!HANDOFF_ID.test(values.skip)) throw new UsageError(`--skip takes a handoff id (H7, H7c), not ${values.skip}`);
-    const reason = text("reason");
-    if (reason === undefined) throw new UsageError("--skip needs --reason");
-    return { mode, opts: { handoff: values.skip, reason } };
-  }
-  if (!STEP_ID.test(values.step)) throw new UsageError(`--step takes a step id, not ${values.step}`);
-  if (values.status === undefined) throw new UsageError("--step needs --status completed|stopped");
-  if (!STATUSES.includes(values.status)) throw new UsageError(`--status is completed or stopped, not ${values.status}`);
-  if (values["no-report"] && values.status !== "stopped") throw new UsageError("--no-report goes with --status stopped (a gate-twice raised by B1 or B5, spec 8.6)");
-  return {
-    mode,
-    opts: {
-      step: values.step, status: values.status, summary: text("summary"), model: text("model"), usageFile: values["usage-file"],
-      note: text("note"), discard: values.discard ?? [], noReport: Boolean(values["no-report"]),
-    },
-  };
+  const { value, errors } = mode === "skip"
+    ? skipOptions({ handoff: values.skip, reason: values.reason })
+    : stepOptions({
+      step: values.step, status: values.status, summary: values.summary, model: values.model, usageFile: values["usage-file"],
+      note: values.note, discard: values.discard ?? [], noReport: Boolean(values["no-report"]),
+    });
+  if (errors.length > 0) throw new UsageError(errors.join("; "));
+  return { mode, opts: value };
 };
 
 const runStep = (repoRoot, opts, out) => {
-  const r = commitStep(repoRoot, opts);
+  const r = stepPhases(repoRoot, opts);
   r.lines.forEach((l) => out.log(l));
   out.log(`commit: ${opts.step} committed ${opts.status}, artifact ${short(r.artifact)}, judgement ${short(r.judgement)}`);
 };
 
 const runSkip = (repoRoot, opts, out) => {
-  const r = skipHandoff(repoRoot, opts);
+  const r = skipPhases(repoRoot, opts);
   r.lines.forEach((l) => out.log(l));
   out.log(`commit: ${opts.handoff} skipped, commit ${short(r.commit)}`);
 };

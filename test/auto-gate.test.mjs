@@ -291,6 +291,19 @@ test("B1 starts the series again after a redispatch", () => {
   assert.deepEqual(of(gate(dir), "B1"), []);
 });
 
+test("B1 requires a completed step's latest report to say completed, except under named checks", () => {
+  const dir = touched();
+  writeReport(dir, "S02", touchReport({ status: "stopped", stop: STOP }));
+  const fs = of(gate(dir), "B1");
+  assert.equal(fs.length, 1, show(fs));
+  assert.match(fs[0].message, /^hsdd\/auto\/steps\/S02\.json: status "stopped"; a step committed completed needs the latest report/);
+  assert.deepEqual(of(gate(dir, "S02", { status: "stopped" }), "B1"), [], "a stopped step may have a stopped report");
+  assert.deepEqual(gate(dir, "S02", { checks: ["B1"] }), [], "named checks run whatever the status (8.3 checks a stopped report's read)");
+  addLaunch(dir, "S02", "resume-answer");
+  writeReport(dir, "S02", touchReport({ artifacts: [] }), 1);
+  assert.deepEqual(of(gate(dir), "B1"), [], "the latest report decides");
+});
+
 test("B1 fails an unparsable or invalid sidecar, naming the file", () => {
   const dir = touched();
   writeSidecar(dir, "S02", [decision(), "{oops"]);

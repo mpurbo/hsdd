@@ -16,7 +16,7 @@ import { STAMP_RE, nowStamp, stampMs } from "./lib/time.mjs";
 import { KINDS, RAISED_WHEN, neverPatterns } from "./lib/kinds.mjs";
 import { P, expandHome, judgementSet, matchesAny, ownerFileHash, ownerMatcher, ownerPath, reportPath, stepPaths } from "./lib/paths.mjs";
 import { git, headSha } from "./lib/git.mjs";
-import { WARN_BYTES, dispatchErrors, idNum, readReports } from "./lib/records.mjs";
+import { WARN_BYTES, dispatchErrors, idNum, readReports, sidecarEntries } from "./lib/records.mjs";
 import { CONTRACT_REF, leafParentsOf } from "./lib/tree.mjs";
 import { decisionRuleErrors } from "./decide.mjs";
 import { validateLedger } from "./ledger.mjs";
@@ -89,8 +89,8 @@ const textOf = (repoRoot, rel) => {
 };
 
 // The owner-file snapshot and the current hash of each listed owner file (lib/paths.mjs ownerFileHash,
-// the rule state.mjs snapshot records with).
-const ownerState = (repoRoot, ownerFiles) => {
+// the rule state.mjs snapshot records with). commit.mjs reads it too, to name A2's files in its note.
+export const ownerState = (repoRoot, ownerFiles) => {
   const file = join(repoRoot, P.ownerFiles);
   if (!existsSync(file)) return { present: false };
   let snapshot;
@@ -142,51 +142,54 @@ const headState = (repoRoot) => ({
   staged: git(repoRoot, ["diff", "--cached", "--name-only", "-z"]).split("\0").filter(Boolean),
 });
 
-// Each non-blank line of the step's sidecar, parsed: { n, value, error }.
-const sidecarOf = (repoRoot, step) => {
-  const rel = stepPaths(step).decisions;
-  const full = join(repoRoot, rel);
-  if (!isFile(full)) return { rel, entries: [] };
-  const entries = readFileSync(full, "utf8").split("\n").flatMap((raw, i) => {
-    const line = raw.replace(/\r$/, "");
-    if (line.trim() === "") return [];
-    try {
-      return [{ n: i + 1, value: JSON.parse(line), error: null }];
-    } catch (e) {
-      return [{ n: i + 1, value: null, error: e.message }];
-    }
-  });
-  return { rel, entries };
-};
-
 // ---------- A: the step's changes ----------
 
 // A1 (decision B-6): the write set, the judgement set (which holds the step's report series and its
-// sidecar), experiments_dir and owner_files admit a path; only a path none admits is checked against
-// the never list, which 7.3 states for a subagent step.
-export const a1 = ({ changed, writeSet, step, experimentsDir, owner, never, subagent }) => {
+// sidecar), experiments_dir and owner_files admit a path (the decide lock is ignored); only a path none
+// admits is checked against the never list, which 7.3 states for a subagent step.
+export const a1Admits = ({ writeSet, step, experimentsDir, owner }) => {
   const admitted = [...judgementSet(step), `${experimentsDir}/**`];
-  return changed
-    .filter((p) => p !== P.decideLock && !matchesAny(p, writeSet) && !matchesAny(p, admitted) && !owner(p))
-    .map((p) => (subagent && matchesAny(p, never)
-      ? error("A1", `${p} is on the never list (spec 7.3): forbidden for a subagent step`, { file: p })
-      : error("A1", `${p} is outside the write set`, { file: p })));
+  return (p) => p === P.decideLock || matchesAny(p, writeSet) || matchesAny(p, admitted) || owner(p);
 };
+
+// A1's admission for a step's dispatch file under a run configuration: the one predicate the gate
+// checks and commit.mjs's --discard respects.
+export const admissionOf = (config, front) => a1Admits({
+  writeSet: front.write_set,
+  step: front.step_ref,
+  experimentsDir: config.experiments_dir.replace(/\/+$/, ""),
+  owner: ownerMatcher(config.owner_files),
+});
+
+export const a1 = ({ changed, admits, never, subagent }) => changed
+  .filter((p) => !admits(p))
+  .map((p) => (subagent && matchesAny(p, never)
+    ? error("A1", `${p} is on the never list (spec 7.3): forbidden for a subagent step`, { file: p })
+    : error("A1", `${p} is outside the write set`, { file: p })));
+
+// A2's verdict per listed owner file (a plain path, lib/config.mjs), against its snapshot entry keyed as
+// listed: [{ file, problem }] for each file the snapshot does not vouch for, where problem is one of
+// `no snapshot`, `unreadable snapshot`, `no hash`, `is gone`, `now exists`, `changed`. A missing or
+// unreadable snapshot vouches for none of them.
+export const ownerProblems = (state, ownerFiles) => ownerFiles.flatMap((o) => {
+  const file = ownerPath(o);
+  if (!state.present) return [{ file, problem: "no snapshot" }];
+  if (state.error) return [{ file, problem: "unreadable snapshot" }];
+  const key = [o, file].find((k) => Object.hasOwn(state.snapshot, k));
+  if (key === undefined) return [{ file, problem: "no hash" }];
+  const was = state.snapshot[key];
+  const now = state.hashes.get(o);
+  return now === was ? [] : [{ file, problem: now === null ? "is gone" : was === null ? "now exists" : "changed" }];
+});
 
 export const a2 = (state, ownerFiles, level) => {
   if (!state.present) {
     return ownerFiles.length === 0 ? [] : [finding("A2", level, `${P.ownerFiles} does not exist, so the owner files (${names(ownerFiles)}) cannot be checked; the segment's setup step takes the snapshot (spec 6.10)`)];
   }
   if (state.error) return [finding("A2", level, `${P.ownerFiles}: ${state.error}`, { file: P.ownerFiles })];
-  // Each listed owner file (a plain path, lib/config.mjs) against its snapshot entry, keyed as listed.
-  return ownerFiles.flatMap((o) => {
-    const file = ownerPath(o);
-    const key = [o, file].find((k) => Object.hasOwn(state.snapshot, k));
-    if (key === undefined) return [finding("A2", level, `owner file ${file} has no hash in ${P.ownerFiles}; the segment's setup step takes the snapshot`, { file })];
-    const was = state.snapshot[key];
-    const now = state.hashes.get(o);
-    return now === was ? [] : [finding("A2", level, `owner file ${file} ${now === null ? "is gone" : was === null ? "now exists" : "changed"} since the snapshot in ${P.ownerFiles}; only the owner restores it`, { file })];
-  });
+  return ownerProblems(state, ownerFiles).map(({ file, problem }) => (problem === "no hash"
+    ? finding("A2", level, `owner file ${file} has no hash in ${P.ownerFiles}; the segment's setup step takes the snapshot`, { file })
+    : finding("A2", level, `owner file ${file} ${problem} since the snapshot in ${P.ownerFiles}; only the owner restores it`, { file })));
 };
 
 // A3's level is the caller's: a warning for a stopped setup step (which may stop before it copies), else an error.
@@ -265,7 +268,9 @@ export const reportRuleErrors = (r, front, step) => {
 
 // B1. `reports` is readReports' result; `exists` tells whether a repository path exists; `refusals`
 // are the closes entries routed.mjs ingest would refuse (closeRefusals), so a stopped step fails here too.
-export const b1 = ({ step, front, subagent, reports, sidecar, exists, refusals = [] }) => {
+// With `status` "completed" (the step gate of a completed step), the latest report of the current
+// series must say completed too; null (named checks, which run whatever the status) skips that rule.
+export const b1 = ({ step, front, subagent, reports, sidecar, exists, refusals = [], status = null }) => {
   const out = [];
   const add = (file, message) => out.push(error("B1", message, file ? { file } : {}));
   if (subagent) {
@@ -281,6 +286,10 @@ export const b1 = ({ step, front, subagent, reports, sidecar, exists, refusals =
         ...report.artifacts.filter((a) => !exists(a)).map((a) => `artifacts names ${a}, which does not exist`),
       ];
       errs.forEach((m) => add(path, `${path}: ${m}`));
+    }
+    const latest = reports.find((r) => r.path === expected.at(-1));
+    if (status === "completed" && latest?.report && latest.report.status !== "completed") {
+      add(latest.path, `${latest.path}: status ${JSON.stringify(latest.report.status)}; a step committed completed needs the latest report of its current series to say completed`);
     }
     refusals.forEach((m) => add(null, m));
   }
@@ -535,7 +544,7 @@ const segmentOfStep = (ctx) => (s) => ctx.dispatches.get(s)?.front?.segment ?? c
 // The step's dispatch file and lazy readers for everything else the step gate reads. `series` is the
 // expected report series (one entry per launch, `missing` when its file is absent), which B3 to B5 and
 // the close refusals read; B1 alone also looks at series files no launch accounts for.
-const stepView = (ctx, step, { status, noReport }) => {
+const stepView = (ctx, step, { status, noReport, named }) => {
   const dispatchPath = stepPaths(step).dispatch;
   const entry = ctx.dispatches.get(step);
   if (entry === undefined) throw new GateError([`${step} has no dispatch file (${dispatchPath}); the step gate reads its kind, target, write set and head there`]);
@@ -554,6 +563,7 @@ const stepView = (ctx, step, { status, noReport }) => {
     front,
     status,
     noReport,
+    named,
     subagent: !KINDS[entry.front.kind].orchestrator,
     dispatchPath,
     readCheck: entry.readCheck,
@@ -561,7 +571,7 @@ const stepView = (ctx, step, { status, noReport }) => {
     changed: memo(() => ctx.uncommitted().filter((p) => p !== P.decideLock)),
     reports,
     series,
-    sidecar: memo(() => sidecarOf(repoRoot, step)),
+    sidecar: memo(() => sidecarEntries(repoRoot, step)),
     refusals: memo(() => closeRefusals(ctx.queueLines, entriesOf(series(), "closes"), { step, front, segmentOf: segmentOfStep(ctx), now })),
   };
 };
@@ -569,10 +579,7 @@ const stepView = (ctx, step, { status, noReport }) => {
 const STEP_CHECKS = {
   A1: (v) => a1({
     changed: v.changed(),
-    writeSet: v.front.write_set,
-    step: v.step,
-    experimentsDir: v.ctx.config.experiments_dir.replace(/\/+$/, ""),
-    owner: ownerMatcher(v.ctx.config.owner_files),
+    admits: admissionOf(v.ctx.config, v.front),
     never: neverPatterns(v.ctx.config, v.ctx.layout),
     subagent: v.subagent,
   }),
@@ -585,6 +592,7 @@ const STEP_CHECKS = {
   B1: (v) => b1({
     step: v.step, front: v.front, subagent: v.subagent, reports: v.subagent ? v.reports() : [], sidecar: v.sidecar(),
     exists: (p) => existsSync(join(v.ctx.repoRoot, p)), refusals: v.subagent ? v.refusals() : [],
+    status: v.named ? null : v.status,
   }),
   B2: (v) => b2({ sidecar: v.sidecar(), renderedAt: v.front.rendered_at, now: v.now }),
   B3: (v) => {
@@ -617,7 +625,7 @@ const checkArguments = (status, checks) => {
 // the final scope, which holds every error the step scope would, and it runs F1 to F6.
 export const stepGate = (ctx, step, { status = "completed", checks, noReport = false } = {}) => {
   checkArguments(status, checks);
-  const view = stepView(ctx, step, { status, noReport });
+  const view = stepView(ctx, step, { status, noReport, named: checks !== undefined });
   const ids = new Set(checkList(view, checks));
   const v = { ...view, ids };
   const report = v.front.kind === "report";

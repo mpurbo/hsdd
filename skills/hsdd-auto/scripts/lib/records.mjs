@@ -1,7 +1,7 @@
 // JSONL records, dispatch files, report series, step ids and judgement-commit detection
 // (spec 6.1, 6.4, 6.6, 8.6; decision A-4). Reads are pure over the files; the only writers
 // here are appendJsonl and writeDispatch.
-import { appendFileSync, existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
+import { appendFileSync, existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { splitFrontMatter, stringifyFrontMatter } from "./yaml.mjs";
 import { validate } from "./schema.mjs";
@@ -161,6 +161,25 @@ export const readReports = (repoRoot, step) =>
   });
 
 export const readSidecar = (repoRoot, step) => readJsonl(repoRoot, stepPaths(step).decisions);
+
+// Each non-blank line of the step's sidecar, parsed without throwing: { rel, entries: [{ n, value, error }] }
+// (n the 1-based line number). The gate's B1 reads it, and commit.mjs checks the same lines before an
+// artifact commit when the gate leaves B1 out.
+export const sidecarEntries = (repoRoot, step) => {
+  const rel = stepPaths(step).decisions;
+  const full = join(repoRoot, rel);
+  if (!existsSync(full) || !statSync(full).isFile()) return { rel, entries: [] };
+  const entries = readFileSync(full, "utf8").split("\n").flatMap((raw, i) => {
+    const line = raw.replace(/\r$/, "");
+    if (line.trim() === "") return [];
+    try {
+      return [{ n: i + 1, value: JSON.parse(line), error: null }];
+    } catch (e) {
+      return [{ n: i + 1, value: null, error: e.message }];
+    }
+  });
+  return { rel, entries };
+};
 
 // ---------- the judgement commit (A-4) ----------
 

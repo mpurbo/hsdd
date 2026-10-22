@@ -167,8 +167,18 @@ test("a stopped step that changed an owner file is committed without it, and its
   assert.deepEqual(filesOf(dir, r.artifact), [API]);
   assert.ok(!filesOf(dir, r.judgement).includes(OWNER));
   assert.equal(read(dir, OWNER), "changed by the step\n", "never restored by the run");
-  assert.match(runLine(dir, "S02").note, /notes\/owner\.md/);
+  assert.equal(runLine(dir, "S02").note, "owner file flagged by A2, left in place and out of the commit: notes/owner.md (changed)");
   assert.match(gitIn(dir, "log", "-1", "--format=%s", r.artifact), / \(stopped\)$/);
+});
+
+test("the note names every owner file A2 flags, a missing snapshot included", () => {
+  const config = cfg({ owner_files: [OWNER, "notes/other.md"] });
+  const dir = begun({ config, files: { [OWNER]: "mine\n" } });
+  open(dir, "spec-touch", "shop.api");
+  edit(dir, API, ...TOUCH);
+  writeReport(dir, "S02", touchReport({ status: "stopped", stop: STOP }));
+  commitOf(dir, { status: "stopped" });
+  assert.equal(runLine(dir, "S02").note, "owner files flagged by A2, left in place and out of the commit: notes/owner.md (no snapshot), notes/other.md (no snapshot)");
 });
 
 test("stages a deletion inside the write set, and a removed STOP.md in the judgement commit", () => {
@@ -184,6 +194,20 @@ test("stages a deletion inside the write set, and a removed STOP.md in the judge
   assert.deepEqual(nameStatus(r.artifact), [`D\t${SCRATCH}`, `M\t${API}`]);
   assert.ok(nameStatus(r.judgement).includes(`D\t${P.stop}`), nameStatus(r.judgement).join(", "));
   assert.equal(status(dir), "");
+});
+
+test("a completed commit over a stopped report is refused", () => {
+  const dir = touched();
+  writeReport(dir, "S02", touchReport({ status: "stopped", stop: STOP }));
+  const head = headFull(dir);
+  refused(run(dir, "commit.mjs", ["--step", "S02", "--status", "completed"]), /^ERROR B1 hsdd\/auto\/steps\/S02\.json: status "stopped"; a step committed completed/m);
+  assert.equal(headFull(dir), head);
+  assert.equal(staged(dir), "");
+  assert.equal(runLine(dir, "S02"), undefined);
+  addLaunch(dir, "S02", "resume-answer");
+  writeReport(dir, "S02", touchReport({ artifacts: [] }), 1);
+  commitOf(dir);
+  assert.equal(runLine(dir, "S02").status, "completed", "the latest report decides");
 });
 
 test("refuses an out-of-set change and commits nothing", () => {
@@ -233,6 +257,23 @@ test("subjects, summaries and trailers", () => {
   writeReport(silent, "S02", touchReport({ notes: [] }));
   const s = commitOf(silent);
   assert.equal(gitIn(silent, "log", "-1", "--format=%s", s.artifact), "hsdd: S02 spec-touch shop.api: no summary");
+
+  const resumed = touched();
+  writeReport(resumed, "S02", touchReport({ notes: ["the first launch"] }));
+  addLaunch(resumed, "S02", "resume-finding");
+  writeReport(resumed, "S02", touchReport({ artifacts: [], notes: ["after the resume"] }), 1);
+  const l = commitOf(resumed);
+  assert.equal(gitIn(resumed, "log", "-1", "--format=%s", l.artifact), "hsdd: S02 spec-touch shop.api: after the resume", "the latest report, the one B5 reads");
+});
+
+test("a summary ending in (stopped) never makes a completed subject read as stopped", () => {
+  assert.equal(artifactSubject({ artifact: "hsdd" }, { step_ref: "S07", kind: "adr", target: "ADR-003" }, "fixed it (stopped) (stopped)", "completed"), "hsdd: S07 adr ADR-003: fixed it");
+  assert.equal(artifactSubject({ artifact: "hsdd" }, { step_ref: "S07", kind: "adr", target: "ADR-003" }, "(stopped)", "completed"), "hsdd: S07 adr ADR-003: no summary");
+  const dir = touched();
+  const first = commitStepPhases(dir, { step: "S02", status: "completed", summary: "fixed it (stopped)" }, { stopAfter: "artifact" });
+  assert.equal(gitIn(dir, "log", "-1", "--format=%s", first.artifact), "hsdd: S02 spec-touch shop.api: fixed it");
+  const r = commitOf(dir);
+  assert.equal(r.artifact, first.artifact, "the rerun resumes as completed");
 });
 
 // ---------- resume ----------
@@ -288,6 +329,16 @@ test("commit rerun after a crash at each point", () => {
     assert.equal(status(dir), "", `a clean tree after ${phase}`);
     assert.throws(() => commitStep(dir, opts), /already committed|judgement commit/, "a third run refuses");
   }
+});
+
+test("plan.md is written through a temporary file that a rerun replaces", () => {
+  const dir = touched();
+  commitStepPhases(dir, { step: "S02", status: "completed" }, { stopAfter: "run" });
+  put(dir, "hsdd/auto/.plan.md.tmp", "half a plan from a write that died\n");
+  commitOf(dir);
+  assert.equal(existsSync(join(dir, "hsdd/auto/.plan.md.tmp")), false);
+  assert.match(read(dir, P.plan), /\| S02 \|/);
+  assert.equal(status(dir), "");
 });
 
 test("unstages a dirty index at the dispatch head", () => {
@@ -434,6 +485,12 @@ test("--no-report skips B1 and B5 and renames the series", () => {
   const r1 = run(dir, "commit.mjs", ["--step", "S02", "--status", "stopped"]);
   refused(r1, /^ERROR B5 /m);
 
+  put(dir, "src/app.js", "x\n");
+  assert.throws(() => commitOf(dir, { status: "stopped", noReport: true }), (e) => e.findings?.some((f) => f.id === "A1"));
+  assert.equal(existsSync(join(dir, reportPath("S02", 0))), true, "a refused run leaves the series in place");
+  assert.equal(existsSync(join(dir, "hsdd/auto/steps/S02.invalid1.json")), false);
+  rmSync(join(dir, "src/app.js"));
+
   const r = commitOf(dir, { status: "stopped", noReport: true });
   assert.equal(existsSync(join(dir, reportPath("S02", 0))), false);
   assert.equal(existsSync(join(dir, reportPath("S02", 1))), false);
@@ -524,6 +581,25 @@ test("the CLI prints the gate, both commits and a summary, and exits 2 on a usag
   }
 });
 
+test("the CLI and callers get the same option check and wording", () => {
+  const dir = touched();
+  for (const [args, opts] of [
+    [["--step", "S02", "--status", "done"], { step: "S02", status: "done" }],
+    [["--step", "S02", "--status", "completed", "--no-report"], { step: "S02", status: "completed", noReport: true }],
+    [["--step", "S02", "--status", "completed", "--note", " "], { step: "S02", status: "completed", note: " " }],
+  ]) {
+    let message = null;
+    try { commitStep(dir, opts); } catch (e) { message = e.errors.join("; "); }
+    assert.ok(message, JSON.stringify(opts));
+    const r = run(dir, "commit.mjs", args);
+    assert.equal(r.code, 2);
+    assert.equal(r.stdout.split("\n")[0], `usage error: ${message}`);
+  }
+  let skipMessage = null;
+  try { skipHandoff(dir, { handoff: "bad", reason: "x" }); } catch (e) { skipMessage = e.errors.join("; "); }
+  assert.equal(run(dir, "commit.mjs", ["--skip", "bad", "--reason", "x"]).stdout.split("\n")[0], `usage error: ${skipMessage}`);
+});
+
 test("--no-report refuses an orchestrator step", () => {
   const dir = begun();
   open(dir, "plan", SEG);
@@ -593,6 +669,11 @@ test("stepLogTable orders rows by time, a run line before a skip in the same sec
   assert.deepEqual(t.slice(2).map((r) => r.split(" | ")[0].replace("| ", "") + (r.includes("skip") ? r.split(" | ")[4] : "")), ["S01", "S02", "-H1", "-H2", "S03"]);
   assert.equal(t[2], `| S01 | ${SEG} | plan | none | ${SEG} | completed | 0123456 |`);
   assert.equal(stepLogTable([], []).split("\n").length, 2, "a header and its rule");
+  const skewed = stepLogTable(
+    [line("S01", "2026-10-22T10:00:00Z"), line("S02", "2026-10-22T09:00:00Z"), line("S03", "2026-10-22T10:10:00Z")],
+    [skip("H1", "2026-10-22T10:05:00Z"), skip("H2", "2026-10-22T08:00:00Z")],
+  ).split("\n").slice(2).map((r) => r.split(" | ")[0].replace("| ", "") + (r.includes("skip") ? r.split(" | ")[4] : ""));
+  assert.deepEqual(skewed, ["S01", "S02", "-H1", "-H2", "S03"], "each file keeps its order; a skewed clock moves no run line");
 });
 
 test("replaceSection rewrites one section whole and keeps the rest", () => {
@@ -676,6 +757,27 @@ test("--skip refuses when the condition holds and resumes from an uncommitted sk
 
   refused(run(dir, "commit.mjs", ["--skip", "H2a", "--reason", "again"]), /H2a.*skipped/);
   assert.equal(readJsonl(dir, P.handoffs).length, 1);
+});
+
+test("--skip finishes its own uncommitted line without checking the condition again", () => {
+  const dir = handedOff({ moveApp: true });
+  skipHandoffPhases(dir, { handoff: "H2a", reason: "nothing cites v1" }, { stopAfter: "append" });
+  const app = read(dir, APP);
+  put(dir, APP, app.replace("order-api@v2", "order-api@v1"));
+  const r = skipHandoff(dir, { handoff: "H2a", reason: "nothing cites v1" });
+  assert.equal(r.resumed, true);
+  assert.deepEqual(filesOf(dir, r.commit), [P.handoffs, P.plan].sort());
+  put(dir, APP, app);
+  assert.equal(status(dir), "");
+});
+
+test("a step commit refuses while an uncommitted skip line exists, naming it", () => {
+  const dir = touched();
+  appendJsonl(dir, P.handoffs, { segment: SEG, handoff: "H4", at: nowStamp(), status: "skipped", reason: "r" });
+  const head = headFull(dir);
+  assert.throws(() => commitOf(dir), /uncommitted skip line for H4/);
+  refused(run(dir, "commit.mjs", ["--step", "S02", "--status", "completed"]), /H4/);
+  assert.equal(headFull(dir), head);
 });
 
 test("--skip crash points each rerun to one skip line and one commit", () => {
