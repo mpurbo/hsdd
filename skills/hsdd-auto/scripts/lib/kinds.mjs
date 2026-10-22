@@ -150,7 +150,8 @@ export const writeSet = (kind, target, { layout, config, segmentId, record = nul
   }
 };
 
-const dirForms = (p) => {
+// A path entry as never-list globs: a directory entry also as `{dir}/`, so it covers what is below it.
+export const dirForms = (p) => {
   const bare = p.replace(/^\.\//, "");
   if (bare.endsWith("/") || /[*]/.test(bare)) return [bare];
   return [bare, `${bare}/`];

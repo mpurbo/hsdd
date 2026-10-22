@@ -1,7 +1,7 @@
 // The ledger and the run log (spec 10.5, appendix A.2 and A.3): appends the step's sidecar and
 // run line, validates both, prints the next decision id. Usage: see USAGE.
 import { readFileSync, realpathSync } from "node:fs";
-import { join } from "node:path";
+import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
 import { validate } from "./lib/schema.mjs";
@@ -265,7 +265,7 @@ const commands = {
     let usage;
     if (values["usage-file"] !== undefined) {
       try {
-        usage = JSON.parse(readFileSync(join(repoRoot, values["usage-file"]), "utf8"));
+        usage = JSON.parse(readFileSync(resolve(repoRoot, values["usage-file"]), "utf8"));
       } catch (e) {
         throw new LedgerError([`--usage-file ${values["usage-file"]}: ${e.message}`]);
       }

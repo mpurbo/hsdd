@@ -65,6 +65,23 @@ test("loadConfig code rules", () => {
   assert.match(errorsOf({ sources: { normative: [{ path: "ref/new.md", cite: "Spec", version: "v1" }], baseline: [{ path: "ref/old.md", cite: "Spec" }] } }), /ref\/old\.md/);
   assert.equal(errorsOf({ sources: { normative: [{ path: "ref/new.md", cite: "Spec" }] } }), null);
 });
+test("read_only covers every source path", () => {
+  const sources = {
+    normative: [{ path: "ref/spec.md", cite: "Spec", version: "v2" }],
+    informative: [{ path: "docs/guide.md", cite: "Guide", version: "v2" }],
+    baseline: [{ path: "./old/spec-v1.md", cite: "Spec", version: "v1" }],
+  };
+  // The exact path, a directory entry with or without its trailing slash, and a glob the gate also reads.
+  assert.equal(errorsOf({ sources, read_only: ["ref/", "docs/guide.md", "old"] }), null);
+  assert.equal(errorsOf({ sources, read_only: ["ref/**", "docs/*.md", "./old/"] }), null);
+  const msg = errorsOf({ sources, read_only: ["ref/", "refs/old/"] });
+  assert.match(msg, /read_only: sources\.informative path docs\/guide\.md is not covered by any read_only entry/);
+  assert.match(msg, /read_only: sources\.baseline path \.\/old\/spec-v1\.md is not covered/);
+  assert.doesNotMatch(msg, /ref\/spec\.md/);
+  // A directory entry covers what is inside it, never a sibling that shares its prefix.
+  assert.match(errorsOf({ sources: { normative: [{ path: "ref-2/spec.md", cite: "Spec" }] }, read_only: ["ref"] }), /ref-2\/spec\.md is not covered/);
+  assert.match(errorsOf({ sources: { normative: [{ path: "ref/spec.md", cite: "Spec" }] }, read_only: [] }), /ref\/spec\.md is not covered/);
+});
 test("owner_files entries are plain file paths", () => {
   for (const entry of ["notes/", "notes/*.md", "notes/a?.md", "notes/[ab].md"]) {
     const msg = errorsOf({ owner_files: ["CLAUDE.md", entry] });

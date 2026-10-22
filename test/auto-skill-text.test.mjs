@@ -268,7 +268,40 @@ test("SKILL.md states the waiting rule and the binding controller rules", () => 
     /outside the repository/i,
     /--unattended \{step\}/,
     /\*\*\{segment id\}\.\*\*/,
+    // B-25: enforcement the setup installs starts with the next host session; the run goes on.
+    /host enforcement \(the deny rules, the hooks, the `hsdd-auto-step` agent type\) starts with the next host session: record a `setup` decision/,
+    /do not stop/,
+    /default agent type when the adapter is not installed, for the rest of the host session whose setup installed it/,
+    /whenever the host rejects `hsdd-auto-step`/,
+    /next-host-session decision by id/,
+    // The fallback timer is cancelled on hand-back; liveness never comes from a probe message.
+    /Cancel it when the hand-back arrives, and ignore a wake-up whose launch has already handed back/,
+    /never send it a probe message/,
+    // --no-report and --discard hold for every stopped commit of a step that reached gate-twice.
+    /Every stopped commit of such a step, whichever branch, takes the flags its last failure needs/,
+    // A rerun's status.
+    /`\{status\}` is `stopped` when `HEAD`'s artifact subject ends in ` \(stopped\)` or `STOP\.md` names the step, else `completed`/,
+    // 9.3: a moved source joins read_only.
+    /the new path joins `read_only` when no entry covers it/,
   ]) assert.match(text, re);
+});
+
+test("every ending runs state.mjs done and puts its output in the final message", () => {
+  const text = textOf(SKILL);
+  const para = /\*\*Every ending\.\*\*([\s\S]*?)\n\n/.exec(text)?.[1].replace(/\s+/g, " ");
+  assert.ok(para, "an Every ending paragraph");
+  for (const part of ["`done`", "case A", "`blocked`", "hard stop", "owner's request to stop",
+    "`node hsdd/scripts/auto/state.mjs done`", "final message", "`DONE {segment id}`", "`STOPPED {segment id}: hsdd/judgement/STOP.md`"]) {
+    assert.ok(para.includes(part), `the Every ending paragraph names ${part}`);
+  }
+  // Each place a session ends sends the orchestrator there: case A, blocked, the hard stops, an owner's stop.
+  const flat = text.replace(/\s+/g, " ");
+  for (const re of [
+    /tree\. End \(Every ending\), showing the question/,
+    /`blocked`: the run is stopped\. End \(Every ending\)/,
+    /each ends the run \(Every ending\)/,
+    /commit the plan step and end \(Every ending\)/,
+  ]) assert.match(flat, re);
 });
 
 test("no em dash and no banned phrase in SKILL.md and the command", () => {

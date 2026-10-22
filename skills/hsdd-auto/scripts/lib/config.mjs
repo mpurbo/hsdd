@@ -3,8 +3,8 @@ import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { parseYaml, YamlError } from "./yaml.mjs";
 import { validate } from "./schema.mjs";
-import { P } from "./paths.mjs";
-import { STOPPABLE } from "./kinds.mjs";
+import { P, matchesAny } from "./paths.mjs";
+import { STOPPABLE, dirForms } from "./kinds.mjs";
 
 export class ConfigError extends Error {
   constructor(errors) {
@@ -37,6 +37,16 @@ const codeRules = (raw) => {
   // owner_files entries are plain file paths, hashed one by one (6.10): no directory, no glob.
   for (const entry of raw.owner_files ?? []) {
     if (/\/$/.test(entry) || /[*?[]/.test(entry)) errors.push(`owner_files: ${entry} is not a plain file path (no trailing /, no *, ? or [); list each owner file by its path`);
+  }
+  // 5.1: read_only always includes every source path, read as the never list reads it (7.3): the exact
+  // path, a directory entry that contains it, or a glob that matches it.
+  const readOnly = (raw.read_only ?? []).flatMap(dirForms);
+  for (const kind of SOURCE_KINDS) {
+    for (const src of raw.sources[kind] ?? []) {
+      if (!matchesAny(src.path.replace(/^\.\//, ""), readOnly)) {
+        errors.push(`read_only: sources.${kind} path ${src.path} is not covered by any read_only entry (read_only always includes every source path)`);
+      }
+    }
   }
   if ((raw.sources.baseline ?? []).length > 0) {
     for (const kind of SOURCE_KINDS) {

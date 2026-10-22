@@ -223,7 +223,13 @@ dispatch path; the step id is the segment's `first_step`. Then:
    `adapter.mjs install --stop-hook` for the optional SubagentStop hook),
    then `node hsdd/scripts/auto/adapter.mjs check`. A check failure is a
    `setup` decision: fix it, or proceed with that rule as an instruction
-   only. On another host skip both: the rules stay instructions in every
+   only. When `install` reports elements added
+   (`adapter: {n} element(s) added`, `n` above 0), host enforcement (the
+   deny rules, the hooks, the `hsdd-auto-step` agent type) starts with the
+   next host session: record a `setup` decision saying so, and that the
+   rules are prompt instructions until then; do not stop. For the rest of
+   this host session launch with the default agent type (On Claude Code).
+   On another host skip both commands: the rules stay instructions in every
    prompt and the gate catches every write after the fact.
 5. Record, each with `decide.mjs --step {step} --by orchestrator --stdin`:
    - the reading of each sentence of the owner's instruction that changes
@@ -235,14 +241,15 @@ dispatch path; the step id is the segment's `first_step`. Then:
      step, each with a change-log entry. For an intake whose request is a
      new version of a source: the new version joins `sources` as normative
      or informative with its `version`, the old one moves to `baseline` with
-     its own, and the `orchestrator_files` that name the normative source
-     follow;
+     its own, the new path joins `read_only` when no entry covers it (the
+     loader refuses a source `read_only` does not cover), and the
+     `orchestrator_files` that name the normative source follow;
    - an owner's answer to `STOP.md`, with
      `decide.mjs --step {step} --by owner --type setup --stdin`, its evidence
      naming the stopped step's id. Delete `STOP.md`. When an owner fact can
      carry the answer (an `axis` answer), append it to `owner_facts` and
      record that change;
-   - an adapter check failure.
+   - an adapter check failure, and the next-host-session decision above.
 6. `node hsdd/scripts/auto/commit.mjs --step {step} --status completed`.
 
 `run.yaml` changes only in a `setup` step, except a `predecided` entry a
@@ -301,7 +308,8 @@ the repository.
   that message as its instruction (The loop, step 1, third form), never a
   `--plan` step. Otherwise Stuck
   (Finishing a segment).
-- `blocked`: the run is stopped. End, showing `STOP.md`'s question.
+- `blocked`: the run is stopped. End (Every ending), showing `STOP.md`'s
+  question.
 - `done`: run `node hsdd/scripts/auto/state.mjs done` and send the final
   message (Finishing a segment).
 
@@ -332,7 +340,8 @@ or a plan step. For one taken while no step is open, start
    `n` after resumes.
 5. `status` `stopped` or `run-stop-candidate`: Answering a stop.
    `completed`: Reviewing a step.
-6. `node hsdd/scripts/auto/commit.mjs --step {step} --status completed`:
+6. For a completed report, after the review:
+   `node hsdd/scripts/auto/commit.mjs --step {step} --status completed`:
    the gate, the artifact commit, the records, the judgement commit. Add
    `commit.mjs --step {step} --status completed --model {id} --usage-file {file}`
    only when the host reports the subagent's model and usage
@@ -348,23 +357,31 @@ timers. With `dispatch.wait: hand-back` (the default) the host notifies you
 when the subagent ends; with `foreground` the launch call returns its
 result. You may set one fallback wake-up per launch, of
 `fallback_wakeup_minutes` from `run.yaml`'s `dispatch` (default 30, never
-under 20), for a subagent that hangs. When it fires, re-read `state.mjs`
-and the subagent's status, then keep waiting with no further timer, or
-treat the subagent as lost (Context recovery). A timed wait shorter than 20
-minutes is a defect.
+under 20), for a subagent that hangs. Cancel it when the hand-back
+arrives, and ignore a wake-up whose launch has already handed back. When it
+fires for a launch still out, re-read `state.mjs` and the host's task state
+for the subagent, then keep waiting with no further timer, or treat the
+subagent as lost (Context recovery). A timed wait shorter than 20 minutes
+is a defect.
 
 ### 7. On Claude Code
 
-- **Launch:** the Agent tool with `subagent_type: hsdd-auto-step` when the
-  adapter is installed (otherwise the default agent type), the launch
-  prompt as `prompt`, and a description such as "hsdd-auto step S07".
+- **Launch:** the Agent tool with the launch prompt as `prompt`, a
+  description such as "hsdd-auto step S07", and
+  `subagent_type: hsdd-auto-step` when the adapter was installed before
+  this host session started. Use the default agent type when the adapter
+  is not installed, for the rest of the host session whose setup installed
+  it (the next-host-session decision in the ledger), and whenever the host
+  rejects `hsdd-auto-step`.
 - **Hand-back:** the task notification (`dispatch.wait: hand-back`).
 - **Resume:** a message to the same agent id (SendMessage) carrying,
-  unedited, the text `dispatch.mjs --resume` printed.
-- **Lost:** a subagent whose session ended or whose agent id no longer
-  answers.
+  unedited, the text `dispatch.mjs --resume` printed. Never send a subagent
+  any other message: a probe would inject text into a live context.
+- **Lost:** a subagent the host's task state or notifications show ended
+  without a hand-back you handled, or one launched in an earlier host
+  session (a restart ends every subagent).
 - **Fallback wake-up:** one background shell command that sleeps that many
-  minutes.
+  minutes; stop that background shell when the hand-back arrives.
 - **`/goal`:** `node hsdd/scripts/auto/state.mjs goal` prints a condition
   line the owner may set; the loop needs none while hand-backs arrive.
 
@@ -373,15 +390,10 @@ minutes is a defect.
 `next.mjs` evaluates the mode's stages from the top on every call and acts
 on the first unfinished one.
 
-- **plan:** setup; plan; root decomposition (`root-spec`); root ADRs (an
-  `adr` per cited ADR id without a file); root contracts (a `contract` per
-  named slug without a file, producer-first); mid-level decomposition (a
-  `mid-level-spec` per internal node that names no child ids, then ADRs and
-  contracts again); phase plans (a `phase-plan` per leaf-parent without
-  one, producer-first, and a `reconcile` on every leaf-parent whose pending
-  section has entries before the next `phase-plan`); consistency (a step
-  per open `must-address` or `consider` item, then an `align` on `all`);
-  report.
+- **plan:** setup, plan, root spec, root ADRs and contracts, mid-level
+  specs, phase plans with their reconciles, consistency (a step per open
+  item, then an `align` on `all`), report. `next.mjs` picks each step and
+  its target.
 - **intake:** setup; plan; route (the `intake` step writes the record and
   its handoff block); handoffs (a step per handoff in block order, each once
   its `after` list is executed or skipped; one whose `when` does not hold
@@ -440,7 +452,7 @@ A step subagent never answers a stop. On a report with `status` `stopped`
 | Class | Policy `stop`, class in `stop_set` | Otherwise |
 |-------|------------------------------------|-----------|
 | `axis`, `shape`, `promotion`, `breaking-amend`, `collision` | Case A | Case B (an `axis` outside `stop_set` never stops: the root step decides it) |
-| `gate-twice` | Case A | Rework and gate-twice |
+| `gate-twice` | Case A, with the stopped commit Rework and gate-twice gives | Rework and gate-twice |
 | `external` | Case A | Case B only with an in-repository alternative (a project-local dependency instead of a global one); with none, a hard stop |
 | `upstream`, `judgement` | Never a stop: resume with `--reason finding` telling the step to decide it; record nothing yourself; it does not count against `rework_limit` | Same |
 | `procedural` | Case C | Case C |
@@ -473,8 +485,9 @@ continuation of the same kind and target is dispatched with it; for a stopped
 ```
 
 Then `node hsdd/scripts/auto/commit.mjs --step {step} --status stopped`
-commits the partial artifacts and the judgement set with `STOP.md`, leaving
-a clean tree. End, showing the question.
+(for `gate-twice`, with the flags Rework and gate-twice gives) commits the
+partial artifacts and the judgement set with `STOP.md`, leaving a clean
+tree. End (Every ending), showing the question.
 
 **Case B: answer and resume.** Record your answer in the step's sidecar
 (`decide.mjs --step {step} --by orchestrator --stdin`) with
@@ -496,14 +509,12 @@ Add the change-log entry; only then
 events share its judgement commit. `next.mjs` returns the inserted step,
 then the continuation.
 
-**Continuations.** `next.mjs` returns a continuation of a stopped subagent
-step (same kind and target, `continues` set) once `STOP.md` is gone and
-every `insert-step` item opened from it is `addressed` or `rejected`.
-Dispatch it like any step; its prompt names the stopped report, the partial
-artifacts and every decision on the stop. A stopped `plan` step gets no
-continuation: the new segment's `plan` step reads the owner's `by: owner`
-decision and opens and accepts the `insert-step` items it implies, by
-`plan` decisions citing it.
+**Continuations.** `next.mjs` returns a stopped subagent step's
+continuation (`continues` set) once `STOP.md` is gone and every
+`insert-step` item opened from it is `addressed` or `rejected`; dispatch it
+like any step. A stopped `plan` step gets none: the new segment's `plan`
+step opens and accepts the `insert-step` items the owner's `by: owner`
+decision implies, by `plan` decisions citing it.
 
 **A producer cycle** (`stop`). In the `--plan --for stop` step: under policy
 `stop` with `shape` in `stop_set`, write `STOP.md` naming the cycle and
@@ -512,11 +523,12 @@ and accept one `insert-step` item per cycle member, in that order.
 
 ### Hard stops
 
-These write `STOP.md` under either policy. They are the only `STOP.md`
-allowed under `decide-and-record`.
+These write `STOP.md` under either policy, and each ends the run (Every
+ending). They are the only `STOP.md` allowed under `decide-and-record`.
 
 - An `external` need with no in-repository alternative.
-- A continuation that itself reaches `gate-twice` (class `gate-twice`).
+- A continuation that itself reaches `gate-twice`: class `gate-twice`, and
+  the stopped commit Rework and gate-twice gives.
 - A dispatch over the size limit. A refused `--next`, once the context file
   is shortened: `dispatch.mjs --plan --for size --result-file {file}`,
   record the decision, write `STOP.md` with class `external` and the size
@@ -574,15 +586,22 @@ sends a finding (a failed gate or review) to the same subagent, the message
 stating the finding and its decision id. A step may be resumed for findings
 at most `rework_limit` times (default 1); resumes that carry an answer, or
 an `upstream` or `judgement` stop back to the step, do not count. The next
-failure is `gate-twice`. Under policy `stop` with `gate-twice` in
-`stop_set`: case A. Otherwise record a decision (`would_have_asked: true`,
-class `gate-twice`, a `why` quoting the findings) and commit the step
-`stopped`; the continuation, a fresh subagent, receives the findings.
+failure is `gate-twice`:
 
-For that stopped commit: when the finding is B1 or B5 (no valid report),
-`commit.mjs --step {step} --status stopped --no-report`; for paths outside
-the write set (A1), `commit.mjs --step {step} --status stopped --discard {path}`,
-with a `plan` decision naming each path. Never discard an owner file.
+- policy `stop` with `gate-twice` in `stop_set`: case A;
+- otherwise: record a decision (`would_have_asked: true`, class
+  `gate-twice`, a `why` quoting the findings) and commit the step `stopped`;
+  the continuation, a fresh subagent, receives the findings;
+- a continuation that itself reaches `gate-twice`: a hard stop under either
+  policy (`STOP.md` with class `gate-twice`).
+
+Every stopped commit of such a step, whichever branch, takes the flags its
+last failure needs: `--no-report` when it includes B1 or B5 (no valid
+report), as in `commit.mjs --step {step} --status stopped --no-report`; and
+for each path outside the write set (A1) a `--discard {path}`, as in
+`commit.mjs --step {step} --status stopped --discard {path}`, with a `plan`
+decision in the step's sidecar naming each path. Both may apply at once.
+Never discard an owner file.
 
 ### Inserted steps
 
@@ -612,8 +631,8 @@ wait for the handoff, and the handoff's continuation for the item.
     `node hsdd/scripts/auto/commit.mjs --step {step} --status completed --note "ended: owner message"`,
     then open the next segment with the message as its instruction (third
     form); its `setup` applies the change.
-  - It asks the run to stop: commit the plan step and end, with no
-    `STOP.md`. `/hsdd-auto` resumes the segment later.
+  - It asks the run to stop: commit the plan step and end (Every ending),
+    with no `STOP.md`. `/hsdd-auto` resumes the segment later.
   - Otherwise act on it in that plan step (queue items, predecided
     answers), commit, and continue the loop.
 
@@ -630,9 +649,12 @@ decision or item already there for the same question or text is reused,
 never minted again. Remove `hsdd/auto/.decide.lock` when a lost subagent
 left it.
 
-When a subagent step is open, first ask the host whether its subagent still
-runs; if it does, wait for its hand-back. Otherwise resume by what is on
-disk (`state.mjs --json`'s `steps.in_progress` gives `has_report` and
+When a subagent step is open, first tell from the host's task state or
+notifications whether its subagent still runs; never send it a probe
+message, which would inject text into a live context. If it runs, wait for
+its hand-back. If you cannot tell, set the one fallback wake-up (Waiting)
+and wait for it before redispatching. Otherwise resume by what is on disk
+(`state.mjs --json`'s `steps.in_progress` gives `has_report` and
 `has_artifact_commit`):
 
 | On disk | Resume by |
@@ -640,11 +662,13 @@ disk (`state.mjs --json`'s `steps.in_progress` gives `has_report` and
 | Dispatch file of a subagent step; no report of the current series; no artifact commit | `node hsdd/scripts/auto/dispatch.mjs --redispatch {step}`: a new launch under the same id, whose prompt lists the files the lost launch changed; launch a fresh subagent with the prompt it prints |
 | Dispatch file whose latest launch is a resume newer than every report; no artifact commit | The resumed subagent is gone: `dispatch.mjs --redispatch {step}` |
 | Dispatch file of an orchestrator step (`skill: none`); no commits | Its kind (`setup`, `plan`, `report`), and for a `--plan` step its body's `for:` line and result, name what it was opened for; finish that work and run `commit.mjs` |
-| Index not empty, `HEAD` equal to the dispatch file's `head` | A crash inside `commit.mjs` after staging: run it again; it unstages and starts over |
+| Index not empty, `HEAD` equal to the dispatch file's `head` | A crash inside `commit.mjs` after staging: `commit.mjs --step {step} --status {status}` again; it unstages and starts over |
 | Dispatch file and report; no artifact commit | The review, or the stop handling |
 | Artifact commit (`HEAD`'s subject names the step); no judgement commit | `commit.mjs --step {step} --status {status}` again: it continues from the ledger |
 
-A refused redispatch is a hard stop recorded in the lost step itself (Hard
+In a rerun, `{status}` is `stopped` when `HEAD`'s artifact subject ends in
+` (stopped)` or `STOP.md` names the step, else `completed`; repeat any
+`--no-report` or `--discard` the step needed. A refused redispatch is a hard stop recorded in the lost step itself (Hard
 stops). With no step open, act on `next` (The step loop); when it is the
 newest segment's `setup` step, run The setup step even if `STOP.md` is
 present: a crash followed `open-segment`, and the segment entry's
@@ -679,9 +703,20 @@ When `next.mjs` returns the `report` step:
 8. `node hsdd/scripts/auto/state.mjs done` prints `DONE {segment id}`.
 
 End with one message to the owner: the report's path, the number of steps
-and decisions, the `would_have_asked` decisions by id, whether anything
-stopped, the output of `state.mjs done`, and a reminder that `/hsdd-summary`
+and decisions, the `would_have_asked` decisions by id, the
+next-host-session decision by id when the segment recorded one (host
+enforcement starts with the next host session), whether anything stopped,
+the output of `state.mjs done`, and a reminder that `/hsdd-summary`
 re-renders the reading aids, which the run does not drive.
+
+**Every ending.** However the session ends (`done`, a case A stop,
+`blocked`, a hard stop, an owner's request to stop), run
+`node hsdd/scripts/auto/state.mjs done` last and put its output in the
+final message: `DONE {segment id}`, `STOPPED {segment id}: hsdd/judgement/STOP.md`,
+or the unmet conditions of a segment paused at the owner's request. A
+`/goal` condition (`state.mjs goal`) accepts the first two. A stopped
+ending also gives `STOP.md`'s question; any ending names the
+next-host-session decision when this host session recorded one.
 
 **Stuck.** `next.mjs` returns `stuck` when no stage rule can make progress
 and the done condition fails. Check `segment.ended` first (The step loop).
@@ -710,8 +745,8 @@ hard stop.
 - [ ] Every owner instruction is a recorded decision; every change to the
       path is a change-log entry opening with its decision id.
 - [ ] Every file written for a script lies outside the repository.
-- [ ] The report's slots are filled, `report.mjs` ran again after them, and
-      the final message carries `state.mjs done`'s output.
+- [ ] The report's slots are filled and `report.mjs` ran again after them.
+- [ ] Every ending's final message carries `state.mjs done`'s output.
 
 ## Anti-Rationalization
 

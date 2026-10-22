@@ -1,6 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { appendDecisions, appendRunLine, main, nextDecisionId, validateLedger } from "../skills/hsdd-auto/scripts/ledger.mjs";
@@ -283,6 +284,21 @@ test("CLI: decisions, run, validate and usage errors", () => {
   assert.equal(run(dir, "ledger.mjs", ["run", "--step", "S00", "--commit", commit, "--status", "bogus"]).code, 2);
   assert.equal(run(dir, "ledger.mjs", ["frobnicate"]).code, 2);
   assert.equal(run(dir, "ledger.mjs", ["decisions", "--step", "S77", "--commit", commit]).code, 1);
+});
+
+test("CLI: run --usage-file takes an absolute path outside the repository", () => {
+  const dir = repo();
+  const commit = commitAll(dir);
+  const outside = mkdtempSync(join(tmpdir(), "hsdd-auto-usage-"));
+  try {
+    const file = join(outside, "usage.json");
+    writeFileSync(file, JSON.stringify({ input_tokens: 3, output_tokens: 4 }));
+    const r = run(dir, "ledger.mjs", ["run", "--step", "S00", "--commit", commit, "--status", "completed", "--usage-file", file]);
+    assert.equal(r.code, 0, r.stdout);
+    assert.deepEqual(readJsonl(dir, P.runLog)[0].usage, { input_tokens: 3, output_tokens: 4 });
+  } finally {
+    rmSync(outside, { recursive: true, force: true });
+  }
 });
 
 test("appendDecisions refuses a commit that does not exist and writes nothing", () => {
