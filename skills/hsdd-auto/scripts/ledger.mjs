@@ -45,6 +45,7 @@ const requireFront = (repoRoot, step) => {
 // All lines are validated first; on any error nothing is written.
 export const appendDecisions = (repoRoot, step, commit) => {
   const front = requireFront(repoRoot, step);
+  if (!revExists(repoRoot, commit)) throw new LedgerError([`commit ${commit} does not exist`]);
   const present = readJsonl(repoRoot, P.ledger);
   const have = new Set(present.map((l) => l.id));
   const top = Math.max(0, ...present.map((l) => idNum(l.id)));
@@ -164,6 +165,7 @@ export const validateLedger = (repoRoot, { now = nowStamp() } = {}) => {
   };
 
   // ----- decisions -----
+  const unreadable = new Set();
   const lines = ledger.value ?? [];
   const legacy = lines.filter((l) => !Object.hasOwn(l, "segment"));
   if (legacy.length > 0) {
@@ -199,11 +201,15 @@ export const validateLedger = (repoRoot, { now = nowStamp() } = {}) => {
       const high = stampMs(commitStamp(repoRoot, l.commit)) + WINDOW_MS;
       if (at < low || at > high) errors.push(`${label}: at ${l.at} is outside ${l.step_ref}'s window (${nowStampOf(low)} to ${nowStampOf(high)})`);
     } else {
-      const next = steps.find((s) => stepNum(s) > stepNum(l.step_ref));
+      const later = steps.filter((s) => stepNum(s) > stepNum(l.step_ref));
+      const next = later.find((s) => renderedAt(s) !== null);
+      later.slice(0, next === undefined ? later.length : later.indexOf(next)).forEach((s) => unreadable.add(s));
       const high = (next !== undefined ? renderedAt(next) : null) ?? nowMs;
       if (at < low || at > high) errors.push(`${label}: at ${l.at} is outside ${l.step_ref}'s window (${nowStampOf(low)} to ${nowStampOf(high)})`);
     }
   }
+
+  [...unreadable].forEach((s) => warnings.push(`${P.dispatchDir}/${s}.md is unreadable; the orchestrator window of an earlier step runs to the next readable step instead`));
 
   // ----- run log -----
   const runLines = runLog.value ?? [];

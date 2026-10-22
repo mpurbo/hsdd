@@ -1,9 +1,9 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
-import { existsSync, mkdirSync, readFileSync, unlinkSync, utimesSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, readdirSync, unlinkSync, utimesSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
-import { decide, nextDecisionId } from "../skills/hsdd-auto/scripts/decide.mjs";
+import { decide, nextDecisionId, replaceIfStale, withLock } from "../skills/hsdd-auto/scripts/decide.mjs";
 import { readJsonl } from "../skills/hsdd-auto/scripts/lib/records.mjs";
 import { P } from "../skills/hsdd-auto/scripts/lib/paths.mjs";
 import { STAMP_RE, stampMs } from "../skills/hsdd-auto/scripts/lib/time.mjs";
@@ -175,4 +175,45 @@ test("CLI: --file, bad JSON, missing --step, both sources", () => {
   assert.equal(run(dir, "decide.mjs", ["--step", "S07", "--stdin", "--file", "d.json"], { input: "{}" }).code, 2);
   assert.equal(run(dir, "decide.mjs", ["--step", "S07"]).code, 2);
   assert.equal(readFileSync(join(dir, "hsdd/auto/steps/S07.decisions.jsonl"), "utf8").trim().split("\n").length, 1);
+});
+
+test("--file accepts an absolute path", () => {
+  const dir = repo();
+  put(dir, "d.json", JSON.stringify(input()));
+  const r = run(dir, "decide.mjs", ["--step", "S07", "--file", join(dir, "d.json")]);
+  assert.equal(r.code, 0, r.stdout);
+  assert.equal(sidecar(dir, "S07").length, 1);
+});
+
+const lockFile = (dir) => join(dir, P.decideLock);
+const age = (file) => { const old = new Date(Date.now() - 120_000); utimesSync(file, old, old); };
+const strays = (dir) => readdirSync(join(dir, "hsdd/auto")).filter((n) => n.startsWith(".decide.lock.stale."));
+
+test("a stale lock replaced by a live one between the check and the rename is left alone", () => {
+  const dir = repo();
+  put(dir, P.decideLock, "99999\n");
+  age(lockFile(dir));
+  const result = replaceIfStale(lockFile(dir), {
+    beforeRename: () => { unlinkSync(lockFile(dir)); put(dir, P.decideLock, "4242\n"); },
+  });
+  assert.equal(result, "live");
+  assert.equal(strays(dir).length, 1, "the moved file is not deleted");
+  assert.equal(readFileSync(join(dir, "hsdd/auto", strays(dir)[0]), "utf8"), "4242\n");
+});
+
+test("a stale lock that is still the judged one is deleted", () => {
+  const dir = repo();
+  put(dir, P.decideLock, "99999\n");
+  age(lockFile(dir));
+  assert.equal(replaceIfStale(lockFile(dir)), "replaced");
+  assert.equal(existsSync(lockFile(dir)), false);
+  assert.deepEqual(strays(dir), []);
+});
+
+test("the holder removes the lock only while it still holds its pid", () => {
+  const dir = repo();
+  withLock(dir, () => { assert.equal(readFileSync(lockFile(dir), "utf8").trim(), String(process.pid)); });
+  assert.equal(existsSync(lockFile(dir)), false);
+  withLock(dir, () => { writeFileSync(lockFile(dir), "4242\n"); });
+  assert.equal(readFileSync(lockFile(dir), "utf8"), "4242\n");
 });

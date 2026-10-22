@@ -5,6 +5,7 @@ import { join } from "node:path";
 import { loadConfig, currentSegment } from "./config.mjs";
 import { P, resolveLayout } from "./paths.mjs";
 import { loadTree } from "./tree.mjs";
+import { checkRegistries } from "./registry.mjs";
 import { loadIntakeRecords, segmentRecord } from "./intake.mjs";
 import {
   branchExists, changedSince, currentBranch, defaultBranch as defaultBranchOf, headSha, listTree, revExists, showFile,
@@ -47,13 +48,9 @@ const verifiedPhasesOf = (repoRoot, layout, branch) => {
     .flatMap((p) => /([^/]+)\.verification\.md$/.exec(p)?.[1] ?? []));
 };
 
-const unavailableRegistry = () => {
-  throw new Error("the registry check is not wired into the context yet (lib/registry.mjs)");
-};
-
-// `registry` is the C0 and C1 check, injected as (repoRoot, layout) => RegistryResult; it runs at
-// most once, and only when a caller asks.
-export const loadContext = (repoRoot, { registry = unavailableRegistry } = {}) => {
+// `registry` is the C0 and C1 check, injected as (repoRoot, layout) => RegistryResult (tests replace
+// it); it runs at most once, and only when a caller asks.
+export const loadContext = (repoRoot, { registry = checkRegistries } = {}) => {
   const config = loadConfig(repoRoot);
   const layout = resolveLayout(repoRoot);
   const tree = loadTree(repoRoot, layout, { root: config.root });

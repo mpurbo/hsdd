@@ -284,3 +284,30 @@ test("CLI: decisions, run, validate and usage errors", () => {
   assert.equal(run(dir, "ledger.mjs", ["frobnicate"]).code, 2);
   assert.equal(run(dir, "ledger.mjs", ["decisions", "--step", "S77", "--commit", commit]).code, 1);
 });
+
+test("appendDecisions refuses a commit that does not exist and writes nothing", () => {
+  const dir = repo();
+  decide(dir, { step: "S00", input: input() });
+  assert.throws(() => appendDecisions(dir, "S00", "deadbeefdeadbeefdeadbeefdeadbeefdeadbeef"), /does not exist/);
+  assert.deepEqual(ledger(dir), []);
+});
+
+test("an unreadable next dispatch file bounds the window by the next readable step and warns", () => {
+  const t0 = stampMs("2026-10-22T10:00:00Z");
+  const dir = makeRepo({ stage: "06-planned" });
+  addSegment(dir, planSeg);
+  openStep(dir, { step: "S00", segment: SEGMENT, kind: "plan", target: SEGMENT, renderedAt: stamp(t0) });
+  openStep(dir, { step: "S01", segment: SEGMENT, kind: "plan", target: SEGMENT, renderedAt: stamp(t0 + 600_000) });
+  openStep(dir, { step: "S02", segment: SEGMENT, kind: "plan", target: SEGMENT, renderedAt: stamp(t0 + 1_200_000) });
+  put(dir, "hsdd/auto/dispatch/S01.md", "not a dispatch file\n");
+  decide(dir, { step: "S00", by: "orchestrator", input: input() });
+  const commit = commitAll(dir);
+  appendDecisions(dir, "S00", commit);
+  writeLedger(dir, ledger(dir).map((l) => ({ ...l, at: stamp(t0 + 1_000_000) })));
+  const r = validateLedger(dir, { now: stamp(t0 + 3_600_000) });
+  assert.deepEqual(r.errors, []);
+  assert.equal(r.warnings.length, 1);
+  assert.match(r.warnings[0], /S01\.md is unreadable/);
+  writeLedger(dir, ledger(dir).map((l) => ({ ...l, at: stamp(t0 + 1_300_000) })));
+  assert.match(validateLedger(dir, { now: stamp(t0 + 3_600_000) }).errors[0], /outside S00's window/);
+});

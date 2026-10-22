@@ -4,7 +4,8 @@
 import {
   closeSync, existsSync, mkdirSync, openSync, readFileSync, readdirSync, realpathSync, renameSync, statSync, unlinkSync, writeSync,
 } from "node:fs";
-import { dirname, join } from "node:path";
+import { randomBytes } from "node:crypto";
+import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
 import { validate, loadSchema } from "./lib/schema.mjs";
@@ -63,19 +64,31 @@ const LOCK_STALE_MS = 60_000;
 
 const sleep = (ms) => Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
 
-// A lock older than LOCK_STALE_MS is replaced. The stale file is re-examined just before it is
-// moved aside, so a lock another process has since taken is left alone (the window that remains
-// is a few microseconds, and only exists after a holder died or stalled for a minute).
-const replaceIfStale = (file) => {
+// A lock older than LOCK_STALE_MS is replaced: it is renamed to a unique name, and the renamed file
+// is judged by its inode. When the inode is the one judged stale it is deleted; when it differs, the
+// rename moved a lock another process had just taken, which is therefore live: nothing is put back and
+// nothing deleted, and the caller keeps waiting. Returns "replaced", "live" or "none".
+export const replaceIfStale = (file, { staleMs = LOCK_STALE_MS, beforeRename = () => {} } = {}) => {
   try {
     const seen = statSync(file);
-    if (Date.now() - seen.mtimeMs <= LOCK_STALE_MS) return;
-    const again = statSync(file);
-    if (again.ino !== seen.ino || again.mtimeMs !== seen.mtimeMs) return;
-    renameSync(file, `${file}.stale.${process.pid}`);
-    unlinkSync(`${file}.stale.${process.pid}`);
+    if (Date.now() - seen.mtimeMs <= staleMs) return "live";
+    beforeRename();
+    const moved = `${file}.stale.${process.pid}.${randomBytes(4).toString("hex")}`;
+    renameSync(file, moved);
+    if (statSync(moved).ino !== seen.ino) return "live";
+    unlinkSync(moved);
+    return "replaced";
   } catch {
-    // gone already, or someone else replaced it: the caller retries
+    return "none"; // gone already, or someone else replaced it: the caller retries
+  }
+};
+
+// The holder removes the lock only while the file still holds its own pid.
+const releaseLock = (file) => {
+  try {
+    if (readFileSync(file, "utf8").trim() === String(process.pid)) unlinkSync(file);
+  } catch {
+    // already removed
   }
 };
 
@@ -99,7 +112,7 @@ export const withLock = (repoRoot, fn) => {
   try {
     return fn();
   } finally {
-    try { unlinkSync(file); } catch { /* already removed */ }
+    releaseLock(file);
   }
 };
 
@@ -174,7 +187,7 @@ const OPTIONS = {
 
 const readInput = (values, repoRoot) => {
   if (Boolean(values.stdin) === (values.file !== undefined)) throw new UsageError("give exactly one of --stdin, --file");
-  const text = values.stdin ? readFileSync(0, "utf8") : readFileSync(join(repoRoot, values.file), "utf8");
+  const text = values.stdin ? readFileSync(0, "utf8") : readFileSync(resolve(repoRoot, values.file), "utf8");
   try {
     return JSON.parse(text);
   } catch (e) {

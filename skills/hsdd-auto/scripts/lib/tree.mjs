@@ -471,7 +471,7 @@ export const loadTree = (repoRoot, layout, { root = null } = {}) => {
     }),
     oqCites: citesIn(OQ_RE, citeFiles),
     adrCites: citesIn(ADR_RE, citeFiles),
-    contractCites: citeFiles.flatMap(({ file, text }) => contractRefs(text).map(({ slug, version }) => ({ slug, version, file }))),
+    contractCites: citeFiles.flatMap(({ file, text }) => contractRefs(text).map(({ slug, version, ext }) => ({ slug, version, ext, file }))),
     contractNames: [...nodes.values()].flatMap((n) => {
       const seen = new Set();
       return [...n.consumes, ...n.produces].flatMap((r) => {

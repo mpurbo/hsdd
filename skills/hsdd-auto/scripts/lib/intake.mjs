@@ -159,6 +159,7 @@ export const parseIntakeRecord = (text, path) => {
     request,
     authority,
     requestLine: fields.request ?? null,
+    headerFields: Object.keys(fields),
     cls: word(fields.class),
     landsOn: listItems(fields["lands on"]),
     contracts: listItems(fields.contracts),
