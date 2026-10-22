@@ -31,7 +31,7 @@ export const readDispatchFile = (dir, step) => {
   const first = /\*\*Report:\*\* `([^`]+)`/.exec(body)?.[1] ?? null;
   const decide = /`(node hsdd\/scripts\/auto\/decide\.mjs --step S\d{2,} --stdin)`/.exec(body)?.[1] ?? null;
   const readCheck = /^read_check: ([0-9a-f]{8})$/.exec(text.trimEnd().split("\n").at(-1))?.[1] ?? null;
-  const experimentsDir = /, your report files, and `([^`]+?)\/?`\./.exec(body)?.[1] ?? "hsdd/auto/experiments";
+  const experimentsDir = /, your report files, and `([^`]+?)\/?`\./.exec(body)?.[1] ?? null;
   return { front, body, report: later.at(-1) ?? first, decide, readCheck, experimentsDir };
 };
 
@@ -75,6 +75,7 @@ export const standIn = (dir, step, plan = {}) => {
   if (d.front.step_ref !== step) throw new Error(`stand-in: ${step}'s dispatch file names ${d.front.step_ref}`);
   if (d.readCheck === null) throw new Error(`stand-in: ${step}'s dispatch file does not end in its read check`);
   if (d.decide === null) throw new Error(`stand-in: ${step}'s dispatch file names no decide command`);
+  if (d.experimentsDir === null) throw new Error(`stand-in: ${step}'s dispatch file names no experiments directory in its write set line`);
 
   const overlays = plan.overlay === undefined ? [] : [].concat(plan.overlay);
   const written = overlays.flatMap((name) => filesBelow(join(OVERLAYS, name)).map((rel) => {

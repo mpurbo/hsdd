@@ -624,13 +624,13 @@ test("D1 at level error fails, at warn warns, and exempts step reports", () => {
 // phrases and the instruction, an orchestrator file such as CLAUDE.md states them. plan.md is the
 // orchestrator's prose and stays checked.
 test("D1 exempts run.yaml, the owner-file snapshot, adapter.json and orchestrator_files, not plan.md", () => {
-  const config = baseConfig({ orchestrator_files: ["CLAUDE.md"], prose_rules: { banned_chars: ["—"], banned_phrases: ["synergy"], level: "error" } });
+  const config = baseConfig({ orchestrator_files: ["CLAUDE.md"], prose_rules: { banned_chars: ["\u2014"], banned_phrases: ["synergy"], level: "error" } });
   const setup = begun({ config });
   open(setup, "setup", SEG);
-  put(setup, P.runYaml, `${read(setup, P.runYaml)}# the owner: no synergy — ever\n`);
+  put(setup, P.runYaml, `${read(setup, P.runYaml)}# the owner: no synergy \u2014 ever\n`);
   put(setup, P.ownerFiles, `${JSON.stringify({ "notes/synergy.md": null })}\n`);
-  put(setup, P.adapter, `${JSON.stringify({ note: "synergy — deny rules" })}\n`);
-  put(setup, "CLAUDE.md", "Never write synergy or —.\n");
+  put(setup, P.adapter, `${JSON.stringify({ note: "synergy \u2014 deny rules" })}\n`);
+  put(setup, "CLAUDE.md", "Never write synergy or \u2014.\n");
   assert.deepEqual(of(gate(setup, "S02", { checks: ["D1"] }), "D1"), []);
 
   const plan = begun({ config });

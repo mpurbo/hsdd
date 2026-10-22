@@ -2,13 +2,13 @@
 // its CLI exactly as the orchestrator drives it (chapter 8), with a scripted stand-in for each step
 // subagent (test/helpers/auto-standin.mjs). One helper per orchestrator action; each scenario is a short
 // sequence of them with assertions.
-import { test } from "node:test";
+import { afterEach, test } from "node:test";
 import assert from "node:assert/strict";
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, utimesSync, writeFileSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
-import { commitStepPhases } from "../skills/hsdd-auto/scripts/commit.mjs";
+import { commitStepPhases, planSkeleton } from "../skills/hsdd-auto/scripts/commit.mjs";
 import { formatFlow, formatScalar, parseYaml } from "../skills/hsdd-auto/scripts/lib/yaml.mjs";
 import { SCRIPTS, baseConfig, completeSkills, gitIn, makeRepo } from "./helpers/auto-repo.mjs";
 import { FIXTURES, readDispatchFile, standIn } from "./helpers/auto-standin.mjs";
@@ -16,11 +16,22 @@ import { FIXTURES, readDispatchFile, standIn } from "./helpers/auto-standin.mjs"
 const read = (dir, rel) => readFileSync(join(dir, rel), "utf8");
 const put = (dir, rel, text) => { mkdirSync(dirname(join(dir, rel)), { recursive: true }); writeFileSync(join(dir, rel), text); };
 const jsonl = (dir, rel) => (existsSync(join(dir, rel)) ? read(dir, rel).split("\n").filter(Boolean).map((l) => JSON.parse(l)) : []);
+// Files the orchestrator writes outside the repository (instructions, messages, the host's usage):
+// one temporary directory per test, removed when the test ends.
+let scratch = null;
+let scratchFiles = 0;
 const outside = (name, text) => {
-  const file = join(mkdtempSync(join(tmpdir(), "hsdd-auto-e2e-")), name);
+  scratch ??= mkdtempSync(join(tmpdir(), "hsdd-auto-e2e-"));
+  scratchFiles += 1;
+  const file = join(scratch, `${scratchFiles}-${name}`);
   writeFileSync(file, text);
   return file;
 };
+afterEach(() => {
+  if (scratch !== null) rmSync(scratch, { recursive: true, force: true });
+  scratch = null;
+  scratchFiles = 0;
+});
 const edit = (from, to) => (old) => {
   assert.ok(old !== null && old.includes(from), `no ${JSON.stringify(from)} to replace`);
   return old.replace(from, to);
@@ -129,6 +140,7 @@ const runSetup = (dir, seg, { decisions = [], owner = null, ownerFact = null, be
       ids.ownerFact = decide(dir, step, dec("Carry the owner's axis answer as an owner fact so the continuation's skill finds it answered?", {
         artifact: "hsdd/auto/run.yaml", evidence: [ids.owner],
       }));
+      changeLog(dir, ids.ownerFact, `appended the owner's answer to ${ids.owner} to owner_facts in hsdd/auto/run.yaml`);
     }
   }
   before?.(step, ids);
@@ -137,17 +149,25 @@ const runSetup = (dir, seg, { decisions = [], owner = null, ownerFact = null, be
   return { step, ids };
 };
 
+// Whether text holds a banned character or phrase of the run's prose rules (7.6).
+const holdsBanned = (dir, text) => {
+  const rules = parseYaml(read(dir, "hsdd/auto/run.yaml")).prose_rules ?? {};
+  return (rules.banned_chars ?? []).some((c) => text.includes(c))
+    || (rules.banned_phrases ?? []).some((p) => text.toLowerCase().includes(p.toLowerCase()));
+};
+
 // 8.1 item 6: the segment's paragraph at the end of ## Segments, opening with **{segment id}.** (S-5),
-// with the stages next.mjs --stages prints; `items` are queue items the orchestrator opens.
-const runPlanStep = (dir, seg, { purpose, items = [] } = {}) => {
+// with the stages next.mjs --stages prints; `items` are queue items the orchestrator opens. plan.md is
+// the orchestrator's prose, which D1 checks: the paragraph quotes the owner's instruction when it holds
+// no banned text, and otherwise gives `paraphrase` and points at its verbatim entry in run.yaml.
+const runPlanStep = (dir, seg, { purpose, paraphrase = null, items = [] } = {}) => {
   assert.equal(nextOf(dir).step?.kind, "plan");
   const [path] = cli(dir, "dispatch.mjs", ["--next"]).stdout.trim().split("\n");
   const step = /(S\d{2,})\.md$/.exec(path)[1];
   const stages = JSON.parse(cli(dir, "next.mjs", ["--stages"]).stdout);
   const paragraph = [
     `**${seg.id}.** ${purpose}`,
-    // plan.md is the orchestrator's prose, checked by D1, so it points at the instruction rather than quoting it.
-    `Mode ${seg.mode}, stop policy ${seg.stop_policy}; the owner's instruction is the segment's entry in hsdd/auto/run.yaml.`,
+    `Mode ${seg.mode}, stop policy ${seg.stop_policy}; ${instructionText(dir, seg, paraphrase)}`,
     `Stages: ${stages.map((s) => `${s.n} ${s.name} (${s.done ? "done" : "to do"})`).join(", ")}.`,
   ].join(" ");
   const plan = read(dir, "hsdd/auto/plan.md");
@@ -157,6 +177,12 @@ const runPlanStep = (dir, seg, { purpose, items = [] } = {}) => {
   }
   commitStep(dir, step);
   return { step };
+};
+
+const instructionText = (dir, seg, paraphrase) => {
+  if (!holdsBanned(dir, seg.instruction)) return `the owner's instruction: "${seg.instruction}"`;
+  assert.ok(paraphrase, "an instruction holding banned text is paraphrased in plan.md");
+  return `the owner's instruction, paraphrased: ${paraphrase} (verbatim in the segment's entry in hsdd/auto/run.yaml).`;
 };
 
 const LAUNCH = (step) => [
@@ -177,8 +203,10 @@ const launch = (dir, plan, expect = {}) => {
 };
 
 // 6.9: a change-log entry, opening with the id of the decision that made the change. plan.md is in every
-// step's judgement set, and the change log is its last section.
+// step's judgement set, and the change log is its last section; before the first judgement commit the
+// file starts from commit.mjs's own skeleton (S-6).
 const changeLog = (dir, decision, text) => {
+  if (!existsSync(join(dir, "hsdd/auto/plan.md"))) put(dir, "hsdd/auto/plan.md", planSkeleton(parseYaml(read(dir, "hsdd/auto/run.yaml")).run));
   const plan = read(dir, "hsdd/auto/plan.md");
   put(dir, "hsdd/auto/plan.md", `${plan.replace(/\s*$/, "")}\n${/## Change log$/.test(plan.trimEnd()) ? "\n" : ""}- ${decision}: ${text}\n`);
 };
@@ -325,19 +353,23 @@ const finishSegment = (dir, seg, { crashAt = null } = {}) => {
 };
 
 // The loop (8.1 item 7) until done, blocked or stuck: each step result runs the stand-in plan keyed
-// "{kind} {target}" (a list is used in order), a skip is committed, a close is handled in a plan step,
-// the report step finishes.
-const drive = (dir, seg, plans) => {
+// "{kind} {target}" (a list is used in order), a skip is committed (after `onSkip`, the orchestrator's
+// change-log entry, which the skip commit carries), a close is handled in a plan step, the report step
+// finishes.
+const drive = (dir, seg, plans, { onSkip = null } = {}) => {
   const queues = Object.fromEntries(Object.entries(plans).map(([k, v]) => [k, [].concat(v)]));
   for (let i = 0; i < 40; i++) {
     const n = nextOf(dir);
-    if (n.stuck) return n;
-    if (n.done || n.blocked) {
+    if (n.done || n.blocked || n.stuck) {
       const unused = Object.entries(queues).filter(([, q]) => q.length > 0).map(([k]) => k);
       assert.deepEqual(unused, [], "every stand-in plan given to drive is used");
       return n;
     }
-    if (n.skip) { cli(dir, "commit.mjs", ["--skip", n.skip.handoff, "--reason", n.skip.reason]); continue; }
+    if (n.skip) {
+      onSkip?.(n.skip);
+      cli(dir, "commit.mjs", ["--skip", n.skip.handoff, "--reason", n.skip.reason]);
+      continue;
+    }
     if (n.close) { closeItem(dir, n); continue; }
     if (n.step?.kind === "report") { finishSegment(dir, seg); continue; }
     assert.ok(n.step, `next.mjs returned ${JSON.stringify(n)}`);
@@ -450,7 +482,13 @@ test("plan, decide-and-record: stage 00 to done", () => {
     })],
   });
   assert.deepEqual(Object.keys(JSON.parse(read(dir, "hsdd/auto/owner-files.json"))), [OWNER_FILE]);
-  runPlanStep(dir, seg, { purpose: "Plan the shop's tree from an empty repository through reconcile." });
+  runPlanStep(dir, seg, {
+    purpose: "Plan the shop's tree from an empty repository through reconcile.",
+    paraphrase: "plan the shop from scratch through reconcile from the spec, decide every stop and record it",
+  });
+  // plan.md quotes no banned text: the instruction is paraphrased there and kept verbatim in run.yaml.
+  assert.equal(holdsBanned(dir, read(dir, "hsdd/auto/plan.md")), false);
+  assert.match(read(dir, "hsdd/auto/plan.md"), /the owner's instruction, paraphrased: .* \(verbatim in the segment's entry in hsdd\/auto\/run\.yaml\)\./);
 
   // The mid-level step meets a shape stop; under decide-and-record the orchestrator answers it (case B)
   // and resumes the same subagent, which finishes the decomposition.
@@ -629,6 +667,8 @@ test("plan, stop: an axis stop ends the run, the owner's answer opens a segment,
   assert.equal(gitIn(dir, "status", "--porcelain"), "", "the run ends with a clean tree");
   assert.equal(committedSteps(dir).at(-1).status, "stopped");
   assert.match(gitIn(dir, "log", "-2", "--format=%s"), new RegExp(`^judgement: ${root}\\nhsdd: ${root} root-spec shop: .* \\(stopped\\)$`));
+  const changedBy = (commit) => gitIn(dir, "show", "--name-status", "--format=", commit).split("\n");
+  assert.ok(changedBy("HEAD").includes("A\thsdd/judgement/STOP.md"), "STOP.md is in the stopped step's judgement commit");
 
   // The owner answers; /hsdd-auto opens a new segment of the stopped one's mode.
   const answer = "One team builds both the order API and the web app.";
@@ -643,6 +683,8 @@ test("plan, stop: an axis stop ends the run, the owner's answer opens a segment,
     ownerFact: `Who builds what: ${answer}`,
   });
   assert.equal(existsSync(join(dir, "hsdd/judgement/STOP.md")), false);
+  assert.ok(changedBy("HEAD").includes("D\thsdd/judgement/STOP.md"), "the setup's judgement commit removes STOP.md");
+  assert.match(read(dir, "hsdd/auto/plan.md"), new RegExp(`^- ${ids.ownerFact}: appended the owner's answer to ${ids.owner} to owner_facts in hsdd/auto/run\\.yaml$`, "m"));
   assert.deepEqual(sidecar(dir, setup2).map((d) => d.id), [ids.owner, ids.ownerFact]);
   const ownerDecision = jsonl(dir, "hsdd/judgement/decisions.jsonl").find((d) => d.id === ids.owner);
   assert.equal(ownerDecision.by, "owner");
@@ -658,6 +700,7 @@ test("plan, stop: an axis stop ends the run, the owner's answer opens a segment,
   const continuing = read(dir, `hsdd/auto/dispatch/${cont}.md`);
   assert.match(continuing, new RegExp(`Stopped step: ${root}`));
   assert.match(continuing, new RegExp(`Decision on its stop: ${ids.owner}, chosen "One team" \\(by owner\\)`));
+  assert.match(continuing, /^- Who builds what: One team builds both the order API and the web app\.$/m, "the owner fact reaches the continuation's prompt");
   review(dir, cont);
   commitStep(dir, cont);
   delete plans["root-spec shop"];
@@ -772,19 +815,27 @@ const SPEC_V2 = readFileSync(join(FIXTURES, "tree/00-empty/ref/spec.md"), "utf8"
   .replace("Version: v1.", "Version: v2.")
   .replace("the total in cents", "the total as a money object (amount in cents and a currency, IDR or USD)");
 
+// The record routes one citation touch per artifact that cites a superseded string (9.3, 12.4), each
+// conditional on `cites-superseded`, after the content handoffs.
+const TOUCHES = [
+  { id: "H3a", skill: "hsdd-spec", target: "shop.web.app", file: "hsdd/spec/shop.web.app.md", after: ["H2"] },
+  { id: "H3b", skill: "hsdd-spec", target: "shop.api", file: "hsdd/spec/shop.api.md", after: ["H1"] },
+  { id: "H3c", skill: "hsdd-spec", target: "shop", file: "hsdd/spec/shop.md", after: ["H1"] },
+  { id: "H3d", skill: "hsdd-spec", target: "shop.web", file: "hsdd/spec/shop.web.md", after: ["H1"] },
+  { id: "H3e", skill: "hsdd-adr", target: "ADR-001", file: "hsdd/adr/001-order-ids.md", after: ["H1"] },
+];
+const touchPrompt = (file) => `citation touch ${file}: move its citations to the current versions`;
+
 const PROMPTS = {
   H1: "Touch order-api: Spec v2 §2 adds a currency to every order; retyping total_cents is breaking, so author order-api@v2 with a migration note",
   H2: `Touch shop.web.app: Spec v2 §3 shows the currency of every total; cite order-api@v2 and ${REQUEST}`,
-  H3a: "citation touch hsdd/spec/shop.web.app.md: move its citations to the current versions",
-  H3b: "citation touch hsdd/spec/shop.api.md: move its citations to the current versions",
 };
 
 const intakeRecord = () => {
   const handoffs = [
     { id: "H1", kind: "contract-touch", skill: "hsdd-contract", target: "order-api", prompt: PROMPTS.H1, when: null, after: [] },
     { id: "H2", kind: "spec-touch", skill: "hsdd-spec", target: "shop.web.app", prompt: PROMPTS.H2, when: null, after: ["H1"] },
-    { id: "H3a", kind: "citation-touch", skill: "hsdd-spec", target: "shop.web.app", prompt: PROMPTS.H3a, when: "cites-superseded", after: ["H2"] },
-    { id: "H3b", kind: "citation-touch", skill: "hsdd-spec", target: "shop.api", prompt: PROMPTS.H3b, when: "cites-superseded", after: ["H1"] },
+    ...TOUCHES.map((t) => ({ id: t.id, kind: "citation-touch", skill: t.skill, target: t.target, prompt: touchPrompt(t.file), when: "cites-superseded", after: t.after })),
   ];
   return [
     "# Intake: Order API v2, a currency on every order", "",
@@ -803,8 +854,7 @@ const intakeRecord = () => {
     "Handoffs, in order:", "",
     `1. H1, hsdd-contract: \`${PROMPTS.H1}\``,
     `2. H2, hsdd-spec: \`${PROMPTS.H2}\``,
-    `3. H3a, hsdd-spec, only when the file still cites a superseded version: \`${PROMPTS.H3a}\``,
-    `4. H3b, hsdd-spec, only when the file still cites a superseded version: \`${PROMPTS.H3b}\``, "",
+    ...TOUCHES.map((t, i) => `${i + 3}. ${t.id}, ${t.skill}, only when the file still cites a superseded version: \`${touchPrompt(t.file)}\``), "",
     "```hsdd-handoffs",
     JSON.stringify({ version: 1, handoffs }, null, 2),
     "```", "",
@@ -814,48 +864,93 @@ const intakeRecord = () => {
   ].join("\n");
 };
 
-const contractV2 = (old) => old
-  .replace("version: v1", "version: v2")
-  .replace("`Order` is `{ \"id\", \"customer_id\", \"lines\", \"total_cents\", \"status\", \"created_at\" }`",
-    "`Order` is `{ \"id\", \"customer_id\", \"lines\", \"total\", \"status\", \"created_at\" }`, where `total` is `{ \"amount_cents\", \"currency\" }`")
-  .replace(/- v1 current\.[\s\S]*?migrate\./, "- v2 current. v1 is superseded: `total_cents` became `total`, a money object;\n  migration note: read `total.amount_cents` where v1 read `total_cents`.");
+// H1: the contract takes v2 (the breaking retype, a migration note in its own ## Versioning), and its
+// fixtures and schema, whose header comments are live citations, move with it.
+const SCHEMA_TOTAL = '"total": { "type": "object", "required": ["amount_cents", "currency"], "properties": { "amount_cents": { "type": "integer", "minimum": 0 }, "currency": { "enum": ["IDR", "USD"] } } },';
+const contractV2 = {
+  "hsdd/contract/order-api.md": (old) => edit("version: v1", "version: v2")(old)
+    .replace("`Order` is `{ \"id\", \"customer_id\", \"lines\", \"total_cents\", \"status\", \"created_at\" }`",
+      "`Order` is `{ \"id\", \"customer_id\", \"lines\", \"total\", \"status\", \"created_at\" }`, where `total` is `{ \"amount_cents\", \"currency\" }`")
+    .replace("- G2: `total_cents` equals", "- G2: `total.amount_cents` equals")
+    .replace(/- v1 current\.[\s\S]*?migrate\./, "- v2 current. v1 is superseded: `total_cents` became `total`, a money object;\n  migration note: read `total.amount_cents` where v1 read `total_cents`."),
+  "hsdd/contract/fixture/order-api/create-order.json": (old) => edit("order-api@v1 example", "order-api@v2 example")(old)
+    .replace('"total_cents": 2100,', '"total": { "amount_cents": 2100, "currency": "IDR" },'),
+  "hsdd/contract/fixture/order-api/get-missing-order.json": edit("order-api@v1 example", "order-api@v2 example"),
+  "hsdd/contract/schema/order-api.schema.json": (old) => edit('"$id": "order-api/v1"', '"$id": "order-api/v2"')(old)
+    .replace('"$comment": "order-api@v1:', '"$comment": "order-api@v2:')
+    .replace('"lines", "total_cents", "status"', '"lines", "total", "status"')
+    .replace('"total_cents": { "type": "integer", "minimum": 0 },', SCHEMA_TOTAL),
+};
 
+// A citation touch moves every live citation (12.4): the contract version and the source path.
 const citesCurrent = (old) => old.replaceAll("order-api@v1", "order-api@v2").replaceAll("ref/spec.md", REQUEST);
+const AMENDED = "2026-10-23";
+const touchPlan = (file, transform = citesCurrent, extra = {}) => ({
+  files: { [file]: transform },
+  decisions: [dec(`Classify the citation touch of ${file} against its own versioning rules`, {
+    artifact: file, options: [{ label: "compatible", consequence: "the file keeps its version" }, { label: "breaking", consequence: "the file would take a new version" }], chosen: "compatible",
+  })],
+  notes: ["moved every live citation to order-api@v2 and Spec v2"],
+  ...extra,
+});
+
+// The pre-existing defect the intake never touches (Review Focus 3): an ADR, citing no contract, that
+// cites an open-question id no spec defines.
+const ADR_002 = [
+  "---", "id: ADR-002", "status: accepted", "affects: [shop.web]", "date: 2026-10-21", "---", "",
+  "# ADR-002: Customer ids", "", "## Context", "",
+  "The identity provider issues customer ids. Whether a guest checkout gets an id of its own is open (OQ7).", "",
+  "## Decision", "", "The web app treats a customer id as an opaque string and never derives one.", "",
+  "## Consequences", "", "- the storefront stores no customer profile", "",
+  "## Alternatives considered", "", "- The email address as the id: rejected because emails change.", "",
+].join("\n");
 
 test("intake: handoffs run or skip by their condition under a predecided breaking-amend, and ## Produced gains order-api@v2", () => {
-  // A pre-existing defect in a file the intake never touches: an open-question id defined nowhere
-  // (Review Focus 3). It stays a warning in every gate and in the done definition.
-  const shop = readFileSync(join(FIXTURES, "tree/04-mid/hsdd/spec/shop.md"), "utf8").replace("axis is the deploy target, not team ownership.", "axis is the deploy target, not team ownership. Refunds are open (OQ7).");
-  const dir = makeRepo({ stage: "06-planned", config: baseConfig({ skills_dir: completeSkills() }), files: { [REQUEST]: SPEC_V2, "hsdd/spec/shop.md": shop } });
+  const web = readFileSync(join(FIXTURES, "tree/04-mid/hsdd/spec/shop.web.md"), "utf8").replace("- **Produces:** none\n", "- **Produces:** none\n- **Governed by:** [ADR-002]\n");
+  const dir = makeRepo({
+    stage: "06-planned", config: baseConfig({ skills_dir: completeSkills() }),
+    files: { [REQUEST]: SPEC_V2, "hsdd/adr/002-customer-ids.md": ADR_002, "hsdd/spec/shop.web.md": web },
+  });
+  assert.equal(spawnSync(process.execPath, ["hsdd/scripts/gen-registry.mjs"], { cwd: dir }).status, 0);
+  gitIn(dir, "add", "-A");
+  gitIn(dir, "commit", "-q", "-m", "owner: ADR-002");
   // An instruction with quotes, `#`, `: ` and a newline round-trips through run.yaml (Review Focus 4).
   const instruction = "Take in \"Spec V2\" as normative: #1 priority.\nDo not ask me anything, but record the decisions.";
   const seg = openSegment(dir, { mode: "intake", request: REQUEST, authority: "accepted-rfc", stopPolicy: "decide-and-record", instruction });
   assert.equal(seg.id.replace(/^\d{4}-\d{2}-\d{2}-/, ""), "intake-spec-v2-n-code");
   assert.equal(parseYaml(read(dir, "hsdd/auto/run.yaml")).segments.at(-1).instruction, instruction);
-  let predecided;
+  const config = {};
   runSetup(dir, seg, {
     before: (step) => {
       // 9.3: the new version becomes normative and the old one moves to the baseline, both recorded.
       setKey(dir, "sources", { normative: [{ path: REQUEST, cite: "Spec", version: "v2" }], baseline: [{ path: "ref/spec.md", cite: "Spec", version: "v1" }] });
-      decide(dir, step, dec("The instruction says to take in Spec v2 as normative: which sources does the run read?", {
+      config.sources = decide(dir, step, dec("The instruction says to take in Spec v2 as normative: which sources does the run read?", {
         artifact: "hsdd/auto/run.yaml", evidence: [REQUEST], blast_radius: "tree",
         options: [{ label: "v2 normative, v1 baseline", consequence: "citations move to v2; v1 is read only to see what changed" }, { label: "both normative", consequence: "two specs bind and contradict" }],
         chosen: "v2 normative, v1 baseline",
       }));
+      changeLog(dir, config.sources, `sources: ${REQUEST} normative at v2, ref/spec.md moved to the baseline at v1`);
       // 8.4: the change breaks a stable contract, so the segment will meet breaking-amend; decided once.
-      predecided = decide(dir, step, dec("A breaking change to a stable contract: how is it versioned?", {
+      config.predecided = decide(dir, step, dec("A breaking change to a stable contract: how is it versioned?", {
         options: [{ label: "next version", consequence: "the contract takes v2 with a migration note; consumers move by citation touches" }, { label: "new contract", consequence: "a second contract beside the first" }],
         chosen: "next version", would_have_asked: true, stop_class: "breaking-amend", blast_radius: "contract", evidence: ["Spec §2", "hsdd/contract/order-api.md"],
       }));
-      setKey(dir, "predecided", { "breaking-amend": { answer: "A breaking change to a stable contract takes the next version with a migration note.", decision: predecided } });
+      setKey(dir, "predecided", { "breaking-amend": { answer: "A breaking change to a stable contract takes the next version with a migration note.", decision: config.predecided } });
+      changeLog(dir, config.predecided, "predecided breaking-amend: a breaking change to a stable contract takes the next version");
     },
   });
+  const predecided = config.predecided;
   runPlanStep(dir, seg, { purpose: "Take Spec v2's currency into the planned tree." });
+  assert.ok(read(dir, "hsdd/auto/plan.md").includes(`the owner's instruction: "${instruction}"`), "a clean instruction is quoted in plan.md");
 
   const intake = runStep(dir, {
     files: { "hsdd/management/2026-10-23-intake-order-v2.md": intakeRecord() },
     decisions: [
       dec("Which class is the request?", { artifact: "hsdd/management/2026-10-23-intake-order-v2.md", chosen: "A" }),
+      dec("Route one citation touch per artifact citing order-api@v1 or ref/spec.md, each run only while it still cites a superseded string?", {
+        artifact: "hsdd/management/2026-10-23-intake-order-v2.md", options: [{ label: "conditional touches", consequence: "a file a content handoff already moved is skipped" }, { label: "unconditional", consequence: "every file is touched even when nothing is left to move" }],
+        chosen: "conditional touches", evidence: ["Spec §2"],
+      }),
       dec("Spec v2 §3 names no display format for an amount in a currency: which one does the tree assume?", {
         artifact: "hsdd/management/2026-10-23-intake-order-v2.md", chosen: "A", would_upstream: true, blast_radius: "upstream", confidence: "medium", evidence: ["Spec §3"],
       }),
@@ -866,10 +961,11 @@ test("intake: handoffs run or skip by their condition under a predecided breakin
   assert.equal(upstream.length, 1);
   assert.match(upstream[0], new RegExp(`^DEC-\\d{3} intake \\(${intake}\\) Spec v2 §3 names no display format .* -> A$`));
   const [consider] = itemsFrom(dir, intake, "consider");
+  const routing = jsonl(dir, "hsdd/judgement/decisions.jsonl").find((d) => d.step_ref === intake && d.chosen === "conditional touches").id;
 
   // H1 meets breaking-amend and applies the predecided answer instead of stopping.
   const h1 = launch(dir, {
-    files: { "hsdd/contract/order-api.md": contractV2 },
+    files: contractV2,
     regen: true,
     decisions: [dec("Retyping total_cents breaks order-api@v1: next version or a new contract?", {
       artifact: "hsdd/contract/order-api.md", options: [{ label: "next version", consequence: "order-api@v2" }, { label: "new contract", consequence: "order-money-api@v1" }],
@@ -881,13 +977,23 @@ test("intake: handoffs run or skip by their condition under a predecided breakin
   review(dir, h1);
   commitStep(dir, h1);
 
+  // The rest of the handoffs: H2 moves shop.web.app's citations with its content change, so its touch
+  // (H3a) is skipped by its condition; every other touch still finds order-api@v1 and runs. The ADR's
+  // touch moves its live citations and keeps a dated amendment entry naming v1 (history, 12.4).
+  const adrTouch = (old) => `${citesCurrent(old).replace(/\s*$/, "")}\n\n## Amendments\n\n- ${AMENDED}: citation touch for Spec v2; the citations of order-api@v1 moved to order-api@v2, and the id format did not change.\n`;
   assert.deepEqual(drive(dir, seg, {
     "spec-touch shop.web.app": {
       files: { "hsdd/spec/shop.web.app.md": (old) => citesCurrent(old).replace("Totals are\nshown from `total_cents` and never recomputed.", "Totals are\nshown from `total` with its currency and never recomputed.") },
       decisions: [dec("Where does the storefront show the currency?", { artifact: "hsdd/spec/shop.web.app.md" })],
     },
-    "citation-touch shop.api": { files: { "hsdd/spec/shop.api.md": citesCurrent } },
+    "citation-touch shop.api": touchPlan("hsdd/spec/shop.api.md"),
+    "citation-touch shop": touchPlan("hsdd/spec/shop.md"),
+    "citation-touch shop.web": touchPlan("hsdd/spec/shop.web.md"),
+    "citation-touch ADR-001": touchPlan("hsdd/adr/001-order-ids.md", adrTouch, { regen: true, notes: ["moved 2 live citations to order-api@v2, kept 1 dated amendment entry as history"] }),
     "align shop.api,shop.web.app": { notes: ["both plans cite only current versions"] },
+  }, {
+    // 6.9: the skip's change-log entry, opening with the intake decision that made the touches conditional.
+    onSkip: (skip) => changeLog(dir, routing, `skipped ${skip.handoff}: ${skip.reason}`),
   }), { done: true });
 
   const reportText = read(dir, `hsdd/auto/report/${seg.id}.md`);
@@ -900,25 +1006,37 @@ test("intake: handoffs run or skip by their condition under a predecided breakin
   assert.equal(closer.kind, "plan");
   assert.match(read(dir, `hsdd/auto/dispatch/${closer.step_ref}.md`), new RegExp(`"item": "${consider.id}"`));
 
-  // H3a was skipped by its condition (H2 already moved the file's citations); H3b ran.
+  // Every citing artifact got a touch or was skipped by its condition: H3a skipped, once, the rest ran.
   const skips = jsonl(dir, "hsdd/auto/handoffs.jsonl");
   assert.deepEqual(skips.map((l) => [l.handoff, l.status]), [["H3a", "skipped"]]);
   assert.match(skips[0].reason, /cites-superseded does not hold/);
   const handoffs = stateOf(dir).intake.handoffs.map((h) => [h.id, h.state]);
-  assert.deepEqual(handoffs, [["H1", "executed"], ["H2", "executed"], ["H3a", "skipped"], ["H3b", "executed"]]);
-  assert.ok(subjects(dir).some((s) => /^auto: skip H3a: cites-superseded does not hold/.test(s)));
+  assert.deepEqual(handoffs, [["H1", "executed"], ["H2", "executed"], ["H3a", "skipped"], ["H3b", "executed"], ["H3c", "executed"], ["H3d", "executed"], ["H3e", "executed"]]);
+  assert.equal(subjects(dir).filter((s) => /^auto: skip H3a: cites-superseded does not hold/.test(s)).length, 1, "one skip commit");
+  const plan = read(dir, "hsdd/auto/plan.md");
+  for (const [id, text] of [[config.sources, "sources: "], [predecided, "predecided breaking-amend: "], [routing, "skipped H3a: cites-superseded does not hold"]]) {
+    assert.ok(plan.includes(`\n- ${id}: ${text}`), `a change-log entry opening with ${id}: ${text}`);
+  }
 
-  // F2's remaining references are warnings only: the files the segment did not touch keep order-api@v1.
+  // F2 lists no live reference. What remains is the ADR's dated amendment entry: exactly one F2 line, for
+  // that file, and every line there naming order-api@v1 is a dated entry (history, 12.4). The contract's
+  // own migration note is in its own file, which F2 leaves out.
   const final = cli(dir, "gate.mjs", ["--final"]).stdout;
-  assert.match(final, /^warn {2}F2 hsdd\/spec\/shop\.md: order-api@v1/m);
-  assert.match(final, /^warn {2}C6 OQ7 is cited and defined nowhere \(hsdd\/spec\/shop\.md\); not changed in this segment$/m);
+  const f2 = final.split("\n").filter((l) => /^warn {2}F2 /.test(l));
+  assert.deepEqual(f2.map((l) => /^warn {2}F2 (\S+): (\S+) /.exec(l).slice(1)), [["hsdd/adr/001-order-ids.md", "order-api@v1"]], final);
+  const stale = read(dir, "hsdd/adr/001-order-ids.md").split("\n").filter((l) => l.includes("order-api@v1"));
+  assert.ok(stale.length > 0 && stale.every((l) => l.startsWith(`- ${AMENDED}: `)), stale.join("\n"));
+  // The pre-existing defect stays a warning: its file is not changed in the segment.
+  assert.match(final, /^warn {2}C6 OQ7 is cited and defined nowhere \(hsdd\/adr\/002-customer-ids\.md\); not changed in this segment$/m);
   assert.doesNotMatch(final, /^ERROR/m);
+  assert.equal(gitIn(dir, "log", "--format=%h", "main..HEAD", "--", "hsdd/adr/002-customer-ids.md"), "", "no step touched it");
   assert.match(read(dir, `hsdd/auto/dispatch/${h1}.md`), /^> Take in "Spec V2" as normative: #1 priority\.\n> Do not ask me anything, but record the decisions\.$/m);
 
-  // The record's ## Produced gains the bump and no phase; one change-log line names the segment.
+  // The record's ## Produced gains the bump and the touched ADR, and no phase; one change-log line names the segment.
   const record = read(dir, "hsdd/management/2026-10-23-intake-order-v2.md");
   const produced = /## Produced\n([\s\S]*?)\n## Change log/.exec(record)[1];
   assert.match(produced, /^- Contracts bumped: order-api@v2$/m);
+  assert.match(produced, /^- ADRs amended: ADR-001$/m);
   assert.doesNotMatch(produced, /shop\.(api|web\.app)\.\d/);
   assert.match(record, new RegExp(`hsdd-auto segment ${seg.id}: contracts bumped order-api@v2`));
   assert.equal(committedSteps(dir).find((l) => l.step_ref === intake).kind, "intake");
@@ -983,17 +1101,20 @@ test("rework: a report that fails B3 is resumed once and passes", () => {
   assert.equal(stateOf(dir).segment.ended, true);
   assert.match(nextOf(dir).stuck[0], new RegExp(`segment ${seg.id} was ended at ${ending}`));
   const seg2 = openSegment(dir, { instruction: message });
+  let limit = null;
   assert.equal(seg2.mode, "plan");
   assert.match(seg2.id, /^\d{4}-\d{2}-\d{2}-plan(-2)?$/);
   runSetup(dir, seg2, {
     before: (step) => {
       setKey(dir, "rework_limit", 2);
-      decide(dir, step, dec(`The owner wrote: "${message}" Set rework_limit to 2?`, {
+      limit = decide(dir, step, dec(`The owner wrote: "${message}" Set rework_limit to 2?`, {
         artifact: "hsdd/auto/run.yaml", options: [{ label: "2", consequence: "two resumes per step before gate-twice" }, { label: "1", consequence: "the default" }], chosen: "2", evidence: [ending],
       }));
+      changeLog(dir, limit, `rework_limit 2 in hsdd/auto/run.yaml, from the owner's message at ${ending}`);
     },
   });
   assert.equal(parseYaml(read(dir, "hsdd/auto/run.yaml")).rework_limit, 2);
+  assert.match(read(dir, "hsdd/auto/plan.md"), new RegExp(`^- ${limit}: rework_limit 2 in hsdd/auto/run\\.yaml`, "m"));
   runPlanStep(dir, seg2, { purpose: "Align the tree under the owner's new rework limit." });
   assert.deepEqual(drive(dir, seg2, { "align all": chain()["align all"] }), { done: true });
   const report = read(dir, `hsdd/auto/report/${seg2.id}.md`);
@@ -1054,14 +1175,17 @@ test("interruption: lost launches are re-dispatched under the same id, and a cra
     decisions: [dec("Cite the cents constraint in shop.api's Overview?", { artifact: "hsdd/spec/shop.api.md", evidence: ["Spec §4"] })],
     noReport: true,
   }, { kind: "spec-touch", target: "shop.api" });
+  // The lock its decide.mjs left behind when the launch died, older than decide.mjs's 60-second limit.
+  const lock = join(dir, "hsdd/auto/.decide.lock");
   put(dir, "hsdd/auto/.decide.lock", "4242\n");
+  const stale = Date.now() / 1000 - 120;
+  utimesSync(lock, stale, stale);
   const lost = stateOf(dir).steps.in_progress;
   assert.deepEqual(lost, { step: touch, has_report: false, has_artifact_commit: false });
   assert.match(cli(dir, "state.mjs").stdout, new RegExp(`^steps: \\d+ dispatched, last ${touch}; in progress ${touch} \\(report: no, artifact commit: no\\)$`, "m"));
   assert.deepEqual(nextOf(dir), { waiting: touch });
-  // 8.9: the decision already recorded is reused, never minted again; the stale lock is removed.
+  // The lost launch's decision stays in the step's sidecar; the redispatch names the sidecar.
   assert.equal(sidecar(dir, touch).length, 1);
-  rmSync(join(dir, "hsdd/auto/.decide.lock"));
   const before = readDispatchFile(dir, touch).readCheck;
   assert.deepEqual(cli(dir, "dispatch.mjs", ["--redispatch", touch]).stdout.trimEnd().split("\n"), [`hsdd/auto/dispatch/${touch}.md`, "", ...LAUNCH(touch)]);
   const again = readDispatchFile(dir, touch);
@@ -1070,8 +1194,14 @@ test("interruption: lost launches are re-dispatched under the same id, and a cra
   assert.match(again.body, /- `hsdd\/spec\/shop\.api\.md`/);
   assert.match(again.body, new RegExp(`The decisions the lost launch recorded are in \`hsdd/auto/steps/${touch}\\.decisions\\.jsonl\``));
 
-  // Launch 2 reports; the review sends a finding back, and the resumed subagent is lost too.
-  standIn(dir, touch, { files: { "hsdd/spec/shop.api.md": overviewFix }, closes });
+  // Launch 2 records a decision (its decide.mjs replaces the stale lock) and reports; the review sends a
+  // finding back, and the resumed subagent is lost too.
+  standIn(dir, touch, {
+    files: { "hsdd/spec/shop.api.md": overviewFix }, closes,
+    decisions: [dec("Name the section that answers OQ1?", { artifact: "hsdd/spec/shop.api.md" })],
+  });
+  assert.equal(sidecar(dir, touch).length, 2, "the fresh launch's decision is recorded past the stale lock");
+  assert.equal(existsSync(lock), false, "decide.mjs replaced the stale lock and removed it");
   review(dir, touch);
   resumeFinding(dir, touch, "review: the Overview's new citation names Spec §4 without its version");
   assert.equal(stateOf(dir).steps.in_progress.has_report, true);
@@ -1106,8 +1236,8 @@ test("interruption: lost launches are re-dispatched under the same id, and a cra
     assert.equal(committedSteps(dir).filter((l) => l.step_ref === step).length, 1, `one run line for ${step}`);
   }
   const ledger = jsonl(dir, "hsdd/judgement/decisions.jsonl").filter((d) => d.step_ref === touch);
-  assert.equal(ledger.length, 2, "the lost launch's decision and the review's, each once");
-  assert.equal(new Set(ledger.map((d) => d.id)).size, 2);
+  assert.equal(ledger.length, 3, "the lost launch's decision, the fresh launch's and the review's, each once");
+  assert.equal(new Set(ledger.map((d) => d.id)).size, 3);
   assert.deepEqual(queue(dir).filter((l) => l.id === item).map((l) => l.status), ["open", "addressed"]);
   gitIn(dir, "cat-file", "-e", `HEAD:hsdd/auto/steps/${touch}.lost2.json`);
   assert.equal(committedSteps(dir).find((l) => l.step_ref === touch).dispatches, 4);
