@@ -18,26 +18,39 @@ const HOOK_BASH = 'node "${CLAUDE_PROJECT_DIR}/hsdd/scripts/auto/hook-bash.mjs"'
 const HOOK_STOP = 'node "${CLAUDE_PROJECT_DIR}/hsdd/scripts/auto/hook-subagent-stop.mjs"';
 const STEP_TOOLS = "Read, Write, Edit, Glob, Grep, Bash, Skill";
 
-export class AdapterError extends Error {}
+export class AdapterError extends Error {
+  name = "AdapterError";
+}
 
 // ---------- the translation table (11.1) ----------
 
-// An owner path as a rule path: absolute `//a/b`, home `~/a/b`, project `/a/b`; a glob is kept as
-// written; `/**` is appended unless the path ends in `**`.
-export const ruleFor = (form, tool) => {
+// The rule path of an owner path, without the `/**` suffix: absolute `//a/b`, home `~/a/b`, project `/a/b`.
+const basePath = (form) => {
   const trimmed = form.length > 1 ? form.replace(/\/+$/, "") : form;
-  const base = trimmed === "~" ? "~"
+  return trimmed === "~" ? "~"
     : trimmed.startsWith("~/") ? trimmed
     : isAbsolute(trimmed) ? `/${trimmed}`
     : `/${trimmed.replace(/^\.\//, "")}`;
-  const path = base.endsWith("**") ? base : `${base.replace(/\/$/, "")}/**`;
-  return `${tool}(${path})`;
 };
 
-export const denyRules = (config) => [
-  ...config.out_of_bounds.map((p) => ruleFor(p, "Read")),
-  ...config.read_only.map((p) => ruleFor(p, "Edit")),
-];
+// An owner path as a rule path (11.1's table): a glob is kept as written; `/**` is appended unless the
+// path ends in `**`.
+export const ruleFor = (form, tool) => {
+  const base = basePath(form);
+  return `${tool}(${base.endsWith("**") ? base : `${base.replace(/\/$/, "")}/**`})`;
+};
+
+// Every rule an entry needs: the table's rule, and the bare path as well unless it ends in `**`, so a
+// file entry is denied as the file and a directory entry as the directory and what is under it.
+const rulesFor = (form, tool) => {
+  const base = basePath(form);
+  return base.endsWith("**") ? [ruleFor(form, tool)] : [ruleFor(form, tool), `${tool}(${base})`];
+};
+
+export const denyRules = (config) => [...new Set([
+  ...config.out_of_bounds.flatMap((p) => rulesFor(p, "Read")),
+  ...config.read_only.flatMap((p) => rulesFor(p, "Edit")),
+])];
 
 const bashHookElement = { matcher: "Bash", hooks: [{ type: "command", command: HOOK_BASH }] };
 const stopHookElement = { hooks: [{ type: "command", command: HOOK_STOP }] };
@@ -62,14 +75,21 @@ export const renderAgent = (config) => {
 
 const unescapePointer = (s) => s.replace(/~1/g, "/").replace(/~0/g, "~");
 const tokensOf = (pointer) => pointer.split("/").slice(1).map(unescapePointer);
-const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+const canonical = (v) => (Array.isArray(v) ? v.map(canonical)
+  : v !== null && typeof v === "object" ? Object.fromEntries(Object.keys(v).sort().map((k) => [k, canonical(v[k])])) : v);
+const same = (a, b) => JSON.stringify(canonical(a)) === JSON.stringify(canonical(b));
 
-// A copy of `doc` with `value` appended to the array at `pointer` (created when missing); pure.
-const appended = (doc, tokens, value) => {
-  if (tokens.length === 0) return [...(Array.isArray(doc) ? doc : []), value];
+// A copy of `doc` with `value` appended to the array at `tokens` (created when missing); pure. An
+// existing container of another type is refused, never replaced.
+const appended = (doc, tokens, value, path = "") => {
+  if (tokens.length === 0) {
+    if (doc !== undefined && !Array.isArray(doc)) throw new AdapterError(`${SETTINGS}: ${path} is not an array; nothing changed`);
+    return [...(doc ?? []), value];
+  }
+  if (doc !== undefined && (doc === null || typeof doc !== "object" || Array.isArray(doc))) throw new AdapterError(`${SETTINGS}: ${path || "/"} is not an object; nothing changed`);
   const [head, ...rest] = tokens;
-  const obj = doc !== null && typeof doc === "object" && !Array.isArray(doc) ? doc : {};
-  return { ...obj, [head]: appended(obj[head], rest, value) };
+  const obj = doc ?? {};
+  return { ...obj, [head]: appended(obj[head], rest, value, `${path}/${head}`) };
 };
 
 const arrayAt = (doc, tokens) => tokens.reduce((d, t) => (d !== null && typeof d === "object" ? d[t] : undefined), doc);
@@ -130,13 +150,10 @@ export const install = (repoRoot, config, { stopHook = false } = {}) => {
     if (Array.isArray(present) && present.some((e) => same(e, w.value))) return acc;
     return { settings: appended(acc.settings, tokensOf(w.pointer), w.value), added: [...acc.added, { file: SETTINGS, ...w }] };
   }, { settings, added: [] });
-  if (next.added.length > 0 || !settingsExisted) writeJson(settingsFile, next.settings);
 
   const ownsAgent = previous.created.includes(AGENT_FILE);
   const agentFile = join(repoRoot, AGENT_FILE);
   const createAgent = ownsAgent || !existsSync(agentFile);
-  if (createAgent) { mkdirSync(dirname(agentFile), { recursive: true }); writeFileSync(agentFile, renderAgent(config)); }
-
   const created = [
     ...previous.created,
     ...(!settingsExisted && !previous.created.includes(SETTINGS) ? [SETTINGS] : []),
@@ -145,7 +162,10 @@ export const install = (repoRoot, config, { stopHook = false } = {}) => {
   const record = { version: 1, added: [...previous.added, ...next.added], created };
   const errors = validate("adapter", record);
   if (errors.length > 0) throw new AdapterError(`adapter record invalid: ${errors.join("; ")}`);
+  // The record first: a crash after it leaves recorded elements that are absent, which uninstall tolerates.
   writeJson(join(repoRoot, P.adapter), record);
+  if (next.added.length > 0 || !settingsExisted) writeJson(settingsFile, next.settings);
+  if (createAgent) { mkdirSync(dirname(agentFile), { recursive: true }); writeFileSync(agentFile, renderAgent(config)); }
   return record;
 };
 
@@ -158,19 +178,23 @@ export const uninstall = (repoRoot, config = null) => {
   if (!existsSync(recordFile)) return;
   const record = readRecord(repoRoot);
   const byFile = Map.groupBy(record.added, (a) => a.file);
-  for (const [rel, entries] of byFile) {
+  // Read every recorded file first: one that cannot be read stops the uninstall before anything changes.
+  const docs = [...byFile].flatMap(([rel, entries]) => {
     const file = join(repoRoot, rel);
-    if (!existsSync(file)) continue;
+    if (!existsSync(file)) return [];
     let doc;
-    try { doc = readJson(file); } catch { continue; }
+    try { doc = readJson(file); } catch (e) { throw new AdapterError(`${rel} cannot be read as JSON (${e.message}); nothing changed, ${P.adapter} kept`); }
+    if (doc === null || typeof doc !== "object" || Array.isArray(doc)) throw new AdapterError(`${rel} is not a JSON object; nothing changed, ${P.adapter} kept`);
+    return [{ rel, file, doc, entries }];
+  });
+  for (const { rel, file, doc, entries } of docs) {
     const after = entries.reduce((acc, e) => {
       const r = removed(acc.doc, tokensOf(e.pointer), e.value);
       return { doc: r.doc, changed: acc.changed || r.removed };
     }, { doc, changed: false });
     if (!after.changed) continue;
-    const left = after.doc;
-    if (Object.keys(left).length === 0 && record.created.includes(rel)) rmSync(file);
-    else writeJson(file, left);
+    if (Object.keys(after.doc).length === 0 && record.created.includes(rel)) rmSync(file);
+    else writeJson(file, after.doc);
   }
   // A created file is ours while it still reads as install renders it from the current configuration.
   let cfg = config;
@@ -207,9 +231,12 @@ export const check = (repoRoot, config) => {
     try { settings = readJson(settingsFile); } catch (e) { failures.push(`${SETTINGS} is not valid JSON (${e.message})`); }
   }
   if (settings !== null) {
-    const deny = settings?.permissions?.deny ?? [];
+    const rawDeny = settings?.permissions?.deny;
+    if (rawDeny !== undefined && !Array.isArray(rawDeny)) failures.push(`${SETTINGS}: permissions.deny is not an array`);
+    const deny = Array.isArray(rawDeny) ? rawDeny : [];
     denyRules(config).filter((r) => !deny.includes(r)).forEach((r) => failures.push(`${SETTINGS} lacks the deny rule ${r}`));
-    const commands = (event) => (settings?.hooks?.[event] ?? []).flatMap((e) => (e?.hooks ?? []).map((h) => ({ matcher: e.matcher, command: h?.command })));
+    const arr = (v) => (Array.isArray(v) ? v : []);
+    const commands = (event) => arr(settings?.hooks?.[event]).flatMap((e) => arr(e?.hooks).map((h) => ({ matcher: e?.matcher, command: h?.command })));
     const bash = commands("PreToolUse").filter((c) => String(c.command).includes("hook-bash.mjs"));
     if (!bash.some((c) => c.command === HOOK_BASH && c.matcher === "Bash")) failures.push(`${SETTINGS} lacks the Bash PreToolUse hook (${HOOK_BASH})`);
     if (!existsSync(join(repoRoot, P.scriptsAuto, "hook-bash.mjs"))) failures.push(`${P.scriptsAuto}/hook-bash.mjs does not exist: the hook command points at a missing file`);

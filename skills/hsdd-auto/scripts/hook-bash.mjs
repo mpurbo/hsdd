@@ -1,6 +1,7 @@
 // The adapter's Bash PreToolUse hook (spec 11.1, rules 1 to 3). evaluateBash is pure over the event,
 // the configuration and the two directories; the CLI reads the event on stdin, exits 2 with the reason
 // on stderr to block, and exits 0 silently on anything it cannot handle (the gate is the backstop).
+// It matches text only: no `cd` tracking, no computed paths, no variable expansion beyond a leading ~ or $HOME.
 import { readFileSync, realpathSync } from "node:fs";
 import { homedir } from "node:os";
 import { basename, isAbsolute, posix, resolve } from "node:path";
@@ -81,7 +82,11 @@ export const parseCommands = (text) => {
       // `2>`, `&>` and `>&2`: a digit-only word before `>` is the descriptor, not an argument.
       if (cur !== null && /^\d+$/.test(cur)) cur = null; else flushWord();
       while (text[i + 1] === ">" || text[i + 1] === "|") i++;
-      if (text[i + 1] === "&") { i++; while (/\d|-/.test(text[i + 1] ?? "")) i++; pendingRedirect = false; } else pendingRedirect = true;
+      if (text[i + 1] === "&") {
+        // `>&2` and `>&-` duplicate or close a descriptor; `>& word` redirects to the file `word`.
+        i++;
+        if (/^(?:\d+-?|-)(?=[\s;|&)<>]|$)/.test(text.slice(i + 1))) { while (/[\d-]/.test(text[i + 1] ?? "")) i++; pendingRedirect = false; } else pendingRedirect = true;
+      } else pendingRedirect = true;
     } else if (c === "<") {
       flushWord();
       while (text[i + 1] === "<") i++;
@@ -98,13 +103,31 @@ export const parseCommands = (text) => {
   return commands;
 };
 
-const WRAPPERS = new Set(["sudo", "command", "env", "nohup", "time", "exec", "nice", "builtin"]);
+// Wrapper commands and the options that take a separate value; the wrapped command follows them.
+const WRAPPERS = {
+  sudo: new Set(["-u", "-g", "-h", "-p", "-C", "-T", "-r", "-t", "-U", "-D", "-R"]),
+  env: new Set(["-u", "-C", "-S"]),
+  nice: new Set(["-n"]),
+  timeout: new Set(["-s", "-k"]),
+  xargs: new Set(["-n", "-I", "-L", "-P", "-s", "-d", "-E", "-a"]),
+  command: new Set(), nohup: new Set(), time: new Set(), exec: new Set(), builtin: new Set(),
+};
 const SHELLS = new Set(["sh", "bash", "zsh", "dash", "ksh"]);
+const SHELL_C = /^-[a-zA-Z]*c$/;
 
-// Drops env assignments and wrapper commands from the front of a command's words.
+// Drops env assignments and wrapper commands, with their own options, from the front of a command's words.
 const significant = (words) => {
   let i = 0;
-  while (i < words.length && (/^[A-Za-z_][A-Za-z0-9_]*=/.test(words[i]) || WRAPPERS.has(basename(words[i])))) i++;
+  while (i < words.length) {
+    const w = words[i];
+    const name = basename(w);
+    if (/^[A-Za-z_][A-Za-z0-9_]*=/.test(w)) { i++; continue; }
+    if (!Object.hasOwn(WRAPPERS, name)) break;
+    const valued = WRAPPERS[name];
+    i++;
+    while (i < words.length && words[i].startsWith("-") && words[i] !== "-") i += valued.has(words[i]) ? 2 : 1;
+    if (name === "timeout" && i < words.length) i++;
+  }
   return words.slice(i);
 };
 
@@ -112,8 +135,9 @@ const significant = (words) => {
 const flatten = (text, depth = 0) =>
   parseCommands(text).flatMap(({ words, redirects }) => {
     const w = significant(words);
-    const nested = depth < 3 && w.length > 0 && SHELLS.has(basename(w[0])) && w.includes("-c") && w[w.indexOf("-c") + 1] !== undefined
-      ? flatten(w[w.indexOf("-c") + 1], depth + 1) : [];
+    const c = w.findIndex((x, k) => k > 0 && SHELL_C.test(x));
+    const nested = depth < 3 && w.length > 0 && SHELLS.has(basename(w[0])) && c > 0 && w[c + 1] !== undefined
+      ? flatten(w[c + 1], depth + 1) : [];
     return [{ words: w, redirects }, ...nested];
   });
 

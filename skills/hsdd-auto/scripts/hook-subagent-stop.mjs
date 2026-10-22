@@ -3,7 +3,7 @@
 // A.4 and its code rules, or carries a read_check that differs from the dispatch file's last line (B5).
 // It nudges once per stop chain (stop_hook_active); the gate and the orchestrator's resume catch the rest.
 // Anything unexpected exits 0: a hook never crashes the host session.
-import { existsSync, readFileSync, realpathSync } from "node:fs";
+import { closeSync, existsSync, openSync, readFileSync, readSync, realpathSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { validate } from "./lib/schema.mjs";
@@ -29,6 +29,18 @@ export const firstUserText = (jsonl) => {
   return null;
 };
 
+// The first 64 KiB of a file: enough for the launch prompt, which is the transcript's first message.
+const HEAD_BYTES = 65536;
+const headOf = (file) => {
+  const fd = openSync(file, "r");
+  try {
+    const buf = Buffer.alloc(HEAD_BYTES);
+    return buf.toString("utf8", 0, readSync(fd, buf, 0, HEAD_BYTES, 0));
+  } finally {
+    closeSync(fd);
+  }
+};
+
 const PASS = { block: false, reason: "" };
 const blocked = (reason) => ({ block: true, reason });
 
@@ -37,7 +49,7 @@ export const evaluateStop = (event, repoRoot) => {
     if (event?.stop_hook_active === true) return PASS;
     const transcript = event?.agent_transcript_path;
     if (typeof transcript !== "string" || !existsSync(transcript)) return PASS;
-    const first = firstUserText(readFileSync(transcript, "utf8"));
+    const first = firstUserText(headOf(transcript));
     const m = first === null ? null : LAUNCH.exec(first);
     if (m === null) return PASS;
     const [, step, dispatchPath] = m;

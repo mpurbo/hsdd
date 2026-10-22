@@ -47,6 +47,8 @@ test("install keeps existing settings and uninstall removes exactly what it adde
   assert.ok(after.permissions.deny.includes("Read(//srv/secret/**)"));
   assert.ok(after.permissions.deny.includes("Read(~/.claude*/projects/*/memory/**)"));
   assert.ok(after.permissions.deny.includes("Edit(/specs/*.md/**)"));
+  assert.ok(after.permissions.deny.includes("Edit(/specs/*.md)"));
+  assert.ok(after.permissions.deny.includes("Read(/docs/private)"));
   assert.equal(after.hooks.PreToolUse[0].matcher, "Write");
   assert.equal(after.hooks.PreToolUse[1].matcher, "Bash");
   assert.equal(after.hooks.PreToolUse[1].hooks[0].command, 'node "${CLAUDE_PROJECT_DIR}/hsdd/scripts/auto/hook-bash.mjs"');
@@ -195,4 +197,68 @@ test("CLI install, check, uninstall", () => {
   const noConfig = makeRepo({ commit: false });
   writeFileSync(join(noConfig, "hsdd/auto/run.yaml"), "run: [unclosed\n");
   assert.equal(run(noConfig, "adapter.mjs", ["install"]).code, 1);
+});
+
+test("a file entry and a file glob each get the bare rule and the /** rule", () => {
+  const dir = repo({ out_of_bounds: ["secrets.env", "~/.aws/credentials"], read_only: ["ref/spec.md", "ref/", "docs/**"] });
+  install(dir, loadConfig(dir), {});
+  const deny = json(dir, SETTINGS).permissions.deny;
+  for (const r of ["Read(/secrets.env)", "Read(/secrets.env/**)", "Read(~/.aws/credentials)", "Read(~/.aws/credentials/**)",
+    "Edit(/ref/spec.md)", "Edit(/ref/spec.md/**)", "Edit(/ref)", "Edit(/ref/**)", "Edit(/docs/**)"]) assert.ok(deny.includes(r), r);
+  assert.equal(deny.filter((r) => r === "Edit(/docs/**)").length, 1);
+  assert.equal(new Set(deny).size, deny.length);
+  const cfg = loadConfig(dir);
+  assert.deepEqual(check(dir, cfg), []);
+  writeFileSync(join(dir, SETTINGS), JSON.stringify({ permissions: { deny: deny.filter((r) => r !== "Read(/secrets.env)") }, hooks: json(dir, SETTINGS).hooks }));
+  assert.match(check(dir, cfg).join("\n"), /lacks the deny rule Read\(\/secrets\.env\)/);
+});
+
+test("uninstall refuses an unreadable or invalid settings file and keeps adapter.json", () => {
+  const dir = repo();
+  install(dir, loadConfig(dir), {});
+  writeFileSync(join(dir, SETTINGS), "{ nope");
+  assert.throws(() => uninstall(dir), (e) => e.name === "AdapterError" && e.message.includes(SETTINGS));
+  assert.ok(existsSync(join(dir, "hsdd/auto/adapter.json")));
+  assert.equal(read(dir, SETTINGS), "{ nope");
+  const r = run(dir, "adapter.mjs", ["uninstall"]);
+  assert.equal(r.code, 1);
+  assert.match(r.stdout, /settings\.json/);
+});
+
+test("elements are compared by canonical JSON, so key order never duplicates", () => {
+  const dir = repo();
+  put(dir, SETTINGS, JSON.stringify({ hooks: { PreToolUse: [{ hooks: [{ command: 'node "${CLAUDE_PROJECT_DIR}/hsdd/scripts/auto/hook-bash.mjs"', type: "command" }], matcher: "Bash" }] } }));
+  const record = install(dir, loadConfig(dir), {});
+  assert.equal(json(dir, SETTINGS).hooks.PreToolUse.length, 1);
+  assert.ok(!record.added.some((a) => a.pointer === "/hooks/PreToolUse"));
+});
+
+test("a non-array deny is a check failure and an install refusal", () => {
+  const dir = repo();
+  const cfg = loadConfig(dir);
+  install(dir, cfg, {});
+  const s = json(dir, SETTINGS);
+  writeFileSync(join(dir, SETTINGS), JSON.stringify({ ...s, permissions: { deny: "Read(x)" } }));
+  assert.match(check(dir, cfg).join("\n"), /permissions\.deny is not an array/);
+  assert.throws(() => install(dir, cfg, {}), /not an array/);
+  assert.equal(json(dir, SETTINGS).permissions.deny, "Read(x)");
+  const d2 = repo();
+  put(d2, SETTINGS, JSON.stringify({ permissions: [] }));
+  assert.throws(() => install(d2, loadConfig(d2), {}), /not an object/);
+});
+
+test("check reports an owner's agent file that does not match", () => {
+  const dir = repo();
+  put(dir, AGENT_FILE, "mine\n");
+  install(dir, loadConfig(dir), {});
+  assert.match(check(dir, loadConfig(dir)).join("\n"), /hsdd-auto-step\.md/);
+});
+
+test("the record is written before the settings, and uninstall tolerates absent recorded elements", () => {
+  const dir = repo();
+  install(dir, loadConfig(dir), {});
+  writeFileSync(join(dir, SETTINGS), JSON.stringify({ env: { A: "1" } }));
+  uninstall(dir);
+  assert.deepEqual(json(dir, SETTINGS), { env: { A: "1" } });
+  assert.ok(!existsSync(join(dir, "hsdd/auto/adapter.json")));
 });

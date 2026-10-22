@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { copyFileSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { spawnSync } from "node:child_process";
-import { homedir, tmpdir } from "node:os";
+import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { evaluateBash } from "../skills/hsdd-auto/scripts/hook-bash.mjs";
@@ -122,7 +122,6 @@ test("bash hook CLI: exit 2 with the reason on stderr, else 0 and silent", () =>
   assert.deepEqual([badConfig.status, badConfig.stderr], [0, ""]);
   const noConfig = call(readFileSync(join(FIX, "bash-event-cat.json"), "utf8"), { CLAUDE_PROJECT_DIR: tmpdir() });
   assert.deepEqual([noConfig.status, noConfig.stderr], [0, ""]);
-  assert.ok(homedir());
 });
 
 // ---------- the SubagentStop hook ----------
@@ -208,4 +207,37 @@ test("stop hook CLI exits 2 with the reason on stderr", () => {
   assert.equal(r.status, 2);
   assert.match(r.stderr, /Write your report to hsdd\/auto\/steps\/S04\.json before ending/);
   assert.deepEqual([call("garbage").status, call(JSON.stringify(event({ stop_hook_active: true }))).status], [0, 0]);
+});
+
+test("shell option clusters ending in c are recursed into", () => {
+  const sub = { agent_id: "a1" };
+  blocks('bash -lc "git commit -m x"', sub);
+  blocks("bash -lc 'rm ref/a'");
+  blocks("zsh -ic 'cat docs/private/a'");
+  blocks("sh -c 'git add f'", sub);
+  allows('bash -lc "git status"', sub);
+  allows("bash -lc 'ls'");
+});
+
+test(">& with a file word is a redirect", () => {
+  blocks("echo x >& ref/f");
+  blocks("echo x >&ref/f");
+  allows("echo x >&2");
+  allows("echo x 2>&1");
+});
+
+test("a wrapper's own options are skipped before the wrapped command", () => {
+  const sub = { agent_id: "a1" };
+  for (const c of ["sudo -u r git commit -m x", "env -i git commit -m x", "env VAR=x git commit -m x", "nice -n 5 git commit -m x",
+    "timeout 10 git commit -m x", "xargs -0 git add", "sudo -E env FOO=1 git push"]) blocks(c, sub);
+  blocks("sudo -u r rm ref/a");
+  blocks("timeout 5 rm ref/a");
+  allows("sudo -u r git status", sub);
+});
+
+test("stop hook finds the launch prompt in a large transcript", () => {
+  const { dir, event, transcript } = stopRepo();
+  const filler = `${JSON.stringify({ type: "assistant", message: { role: "assistant", content: [{ type: "text", text: "x".repeat(1000) }] } })}\n`.repeat(200);
+  writeFileSync(transcript, readFileSync(transcript, "utf8") + filler);
+  assert.equal(evaluateStop(event(), dir).block, true);
 });
