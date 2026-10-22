@@ -194,6 +194,10 @@ tokens, time, and quality.
 
 ## Learn more
 
+- [Interactive guide](docs/guide/index.html): a visual, step-by-step
+  introduction for newcomers, from the tree and contracts to brownfield
+  adoption and change intake. Open it in a browser from a checkout; it works
+  offline.
 - [Methodology specification](spec/hsdd-spec-v0_10.md): the single current
   specification, with the full model and every settled decision and its
   provenance. The superseded delta series

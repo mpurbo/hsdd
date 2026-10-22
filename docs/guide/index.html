@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="description" content="An interactive guide to HSDD (Hierarchical Spec-Driven Development) for people new to it: the tree, contracts, phases, brownfield adoption, change intake, and running the project.">
+  <title>HSDD Guide</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 28 28'%3E%3Cpath d='M14 7L7 14M14 7L21 14M7 14L4 21M7 14L10 21M21 14L21 21' fill='none' stroke='%23475569' stroke-width='1.6'/%3E%3Crect x='10' y='3' width='8' height='6' rx='1.5' fill='%23e0e7ff' stroke='%234f46e5'/%3E%3Crect x='3' y='11' width='8' height='6' rx='1.5' fill='%23f3e8ff' stroke='%237c3aed'/%3E%3Crect x='17' y='11' width='8' height='6' rx='1.5' fill='%23f3e8ff' stroke='%237c3aed'/%3E%3Crect x='1' y='20' width='6' height='5' rx='1.5' fill='%23d1fae5' stroke='%23059669'/%3E%3Crect x='8' y='20' width='6' height='5' rx='1.5' fill='%23d1fae5' stroke='%23059669'/%3E%3Crect x='18' y='20' width='6' height='5' rx='1.5' fill='%23d1fae5' stroke='%23059669'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="guide.css">
+  <script src="guide.js" defer></script>
+</head>
+<body>
+  <a class="skip" href="#stage">Skip to the guide</a>
+  <header class="topbar">
+    <button class="tool contents-toggle" id="contents-toggle" aria-expanded="false" aria-controls="toc">Contents</button>
+    <a class="brand" href="#start-1" aria-label="HSDD guide, start page">
+      <svg class="brand-mark" viewBox="0 0 28 28" aria-hidden="true">
+        <path d="M14 7 L7 14 M14 7 L21 14 M7 14 L4 21 M7 14 L10 21 M21 14 L21 21" />
+        <rect x="10" y="3" width="8" height="6" rx="1.5" class="m-root" />
+        <rect x="3" y="11" width="8" height="6" rx="1.5" class="m-node" />
+        <rect x="17" y="11" width="8" height="6" rx="1.5" class="m-node" />
+        <rect x="1" y="20" width="6" height="5" rx="1.5" class="m-leaf" />
+        <rect x="8" y="20" width="6" height="5" rx="1.5" class="m-leaf" />
+        <rect x="18" y="20" width="6" height="5" rx="1.5" class="m-leaf" />
+      </svg>
+      <span class="brand-text"><strong>HSDD</strong><span>Hierarchical Spec-Driven Development</span></span>
+    </a>
+    <div class="tools">
+      <button class="tool" id="glossary-open" title="Glossary (G)">Glossary <kbd>G</kbd></button>
+      <button class="tool" id="faq-open" title="Common questions (?)">Questions <kbd>?</kbd></button>
+      <button class="tool icon" id="theme-toggle" title="Theme (T)" aria-label="Theme: follow system">◐</button>
+    </div>
+  </header>
+  <div class="shell">
+    <nav class="toc" id="toc" aria-label="Guide chapters"></nav>
+    <main id="stage" tabindex="-1"></main>
+  </div>
+  <footer class="pager">
+    <div class="pager-inner">
+      <p class="where" id="where"></p>
+      <div class="dots" id="dots" role="group" aria-label="Steps in this chapter"></div>
+      <div class="nav">
+        <button class="btn" id="prev" title="Previous step (Left arrow)">← Back</button>
+        <button class="btn primary" id="next" title="Next step (Right arrow)">Next →</button>
+      </div>
+    </div>
+  </footer>
+  <dialog id="sheet" aria-labelledby="sheet-title">
+    <div class="sheet-head">
+      <p class="eyebrow" id="sheet-kind"></p>
+      <button class="tool icon" id="sheet-close" aria-label="Close">×</button>
+    </div>
+    <div class="sheet-body" id="sheet-body"></div>
+  </dialog>
+  <div class="sr-only" id="announce" aria-live="polite"></div>
+  <noscript><p class="noscript">This guide needs JavaScript. The <a href="../users-guide.md">user's guide</a> covers the same ground in prose.</p></noscript>
+</body>
+</html>

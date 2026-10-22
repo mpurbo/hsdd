@@ -2,7 +2,8 @@
 
 A practical, example-driven walkthrough. For the full model and rationale, see
 the [methodology specification](../spec/hsdd-spec-v0_10.md), the single current
-spec; the superseded delta series remains in `spec/` as history.
+spec; the superseded delta series remains in `spec/` as history. New to HSDD?
+The [interactive guide](guide/index.html) covers the same examples visually.
 
 ## Before you start
 
