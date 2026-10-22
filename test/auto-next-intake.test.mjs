@@ -148,6 +148,14 @@ test("first handoff in block order", () => {
 });
 
 test("after waits", () => {
+  // H1 pending but not selectable (its continuation waits on an insert-step ordered after the
+  // handoffs): H2a, after H1, is not returned, so this fails if waitsOn returned [].
+  const blocked = routed();
+  h1(blocked, 3, { status: "stopped" });
+  queue(blocked, insert("Q-001", "S03", "phase-plan-append", "shop.web.app", { after: "handoffs" }), accepted("Q-001"));
+  const r = next(blocked);
+  assert.equal(r.step?.handoff ?? null, null, JSON.stringify(r));
+  assert.notEqual(r.step?.handoff, "H2a");
   const dir = routed();
   assert.equal(stepOf(dir).handoff, "H1", "H1 pending: H2a, after H1, is not returned");
   h1(dir, 3, { status: "stopped" });
@@ -267,6 +275,12 @@ test("empty align set holds", () => {
   assert.equal(s.kind, "report");
   assert.deepEqual(s.write_set, [`hsdd/auto/report/${SEG}.md`, RECORD]);
   assert.equal(stages(ctxOf(dir))[5].done, true);
+});
+
+test("a completed align on all satisfies the intake align condition", () => {
+  const dir = handedOff();
+  step(dir, 4, "align", "all");
+  assert.equal(stepOf(dir).kind, "report");
 });
 
 test("consistency before align", () => {

@@ -117,6 +117,13 @@ export const handoffTargets = (record) => new Map((Array.isArray(record?.block?.
   .filter((h) => typeof h?.id === "string" && typeof h?.target === "string")
   .map((h) => [h.id, h.target]));
 
+// The handoff map every consumer of the matching rule builds (next.mjs, dispatch, gate): empty
+// unless the record has a block that C8 accepts. The caller passes the record only when a
+// completed intake step of this intake wrote it, and null otherwise.
+export const guardedHandoffTargets = (record, tree) => (record != null && record.block != null && blockErrors(record, tree).length === 0
+  ? handoffTargets(record)
+  : new Map());
+
 // ---------- the record ----------
 
 const HEADER_FIELD = /^\s*(?:[-*+]\s+)?\*\*([^*]+?):\*\*\s*(.*)$/;

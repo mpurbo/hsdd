@@ -9,7 +9,7 @@ import { fileURLToPath } from "node:url";
 import { loadContext } from "./lib/context.mjs";
 import { KINDS, skillFor, targetType, writeSet } from "./lib/kinds.mjs";
 import { c3Cited, c5, c6, c7, inScope } from "./lib/checks.mjs";
-import { blockErrors, citesSuperseded, handoffTargets, supersededStrings, targetFiles } from "./lib/intake.mjs";
+import { blockErrors, citesSuperseded, guardedHandoffTargets, supersededStrings, targetFiles } from "./lib/intake.mjs";
 import { P, globToRegExp } from "./lib/paths.mjs";
 import { contractOrder, contractRoles, firstCited, nodeFiles, ordered, producerOrder } from "./lib/order.mjs";
 import { idNum, stepNum } from "./lib/records.mjs";
@@ -348,7 +348,10 @@ const alignHolds = (v) => {
   const target = v.mode.alignTarget(v);
   if (target === null) return true;
   const last = lastSubagent(v);
-  return last !== null && last.kind === "align" && last.status === "completed" && targetSet(last.target) === targetSet(target);
+  if (last === null || last.kind !== "align" || last.status !== "completed") return false;
+  // `all` stands for every leaf-parent of the segment, which covers any smaller required set.
+  if (last.target === "all") return target === "all" || targetSet(target).split(",").every((id) => v.leafParents.includes(id));
+  return targetSet(last.target) === targetSet(target);
 };
 
 const alignLine = (v) => {
@@ -449,7 +452,7 @@ const intakeView = (ctx) => {
       states: statesOf(ctx, segs, lines, handoffs),
       replanned: replannedOf(ctx, lines),
     },
-    handoffTargets: handoffs.length > 0 ? handoffTargets(record) : new Map(),
+    handoffTargets: guardedHandoffTargets(record, ctx.tree),
   };
 };
 
