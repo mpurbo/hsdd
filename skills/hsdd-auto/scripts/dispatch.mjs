@@ -9,6 +9,7 @@ import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
 import { loadContext } from "./lib/context.mjs";
+import { ConfigError, sourcesOf } from "./lib/config.mjs";
 import { KINDS, RAISED_WHEN, skillFor, targetType, writeSet } from "./lib/kinds.mjs";
 import { P, reportPath, stepPaths } from "./lib/paths.mjs";
 import { RenderError, renderTemplate, slotNames } from "./lib/render.mjs";
@@ -19,8 +20,9 @@ import {
 } from "./lib/records.mjs";
 import { targetFiles } from "./lib/intake.mjs";
 import { leafParentsOf } from "./lib/tree.mjs";
+import { specFilesInOrder } from "./lib/order.mjs";
 import { factLines } from "./lib/facts.mjs";
-import { intakeHandoffTargets, selectNext, specFileOrder } from "./next.mjs";
+import { intakeHandoffTargets, selectNext } from "./next.mjs";
 import { openMatching, queueItems } from "./routed.mjs";
 
 export { factLines };
@@ -36,13 +38,21 @@ export class DispatchError extends Error {
   }
 }
 
+// A failure after some of a redispatch's writes ran: `done` names the renames already made.
+class PartialWriteError extends Error {
+  constructor(cause, done) {
+    super(cause.message);
+    this.name = "PartialWriteError";
+    this.errors = [cause.message, ...done.map(([from, to]) => `already renamed: ${from} -> ${to}`)];
+    this.done = done;
+  }
+}
+
 const unique = (xs) => [...new Set(xs)];
 const code = (s) => `\`${s}\``;
 const lines = (xs) => (xs.length > 0 ? xs.join("\n") : "none");
 const bullets = (xs) => lines(xs.map((x) => `- ${String(x).replace(/\n/g, "\n  ")}`));
 const commaList = (xs) => (xs.length > 0 ? xs.map(code).join(", ") : "none");
-const ROLES = ["normative", "informative", "baseline"];
-const sourcesOf = (config) => ROLES.flatMap((role) => (config.sources[role] ?? []).map((s) => ({ ...s, role })));
 
 // ---------- templates (part of the skill, read beside this script) ----------
 
@@ -113,11 +123,15 @@ const TOKEN_USE = {
   source_separator: "between the path, authority and scope of a root `## Sources` line",
 };
 
-// Unicode names of the dash and quote characters; any other banned character is named by code point alone.
+// Unicode names of the characters a prose rule usually bans: dashes, quotes, spaces and other
+// typographic marks. Any other banned character is named by code point and "(unnamed)".
 const CHAR_NAMES = new Map([
   [0x2010, "HYPHEN"], [0x2011, "NON-BREAKING HYPHEN"], [0x2012, "FIGURE DASH"], [0x2013, "EN DASH"], [0x2014, "EM DASH"],
   [0x2015, "HORIZONTAL BAR"], [0x2212, "MINUS SIGN"], [0x2E3A, "TWO-EM DASH"], [0x2E3B, "THREE-EM DASH"], [0xFE58, "SMALL EM DASH"],
-  [0xFE63, "SMALL HYPHEN-MINUS"], [0xFF0D, "FULLWIDTH HYPHEN-MINUS"],
+  [0xFE63, "SMALL HYPHEN-MINUS"], [0xFF0D, "FULLWIDTH HYPHEN-MINUS"], [0x00AD, "SOFT HYPHEN"],
+  [0x2026, "HORIZONTAL ELLIPSIS"], [0x2022, "BULLET"], [0x00B7, "MIDDLE DOT"], [0x2032, "PRIME"], [0x2033, "DOUBLE PRIME"],
+  [0x00A0, "NO-BREAK SPACE"], [0x202F, "NARROW NO-BREAK SPACE"], [0x2009, "THIN SPACE"], [0x200B, "ZERO WIDTH SPACE"],
+  [0x200C, "ZERO WIDTH NON-JOINER"], [0x200D, "ZERO WIDTH JOINER"], [0x2060, "WORD JOINER"], [0xFEFF, "ZERO WIDTH NO-BREAK SPACE"],
   [0x2018, "LEFT SINGLE QUOTATION MARK"], [0x2019, "RIGHT SINGLE QUOTATION MARK"], [0x201A, "SINGLE LOW-9 QUOTATION MARK"],
   [0x201B, "SINGLE HIGH-REVERSED-9 QUOTATION MARK"], [0x201C, "LEFT DOUBLE QUOTATION MARK"], [0x201D, "RIGHT DOUBLE QUOTATION MARK"],
   [0x201E, "DOUBLE LOW-9 QUOTATION MARK"], [0x201F, "DOUBLE HIGH-REVERSED-9 QUOTATION MARK"],
@@ -128,8 +142,11 @@ const CHAR_NAMES = new Map([
 const charName = (ch) => {
   const cp = ch.codePointAt(0);
   const name = CHAR_NAMES.get(cp);
-  return `U+${cp.toString(16).toUpperCase().padStart(4, "0")}${name ? ` ${name}` : ""}`;
+  return `U+${cp.toString(16).toUpperCase().padStart(4, "0")} ${name ?? "(unnamed)"}`;
 };
+
+// Text with every banned character written as `<U+XXXX NAME>`, so the rule itself never contains one.
+const withoutChars = (text, banned) => [...String(text)].map((ch) => (banned.has(ch) ? `<${charName(ch)}>` : ch)).join("");
 
 // The first sentence of the segment's paragraph under plan.md's `## Segments`, which opens with
 // `**{segment id}.**` (S-5); null when there is none.
@@ -185,12 +202,13 @@ const toolchainLines = ({ rules = [], commands = {} }) => {
 };
 
 const proseRuleLines = ({ banned_chars: chars = [], banned_phrases: phrases = [], token_forms: forms = {} }) => {
-  const names = unique(chars.flatMap((s) => [...s]).map(charName));
+  const banned = new Set(chars.flatMap((s) => [...s]));
+  const names = [...banned].map(charName);
   const usable = Object.entries(forms).filter(([k]) => TOKEN_USE[k] !== undefined);
   const parts = [
     ...(names.length > 0 ? [`Never write these characters: ${names.join(", ")}.`] : []),
-    ...(phrases.length > 0 ? [`Never write these phrases: ${phrases.map((p) => `"${p}"`).join(", ")}.`] : []),
-    ...(usable.length > 0 ? [`Where an HSDD template uses a banned character as a token, write instead: ${usable.map(([k, v]) => `${code(v)} ${TOKEN_USE[k]}`).join("; ")}.`] : []),
+    ...(phrases.length > 0 ? [`Never write these phrases: ${phrases.map((p) => `"${withoutChars(p, banned)}"`).join(", ")}.`] : []),
+    ...(usable.length > 0 ? [`Where an HSDD template uses a banned character as a token, write instead: ${usable.map(([k, v]) => `${code(withoutChars(v, banned))} ${TOKEN_USE[k]}`).join("; ")}.`] : []),
   ];
   return parts.length > 0 ? parts.join(" ") : "none";
 };
@@ -259,16 +277,23 @@ const targetVersion = (ctx, slug) => {
   return versions.length > 0 ? `v${Math.max(...versions)}` : "v1";
 };
 
-// The first spec file, in stage 3's order, that cites the ADR; an insert-step item stands in when none does.
-const proposingSpec = (ctx, next) => specFileOrder(ctx.tree).find((f) => ctx.tree.adrCites.some((c) => c.id === next.target && c.file === f))
+// The first spec file, in the root spec's order (C.4), that cites the ADR; the adr facts list the citing
+// lines in the same order.
+const proposingSpec = (ctx, next) => specFilesInOrder(ctx.tree).find((f) => ctx.tree.adrCites.some((c) => c.id === next.target && c.file === f))
+  // Deliberate departure from 13.2's fail-on-unfillable rule: an inserted adr step no spec cites yet
+  // names its insert-step item instead of failing to render.
   ?? (next.queue_item ? `the insert-step item ${next.queue_item}` : null);
 
 const STAGE_REASON = { plan: "the consistency pass", intake: "the segment's handoffs" };
 
+// C.4: the executed insert-step item's text; for an align from a stage rule the mode's fixed text; else
+// the texts of the routed items the step closes.
 const reasonText = (ctx, next, routed) => {
   if (next.queue_item) return queueItems(ctx.queueLines).get(next.queue_item)?.text ?? null;
+  if (next.kind === "align" && !next.handoff) return STAGE_REASON[ctx.segment.mode];
   if (routed.length > 0) return routed.map((it) => it.text).join("; ");
-  if (next.kind === "align") return STAGE_REASON[ctx.segment.mode];
+  // Deliberate departure from 13.2's fail-on-unfillable rule: a step with no item to quote (a
+  // continuation whose items are closed) gives next.mjs's reason for selecting it.
   return next.why ?? null;
 };
 
@@ -457,10 +482,12 @@ const readText = (repoRoot, file, flag) => {
   return readFileSync(full, "utf8").replace(/\r\n?/g, "\n");
 };
 
+// Lines are checked, and a refusal numbered, as the file stands; the fill drops leading and trailing blank lines.
 const readContextFile = (repoRoot, file, config) => {
-  const ls = readText(repoRoot, file, "--context-file").replace(/^\n+|\n+$/g, "").split("\n");
-  const errors = contextErrors(ls, config, file);
+  const text = readText(repoRoot, file, "--context-file");
+  const errors = contextErrors(text.split("\n"), config, file);
   if (errors.length > 0) throw new DispatchError(errors);
+  const ls = text.replace(/^\n+|\n+$/g, "").split("\n");
   return ls.some((l) => l.trim() !== "") ? ls : null;
 };
 
@@ -630,9 +657,17 @@ const runRedispatch = (repoRoot, { step }) => {
   const errors = dispatchErrors(front, step);
   if (errors.length > 0) throw new DispatchError(errors.map((e) => `${path}: ${e}`));
   const warnings = checkSize(path, dispatchText(front, body), [{ slot: "file before this redispatch", bytes: Buffer.byteLength(d.text) }, { slot: "redispatch section", bytes: Buffer.byteLength(section) }],
-    (bytes) => `${path} would be ${bytes} bytes, above the ${MAX_BYTES}-byte limit (64 KiB, spec 10.3); nothing written or renamed. Sizes:`);
-  renames.forEach(([from, to]) => renameSync(join(repoRoot, from), join(repoRoot, to)));
-  writeDispatch(repoRoot, step, front, body);
+    (bytes) => `${path} would be ${bytes} bytes, above the ${MAX_BYTES}-byte limit (64 KiB, spec 10.3); nothing written or renamed. This is a hard stop recorded in ${step} itself: decide.mjs --step ${step} --by orchestrator, STOP.md, then commit.mjs --step ${step} --status stopped --no-report. Sizes:`);
+  const done = [];
+  try {
+    for (const [from, to] of renames) {
+      renameSync(join(repoRoot, from), join(repoRoot, to));
+      done.push([from, to]);
+    }
+    writeDispatch(repoRoot, step, front, body);
+  } catch (e) {
+    throw new PartialWriteError(e, done);
+  }
   return { out: [path, "", ...launchPrompt(step, path)], warnings };
 };
 
@@ -705,7 +740,9 @@ export const main = (argv, repoRoot = process.cwd(), out = { log: console.log, e
       return 2;
     }
     (Array.isArray(e?.errors) ? e.errors : [e?.message ?? String(e)]).forEach((m) => out.log(m));
-    out.log("dispatch: refused, nothing written");
+    if (e instanceof DispatchError || e instanceof ConfigError) out.log("dispatch: refused, nothing written");
+    else if (e instanceof PartialWriteError) out.log(`dispatch: failed after ${e.done.length} rename(s) listed above, before the dispatch file was written in full; check git status`);
+    else out.log("dispatch: failed unexpectedly; check git status for a partial write");
     return 1;
   }
 };

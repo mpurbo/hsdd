@@ -80,6 +80,10 @@ export const producerOrder = (tree, nodeIds) => {
 
 export const nodeFiles = (tree, ids) => ids.map((id) => tree.nodes.get(id)?.file);
 
+// The spec files in the root spec's order: the root's first, then in first-mention order (tree.mentionOrder),
+// then any other spec file. dispatch.mjs's `{proposing_spec}` and the adr facts both read it.
+export const specFilesInOrder = (tree) => unique([...nodeFiles(tree, [tree.root, ...tree.mentionOrder]), ...tree.specFiles.map((f) => f.file)].filter(Boolean));
+
 // Contract slugs in order of first mention in the specs: the root's, then tree.mentionOrder's.
 const contractRank = (tree) => {
   const files = nodeFiles(tree, [tree.root, ...tree.mentionOrder]).filter(Boolean);

@@ -1,10 +1,10 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
+import { chmodSync, existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
-  MAX_BYTES, WARN_BYTES, buildDispatch, contextErrors, dispatchContext, factLines, preambleFills, purposeOf, stepFills,
+  MAX_BYTES, WARN_BYTES, buildDispatch, contextErrors, dispatchContext, factLines, instructionFills, preambleFills, purposeOf, stepFills,
 } from "../skills/hsdd-auto/scripts/dispatch.mjs";
 import { selectNext } from "../skills/hsdd-auto/scripts/next.mjs";
 import { lineErrors } from "../skills/hsdd-auto/scripts/routed.mjs";
@@ -46,8 +46,8 @@ const planRepo = (stage, { config, files } = {}) => {
   return dir;
 };
 // An intake segment on the planned tree, setup and plan committed; with `record`, its intake step (S02) too.
-const intakeRepo = ({ config, record } = {}) => {
-  const dir = makeRepo({ stage: "06-planned", ...(config ? { config } : {}), files: { [REQUEST]: "# Spec v2\n\nVersion: v2.\n" } });
+const intakeRepo = ({ config, record, files = {} } = {}) => {
+  const dir = makeRepo({ stage: "06-planned", ...(config ? { config } : {}), files: { [REQUEST]: "# Spec v2\n\nVersion: v2.\n", ...files } });
   addSegment(dir, intakeSegment());
   const s = stepIn(INTAKE);
   s(dir, 0, "setup");
@@ -365,7 +365,7 @@ const EXPECTED_FACTS = {
   contract: ["`shop.api` **Produces:** [order-api@v1] (hsdd/spec/shop.api.md)", "`shop.web` **Consumes:** [order-api@v1] (hsdd/spec/shop.web.md)",
     "`ADR-001` (accepted) affects `order-api@v1` (hsdd/adr/001-order-ids.md)", "`order-api` has no contract file yet"],
   "mid-level-spec": ["`shop.web` **Kind:** internal (hsdd/spec/shop.web.md)", "Parent `shop` embeds `shop.web` under `### shop.web: Web App` (hsdd/spec/shop.md)",
-    "Consumes `order-api@v1`: version v1, status draft, phase_ids provisional (hsdd/contract/order-api.md)"],
+    "Consumes `order-api@v1` (hsdd/spec/shop.web.md); contract `order-api` is at version v1, status draft, phase_ids provisional (hsdd/contract/order-api.md)"],
   "phase-plan": ["`shop.api` **Owns:** order storage, order id minting, the order endpoints (hsdd/spec/shop.api.md)",
     "**Ordering policy:** interfaces-first (hsdd/conventions.md)", "**Coding method:** openspec (hsdd/conventions.md)", "**Teams:** single-team (hsdd/conventions.md)",
     "Governed by `ADR-001`: status accepted (hsdd/adr/001-order-ids.md)"],
@@ -487,18 +487,22 @@ test("owner text renders verbatim, braces included", () => {
 
 test("prose rules name banned characters by code point, never the character", () => {
   const config = baseConfig({
-    prose_rules: { banned_chars: ["\u2014", "\u2026"], banned_phrases: ["leverage"], token_forms: { empty_cell: "none", id_separator: ":" } },
+    prose_rules: {
+      banned_chars: ["\u2014", "\u2026", "\u2603"], banned_phrases: ["leverage", "wait\u2026 what"], token_forms: { empty_cell: "none", id_separator: ":" },
+    },
   });
   const dir = planRepo("00-empty", { config });
   assert.equal(run(dir, "dispatch.mjs", ["--next"]).code, 0);
   const text = read(dir, "hsdd/auto/dispatch/S02.md");
   const rules = text.split("- **Prose rules for everything you write.** ")[1].split("\n- **Citations.**")[0];
   assert.ok(rules.includes("U+2014 EM DASH"), rules);
-  assert.ok(rules.includes("U+2026."), rules);
+  assert.ok(rules.includes("U+2026 HORIZONTAL ELLIPSIS"), rules);
+  assert.ok(rules.includes("U+2603 (unnamed)"), rules);
   assert.ok(rules.includes("\"leverage\""), rules);
+  assert.ok(rules.includes("\"wait<U+2026 HORIZONTAL ELLIPSIS> what\""), "a banned character inside a phrase is written by name");
   assert.ok(rules.includes("`none` for an empty table cell or list"), rules);
   assert.ok(rules.includes("`:` between an id and its title in a heading"), rules);
-  assert.ok(!text.includes("\u2014") && !text.includes("\u2026"), "the characters themselves never appear");
+  assert.ok(!text.includes("\u2014") && !text.includes("\u2026") && !text.includes("\u2603"), "the characters themselves never appear");
 });
 
 test("the preamble's slots come from run.yaml and the segment", () => {
@@ -594,4 +598,92 @@ test("--redispatch refuses once HEAD has moved past the dispatch head", () => {
   assert.match(out.stdout, /commit\.mjs/);
   assert.equal(read(dir, "hsdd/auto/dispatch/S02.md"), before);
   assert.ok(existsSync(join(dir, "hsdd/auto/steps/S02.json")), "nothing renamed");
+});
+
+test("an align's reason is the stage text even when an open item matches it", () => {
+  const dir = queue(planRepo("06-planned"), item("Q-001", "consider", "shop.api"));
+  const ctx = dispatchContext(dir);
+  const align = { kind: "align", skill: "hsdd-reconcile", target: "all", handoff: null, queue_item: null, continues: null, write_set: [], inputs: [], why: "test" };
+  assert.equal(instructionFills(ctx, align).reason, "the consistency pass");
+  const fills = stepFills(ctx, align, { step: "S09", head: "abcdef0" });
+  assert.equal(fills.invocation, "Align all after the consistency pass.");
+  assert.ok(fills.routed_lines.includes("Q-001"), "the matching item is still routed to the step");
+});
+
+test("a refused context line is numbered as the file stands", () => {
+  const dir = planRepo("00-empty");
+  put(dir, "ctx.md", "\n\nThe contract is fine.\n");
+  const out = run(dir, "dispatch.mjs", ["--next", "--context-file", "ctx.md"]);
+  assert.equal(out.code, 1, out.stdout);
+  assert.match(out.stdout, /^ctx\.md:3: /m);
+  put(dir, "ctx.md", "\n\nSee hsdd/spec/shop.md.\n\n");
+  assert.equal(run(dir, "dispatch.mjs", ["--next", "--context-file", "ctx.md"]).code, 0);
+  assert.equal(section(read(dir, "hsdd/auto/dispatch/S02.md"), "### Context from the orchestrator").trim(), "See hsdd/spec/shop.md.");
+});
+
+test("a second redispatch after one that renamed nothing numbers its lost series 2", () => {
+  const dir = planRepo("00-empty");
+  assert.equal(run(dir, "dispatch.mjs", ["--next"]).code, 0);
+  const first = run(dir, "dispatch.mjs", ["--redispatch", "S02"]);
+  assert.equal(first.code, 0, first.stdout);
+  assert.ok(!existsSync(join(dir, P.stepsDir)) || readdirSync(join(dir, P.stepsDir)).length === 0, "nothing to rename");
+  put(dir, "hsdd/auto/steps/S02.json", "{}\n");
+  const second = run(dir, "dispatch.mjs", ["--redispatch", "S02"]);
+  assert.equal(second.code, 0, second.stdout);
+  assert.deepEqual(readdirSync(join(dir, P.stepsDir)), ["S02.lost2.json"], "k counts redispatches (spec 8.6)");
+  const d = readDispatch(dir, "S02");
+  assert.deepEqual(d.front.launches.map((l) => l.reason), ["initial", "redispatch", "redispatch"]);
+  assert.ok(d.body.includes("Redispatch 2 of step S02"));
+});
+
+test("a refused redispatch names the follow-up that records it in the lost step", () => {
+  const dir = planRepo("00-empty");
+  assert.equal(run(dir, "dispatch.mjs", ["--next"]).code, 0);
+  const size = Buffer.byteLength(read(dir, "hsdd/auto/dispatch/S02.md"));
+  put(dir, "msg.md", `${"m".repeat(MAX_BYTES - size - 400)}\n`);
+  assert.equal(run(dir, "dispatch.mjs", ["--resume", "S02", "--reason", "finding", "--message-file", "msg.md"]).code, 0);
+  const resumed = Buffer.byteLength(read(dir, "hsdd/auto/dispatch/S02.md"));
+  assert.ok(resumed <= MAX_BYTES && resumed > MAX_BYTES - 300, String(resumed));
+  put(dir, "hsdd/auto/steps/S02.json", "{}\n");
+  const before = read(dir, "hsdd/auto/dispatch/S02.md");
+  const out = run(dir, "dispatch.mjs", ["--redispatch", "S02"]);
+  assert.equal(out.code, 1, out.stdout);
+  assert.ok(out.stdout.includes("decide.mjs --step S02 --by orchestrator, STOP.md, then commit.mjs --step S02 --status stopped --no-report"), out.stdout);
+  assert.match(out.stdout, /dispatch: refused, nothing written$/m);
+  assert.equal(read(dir, "hsdd/auto/dispatch/S02.md"), before);
+  assert.ok(existsSync(join(dir, "hsdd/auto/steps/S02.json")), "nothing renamed");
+});
+
+test("an IO failure after a redispatch's renames names what was renamed", () => {
+  const dir = planRepo("00-empty");
+  assert.equal(run(dir, "dispatch.mjs", ["--next"]).code, 0);
+  put(dir, "hsdd/auto/steps/S02.json", "{}\n");
+  chmodSync(join(dir, "hsdd/auto/dispatch/S02.md"), 0o444);
+  const out = run(dir, "dispatch.mjs", ["--redispatch", "S02"]);
+  assert.equal(out.code, 1, out.stdout);
+  assert.ok(out.stdout.includes("already renamed: hsdd/auto/steps/S02.json -> hsdd/auto/steps/S02.lost1.json"), out.stdout);
+  assert.ok(!out.stdout.includes("nothing written"), out.stdout);
+  assert.match(out.stdout, /^dispatch: failed after 1 rename\(s\)/m);
+  assert.ok(!/\n\s+at /.test(out.stdout + out.stderr), "no stack trace");
+});
+
+test("intake facts list every open intake record with its landings", () => {
+  const other = ORDER.replace("ref/spec-v2.md (accepted-rfc)", "ref/other.md (draft)");
+  const dir = intakeRepo({ files: { "hsdd/management/2026-10-20-intake-other.md": other } });
+  const out = run(dir, "dispatch.mjs", ["--next"]);
+  assert.equal(out.code, 0, out.stdout);
+  const facts = factsOf(read(dir, "hsdd/auto/dispatch/S02.md"));
+  assert.ok(facts.includes("Open intake record, lands on shop.api, shop.web.app, contracts order-api (hsdd/management/2026-10-20-intake-other.md)"), facts.join("\n"));
+  assert.ok(!facts.some((l) => l.startsWith("No open intake record")));
+});
+
+test("contract facts cite the node file for a reference and name a role with no spec file", () => {
+  const dir = planRepo("06-planned", {
+    files: { "hsdd/contract/order-api.md": readFileSync(join(HERE, "fixtures", "auto", "tree", "06-planned", "hsdd", "contract", "order-api.md"), "utf8").replace("consumers: [shop.web.app.1, shop.web.app.2]", "consumers: [shop.web.app.1, shop.admin.1]") },
+  });
+  const ctx = dispatchContext(dir);
+  const facts = factLines(ctx, { kind: "contract-touch", target: "order-api", handoff: null, queue_item: null });
+  assert.ok(facts.includes("`order-api` names `shop.admin.1` as its consumer, which has no spec file (hsdd/contract/order-api.md)"), facts.join("\n"));
+  const phase = factLines(ctx, { kind: "phase-plan", target: "shop.web.app", handoff: null, queue_item: null });
+  assert.ok(phase.some((l) => l.startsWith("Consumes `order-api@v1` (hsdd/spec/shop.web.app.md); contract `order-api` is at version v1")), phase.join("\n"));
 });

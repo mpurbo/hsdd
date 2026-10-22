@@ -14,7 +14,10 @@ export class ConfigError extends Error {
   }
 }
 
-const SOURCE_KINDS = ["normative", "informative", "baseline"];
+export const SOURCE_KINDS = ["normative", "informative", "baseline"];
+
+// Every source of a (defaulted) configuration, each with its `role`: normative, informative, then baseline.
+export const sourcesOf = (config) => SOURCE_KINDS.flatMap((role) => (config.sources[role] ?? []).map((s) => ({ ...s, role })));
 
 // A.1 "checked in code", with S-9: a segment moves a version exactly when sources.baseline is not empty.
 const codeRules = (raw) => {

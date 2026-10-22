@@ -4,16 +4,15 @@
 // paths exist: contract validation paths and the atlas) and `stepFiles` (names under hsdd/auto/steps).
 // Every line ends in ` ({path})`, the file it was read from (10.3 "Facts come from files").
 import { P } from "./paths.mjs";
+import { sourcesOf } from "./config.mjs";
 import { contractRefs, leafParentsOf, phaseNodeOf, toLines } from "./tree.mjs";
-import { contractRoles, nodeFiles } from "./order.mjs";
+import { contractRoles, nodeFiles, specFilesInOrder } from "./order.mjs";
 
 const unique = (xs) => [...new Set(xs)];
 const code = (s) => `\`${s}\``;
 const cite = (text, path) => `${text} (${path})`;
 const plural = (n, one, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
 const fmt = (v) => (Array.isArray(v) ? `[${v.join(", ")}]` : String(v));
-const ROLES = ["normative", "informative", "baseline"];
-const sourcesOf = (config) => ROLES.flatMap((role) => (config.sources[role] ?? []).map((s) => ({ ...s, role })));
 const stripVersion = (ref) => ref.replace(/@v\d+$/, "");
 const verifyRef = (ctx) => `${ctx.defaultBranch}:${ctx.layout.verify}`;
 
@@ -25,13 +24,14 @@ const validationText = (c) => (c.validationPaths.length === 0
   ? "no validation path"
   : `validation ${c.validationPaths.map((v) => `${v.kind} ${v.path}`).join(", ")}`);
 
-// One line per contract reference of a node: the contract's state from its file, or that it has none.
+// One line per contract reference of a node: the reference cites the node file it was read from,
+// and the contract's state the contract file (or that the contract has no file).
 const refLines = (ctx, node, role, refs, { validation = false } = {}) => refs.map((r) => {
   const c = ctx.tree.contracts.get(r.slug);
-  const ref = code(`${r.slug}@${r.version}`);
+  const ref = `${role} ${code(`${r.slug}@${r.version}`)}`;
   return c
-    ? cite(`${role} ${ref}: ${contractState(c)}${validation ? `, ${validationText(c)}` : ""}`, c.file)
-    : cite(`${role} ${ref}, which has no contract file yet`, node.file);
+    ? cite(`${cite(ref, node.file)}; contract ${code(r.slug)} is at ${contractState(c)}${validation ? `, ${validationText(c)}` : ""}`, c.file)
+    : cite(`${ref}, which has no contract file yet`, node.file);
 });
 
 const nodeContractLines = (ctx, node, opts) => [
@@ -107,9 +107,6 @@ const nodeFacts = (ctx, step) => {
   ];
 };
 
-// The spec files, the root's first, then in first-mention order.
-const specFilesInOrder = (tree) => unique([...nodeFiles(tree, [tree.root, ...tree.mentionOrder]), ...tree.specFiles.map((f) => f.file)].filter(Boolean));
-
 const frontMatterLines = (id, front, file) => Object.entries(front ?? {}).map(([k, v]) => cite(`${code(id)} front matter ${code(`${k}: ${fmt(v)}`)}`, file));
 
 const affectsLine = (ctx, adr, ref) => {
@@ -147,10 +144,15 @@ const versioningItems = (text) => toLines(text ?? "").reduce(({ items, open }, l
 
 const roleLines = (ctx, ids, field, missing) => (ids.length === 0
   ? [cite(missing, `${ctx.layout.spec}/*.md`)]
-  : ids.flatMap((id) => {
+  : ids.map((id) => {
     const n = ctx.tree.nodes.get(id);
-    return n ? [fieldLine(n, field)] : [];
+    return n ? fieldLine(n, field) : noFileLine(ctx, id);
   }));
+
+// A contract's own `owner` and `consumers` that name no node in the tree (a phase id counts as its node's).
+const unresolvedRoleLines = (ctx, c) => [["owner", c.owner], ...c.consumers.map((x) => ["consumer", x])]
+  .filter(([, name]) => name && !ctx.tree.nodes.has(name) && !ctx.tree.nodes.has(phaseNodeOf(name)))
+  .map(([role, name]) => cite(`${code(c.slug)} names ${code(name)} as its ${role}, which has no spec file`, c.file));
 
 // contract, contract-touch.
 const contractFacts = (ctx, step) => {
@@ -167,6 +169,7 @@ const contractFacts = (ctx, step) => {
   return [
     ...roleLines(ctx, producedBy, "Produces", `No node produces ${code(slug)}`),
     ...roleLines(ctx, [...(consumers.get(slug) ?? [])], "Consumes", `No node consumes ${code(slug)}`),
+    ...(c ? unresolvedRoleLines(ctx, c) : []),
     ...(adrs.length > 0
       ? adrs.flatMap((a) => a.affects.filter((x) => stripVersion(x) === slug).map((x) => cite(`${code(a.id)} (${a.status ?? "no status"}) affects ${code(x)}`, a.file)))
       : [cite(`No ADR's affects names ${code(slug)}`, `${layout.adr}/*.md`)]),
