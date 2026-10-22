@@ -7,7 +7,7 @@ import { realpathSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { loadContext } from "./lib/context.mjs";
 import { KINDS, skillFor, targetType, writeSet } from "./lib/kinds.mjs";
-import { c5, c6, c7 } from "./lib/checks.mjs";
+import { c3Cited, c5, c6, c7, inScope } from "./lib/checks.mjs";
 import { P, globToRegExp } from "./lib/paths.mjs";
 import { phaseNodeOf } from "./lib/tree.mjs";
 import { idNum, stepNum } from "./lib/records.mjs";
@@ -294,6 +294,10 @@ const orchestratorStage = (n, name, kind) => ({
     : notDone([`the segment's ${kind} step is not committed`], () => orchestratorStep(v, kind, `stage ${n} ${name}: segment ${v.seg.id} has no ${kind} commit`))),
 });
 
+// Every mode starts with these two; the selection order also returns them ahead of `blocked` (10.2).
+const SETUP_STAGE = orchestratorStage(0, "Setup", "setup");
+const PLAN_STAGE = orchestratorStage(1, "Plan", "plan");
+
 const rootStage = {
   n: 2, name: "Root decomposition",
   evaluate: (v) => {
@@ -463,8 +467,8 @@ const reportStage = (n) => ({
 const MODES = {
   plan: {
     stages: [
-      orchestratorStage(0, "Setup", "setup"),
-      orchestratorStage(1, "Plan", "plan"),
+      SETUP_STAGE,
+      PLAN_STAGE,
       rootStage,
       adrStage,
       contractStage,
@@ -488,24 +492,22 @@ const notImplemented = (mode) => `${mode} mode not implemented`;
 
 // ---------- the done definition (9.1, decision S-1) ----------
 
-const finding = (id, message, file) => ({ id, level: "error", message, file });
 const findingLine = (f) => `${f.id} ${f.message}${f.file && !f.message.includes(f.file) ? ` (${f.file})` : ""}`;
 
 // Every cited ADR, contract, open-question and phase id resolves; what a stage rule will create is not a failure.
 const idFindings = (ctx, creating) => [
-  ...ctx.tree.adrCites.filter((c) => !ctx.tree.adrs.has(c.id) && !creating.adrs.has(c.id))
-    .map((c) => finding("C3", `${c.id} is cited and has no file`, c.file)),
+  ...c3Cited(ctx.tree, { willCreateAdrs: creating.adrs }),
   ...c5(ctx.tree, { willCreateContracts: creating.contracts }),
   ...c6(ctx.tree),
   ...c7(ctx.tree),
 ].filter((f) => f.level === "error");
 
-// S-1: a failure counts only when its file changed during the segment.
+// S-1: a failure counts only when its file, or a file related to it, changed during the segment.
 const scoped = (ctx, findings) => {
-  const errors = findings.filter((f) => f.level === "error" && f.file);
+  const errors = findings.filter((f) => f.level === "error");
   if (errors.length === 0) return [];
   const changed = ctx.changedInSegment(ctx.segment.id);
-  return errors.filter((f) => changed.has(f.file)).map(findingLine);
+  return errors.filter((f) => inScope(f, changed)).map(findingLine);
 };
 
 // Every contract above v0 is stable with phase_ids final; deprecated and retired ones are exempt (S-2).
@@ -622,6 +624,15 @@ const finish = (v) => {
 
 const firstOf = (thunks) => thunks.reduce((found, f) => found ?? f(), null);
 
+// 10.2 returns the newest segment's setup, then plan, ahead of `blocked`, so a segment opened by an
+// owner's answer can remove STOP.md; not when a step of that segment stopped (a hard stop in its
+// setup, say), which 6.7 blocks on.
+const earlyStage = (v, stage) => {
+  if (v.segLines.some((l) => l.status === "stopped")) return null;
+  const e = stage.evaluate(v);
+  return e.done ? null : e.rule();
+};
+
 export const selectNext = (ctx) => {
   if (ctx.segment === null) return { stuck: [NO_SEGMENT] };
   if (ctx.inProgress !== null) return { waiting: ctx.inProgress };
@@ -629,8 +640,8 @@ export const selectNext = (ctx) => {
   if (!mode) return { stuck: [notImplemented(ctx.segment.mode)] };
   const v = derive(ctx, mode);
   return firstOf([
-    () => (committedKind(v, "setup") ? null : orchestratorStep(v, "setup", `segment ${v.seg.id} has no setup commit`)),
-    () => (committedKind(v, "plan") ? null : orchestratorStep(v, "plan", `segment ${v.seg.id} has no plan commit`)),
+    () => earlyStage(v, SETUP_STAGE),
+    () => earlyStage(v, PLAN_STAGE),
     () => (ctx.stopExists ? { blocked: P.stop } : null),
     () => { const line = endedLine(v); return line ? { stuck: [line] } : null; },
     () => { const it = v.items.find((x) => x.kind === "insert-step" && x.status === "open"); return it ? { decide: { item: it.id } } : null; },

@@ -1,13 +1,21 @@
 // The gate's tree checks C2 to C8 (spec 10.6) as pure functions of a tree snapshot. Each returns
-// findings { id, level, message, file }: `level` is the check's own level before the gate scopes it
-// (spec 10.6, Scope), and `file` is the repository-relative file the check names, or null when the
-// finding names something with no file yet.
+// findings { id, level, message, file, related? }: `level` is the check's own level before the gate
+// scopes it (spec 10.6, Scope), `file` is the repository-relative file the check names, or null when
+// the finding names something with no file yet, and `related` lists other files whose change can
+// cause the finding (inScope).
 import { existsSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { blockErrors } from "./intake.mjs";
 import { phaseNodeOf } from "./tree.mjs";
 
-const finding = (id, level, message, file) => ({ id, level, message, file: file ?? null });
+const finding = (id, level, message, file, related = []) => ({
+  id, level, message, file: file ?? null, ...(related.length > 0 ? { related } : {}),
+});
+
+// A finding is in scope when its file or any related file is in `changed` (a Set of repository-relative
+// paths): the done definition and the gates count an error only then (spec 10.6 Scope, decision S-1).
+export const inScope = (f, changed) => (f.file !== null && f.file !== undefined && changed.has(f.file))
+  || (f.related ?? []).some((p) => changed.has(p));
 const asSet = (xs) => new Set(xs ?? []);
 const unique = (xs) => [...new Set(xs)];
 
@@ -46,22 +54,27 @@ const governance = (tree, target, adrId) => {
   return null;
 };
 
-export const c3 = (tree, { willCreateAdrs } = {}) => {
+// C3's citation part: every cited ADR-{nnn} has a file, or is one that will be created (a warning).
+export const c3Cited = (tree, { willCreateAdrs } = {}) => {
   const creating = asSet(willCreateAdrs);
-  const shape = [...tree.adrs.values()].flatMap((a) =>
-    ADR_FIELDS.filter((f) => a.front === null || a.front[f] === undefined)
-      .map((f) => finding("C3", "error", `${a.id ?? a.file}: front matter has no ${f}`, a.file)));
-  const cited = tree.adrCites
+  return tree.adrCites
     .filter((c) => !tree.adrs.has(c.id))
     .map((c) => (creating.has(c.id)
       ? finding("C3", "warn", `${c.id} is cited and has no file yet; a stage rule or an intake handoff will create it`, c.file)
       : finding("C3", "error", `${c.id} is cited and has no file`, c.file)));
+};
+
+// A governance finding names the affects target's file; the ADR's own file is related.
+export const c3 = (tree, { willCreateAdrs } = {}) => {
+  const shape = [...tree.adrs.values()].flatMap((a) =>
+    ADR_FIELDS.filter((f) => a.front === null || a.front[f] === undefined)
+      .map((f) => finding("C3", "error", `${a.id ?? a.file}: front matter has no ${f}`, a.file)));
   const governed = [...tree.adrs.values()].flatMap((a) => a.affects.flatMap((target) => {
     const g = governance(tree, target, a.id);
-    if (g === null) return [finding("C3", "warn", `${a.id} affects ${target}, which has no file yet`, null)];
-    return g.governed ? [] : [finding("C3", "error", `${a.id} affects ${target}, but ${g.where} does not name ${a.id} under Governed by`, g.file)];
+    if (g === null) return [finding("C3", "warn", `${a.id} affects ${target}, which has no file yet`, null, [a.file])];
+    return g.governed ? [] : [finding("C3", "error", `${a.id} affects ${target}, but ${g.where} does not name ${a.id} under Governed by`, g.file, [a.file])];
   }));
-  return [...shape, ...cited, ...governed];
+  return [...shape, ...c3Cited(tree, { willCreateAdrs }), ...governed];
 };
 
 // ---------- C4: contract files ----------
@@ -149,12 +162,16 @@ const phaseExists = (tree, name) => {
   return [...tree.nodes.values()].some((n) => n.phases.some((p) => p.short === name));
 };
 
+// The finding names the contract's file; the spec file of the phase's node is related.
 export const c7 = (tree) => [...tree.contracts.values()].flatMap((c) => {
   const level = c.phaseIds === "final" ? "error" : "warn";
   return unique([...c.producedBy, ...c.consumers])
     .filter((name) => PHASE_ID_SHAPE.test(name) && !tree.nodes.has(name))
     .filter((name) => !phaseExists(tree, name))
-    .map((name) => finding("C7", level, `${c.slug}: ${name} is not a phase heading in its node's spec file`, c.file));
+    .map((name) => {
+      const nodeFile = tree.nodes.get(phaseNodeOf(name))?.file;
+      return finding("C7", level, `${c.slug}: ${name} is not a phase heading in its node's spec file`, c.file, nodeFile ? [nodeFile] : []);
+    });
 });
 
 // ---------- C8: intake records ----------

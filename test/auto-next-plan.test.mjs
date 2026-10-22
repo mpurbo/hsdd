@@ -294,6 +294,20 @@ test("an answered stop runs the new segment's setup and plan, then the continuat
   assert.equal(s.continues, "S02");
 });
 
+test("a hard stop in the newest segment's own setup is blocked", () => {
+  const single = opened("00-empty");
+  writeStop(single);
+  step(single, 0, "setup", SEG, { status: "stopped" });
+  assert.deepEqual(next(single), { blocked: "hsdd/judgement/STOP.md" });
+
+  const answered = begun("00-empty");
+  writeStop(answered);
+  step(answered, 2, "root-spec", "shop", { status: "stopped" });
+  addSegment(answered, segment(SEG2, { first_step: "S03" }));
+  fakeStep(answered, { step: "S03", segment: SEG2, kind: "setup", target: SEG2, status: "stopped" });
+  assert.deepEqual(next(answered), { blocked: "hsdd/judgement/STOP.md" });
+});
+
 test("decide", () => {
   const dir = begun("04-mid");
   queue(dir, insert("Q-001", "S01", "spec-touch", "shop.web"));
@@ -576,6 +590,39 @@ test("a registry finding counts only in a file the segment changed", () => {
   assert.ok(r.stuck?.some((l) => l.startsWith("C1 ")), JSON.stringify(r));
 });
 
+test("a registry the segment's own change made stale is unmet", () => {
+  // A contract-touch drops a consumer without regenerating INDEX.md: the stale file is INDEX.md (unchanged),
+  // and the contract it was generated from is related and changed (review fix round 1).
+  const dir = begun("06-planned");
+  const touched = read(dir, "hsdd/contract/order-api.md").replace("consumers: [shop.web.app.1, shop.web.app.2]", "consumers: [shop.web.app.1]");
+  step(dir, 2, "contract-touch", "order-api", { files: { "hsdd/contract/order-api.md": touched } });
+  step(dir, 3, "align", "all");
+  const lines = unmetDone(ctxOf(dir), { final: true });
+  assert.ok(lines.some((l) => l.startsWith("C1 ") && l.includes("hsdd/contract/INDEX.md")), JSON.stringify(lines));
+  const r = next(dir);
+  assert.deepEqual(Object.keys(r), ["stuck"], "stuck, not report");
+  assert.ok(r.stuck.some((l) => l.startsWith("C1 ")));
+});
+
+test("a phase heading a final contract names, removed in the segment, is unmet", () => {
+  const dir = begun("06-planned");
+  const replanned = read(dir, "hsdd/spec/shop.web.app.md").replace("### shop.web.app.2: Cart and checkout", "### Cart and checkout");
+  step(dir, 2, "phase-plan", "shop.web.app", { files: { "hsdd/spec/shop.web.app.md": replanned } });
+  step(dir, 3, "align", "all");
+  const r = next(dir);
+  assert.ok(r.stuck?.some((l) => l.startsWith("C7 ") && l.includes("shop.web.app.2")), JSON.stringify(r));
+});
+
+test("contracts authored in the segment without the generator are unmet", () => {
+  const authored = begun("02-adrs");
+  step(authored, 2, "contract", "order-api", { files: { "hsdd/contract/order-api.md": contractFile("order-api", "shop.api") } });
+  const lines = unmetDone(ctxOf(authored), { final: true });
+  assert.ok(lines.some((l) => l.startsWith("C0 ")), JSON.stringify(lines));
+
+  const before = begun("02-adrs", { prepare: (d) => put(d, "hsdd/contract/order-api.md", contractFile("order-api", "shop.api")) });
+  assert.ok(!unmetDone(ctxOf(before), { final: true }).some((l) => l.startsWith("C0 ")), "a contract from before the segment is a warning");
+});
+
 test("an open must-address item is unmet in the done definition", () => {
   const dir = begun("06-planned");
   queue(dir, item("Q-001", "consider", "shop.api"), item("Q-002", "must-address", "shop.web.app", { from: "S12" }));
@@ -645,6 +692,19 @@ test("partial artifacts of a stopped step never satisfy a stage", () => {
   assert.ok(ctx.tree.nodes.has("shop"), "the partial root spec exists");
   assert.equal(stages(ctx)[2].done, false);
   assert.ok(unmetDone(ctx, { final: true }).some((l) => /^stage 2 .*S02/.test(l)));
+});
+
+test("a stopped contract step's partial file keeps stage 4 open and returns its continuation", () => {
+  const dir = begun("02-adrs");
+  step(dir, 2, "contract", "order-api", { status: "stopped", files: { "hsdd/contract/order-api.md": contractFile("order-api", "shop.api") } });
+  const ctx = ctxOf(dir);
+  assert.ok(ctx.tree.contracts.has("order-api"), "the partial contract file exists");
+  assert.equal(stages(ctx)[4].done, false);
+  assert.ok(unmetDone(ctx, { final: true }).includes("stage 4 Root contracts: contract S02 on order-api stopped and no continuation of it has completed"));
+  const s = stepOf(dir);
+  assert.equal(s.kind, "contract");
+  assert.equal(s.target, "order-api");
+  assert.equal(s.continues, "S02");
 });
 
 test("willCreate lists the cited ADRs and named contracts that have no file", () => {

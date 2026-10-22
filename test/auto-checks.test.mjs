@@ -4,7 +4,7 @@ import { createHash } from "node:crypto";
 import { mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { tmpdir } from "node:os";
-import { c2, c3, c4, c5, c6, c7, c8, treeChecks } from "../skills/hsdd-auto/scripts/lib/checks.mjs";
+import { c2, c3, c3Cited, c4, c5, c6, c7, c8, inScope, treeChecks } from "../skills/hsdd-auto/scripts/lib/checks.mjs";
 import { checkRegistries } from "../skills/hsdd-auto/scripts/lib/registry.mjs";
 import { loadTree } from "../skills/hsdd-auto/scripts/lib/tree.mjs";
 import { loadContext } from "../skills/hsdd-auto/scripts/lib/context.mjs";
@@ -399,4 +399,57 @@ test("treeChecks passes the intake record to C8", () => {
   assert.deepEqual(treeChecks(ctx, {}), []);
   const fs = treeChecks(ctx, { intakeStep: true, recordPath: "hsdd/management/2026-10-23-intake-marketplace.md" });
   assert.deepEqual(fs.map((f) => f.id), ["C8"]);
+});
+
+// ---------- related files and the scope rule ----------
+
+test("inScope counts a finding by its file or by a related file", () => {
+  const changed = new Set(["hsdd/contract/order-api.md"]);
+  assert.equal(inScope({ file: "hsdd/contract/order-api.md" }, changed), true);
+  assert.equal(inScope({ file: "hsdd/contract/INDEX.md", related: ["hsdd/contract/order-api.md"] }, changed), true);
+  assert.equal(inScope({ file: null, related: ["hsdd/contract/order-api.md"] }, changed), true);
+  assert.equal(inScope({ file: "hsdd/contract/INDEX.md" }, changed), false);
+  assert.equal(inScope({ file: null }, changed), false);
+});
+
+test("C0 relates the contract files; C1 the contract and ADR files and the generator", () => {
+  const dir = repo("06-planned");
+  edit(dir, CONTRACT, "status: stable", "status: draft");
+  const [c1] = checkRegistries(dir, resolveLayout(dir)).c1;
+  assert.equal(c1.file, "hsdd/contract/INDEX.md");
+  assert.deepEqual(c1.related, [CONTRACT, ADR, "hsdd/scripts/gen-registry.mjs"]);
+  rmSync(join(dir, "hsdd/scripts/gen-registry.mjs"));
+  const [c0] = checkRegistries(dir, resolveLayout(dir)).c0;
+  assert.equal(c0.file, "hsdd/scripts/gen-registry.mjs");
+  assert.deepEqual(c0.related, [CONTRACT]);
+});
+
+test("a generator crash relates the same files as a stale registry", () => {
+  const dir = repo("06-planned");
+  put(dir, "hsdd/scripts/gen-registry.mjs", "process.exit(3);\n");
+  const [c1] = checkRegistries(dir, resolveLayout(dir)).c1;
+  assert.match(c1.message, /failed on a temporary copy/);
+  assert.deepEqual(c1.related, [CONTRACT, ADR, "hsdd/scripts/gen-registry.mjs"]);
+});
+
+test("C3 relates the ADR's own file to a governance finding; C3's citation part is exported", () => {
+  const dir = repo("06-planned");
+  edit(dir, API, "- **Governed by:** [ADR-001]\n- **Sources", "- **Governed by:** none\n- **Sources");
+  edit(dir, API, "- **Governed by:** [ADR-001]\n- **Scope:** order and line", "- **Governed by:** none\n- **Scope:** order and line");
+  const [g] = c3(treeOf(dir), {});
+  assert.equal(g.file, API);
+  assert.deepEqual(g.related, [ADR]);
+  edit(dir, API, "- **Governed by:** none\n- **Sources", "- **Governed by:** [ADR-002]\n- **Sources");
+  const cited = c3Cited(treeOf(dir), {});
+  assert.deepEqual(cited.map((f) => [f.level, f.file, f.related]), [["error", API, undefined]]);
+  assert.deepEqual(ids(c3Cited(treeOf(dir), { willCreateAdrs: ["ADR-002"] })), ["warn:C3"]);
+});
+
+test("C7 relates the spec file of the phase's node", () => {
+  const dir = repo("06-planned");
+  edit(dir, WEB, "### shop.web.app.2: Cart and checkout", "### Cart and checkout");
+  const [f] = c7(treeOf(dir));
+  assert.equal(f.file, CONTRACT);
+  assert.equal(f.level, "error");
+  assert.deepEqual(f.related, [WEB]);
 });
