@@ -385,8 +385,14 @@ export const proseFindings = (path, text, { chars, phrases, level, slotsOnly = f
   }));
 };
 
-// 7.6's exemptions; a segment report is checked in its prose slots only.
-const proseExempt = (p) => p === P.conventions || p.startsWith("hsdd/scripts/") || p.startsWith(".claude/") || p.startsWith(`${P.stepsDir}/`);
+// 7.6's exemptions; a segment report is checked in its prose slots only. The owner's configuration
+// files are exempt on 7.6's ground for step reports and sidecars, since they hold the owner's rules and
+// words verbatim: run.yaml lists the banned phrases and the instruction, the owner-file snapshot and
+// adapter.json name the owner's paths, and an orchestrator file (such as CLAUDE.md) states the rules.
+// plan.md is the orchestrator's own prose and stays checked.
+const OWNER_CONFIG = [P.runYaml, P.ownerFiles, P.adapter];
+const proseExempt = (p, config) => p === P.conventions || p.startsWith("hsdd/scripts/") || p.startsWith(".claude/")
+  || p.startsWith(`${P.stepsDir}/`) || OWNER_CONFIG.includes(p) || (config.orchestrator_files ?? []).map(ownerPath).includes(p);
 
 const d1 = (v) => {
   const { config, repoRoot } = v.ctx;
@@ -396,7 +402,7 @@ const d1 = (v) => {
   if (chars.length === 0 && phrases.length === 0) return [];
   const reportDir = reportDirOf(config);
   return v.changed()
-    .filter((p) => matchesAny(p, v.front.write_set) && !proseExempt(p))
+    .filter((p) => matchesAny(p, v.front.write_set) && !proseExempt(p, config))
     .flatMap((p) => {
       const text = textOf(repoRoot, p);
       if (text === null) return [];

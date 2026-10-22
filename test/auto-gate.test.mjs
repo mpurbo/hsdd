@@ -620,6 +620,27 @@ test("D1 at level error fails, at warn warns, and exempts step reports", () => {
   assert.deepEqual(of(gate(clean), "D1"), []);
 });
 
+// The owner's configuration files hold the owner's rules and words verbatim: run.yaml lists the banned
+// phrases and the instruction, an orchestrator file such as CLAUDE.md states them. plan.md is the
+// orchestrator's prose and stays checked.
+test("D1 exempts run.yaml, the owner-file snapshot, adapter.json and orchestrator_files, not plan.md", () => {
+  const config = baseConfig({ orchestrator_files: ["CLAUDE.md"], prose_rules: { banned_chars: ["—"], banned_phrases: ["synergy"], level: "error" } });
+  const setup = begun({ config });
+  open(setup, "setup", SEG);
+  put(setup, P.runYaml, `${read(setup, P.runYaml)}# the owner: no synergy — ever\n`);
+  put(setup, P.ownerFiles, `${JSON.stringify({ "notes/synergy.md": null })}\n`);
+  put(setup, P.adapter, `${JSON.stringify({ note: "synergy — deny rules" })}\n`);
+  put(setup, "CLAUDE.md", "Never write synergy or —.\n");
+  assert.deepEqual(of(gate(setup, "S02", { checks: ["D1"] }), "D1"), []);
+
+  const plan = begun({ config });
+  open(plan, "plan", SEG);
+  put(plan, P.runYaml, `${read(plan, P.runYaml)}# synergy\n`);
+  put(plan, P.plan, "# Run plan: shop\n\n## Segments\n\n**2026-10-22-plan.** Plan for synergy.\n");
+  const fs = of(gate(plan, "S02", { checks: ["D1"] }), "D1");
+  assert.deepEqual(fs.map((f) => [f.level, f.file]), [["error", P.plan]], show(fs));
+});
+
 test("D1 checks only a segment report's prose slots", () => {
   const config = baseConfig({ prose_rules: { banned_chars: ["\u2014"], level: "error" } });
   const dir = finished({ config });
