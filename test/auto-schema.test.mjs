@@ -70,7 +70,7 @@ test("sidecarDecision and decisionInput defs resolve", () => {
   const errs = validate("decision", { ...input, id: "DEC-001" }, "decisionInput");
   assert.equal(errs.length, 1);
   assert.match(errs[0], /^\$: /);
-  assert.match(errs[0], /additional property id/);
+  assert.match(errs[0], /unexpected property id/);
 });
 test("cross-file $ref resolves (step-report routed.step_kind)", () => {
   const routed = (k) => ({ routed: [{ target: "t", kind: "insert-step", text: "x", step_kind: k }] });
