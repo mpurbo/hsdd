@@ -65,7 +65,8 @@ export const makeRepo = ({ stage = null, config = baseConfig(), files = {}, comm
   gitIn(dir, "config", "user.email", "owner@example.invalid");
   gitIn(dir, "config", "commit.gpgsign", "false");
   if (stage !== null) applyOverlays(dir, stage);
-  write(dir, "ref/spec.md", "# Spec v1\n");
+  // A stage overlay brings its own normative source; the stand-in is for stage-less repositories.
+  if (!existsSync(join(dir, "ref/spec.md"))) write(dir, "ref/spec.md", "# Spec v1\n");
   write(dir, P.runYaml, writeRunYaml(config));
   for (const [rel, content] of Object.entries(files)) write(dir, rel, content);
   if (commit) {
