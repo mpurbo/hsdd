@@ -203,7 +203,7 @@ const recordGaps = (ctx, covered, steps, decisions, reports, queue, warningLine)
 const gateWarningLine = (ctx, seg, index) => {
   try {
     const n = finalGate(viewOf(ctx, seg, index)).filter((f) => f.level !== "error").length;
-    return `The final gate reports ${n} warning${n === 1 ? "" : "s"}.`;
+    return `As of this report run, the final gate reports ${n} warning${n === 1 ? "" : "s"}.`;
   } catch (e) {
     return `The final gate could not run: ${cut(e.message, 120)}`;
   }
@@ -213,8 +213,7 @@ const gateWarningLine = (ctx, seg, index) => {
 
 const deferredTable = (ctx, covered, steps, queueLines, queue) => {
   const mine = new Set(steps.map((s) => s.step));
-  const known = new Set(ctx.dispatches.keys());
-  const ours = (it) => mine.has(it.from) || !known.has(it.from);
+  const ours = (it) => mine.has(it.from);
   const items = [...queue.values()];
   const considers = items.filter((it) => it.kind === "consider" && it.status === "open" && ours(it))
     .map((it) => ["consider, open", it.id, it.from, it.target, it.text]);
@@ -235,18 +234,20 @@ const SLOT = /(<!--\s*slot:([A-Za-z0-9_-]+)\s*-->)([\s\S]*?)(<!--\s*\/slot\s*-->
 const slotTexts = (text) => new Map([...text.matchAll(SLOT)].map((m) => [m[2], m[3]]));
 
 // The rendered report with each prose slot's text taken from `existing` when it has that slot;
-// `prefill` fills a slot that is still empty.
-const keepSlots = (rendered, existing, prefill) => {
+const keepSlots = (rendered, existing) => {
   const old = existing === null ? new Map() : slotTexts(existing);
   return rendered.replace(SLOT, (_, open, name, inner, close) => {
     const kept = old.get(name);
-    const filled = prefill[name] === undefined ? null : `\n${prefill[name]}\n`;
-    const text = kept !== undefined && (kept.trim() !== "" || filled === null) ? kept : filled ?? inner;
+    const text = kept !== undefined ? kept : inner;
     return `${open}${text}${close}`;
   });
 };
 
 // ---------- the report ----------
+
+// Generated, never in the Outcome slot: the orchestrator writes that slot (F6 needs it filled).
+const coverageNote = (covered) => (covered.length < 2 ? ""
+  : `This report also covers segment${covered.length > 2 ? "s" : ""} ${covered.slice(0, -1).join(", ")}, which ended without a report. Its generated sections draw from every covered segment.\n\n`);
 
 const templateOf = (mode) => readFileSync(join(dirname(fileURLToPath(import.meta.url)), "templates", "report", `${mode}.md`), "utf8");
 
@@ -277,13 +278,10 @@ export const buildReport = (ctx, segmentId, existing = null) => {
   const fills = {
     ...Object.fromEntries(Object.entries(data).map(([k, v]) => [k, asFill(v)])),
     // `{{step}}` renders as the literal `{step}`; the prefixes are the configured ones.
+    coverage_note: asFill(coverageNote(covered)),
     commit_prefixes: `\`${asFill(artifact)}: {{step}} ...\` then \`${asFill(judgement)}: {{step}}\``,
   };
-  const earlier = covered.slice(0, -1);
-  const prefill = earlier.length === 0 ? {} : {
-    outcome: `This report also covers ${earlier.join(", ")}, which ended without a report. Its generated sections draw from every covered segment.`,
-  };
-  return keepSlots(renderTemplate(templateOf(segment.mode), fills), existing, prefill);
+  return keepSlots(renderTemplate(templateOf(segment.mode), fills), existing);
 };
 
 // ---------- the intake record's ## Produced (S-7) ----------
@@ -383,7 +381,14 @@ export const main = (argv, repoRoot = process.cwd(), out = { log: console.log })
     mkdirSync(dirname(file), { recursive: true });
     if (!existsSync(file) || readFileSync(file, "utf8") !== text) writeFileSync(file, text);
     out.log(`wrote ${rel}`);
-    const appended = appendProduced(ctx, values.segment);
+    let appended;
+    try {
+      appended = appendProduced(ctx, values.segment);
+    } catch (e) {
+      out.log(`the report was written to ${rel}; the ## Produced append failed: ${e.message}`);
+      out.log("report: failed");
+      return 1;
+    }
     if (segmentOf(ctx, values.segment).segment.mode === "intake") {
       out.log(appended ? "appended ## Produced and one change-log line to the intake record" : "no ## Produced append (nothing to add, or already appended)");
     }

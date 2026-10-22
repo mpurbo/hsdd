@@ -2,7 +2,7 @@
 
 ## Outcome
 
-<!-- slot:outcome -->
+{coverage_note}<!-- slot:outcome -->
 
 <!-- /slot -->
 

@@ -6,6 +6,7 @@ import { fileURLToPath } from "node:url";
 import {
   appendProduced, appendedRecord, buildReport, coveredSegments, decisionsFirst, main, producedAdditions,
 } from "../skills/hsdd-auto/scripts/report.mjs";
+import { finalGate } from "../skills/hsdd-auto/scripts/gate.mjs";
 import { loadContext } from "../skills/hsdd-auto/scripts/lib/context.mjs";
 import { P, reportPath } from "../skills/hsdd-auto/scripts/lib/paths.mjs";
 import { appendJsonl, readDispatch, writeDispatch } from "../skills/hsdd-auto/scripts/lib/records.mjs";
@@ -163,7 +164,13 @@ test("a segment ended by an owner message is covered by the next report", () => 
   assert.deepEqual(coveredSegments(ctx, SEG2), [SEG, SEG2]);
   assert.deepEqual(coveredSegments(ctx, SEG), [SEG]);
   const text = buildReportOf(ctx);
-  assert.match(section(text, "Outcome"), new RegExp(`also covers ${SEG}, which ended without a report`));
+  assert.ok(buildReport(ctxOf(begun()), SEG, null).indexOf("also covers") < 0, "nothing earlier, no note");
+  assert.match(text, new RegExp(`^This report also covers segment ${SEG}, which ended without a report`, "m"));
+  assert.ok(!text.includes("also covers segments"));
+  const outcome = section(text, "Outcome");
+  assert.match(outcome, /<!-- slot:outcome -->\s*<!-- \/slot -->/, "the Outcome slot stays empty");
+  put(dir, `hsdd/auto/report/${SEG2}.md`, text);
+  assert.ok(finalGate(ctxOf(dir)).some((f) => f.id === "F6" && /slot outcome is empty/.test(f.message)), "F6 does not accept the empty Outcome slot");
   const first = section(text, "Decisions to look at first");
   assert.ok(first.includes("from the first segment") && first.includes("from the second segment"));
   // Once the earlier segment has a committed report it is not covered again.
@@ -227,7 +234,7 @@ test("record gaps list resumed, re-dispatched and stopped steps", () => {
   assert.match(gaps, /- S02 read docs\/notes\.md outside its read set: needed the glossary/);
   assert.match(gaps, /- DEC-002 \(S02\) is stamped 2000-01-01T00:00:00Z, outside its step's window/);
   assert.ok(!gaps.includes("DEC-003"), "an owner's answer is recorded later than its step window");
-  assert.match(gaps, /- The final gate reports \d+ warnings?\./);
+  assert.match(gaps, /- As of this report run, the final gate reports \d+ warnings?\./);
 });
 
 test("record gaps list inserted and skipped steps", () => {
@@ -257,6 +264,7 @@ test("deferred findings list open consider items, rejected insert-steps and alig
     { id: "Q-004", status: "rejected", decision: "DEC-009" },
     { id: "Q-005", status: "open", from: "S02", target: "run", kind: "insert-step", text: "accepted insert", step_kind: "reconcile", step_target: "shop.api" },
     { id: "Q-005", status: "accepted", decision: "DEC-010" },
+    { id: "Q-006", status: "open", from: "S90", target: "shop.api", kind: "consider", text: "from an unknown step" },
   );
   step(dir, 4, "align", "all", { files: withReport("S04", { skill: "hsdd-reconcile", target: "all", routed: [
     { target: "shop.api", kind: "consider", text: "repeat finding" },
@@ -264,6 +272,7 @@ test("deferred findings list open consider items, rejected insert-steps and alig
   ] }) });
   const text = build(dir);
   const deferred = section(text, "Deferred findings");
+  assert.ok(!deferred.includes("Q-006"), "an item from a step outside the covered segments is not listed");
   assert.ok(deferred.includes("| consider, open | Q-002 | S02 | shop.api | still open finding |"), deferred);
   assert.ok(deferred.includes("| insert-step, rejected | Q-004 | S02 | reconcile on shop.api | add a reconcile (rejected by DEC-009) |"), deferred);
   assert.ok(deferred.includes("| align repeat, not reopened | - | S04 | shop.api | repeat finding |"), deferred);
