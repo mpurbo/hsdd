@@ -4,8 +4,8 @@
 // file or changes git state. A check returns findings { id, level, message, file?, related? }; the
 // CLI prints them, one line each, then the summary, and exits 0 when none is an error.
 // Usage: see USAGE.
-import { existsSync, readFileSync, readdirSync, realpathSync, statSync } from "node:fs";
-import { isAbsolute, join } from "node:path";
+import { existsSync, readFileSync, realpathSync, statSync } from "node:fs";
+import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
 import { loadContext } from "./lib/context.mjs";
@@ -14,7 +14,7 @@ import { inScope, treeChecks } from "./lib/checks.mjs";
 import { validate } from "./lib/schema.mjs";
 import { STAMP_RE, nowStamp, stampMs } from "./lib/time.mjs";
 import { KINDS, RAISED_WHEN, neverPatterns } from "./lib/kinds.mjs";
-import { P, expandHome, judgementSet, matchesAny, ownerFileHash, ownerMatcher, ownerPath, reportPath, stepPaths } from "./lib/paths.mjs";
+import { P, filesUnder, judgementSet, matchesAny, ownerFileHash, ownerMatcher, ownerPath, reportPath, skillsRoot, stepPaths } from "./lib/paths.mjs";
 import { git, headSha } from "./lib/git.mjs";
 import { WARN_BYTES, dispatchErrors, idNum, readReports, sidecarEntries } from "./lib/records.mjs";
 import { CONTRACT_REF, leafParentsOf } from "./lib/tree.mjs";
@@ -70,16 +70,6 @@ const memo = (fn) => {
 
 const isFile = (full) => existsSync(full) && statSync(full).isFile();
 
-// Repository-relative files below `root`, sorted; null when `root` is not a directory.
-const filesUnder = (root) => {
-  if (!existsSync(root) || !statSync(root).isDirectory()) return null;
-  const walk = (rel) => readdirSync(join(root, rel), { withFileTypes: true }).flatMap((e) => {
-    const r = rel === "" ? e.name : `${rel}/${e.name}`;
-    return e.isDirectory() ? walk(r) : e.isFile() ? [r] : [];
-  });
-  return walk("").sort();
-};
-
 // A text file's content; null when it is absent, not a regular file, or binary (holds a NUL byte).
 const textOf = (repoRoot, rel) => {
   const full = join(repoRoot, rel);
@@ -102,11 +92,6 @@ export const ownerState = (repoRoot, ownerFiles) => {
   const errs = validate("owner-files", snapshot);
   if (errs.length > 0) return { present: true, error: errs.join("; ") };
   return { present: true, error: null, snapshot, hashes: new Map(ownerFiles.map((o) => [o, ownerFileHash(repoRoot, o)])) };
-};
-
-const skillsRoot = (repoRoot, skillsDir) => {
-  const p = expandHome(skillsDir);
-  return isAbsolute(p) ? p : join(repoRoot, p);
 };
 
 // What A3 compares, read once: the copy against the installed skill's scripts (4.3), and the

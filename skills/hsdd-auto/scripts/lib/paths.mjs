@@ -1,8 +1,8 @@
 // Fixed record paths, layout resolution (spec 4.2), globs and the judgement set (spec 6.11).
 import { createHash } from "node:crypto";
-import { existsSync, readFileSync, statSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { homedir } from "node:os";
-import { join } from "node:path";
+import { isAbsolute, join } from "node:path";
 
 export const P = Object.freeze({
   runYaml: "hsdd/auto/run.yaml",
@@ -122,6 +122,22 @@ export const ownerFileHash = (repoRoot, entry) => {
 };
 
 export const expandHome = (p) => (p === "~" ? homedir() : p.startsWith("~/") ? join(homedir(), p.slice(2)) : p);
+
+// The directory `skills_dir` names: `~` expanded, a relative path taken from the repository root.
+export const skillsRoot = (repoRoot, skillsDir) => {
+  const p = expandHome(skillsDir);
+  return isAbsolute(p) ? p : join(repoRoot, p);
+};
+
+// Files below `root` (relative, `/` separators, sorted); null when `root` is not a directory.
+export const filesUnder = (root) => {
+  if (!existsSync(root) || !statSync(root).isDirectory()) return null;
+  const walk = (rel) => readdirSync(join(root, rel), { withFileTypes: true }).flatMap((e) => {
+    const r = rel === "" ? e.name : `${rel}/${e.name}`;
+    return e.isDirectory() ? walk(r) : e.isFile() ? [r] : [];
+  });
+  return walk("").sort();
+};
 
 // 6.11: what the judgement commit may hold for a step.
 export const judgementSet = (step) => [

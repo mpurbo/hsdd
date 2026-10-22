@@ -50,7 +50,7 @@ const missingContracts = (ctx) => {
   return named.filter((n, i) => named.findIndex((m) => m.slug === n.slug) === i).map((n) => ({ slug: n.slug, file: n.file }));
 };
 
-const leafParentsToPlan = (tree) => [...tree.nodes.values()]
+export const leafParentsToPlan = (tree) => [...tree.nodes.values()]
   .filter((n) => n.kind === "leaf-parent" && notRetired(n) && n.adopted !== "as-built");
 
 // What a plan segment's stage rules will create: C3 and C5 warn instead of failing on these (10.6).
@@ -612,10 +612,10 @@ const notImplemented = (mode) => `${mode} mode not implemented`;
 
 // ---------- the done definition (9.1, decision S-1) ----------
 
-const findingLine = (f) => `${f.id} ${f.message}${f.file && !f.message.includes(f.file) ? ` (${f.file})` : ""}`;
+export const findingLine = (f) => `${f.id} ${f.message}${f.file && !f.message.includes(f.file) ? ` (${f.file})` : ""}`;
 
 // Every cited ADR, contract, open-question and phase id resolves; what a stage rule will create is not a failure.
-const idFindings = (ctx, creating) => [
+export const idFindings = (ctx, creating) => [
   ...c3Cited(ctx.tree, { willCreateAdrs: creating.adrs }),
   ...c5(ctx.tree, { willCreateContracts: creating.contracts }),
   ...c6(ctx.tree),
@@ -631,8 +631,13 @@ const scoped = (ctx, findings) => {
 };
 
 // Every contract above v0 is stable with phase_ids final; deprecated and retired ones are exempt (S-2).
+const finalExempt = (c) => c.version === "v0" || c.status === "deprecated" || c.status === "retired";
+export const contractsNotFinal = (tree) => [...tree.contracts.values()]
+  .filter((c) => !finalExempt(c) && (c.status !== "stable" || c.phaseIds !== "final"))
+  .map((c) => c.slug);
+
 const contractLines = (tree) => [...tree.contracts.values()]
-  .filter((c) => c.version !== "v0" && c.status !== "deprecated" && c.status !== "retired")
+  .filter((c) => !finalExempt(c))
   .flatMap((c) => [
     ...(c.status === "stable" ? [] : [`contract ${c.slug} is ${c.status ?? "without a status"}`]),
     ...(c.phaseIds === "final" ? [] : [`contract ${c.slug} has phase_ids ${c.phaseIds ?? "missing"}`]),

@@ -62,6 +62,11 @@ const applyOverlays = (dir, stage) => {
 export const makeRepo = ({ stage = null, config = baseConfig(), files = {}, commit = true } = {}) => {
   const dir = mkdtempSync(join(tmpdir(), "hsdd-auto-"));
   gitIn(dir, "init", "-q", "-b", "main");
+  // An empty hooks directory per repository: no hook of the machine running the tests (a global
+  // template or core.hooksPath) runs on checkout or commit in a test repository.
+  const noHooks = join(dir, ".git", "no-hooks");
+  mkdirSync(noHooks);
+  gitIn(dir, "config", "core.hooksPath", noHooks);
   gitIn(dir, "config", "user.name", "Test Owner");
   gitIn(dir, "config", "user.email", "owner@example.invalid");
   gitIn(dir, "config", "commit.gpgsign", "false");
