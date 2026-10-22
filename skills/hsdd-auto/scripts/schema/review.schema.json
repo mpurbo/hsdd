@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "hsdd-auto/review/1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["decision", "at", "review"],
+  "properties": {
+    "decision": { "type": "string", "pattern": "^DEC-[0-9]{3,}$" },
+    "at": { "type": "string", "minLength": 1 },
+    "review": { "enum": ["agree", "disagree", "should-have-asked"] },
+    "reason": { "type": "string", "minLength": 1 },
+    "reviewer": { "type": "string", "minLength": 1 },
+    "preferred": { "type": "string", "minLength": 1 },
+    "impact": { "enum": ["node-local", "contract", "tree", "upstream"] }
+  }
+}

@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "hsdd-auto/run-line/1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["step_ref", "segment", "kind", "skill", "target", "started", "finished", "commit", "dispatches", "status"],
+  "properties": {
+    "step_ref": { "type": "string", "pattern": "^S[0-9]{2,}$" },
+    "segment": { "type": "string", "minLength": 1 },
+    "kind": { "$ref": "#/$defs/kind" },
+    "skill": { "enum": ["none", "hsdd-spec", "hsdd-adr", "hsdd-contract", "hsdd-phase-plan", "hsdd-reconcile", "hsdd-intake"] },
+    "target": { "type": "string", "minLength": 1 },
+    "started": { "$ref": "#/$defs/time" },
+    "finished": { "$ref": "#/$defs/time" },
+    "commit": { "type": "string", "pattern": "^[0-9a-f]{7,64}$" },
+    "dispatches": { "type": "integer", "minimum": 0 },
+    "status": { "enum": ["completed", "stopped"] },
+    "continues": { "type": "string", "pattern": "^S[0-9]{2,}$" },
+    "model": { "type": "string", "minLength": 1 },
+    "usage": {
+      "type": "object", "additionalProperties": false,
+      "properties": {
+        "input_tokens": { "type": "integer", "minimum": 0 },
+        "output_tokens": { "type": "integer", "minimum": 0 },
+        "cache_read_input_tokens": { "type": "integer", "minimum": 0 },
+        "cache_creation_input_tokens": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "note": { "type": "string", "minLength": 1 }
+  },
+  "$defs": {
+    "time": { "type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$" },
+    "kind": {
+      "enum": ["setup", "plan", "root-spec", "mid-level-spec", "graft", "promote", "spec-touch", "adr", "adr-update", "contract", "contract-touch", "citation-touch", "phase-plan", "phase-plan-append", "reconcile", "align", "intake", "report"]
+    },
+    "insertableKind": {
+      "enum": ["root-spec", "mid-level-spec", "graft", "promote", "spec-touch", "adr", "adr-update", "contract", "contract-touch", "citation-touch", "phase-plan", "phase-plan-append", "reconcile", "align"]
+    }
+  }
+}

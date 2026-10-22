@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "hsdd-auto/handoffs/1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["version", "handoffs"],
+  "properties": {
+    "version": { "enum": [1] },
+    "handoffs": {
+      "type": "array",
+      "items": {
+        "type": "object", "additionalProperties": false,
+        "required": ["id", "kind", "skill", "target", "prompt", "when", "after"],
+        "properties": {
+          "id": { "type": "string", "pattern": "^H[0-9]+[a-z]?$" },
+          "kind": {
+            "enum": ["root-spec", "mid-level-spec", "graft", "promote", "spec-touch", "adr", "adr-update", "contract", "contract-touch", "citation-touch", "phase-plan", "phase-plan-append", "reconcile", "align"]
+          },
+          "skill": { "enum": ["hsdd-spec", "hsdd-adr", "hsdd-contract", "hsdd-phase-plan", "hsdd-reconcile"] },
+          "target": { "type": "string", "minLength": 1 },
+          "prompt": { "type": "string", "minLength": 1 },
+          "when": { "enum": [null, "cites-superseded"] },
+          "after": { "type": "array", "items": { "type": "string", "pattern": "^H[0-9]+[a-z]?$" } }
+        }
+      }
+    },
+    "insert_rule": { "type": "string", "minLength": 1 }
+  }
+}
