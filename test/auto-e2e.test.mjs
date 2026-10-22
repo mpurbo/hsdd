@@ -10,7 +10,7 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { commitStepPhases } from "../skills/hsdd-auto/scripts/commit.mjs";
 import { formatFlow, formatScalar, parseYaml } from "../skills/hsdd-auto/scripts/lib/yaml.mjs";
-import { SCRIPTS, baseConfig, completeSkills, gitIn, makeRepo, writeRunYaml } from "./helpers/auto-repo.mjs";
+import { SCRIPTS, baseConfig, completeSkills, gitIn, makeRepo } from "./helpers/auto-repo.mjs";
 import { FIXTURES, readDispatchFile, standIn } from "./helpers/auto-standin.mjs";
 
 const read = (dir, rel) => readFileSync(join(dir, rel), "utf8");
@@ -146,7 +146,8 @@ const runPlanStep = (dir, seg, { purpose, items = [] } = {}) => {
   const stages = JSON.parse(cli(dir, "next.mjs", ["--stages"]).stdout);
   const paragraph = [
     `**${seg.id}.** ${purpose}`,
-    `Mode ${seg.mode}, stop policy ${seg.stop_policy}; the owner's instruction: "${seg.instruction}"`,
+    // plan.md is the orchestrator's prose, checked by D1, so it points at the instruction rather than quoting it.
+    `Mode ${seg.mode}, stop policy ${seg.stop_policy}; the owner's instruction is the segment's entry in hsdd/auto/run.yaml.`,
     `Stages: ${stages.map((s) => `${s.n} ${s.name} (${s.done ? "done" : "to do"})`).join(", ")}.`,
   ].join(" ");
   const plan = read(dir, "hsdd/auto/plan.md");
@@ -429,18 +430,18 @@ const TRAILER = "Co-Authored-By: Test Agent <agent@example.invalid>";
 const OWNER_FILE = "notes/owner.md";
 
 test("plan, decide-and-record: stage 00 to done", () => {
-  // An uncommitted owner file, a commit trailer, and a banned character at level error: none of them may
-  // stop the run, and the owner file reaches no commit. The banned character is written as a YAML escape,
-  // as spec 5.4 writes it: D1 reads run.yaml as a write-set file, so a literal one there is flagged at
-  // every setup.
-  const config = baseConfig({
-    skills_dir: completeSkills(), owner_files: [OWNER_FILE], commit: { trailers: [TRAILER] }, prose_rules: { banned_chars: ["\u2014"], level: "error" },
+  // An uncommitted owner file, a commit trailer, and spec 5.4's prose rules at level error: none of them
+  // may stop the run, and the owner file reaches no commit. run.yaml holds the banned character and
+  // phrase literally, and so does the owner's instruction, which run.yaml keeps verbatim (D1 exempts the
+  // owner's configuration files).
+  const dir = repoAt("00-empty", {
+    owner_files: [OWNER_FILE], commit: { trailers: [TRAILER] },
+    prose_rules: { banned_chars: ["\u2014"], banned_phrases: ["leverage"], token_forms: { empty_cell: "none", id_separator: ":", reason_separator: " - " }, level: "error" },
   });
-  const yaml = writeRunYaml(config).replace("banned_chars: [\u2014]", "banned_chars: [\"\\u2014\"]");
-  assert.doesNotMatch(yaml, /\u2014/);
-  const dir = makeRepo({ stage: "00-empty", config, files: { "hsdd/auto/run.yaml": yaml } });
+  assert.match(read(dir, "hsdd/auto/run.yaml"), /\u2014/);
+  assert.match(read(dir, "hsdd/auto/run.yaml"), /leverage/);
   put(dir, OWNER_FILE, "The owner's notes, uncommitted.\n");
-  const seg = openSegment(dir, { mode: "plan", instruction: "Plan the shop from scratch through reconcile. Do not ask me anything; record the decisions.", stopPolicy: "decide-and-record" });
+  const seg = openSegment(dir, { mode: "plan", instruction: "Plan the shop from scratch through reconcile \u2014 leverage the spec. Do not ask me anything; record the decisions.", stopPolicy: "decide-and-record" });
   assert.equal(seg.first_step, "S00");
   runSetup(dir, seg, {
     decisions: [dec("The owner asked not to be asked: which stop policy does this segment run under?", {
