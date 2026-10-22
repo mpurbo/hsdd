@@ -148,6 +148,28 @@ export const fakeStep = (dir, {
   return { commit, judgementCommit, line };
 };
 
+// A dispatched step that has no commit yet: the dispatch file only (no run line, no judgement commit).
+export const openStep = (dir, { step, segment, kind, target, renderedAt = nowStamp() }) => {
+  const config = loadConfig(dir);
+  const layout = resolveLayout(dir);
+  const tree = { nodes: new Map(), contracts: new Map() };
+  const orchestrator = KINDS[kind].orchestrator;
+  const paths = stepPaths(step);
+  const front = {
+    step_ref: step, segment, kind, skill: skillFor(kind, target, tree), target, handoff: null, queue_item: null, continues: null,
+    report: orchestrator ? null : paths.report,
+    decisions: paths.decisions,
+    write_set: writeSet(kind, target, { layout, config, segmentId: segment, tree }),
+    template: orchestrator ? null : `steps/${kind}.md`,
+    skill_version: "0.11.0",
+    rendered_at: renderedAt,
+    head: gitIn(dir, "rev-parse", "--short", "HEAD"),
+    launches: orchestrator ? [] : [{ at: renderedAt, reason: "initial" }],
+  };
+  writeDispatch(dir, step, front, orchestrator ? "" : "fake prompt\n\nread_check: 00000000\n");
+  return front;
+};
+
 export const addSegment = (dir, entry) => {
   const file = join(dir, P.runYaml);
   writeFileSync(file, appendSegmentEntry(readFileSync(file, "utf8"), entry));
