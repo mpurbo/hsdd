@@ -40,19 +40,22 @@ export const leafParentsOf = (tree) =>
 
 // 6.5: an item matches a step when its target equals the step's target, is an element of the
 // step's target list (`all` matching every leaf-parent), or is the handoff id the step executes.
+// B-10: an item on a handoff id also matches a step on that handoff's own target, read from
+// `handoffTargets` (handoff id -> target, lib/intake.mjs handoffTargets of the segment's record).
 // An insert-step item targets `run` and never matches.
-export const matches = (item, step, leafParents) => {
+export const matches = (item, step, leafParents, handoffTargets = new Map()) => {
   if (item.kind === "insert-step") return false;
   if (item.target === step.target) return true;
   if (step.handoff != null && item.target === step.handoff) return true;
+  if (handoffTargets.has(item.target) && handoffTargets.get(item.target) === step.target) return true;
   if (step.target === "all") return leafParents.includes(item.target);
   return step.target.includes(",") && step.target.split(",").map((s) => s.trim()).includes(item.target);
 };
 
 // Items matching the step whose state is open: now, or at time `at` (inclusive). Oldest id first.
-export const openMatching = (lines, step, leafParents, at) =>
+export const openMatching = (lines, step, leafParents, at, handoffTargets = new Map()) =>
   [...queueItems(lines).values()]
-    .filter((it) => matches(it, step, leafParents))
+    .filter((it) => matches(it, step, leafParents, handoffTargets))
     .filter((it) => (at === undefined ? it.status : statusAt(it, at)) === "open")
     .sort((a, b) => idNum(a.id) - idNum(b.id));
 

@@ -5,7 +5,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
   loadIntakeRecords, parseIntakeRecord, parseHandoffBlock, blockErrors, segmentRecord,
-  supersededStrings, citesSuperseded, targetFiles,
+  supersededStrings, citesSuperseded, targetFiles, handoffTargets,
 } from "../skills/hsdd-auto/scripts/lib/intake.mjs";
 import { loadTree } from "../skills/hsdd-auto/scripts/lib/tree.mjs";
 import { parseLayout } from "../skills/hsdd-auto/scripts/lib/paths.mjs";
@@ -249,4 +249,11 @@ test("cites-superseded with a multi-dot baseline version", () => {
   const strings = supersededStrings(config, { contracts: new Map() });
   assert.equal(citesSuperseded(dir, ["notes/exact.md"], strings), true);
   assert.equal(citesSuperseded(dir, ["notes/longer.md"], strings), false);
+});
+
+test("handoffTargets maps each handoff id to its target; empty without a block", () => {
+  assert.deepEqual([...handoffTargets(record("2026-10-22-intake-order-v2.md"))], [["H1", "order-api"], ["H2a", "shop.web.app"]]);
+  assert.deepEqual([...handoffTargets(record("structural.md"))], []);
+  assert.deepEqual([...handoffTargets(null)], []);
+  assert.deepEqual([...handoffTargets({ block: { handoffs: "not a list" } })], []);
 });

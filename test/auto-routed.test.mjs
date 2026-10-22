@@ -73,6 +73,26 @@ test("matching rule for each target form", () => {
   assert.equal(matches(item("ref/spec.md"), step("ref/spec.md"), leafParents), true);
 });
 
+test("an item on a handoff id also matches a step on the handoff's own target (B-10)", () => {
+  const leafParents = ["shop.api", "shop.web.app"];
+  const targets = new Map([["H1", "order-api"], ["H2a", "shop.web.app"]]);
+  const item = (target, kind = "consider") => ({ target, kind });
+  const step = (target, handoff = null) => ({ target, handoff });
+  assert.equal(matches(item("H1"), step("order-api"), leafParents, targets), true);
+  assert.equal(matches(item("H1"), step("order-api", "H1"), leafParents, targets), true);
+  assert.equal(matches(item("H1"), step("shop.web.app"), leafParents, targets), false);
+  assert.equal(matches(item("H2a"), step("shop.web.app"), leafParents, targets), true);
+  assert.equal(matches(item("H9"), step("order-api"), leafParents, targets), false, "a handoff the map lacks matches only its own step");
+  assert.equal(matches(item("H1"), step("order-api"), leafParents), false, "without the map the 6.5 rule alone applies");
+  assert.equal(matches(item("H1", "insert-step"), step("order-api"), leafParents, targets), false);
+  const lines = [
+    { id: "Q-001", at: "2026-10-22T10:00:00Z", status: "open", from: "S02", target: "H1", kind: "consider", text: "a" },
+    { id: "Q-002", at: "2026-10-22T10:01:00Z", status: "open", from: "S02", target: "order-api", kind: "must-address", text: "b" },
+  ];
+  assert.deepEqual(openMatching(lines, step("order-api"), leafParents, undefined, targets).map((i) => i.id), ["Q-001", "Q-002"]);
+  assert.deepEqual(openMatching(lines, step("order-api"), leafParents).map((i) => i.id), ["Q-002"]);
+});
+
 test("leafParentsOf: leaf-parents that are not retired", () => {
   const dir = makeRepo({ stage: "06-planned" });
   const tree = loadContext(dir).tree;

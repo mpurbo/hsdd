@@ -424,7 +424,7 @@ test("accepted insert-steps are returned oldest first", () => {
 
 test("item after honoured", () => {
   // A plan segment has no handoffs, so `after: "handoffs"` holds vacuously and the item is returned.
-  // The pending-handoff case needs Task 9's intake fixture.
+  // The pending-handoff case is in auto-next-intake.test.mjs.
   const dir = begun("04-mid");
   queue(dir, insert("Q-001", "S01", "spec-touch", "shop.web", { after: "handoffs" }), accepted("Q-001"));
   const s = stepOf(dir);
@@ -678,9 +678,10 @@ test("a segment ended by an owner message gives no step", () => {
 test("no segment and an intake segment", () => {
   const empty = makeRepo({ stage: "00-empty" });
   assert.deepEqual(Object.keys(next(empty)), ["stuck"]);
+  // Intake mode has its own tests (auto-next-intake.test.mjs); here only that it starts with setup.
   const intake = makeRepo({ stage: "06-planned" });
   addSegment(intake, segment("2026-10-22-intake-spec-v2", { mode: "intake", request: "ref/spec-v2.md", authority: "accepted-rfc" }));
-  assert.deepEqual(next(intake), { stuck: ["intake mode not implemented"] });
+  assert.equal(stepOf(intake).kind, "setup");
 });
 
 // ---------- stages, willCreate, determinism, the CLI ----------

@@ -1,119 +1,29 @@
-// The next step (spec 10.2), the mode's stages (chapter 9) and the done definition (9.1), as pure
-// functions of one repository snapshot (lib/context.mjs). The edges are the snapshot's memoized
-// reads (ctx.registry(), ctx.changedInSegment(), ctx.uncommitted()) and validateLedger; only the
-// done definition calls them. A mode is a row of MODES: its stage table and the few rules that
-// differ between modes. Usage: next.mjs [--stages]
+// The next step (spec 10.2), the mode's stages (chapter 9) and the done definition (9.1, 9.2), as
+// pure functions of one repository snapshot (lib/context.mjs). The edges are the snapshot's memoized
+// reads (ctx.registry(), ctx.changedInSegment(), ctx.uncommitted()) and validateLedger, which only
+// the done definition calls, and the target files a `cites-superseded` handoff reads when it comes
+// up (12.2). A mode is a row of MODES: its stage table and the few rules that differ between modes.
+// Usage: next.mjs [--stages]
 import { realpathSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { loadContext } from "./lib/context.mjs";
 import { KINDS, skillFor, targetType, writeSet } from "./lib/kinds.mjs";
 import { c3Cited, c5, c6, c7, inScope } from "./lib/checks.mjs";
+import { blockErrors, citesSuperseded, handoffTargets, supersededStrings, targetFiles } from "./lib/intake.mjs";
 import { P, globToRegExp } from "./lib/paths.mjs";
-import { phaseNodeOf } from "./lib/tree.mjs";
+import { contractOrder, contractRoles, firstCited, nodeFiles, ordered, producerOrder } from "./lib/order.mjs";
 import { idNum, stepNum } from "./lib/records.mjs";
 import { leafParentsOf, matches, queueItems } from "./routed.mjs";
 import { validateLedger } from "./ledger.mjs";
 
 const unique = (xs) => [...new Set(xs)];
 const byIdNum = (a, b) => idNum(a.id) - idNum(b.id);
-const cmp = (a, b) => (a < b ? -1 : a > b ? 1 : 0);
 const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`;
 const isSubagent = (kind) => KINDS[kind] !== undefined && !KINDS[kind].orchestrator;
 const isStepId = (s) => typeof s === "string" && /^S\d{2,}$/.test(s);
-// A position in `list`; what is not in it comes after everything that is.
-const rankIn = (list) => (x) => { const i = list.indexOf(x); return i < 0 ? list.length : i; };
 
-// ---------- producer-first (9.1) ----------
-
-// A name in a Produces/Consumes field or contract front matter as a node id: the node itself, or a
-// phase id's node (the id without its trailing numeric segment); null when the tree has no such node.
-const nodeOf = (tree, name) => {
-  if (tree.nodes.has(name)) return name;
-  const owner = phaseNodeOf(name);
-  return owner !== name && tree.nodes.has(owner) ? owner : null;
-};
-
-// Who produces and who consumes each contract slug, as sets of node ids: node and phase Produces and
-// Consumes fields, contract `owner` and `consumers`.
-const contractRoles = (tree) => {
-  const fromNodes = [...tree.nodes.values()].flatMap((n) => [
-    ...[...n.produces, ...n.phases.flatMap((p) => p.produces)].map((r) => ["produces", r.slug, n.id]),
-    ...[...n.consumes, ...n.phases.flatMap((p) => p.consumes)].map((r) => ["consumes", r.slug, n.id]),
-  ]);
-  const fromContracts = [...tree.contracts.values()].flatMap((c) => [
-    ...(c.owner ? [["produces", c.slug, nodeOf(tree, c.owner)]] : []),
-    ...c.consumers.map((name) => ["consumes", c.slug, nodeOf(tree, name)]),
-  ]);
-  const group = (role) => [...fromNodes, ...fromContracts]
-    .filter(([r, , node]) => r === role && node !== null)
-    .reduce((m, [, slug, node]) => m.set(slug, new Set([...(m.get(slug) ?? []), node])), new Map());
-  return { producers: group("produces"), consumers: group("consumes") };
-};
-
-// Every item reachable from `start` along `succ`, `start` excluded unless a cycle returns to it.
-const reachable = (succ, start) => {
-  const seen = new Set();
-  const visit = (x) => succ(x).forEach((y) => { if (!seen.has(y)) { seen.add(y); visit(y); } });
-  visit(start);
-  return seen;
-};
-
-// Kahn's algorithm over `items` with `before(a, b)` (a must come first) and the tie order `rank`:
-// the lowest-ranked ready item goes next. Items left when none is ready are the cycle.
-const kahn = (items, before, rank) => {
-  const go = (remaining, order) => {
-    const ready = remaining.filter((b) => !remaining.some((a) => a !== b && before(a, b)));
-    if (ready.length === 0) return { order, cycle: remaining };
-    return go(remaining.filter((x) => x !== ready[0]), [...order, ready[0]]);
-  };
-  return go(unique(items).sort((a, b) => rank(a) - rank(b) || cmp(a, b)), []);
-};
-
-// Ties keep first mention in the root spec, then in the parent specs (tree.mentionOrder); the root
-// comes first; nodes never mentioned last.
-const nodeRank = (tree) => rankIn([tree.root, ...tree.mentionOrder]);
-
-// Citations ({ file, ... }) in the order of their file in `files` (citations elsewhere dropped), then
-// text order; each key once, at its first citation.
-const firstCited = (cites, files, key) => {
-  const rank = rankIn(files);
-  const sorted = cites
-    .map((c, i) => ({ c, i }))
-    .filter(({ c }) => files.includes(c.file))
-    .sort((a, b) => rank(a.c.file) - rank(b.c.file) || a.i - b.i)
-    .map(({ c }) => c);
-  return sorted.filter((c, i) => sorted.findIndex((d) => key(d) === key(c)) === i);
-};
-
-// Node A precedes node B when B consumes a contract A produces, directly or through other nodes, so
-// an order over some candidates honours links through nodes that are not candidates.
-export const producerOrder = (tree, nodeIds) => {
-  const { producers, consumers } = contractRoles(tree);
-  const succ = (a) => unique([...producers].flatMap(([slug, ps]) => (ps.has(a) ? [...(consumers.get(slug) ?? [])] : [])))
-    .filter((b) => b !== a);
-  const reach = new Map(unique(nodeIds).map((id) => [id, reachable(succ, id)]));
-  return kahn(nodeIds, (a, b) => reach.get(a).has(b), nodeRank(tree));
-};
-
-const nodeFiles = (tree, ids) => ids.map((id) => tree.nodes.get(id)?.file);
-
-// Contract slugs in order of first mention in the specs: the root's, then tree.mentionOrder's.
-const contractRank = (tree) => {
-  const files = nodeFiles(tree, [tree.root, ...tree.mentionOrder]).filter(Boolean);
-  return rankIn(firstCited(tree.contractCites, files, (c) => c.slug).map((c) => c.slug));
-};
-
-// Contract X precedes contract Y when Y's producing node consumes X, directly or through other contracts.
-export const contractOrder = (tree, slugs) => {
-  const { producers, consumers } = contractRoles(tree);
-  const consumedBy = (node) => [...consumers].flatMap(([slug, cs]) => (cs.has(node) ? [slug] : []));
-  const succ = (x) => unique([...producers].flatMap(([y, ps]) => ([...ps].some((p) => consumedBy(p).includes(x)) ? [y] : [])))
-    .filter((y) => y !== x);
-  const reach = new Map(unique(slugs).map((s) => [s, reachable(succ, s)]));
-  return kahn(slugs, (a, b) => reach.get(a).has(b), contractRank(tree));
-};
-
-const ordered = ({ order, cycle }) => [...order, ...cycle];
+// Producer-first ordering lives in lib/order.mjs; re-exported so earlier imports keep working.
+export { contractOrder, producerOrder };
 
 // ---------- stage inputs read from the tree ----------
 
@@ -171,6 +81,8 @@ export const pendingStopped = (ctx) => {
     });
 };
 
+// `mode.view(ctx)` adds what only that mode reads (intake: the record, its handoffs and their
+// states) and `handoffTargets`, the matching rule's handoff map (B-10).
 const derive = (ctx, mode) => {
   const chains = pendingStopped(ctx);
   return {
@@ -182,6 +94,7 @@ const derive = (ctx, mode) => {
     chains,
     blocked: new Map(chains.map((c) => [chainKey(c.kind, c.target), c])),
     leafParents: leafParentsOf(ctx.tree),
+    ...mode.view(ctx),
   };
 };
 
@@ -387,13 +300,14 @@ const openItems = (v) => v.items.filter((it) => OPEN_KINDS.has(it.kind) && it.st
 
 const TOUCH_BY_TYPE = { node: "spec-touch", contract: "contract-touch", adr: "adr-update" };
 
-// The step an open item's target needs (plan stage 7): { close } for `run` or the request path,
-// { kind, target } for a node, contract, ADR or handoff id, null when no kind fits.
+// The step an open item's target needs (plan stage 7, intake stage 4): { close } for `run` or the
+// request path, { kind, target } for a node, contract or ADR, or for a handoff id the touch of the
+// handoff's own target (B-10); null when no kind fits.
 const itemNeed = (v, it) => {
   const type = it.target === "run" ? "run" : targetType(it.target, v.ctx.tree);
   if (type === "run" || type === "request") return { close: true };
   if (type === "handoff") {
-    const own = v.mode.handoffTarget(v, it.target);
+    const own = v.handoffTargets.get(it.target) ?? null;
     const ownType = own === null ? null : targetType(own, v.ctx.tree);
     return own !== null && TOUCH_BY_TYPE[ownType] ? { kind: TOUCH_BY_TYPE[ownType], target: own } : null;
   }
@@ -401,6 +315,7 @@ const itemNeed = (v, it) => {
 };
 
 const itemLabel = (it) => `${it.kind} ${it.id} from ${it.from} on ${it.target}`;
+const openLine = (open) => `open items: ${open.map((it) => `${it.id} (${it.kind} on ${it.target})`).join(", ")}`;
 
 // One step per open must-address or consider item, oldest first; then, with `align`, an align on
 // the mode's align target when the align condition does not hold.
@@ -410,7 +325,7 @@ const consistencyRule = (v, { stage, align }) => {
     if (need === null) continue;
     if (need.close) return { close: { item: it.id, why: `stage ${stage}: ${itemLabel(it)} targets ${it.target}; record the decision and close it in a plan step` } };
     if (!fresh(v, need.kind, need.target)) continue;
-    const closes = openItems(v).filter((x) => matches(x, { target: need.target, handoff: null }, v.leafParents)).map((x) => x.id);
+    const closes = openItems(v).filter((x) => matches(x, { target: need.target, handoff: null }, v.leafParents, v.handoffTargets)).map((x) => x.id);
     return stepResult(v, {
       kind: need.kind, target: need.target,
       why: `stage ${stage}: ${itemLabel(it)} needs a ${need.kind}; it closes ${closes.join(", ")}`,
@@ -424,11 +339,22 @@ const consistencyRule = (v, { stage, align }) => {
 };
 
 const lastSubagent = (v) => v.segLines.filter((l) => isSubagent(l.kind)).at(-1) ?? null;
+const targetSet = (t) => t.split(",").map((x) => x.trim()).filter(Boolean).sort().join(",");
 
-// 9.1: the segment's last committed subagent step is a completed align on the mode's target (`all`).
+// 9.1: the segment's last committed subagent step is a completed align on the mode's target (plan:
+// `all`; intake: the leaf-parents not re-planned, compared as a set). An intake segment whose
+// leaf-parents were all re-planned has no target (null), and the condition holds without an align.
 const alignHolds = (v) => {
+  const target = v.mode.alignTarget(v);
+  if (target === null) return true;
   const last = lastSubagent(v);
-  return last !== null && last.kind === "align" && last.target === v.mode.alignTarget(v) && last.status === "completed";
+  return last !== null && last.kind === "align" && last.status === "completed" && targetSet(last.target) === targetSet(target);
+};
+
+const alignLine = (v) => {
+  const last = lastSubagent(v);
+  const lastText = last ? `${last.step_ref} (${last.kind} on ${last.target}, ${last.status})` : "none";
+  return `the align condition does not hold: the segment's last committed subagent step is ${lastText}, not a completed align on ${v.mode.alignTarget(v)}`;
 };
 
 const consistencyStage = {
@@ -437,12 +363,8 @@ const consistencyStage = {
     const open = openItems(v);
     const holds = alignHolds(v);
     if (open.length === 0 && holds) return DONE;
-    const last = lastSubagent(v);
-    const lastText = last ? `${last.step_ref} (${last.kind} on ${last.target}, ${last.status})` : "none";
-    return notDone([
-      ...(open.length > 0 ? [`open items: ${open.map((it) => `${it.id} (${it.kind} on ${it.target})`).join(", ")}`] : []),
-      ...(holds ? [] : [`the align condition does not hold: the segment's last committed subagent step is ${lastText}, not a completed align on ${v.mode.alignTarget(v)}`]),
-    ], () => consistencyRule(v, { stage: "7 Consistency", align: true }));
+    return notDone([...(open.length > 0 ? [openLine(open)] : []), ...(holds ? [] : [alignLine(v)])],
+      () => consistencyRule(v, { stage: "7 Consistency", align: true }));
   },
 };
 
@@ -460,10 +382,176 @@ const reportStage = (n) => ({
   },
 });
 
+// ---------- intake (9.2, 6.12) ----------
+
+const PLAN_KINDS = new Set(["phase-plan", "phase-plan-append"]);
+const SETTLED = new Set(["executed", "skipped"]);
+
+const finished = (ctx, segId) => ctx.committedRunLines.some((l) => l.segment === segId && l.kind === "report" && l.status === "completed");
+
+// The segments of the current intake: the newest, and the earlier ones with the same request after
+// the last of those that finished. A segment opened by an answer or an owner message copies the
+// request and continues the intake (5.5); a finished segment ended it, so a later segment on the
+// same request is a new intake.
+const intakeSegments = (ctx) => {
+  const same = ctx.segments.slice(0, -1).filter((s) => s.mode === "intake" && s.request === ctx.segment.request);
+  const last = same.findLastIndex((s) => finished(ctx, s.id));
+  return new Set([...same.slice(last + 1).map((s) => s.id), ctx.segment.id]);
+};
+
+// Why the record does not route the intake: no block, a block C8 rejects (`errors`, blockErrors),
+// or a structural class, whose handoffs are the owner's decision (the intake step stops, 9.2).
+const recordProblems = (record, errors) => {
+  if (record.block === null && record.blockError === null) return ["no hsdd-handoffs block in its ## Routing section"];
+  if (errors.length > 0) return errors;
+  return record.cls === "structural" ? ["class structural: its handoffs are the owner's decision, so the intake step stops with shape (spec 9.2)"] : [];
+};
+
+// Each handoff of the block as executed, skipped or pending (6.12), across the intake's segments:
+// executed when a completed step's dispatch file names it (a completed continuation names it too),
+// skipped when a committed skip line names it. `step` is the executing step, or for a pending
+// handoff its newest (stopped) step.
+const statesOf = (ctx, segs, lines, handoffs) => {
+  const skipped = new Set(ctx.committedHandoffLines.filter((l) => segs.has(l.segment)).map((l) => l.handoff));
+  return handoffs.map((h) => {
+    const steps = lines.filter((l) => ctx.dispatches.get(l.step_ref)?.front?.handoff === h.id);
+    const done = steps.filter((l) => l.status === "completed").at(-1);
+    const state = done ? "executed" : skipped.has(h.id) ? "skipped" : "pending";
+    const step = done ? done.step_ref : state === "pending" ? (steps.at(-1)?.step_ref ?? null) : null;
+    return { id: h.id, kind: h.kind, target: h.target, state, step };
+  });
+};
+
+// Leaf-parents a completed phase-plan or phase-plan-append re-planned (9.1's align condition): in
+// this segment, and in the intake's earlier segments from the record's intake step on.
+const replannedOf = (ctx, lines) => {
+  const intake = lines.find((l) => l.kind === "intake");
+  const from = intake ? stepNum(intake.step_ref) : Infinity;
+  return new Set(lines
+    .filter((l) => PLAN_KINDS.has(l.kind) && l.status === "completed" && (l.segment === ctx.segment.id || stepNum(l.step_ref) >= from))
+    .map((l) => l.target));
+};
+
+// What an intake segment reads beyond the shared view. The segment's record (9.2) counts only once
+// an intake step of this intake completed, so neither a stopped step's partial record nor an
+// earlier intake's record routes it.
+const intakeView = (ctx) => {
+  const segs = intakeSegments(ctx);
+  const lines = ctx.committedRunLines.filter((l) => segs.has(l.segment) && isStepId(l.step_ref));
+  const wrote = lines.find((l) => l.kind === "intake" && l.status === "completed") ?? null;
+  const record = wrote ? ctx.intake.record : null;
+  const errors = record ? blockErrors(record, ctx.tree) : [];
+  const handoffs = record && record.block !== null && errors.length === 0 ? record.block.handoffs : [];
+  return {
+    intake: {
+      lines, wrote, record, handoffs,
+      problems: record ? recordProblems(record, errors) : [],
+      states: statesOf(ctx, segs, lines, handoffs),
+      replanned: replannedOf(ctx, lines),
+    },
+    handoffTargets: handoffs.length > 0 ? handoffTargets(record) : new Map(),
+  };
+};
+
+// [{ id, kind, target, state: "executed"|"skipped"|"pending", step }] for the segment's record.
+export const handoffStates = (ctx) => (ctx.segment?.mode === "intake" ? intakeView(ctx).intake.states : []);
+
+// C3 and C5 warn on what a not yet executed intake handoff of kind `adr` or `contract` will create (10.6).
+const intakeWillCreate = (ctx) => {
+  const pending = handoffStates(ctx).filter((h) => h.state === "pending");
+  const of = (kind) => new Set(pending.filter((h) => h.kind === kind).map((h) => h.target));
+  return { adrs: of("adr"), contracts: of("contract") };
+};
+
+const routeStage = {
+  n: 2, name: "Route",
+  evaluate: (v) => {
+    const { request } = v.seg;
+    const { wrote, record, problems } = v.intake;
+    const chain = chainOf(v, "intake", request);
+    if (chain !== null) return notDone([chainLine(chain)], () => null);
+    if (wrote === null) {
+      const line = `no intake step of this intake has written a record for ${request}`;
+      return notDone([line], () => stepResult(v, { kind: "intake", target: request, why: `stage 2 Route: ${line}` }));
+    }
+    if (record === null) {
+      return notDone([`${wrote.step_ref} completed, but no ${v.ctx.layout.management}/*-intake-*.md names ${request} in its **Request:** line`], () => null);
+    }
+    return problems.length === 0 ? DONE : notDone(problems.map((p) => `the intake record ${record.path}: ${p}`), () => null);
+  },
+};
+
+const settledIn = (states, id) => SETTLED.has(states.find((s) => s.id === id)?.state);
+// 12.2: a handoff waits on its `after` list; an empty list means the previous handoff.
+const waitsOn = (handoffs, i) => (handoffs[i].after.length > 0 ? handoffs[i].after : i > 0 ? [handoffs[i - 1].id] : []);
+// The unfinished stopped chain of this intake whose dispatch file names the handoff (8.3).
+const stoppedHandoff = (v, id) => v.chains.find((c) => c.handoff === id && v.intake.lines.some((l) => l.step_ref === c.step)) ?? null;
+const handoffLabel = (h) => `${h.id} (${h.kind} on ${h.target})`;
+
+// The first pending handoff in block order whose `after` holds and that no stopped step names (such
+// a handoff is returned only as that step's continuation, 10.2): `skip` when its `when` condition
+// does not hold, evaluated now (12.2), else its step.
+const nextHandoff = (v, pending) => {
+  const { ctx } = v;
+  const { handoffs, states } = v.intake;
+  const ready = pending.find(({ h, i }) => waitsOn(handoffs, i).every((id) => settledIn(states, id))
+    && stoppedHandoff(v, h.id) === null && fresh(v, h.kind, h.target));
+  if (ready === undefined) return null;
+  const { h } = ready;
+  const why = `stage 3 Handoffs: ${handoffLabel(h)}, the next in block order whose after list is executed or skipped`;
+  if (h.when !== "cites-superseded") return stepResult(v, { kind: h.kind, target: h.target, handoff: h.id, why });
+  const files = targetFiles(h.kind, h.target, ctx.layout, ctx.tree);
+  return citesSuperseded(ctx.repoRoot, files, supersededStrings(ctx.config, ctx.tree))
+    ? stepResult(v, { kind: h.kind, target: h.target, handoff: h.id, why: `${why}; cites-superseded holds for ${files.join(", ")}` })
+    : { skip: { handoff: h.id, reason: `cites-superseded does not hold: ${files.join(", ") || `no file of ${h.target}`} names no baseline source path or version and no contract version below the current one` } };
+};
+
+const handoffStage = {
+  n: 3, name: "Handoffs",
+  evaluate: (v) => {
+    const { handoffs, states } = v.intake;
+    const pending = handoffs.map((h, i) => ({ h, i })).filter(({ i }) => states[i].state === "pending");
+    if (pending.length === 0) return DONE;
+    const line = ({ h, i }) => {
+      const chain = stoppedHandoff(v, h.id);
+      const waits = waitsOn(handoffs, i).filter((id) => !settledIn(states, id));
+      return `${handoffLabel(h)} is pending${chain ? `: ${chainLine(chain)}` : waits.length > 0 ? `, waiting on ${waits.join(", ")}` : ""}`;
+    };
+    return notDone(pending.map(line), () => nextHandoff(v, pending));
+  },
+};
+
+// Plan stage 7 without the align (9.2).
+const intakeConsistencyStage = {
+  n: 4, name: "Consistency",
+  evaluate: (v) => {
+    const open = openItems(v);
+    return open.length === 0 ? DONE : notDone([openLine(open)], () => consistencyRule(v, { stage: "4 Consistency", align: false }));
+  },
+};
+
+// The leaf-parents no step of this intake re-planned, producer-first and comma-separated; null when
+// there is none, which holds the align condition without an align (9.1).
+const intakeAlignTarget = (v) => {
+  const ids = v.leafParents.filter((id) => !v.intake.replanned.has(id));
+  return ids.length === 0 ? null : ordered(producerOrder(v.ctx.tree, ids)).join(",");
+};
+
+const alignStage = {
+  n: 5, name: "Align",
+  evaluate: (v) => {
+    if (alignHolds(v)) return DONE;
+    const target = intakeAlignTarget(v);
+    return notDone([alignLine(v)], () => (fresh(v, "align", target)
+      ? stepResult(v, { kind: "align", target, why: `stage 5 Align: an align on ${target}, the leaf-parents no step of this intake re-planned` })
+      : null));
+  },
+};
+
 // ---------- modes ----------
 
 // A mode: its stages in order, each `evaluate(view) -> { done, unmet, rule }`, and the rules that
-// differ between modes. Intake mode (spec 9.2) is a second row of this table.
+// differ between modes.
 const MODES = {
   plan: {
     stages: [
@@ -477,13 +565,37 @@ const MODES = {
       consistencyStage,
       reportStage(8),
     ],
+    // A plan segment has no handoffs.
+    view: () => ({ handoffTargets: new Map() }),
     // An item's `after` names an intake handoff (8.7); a plan segment has none, so it holds.
     afterSatisfied: () => true,
-    // The target of an intake handoff id; a plan segment has no handoffs.
-    handoffTarget: () => null,
     alignTarget: () => "all",
     record: () => null,
     willCreate: planWillCreate,
+  },
+  intake: {
+    stages: [
+      SETUP_STAGE,
+      PLAN_STAGE,
+      routeStage,
+      handoffStage,
+      intakeConsistencyStage,
+      alignStage,
+      reportStage(6),
+    ],
+    view: intakeView,
+    // 8.7: the named handoff, or every handoff, is executed or skipped. Before the record routes
+    // the intake no handoff is known, so the item waits; an id the block does not list waits for
+    // every handoff, so the item neither runs early nor waits for ever.
+    afterSatisfied: (v, after) => {
+      const { record, problems, states } = v.intake;
+      if (record === null || problems.length > 0) return false;
+      const ids = states.some((s) => s.id === after) ? [after] : states.map((s) => s.id);
+      return ids.every((id) => settledIn(states, id));
+    },
+    alignTarget: intakeAlignTarget,
+    record: (v) => v.intake.record?.path ?? null,
+    willCreate: intakeWillCreate,
   },
 };
 

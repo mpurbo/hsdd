@@ -83,6 +83,8 @@ export const loadContext = (repoRoot, { registry = checkRegistries } = {}) => {
     decisions: readJsonl(repoRoot, P.ledger),
     queueLines: readJsonl(repoRoot, P.queue),
     handoffLines: readJsonl(repoRoot, P.handoffs),
+    // Skip lines in HEAD: an uncommitted one is a crash after the append (10.7), still pending.
+    committedHandoffLines: committedJsonl(repoRoot, P.handoffs),
     dispatches,
     inProgress,
     intake: {

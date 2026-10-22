@@ -111,6 +111,12 @@ export const blockErrors = (record, tree) => {
   return [...errors, ...promptErrors(record.routing, handoffs)];
 };
 
+// Handoff id -> target for the record's block, for the matching rule (routed.mjs matches, B-10);
+// empty when the record or its block is missing.
+export const handoffTargets = (record) => new Map((Array.isArray(record?.block?.handoffs) ? record.block.handoffs : [])
+  .filter((h) => typeof h?.id === "string" && typeof h?.target === "string")
+  .map((h) => [h.id, h.target]));
+
 // ---------- the record ----------
 
 const HEADER_FIELD = /^\s*(?:[-*+]\s+)?\*\*([^*]+?):\*\*\s*(.*)$/;
