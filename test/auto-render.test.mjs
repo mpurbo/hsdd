@@ -11,7 +11,7 @@ const SPEC = readFileSync(join(HERE, "..", "spec", "hsdd-spec-v0_11.md"), "utf8"
 const KINDS = ["root-spec", "mid-level-spec", "graft", "promote", "spec-touch", "adr", "adr-update", "contract", "contract-touch",
   "citation-touch", "phase-plan", "phase-plan-append", "reconcile", "align", "intake"];
 const stepTemplate = (k) => readFileSync(join(TEMPLATES, "steps", `${k}.md`), "utf8");
-const flat = (t) => t.split(/\s+/).join(" ");
+const flat = (t) => t.split(/\s+/).filter(Boolean).join(" ");
 
 test("doubled braces render single; non-slot braces stay", () => assert.equal(renderTemplate("{{name}} {Not a slot} {a b} {x}", { x: "1" }), "{name} {Not a slot} {a b} 1"));
 test("a fill naming a slot is rendered once", () => assert.equal(renderTemplate("{cmd}", { cmd: "decide --step {step}", step: "S07" }), "decide --step S07"));
@@ -51,8 +51,10 @@ test("every step template carries the C.1 skeleton and its C.3 text", () => {
     assert.ok(body.startsWith(head + "### What to do\n\n"), `${k}: head`);
     assert.ok(body.endsWith(tail + "\n"), `${k}: tail`);
     assert.ok(body.endsWith(GATE), `${k}: gate bullet`);
-    assert.ok(flat(body).includes(flat(esc(what))), `${k}: What to do`);
-    assert.ok(flat(body).includes(`- ${cap(done)}`.split(/\s+/).join(" ")), `${k}: Done when`);
+    const between = (a, b) => body.split(a)[1].split(b)[0];
+    assert.equal(flat(between("### What to do\n", "### Done when\n")), flat(esc(what)), `${k}: What to do block`);
+    const doneBlock = between("### Done when\n", "\n- Your report validates");
+    assert.equal(flat(doneBlock), `- ${cap(done)}`, `${k}: Done when block`);
     assert.ok(!t.includes("{default_invocation}"), k);
     assert.ok(!t.includes("—"), `${k}: em dash`);
   }

@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { handoffStates, selectNext, stages, unmetDone, willCreate } from "../skills/hsdd-auto/scripts/next.mjs";
+import { handoffStates, intakeHandoffTargets, selectNext, stages, unmetDone, willCreate } from "../skills/hsdd-auto/scripts/next.mjs";
 import { lineErrors } from "../skills/hsdd-auto/scripts/routed.mjs";
 import { loadContext } from "../skills/hsdd-auto/scripts/lib/context.mjs";
 import { appendJsonl, readJsonl } from "../skills/hsdd-auto/scripts/lib/records.mjs";
@@ -154,8 +154,7 @@ test("after waits", () => {
   h1(blocked, 3, { status: "stopped" });
   queue(blocked, insert("Q-001", "S03", "phase-plan-append", "shop.web.app", { after: "handoffs" }), accepted("Q-001"));
   const r = next(blocked);
-  assert.equal(r.step?.handoff ?? null, null, JSON.stringify(r));
-  assert.notEqual(r.step?.handoff, "H2a");
+  assert.deepEqual(Object.keys(r), ["stuck"], JSON.stringify(r));
   const dir = routed();
   assert.equal(stepOf(dir).handoff, "H1", "H1 pending: H2a, after H1, is not returned");
   h1(dir, 3, { status: "stopped" });
@@ -281,6 +280,15 @@ test("a completed align on all satisfies the intake align condition", () => {
   const dir = handedOff();
   step(dir, 4, "align", "all");
   assert.equal(stepOf(dir).kind, "report");
+});
+
+test("intakeHandoffTargets is guarded by a completed intake step and a valid block", () => {
+  const stopped = begun();
+  step(stopped, 2, "intake", REQUEST, { status: "stopped", files: { [RECORD]: ORDER } });
+  assert.deepEqual([...intakeHandoffTargets(ctxOf(stopped))], []);
+  assert.deepEqual([...intakeHandoffTargets(ctxOf(begun()))], []);
+  const done = routed();
+  assert.deepEqual([...intakeHandoffTargets(ctxOf(done))].sort(), [["H1", "order-api"], ["H2a", "shop.web.app"]]);
 });
 
 test("consistency before align", () => {

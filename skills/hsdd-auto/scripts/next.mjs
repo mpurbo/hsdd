@@ -456,6 +456,11 @@ const intakeView = (ctx) => {
   };
 };
 
+// The matching rule's handoff map for the segment, from one call (dispatch and the gate use it):
+// empty outside an intake segment, before a completed intake step wrote the record, and when C8
+// rejects the block.
+export const intakeHandoffTargets = (ctx) => (ctx.segment?.mode === "intake" ? intakeView(ctx).handoffTargets : new Map());
+
 // [{ id, kind, target, state: "executed"|"skipped"|"pending", step }] for the segment's record.
 export const handoffStates = (ctx) => (ctx.segment?.mode === "intake" ? intakeView(ctx).intake.states : []);
 

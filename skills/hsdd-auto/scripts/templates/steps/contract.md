@@ -41,8 +41,8 @@ Each line names its file; check it there before relying on it.
 
 write every front-matter field (`status: draft`, `phase_ids: provisional`,
 `governed_by` naming the ADRs the facts list), the Interface, Guarantees with
-ids `G{{n}}`, `## Versioning` with its `Breaking:` line (§12.1), and `##
-Validation` with the schema and fixtures written now; prove executable
+ids `G{{n}}`, `## Versioning` with its `Breaking:` line (§12.1), and
+`## Validation` with the schema and fixtures written now; prove executable
 fixtures with an experiment where the toolchain can run them; regenerate the
 registries.
 
