@@ -9,8 +9,7 @@ import { P, resolveLayout } from "./lib/paths.mjs";
 import { targetType } from "./lib/kinds.mjs";
 import { loadConfig } from "./lib/config.mjs";
 import { loadTree } from "./lib/tree.mjs";
-import { loadContext } from "./lib/context.mjs";
-import { appendJsonl, readJsonl, readReports, stepNum } from "./lib/records.mjs";
+import { appendJsonl, idNum, readDispatch, readJsonl, readReports, stepNum } from "./lib/records.mjs";
 
 export class QueueError extends Error {
   constructor(errors) {
@@ -55,7 +54,7 @@ export const openMatching = (lines, step, leafParents, at) =>
   [...queueItems(lines).values()]
     .filter((it) => matches(it, step, leafParents))
     .filter((it) => (at === undefined ? it.status : statusAt(it, at)) === "open")
-    .sort((a, b) => a.id.localeCompare(b.id));
+    .sort((a, b) => idNum(a.id) - idNum(b.id));
 
 export const nextQueueId = (lines) => {
   const max = lines.reduce((m, l) => Math.max(m, Number(/^Q-(\d+)$/.exec(l.id)?.[1] ?? 0)), 0);
@@ -168,10 +167,24 @@ const entriesOf = (reports, field) =>
 
 // Opens one item per `routed` entry of the step's current report series and records each `closes`
 // entry. The queue is read afresh, so a rerun after a crash writes nothing twice.
+// It reads only what it needs (the step's dispatch file, other steps' dispatch files for the
+// segment check, the run lines, the report series, the queue), so a defect in the tree, the
+// config or an intake record never blocks crash recovery. `ctx` is optional and only a test shortcut.
+const readFront = (repoRoot, step) => {
+  try {
+    return readDispatch(repoRoot, step)?.front ?? null;
+  } catch {
+    return null;
+  }
+};
+
 export const ingest = (repoRoot, step, ctx) => {
-  const dispatch = ctx.dispatches.get(step);
-  if (!dispatch || dispatch.front === null) throw new QueueError([`${step} has no readable dispatch file`]);
-  const segmentOf = (s) => ctx.dispatches.get(s)?.front?.segment ?? ctx.runLines.find((l) => l.step_ref === s)?.segment ?? null;
+  const front = ctx ? (ctx.dispatches.get(step)?.front ?? null) : readFront(repoRoot, step);
+  if (front === null) throw new QueueError([`${step} has no readable dispatch file`]);
+  const dispatch = { front };
+  const runLines = ctx ? ctx.runLines : readJsonl(repoRoot, P.runLog);
+  const segmentOf = (s) => (ctx ? ctx.dispatches.get(s)?.front : readFront(repoRoot, s))?.segment
+    ?? runLines.find((l) => l.step_ref === s)?.segment ?? null;
   const reports = readReports(repoRoot, step);
   const lines = readJsonl(repoRoot, P.queue);
   const plan = planIngest(lines, {
@@ -259,7 +272,7 @@ const describe = (item) =>
 const commands = {
   ingest: ({ values }, repoRoot) => {
     require_(values, "step");
-    const r = ingest(repoRoot, values.step, loadContext(repoRoot));
+    const r = ingest(repoRoot, values.step);
     return {
       lines: r.skipped.map((e) => `skipped an align repeat: ${e.text}`),
       summary: `ingest ${values.step}: opened ${r.opened.length} (${r.opened.join(", ") || "none"}), recorded ${r.closed.length} close(s), skipped ${r.skipped.length}`,

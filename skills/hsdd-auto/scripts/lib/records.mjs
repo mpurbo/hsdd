@@ -48,6 +48,9 @@ export const stepNum = (step) => {
   return Number(m[1]);
 };
 
+// The numeric part of a record id (`Q-1000`, `DEC-012`, `S07`); ids order by it, never as strings.
+export const idNum = (id) => Number(/(\d+)$/.exec(String(id))?.[1] ?? 0);
+
 export const stepId = (n) => `S${String(n).padStart(2, "0")}`;
 
 const DISPATCH_FILE = /^(S\d{2,})\.md$/;

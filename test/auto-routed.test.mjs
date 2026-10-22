@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { appendFileSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import {
   closeItem, decideItem, ingest, leafParentsOf, lineErrors, main, markAddressed, matches, nextQueueId, openItem,
@@ -287,4 +287,36 @@ test("CLI ingest and decide end to end", () => {
   assert.equal(JSON.parse(readFileSync(join(dir, P.queue), "utf8").trim().split("\n").at(-1)).status, "accepted");
   const noDispatch = run(dir, "routed.mjs", ["ingest", "--step", "S77"]);
   assert.equal(noDispatch.code, 1);
+});
+
+test("openMatching orders by the numeric part of the id", () => {
+  const lines = [open("Q-1000"), open("Q-999"), open("Q-100")];
+  const step = { target: "shop.api", handoff: null };
+  assert.deepEqual(openMatching(lines, step, []).map((i) => i.id), ["Q-100", "Q-999", "Q-1000"]);
+});
+
+test("ingest after a crash that wrote only the first of two lines ends with exactly two", () => {
+  const dir = makeRepo({ stage: "06-planned" });
+  withStep(dir, "S01");
+  putReport(dir, "S01", { routed: [
+    { target: "shop.api", kind: "must-address", text: "first" },
+    { target: "shop.web", kind: "consider", text: "second" },
+  ] });
+  appendFileSync(join(dir, P.queue), `${JSON.stringify(open("Q-001", { from: "S01", target: "shop.api", text: "first" }))}\n`);
+  const r = ingest(dir, "S01");
+  assert.deepEqual(r.opened, ["Q-002"]);
+  assert.deepEqual(queue(dir).map((l) => [l.id, l.text]), [["Q-001", "first"], ["Q-002", "second"]]);
+  assert.deepEqual(ingest(dir, "S01").opened, []);
+  assert.equal(queue(dir).length, 2);
+});
+
+test("ingest ignores defects in the config, the tree and the intake records", () => {
+  const dir = makeRepo({ stage: "06-planned" });
+  withStep(dir, "S01");
+  putReport(dir, "S01", { routed: [{ target: "shop.api", kind: "consider", text: "x" }] });
+  writeFileSync(join(dir, P.runYaml), "version: [unclosed\n");
+  put(dir, "hsdd/specs/broken.md", "\u0000 not a spec\n");
+  const r = run(dir, "routed.mjs", ["ingest", "--step", "S01"]);
+  assert.equal(r.code, 0, r.stdout);
+  assert.deepEqual(queue(dir).map((l) => l.id), ["Q-001"]);
 });
