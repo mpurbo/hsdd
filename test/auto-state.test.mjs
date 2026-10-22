@@ -15,9 +15,10 @@ import { appendJsonl, readJsonl } from "../skills/hsdd-auto/scripts/lib/records.
 import { validate } from "../skills/hsdd-auto/scripts/lib/schema.mjs";
 import { nowStamp } from "../skills/hsdd-auto/scripts/lib/time.mjs";
 import { ownerState } from "../skills/hsdd-auto/scripts/gate.mjs";
-import { SCRIPTS, SKILLS, addSegment, baseConfig, fakeStep, gitIn, makeRepo, openStep, run, writeRunYaml } from "./helpers/auto-repo.mjs";
+import {
+  PLANNING_SKILLS as PLANNING, SCRIPTS, SKILLS, addSegment, baseConfig, completeSkills, fakeStep, gitIn, makeRepo, openStep, run, writeRunYaml,
+} from "./helpers/auto-repo.mjs";
 
-const PLANNING = ["hsdd-spec", "hsdd-adr", "hsdd-contract", "hsdd-phase-plan", "hsdd-reconcile", "hsdd-intake"];
 const SEG = "2026-10-22-plan";
 const INTAKE = "2026-10-22-intake-spec-v2";
 const REQUEST = "ref/spec-v2.md";
@@ -25,20 +26,6 @@ const REQUEST = "ref/spec-v2.md";
 const put = (dir, rel, text) => { mkdirSync(dirname(join(dir, rel)), { recursive: true }); writeFileSync(join(dir, rel), text); };
 const read = (dir, rel) => readFileSync(join(dir, rel), "utf8");
 const commitAll = (dir, msg = "owner edit") => { gitIn(dir, "add", "-A"); gitIn(dir, "commit", "-q", "--allow-empty", "-m", msg); };
-
-// A copy of skills/ whose six planning skills carry `## Unattended runs` (Tasks 19 and 20 add the real
-// section), so preflight and the bundled-script copy are tested against a complete installation.
-let cached = null;
-const completeSkills = () => {
-  if (cached !== null) return cached;
-  cached = mkdtempSync(join(tmpdir(), "hsdd-auto-skills-"));
-  cpSync(SKILLS, cached, { recursive: true });
-  for (const name of PLANNING) {
-    const file = join(cached, name, "SKILL.md");
-    writeFileSync(file, `${readFileSync(file, "utf8").replace(/\s*$/, "")}\n\n## Unattended runs\n\nstub\n`);
-  }
-  return cached;
-};
 
 const cfg = (over = {}) => baseConfig({ skills_dir: completeSkills(), ...over });
 const instruction = (text = "Plan the shop.\n") => {
