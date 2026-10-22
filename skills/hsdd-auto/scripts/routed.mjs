@@ -8,7 +8,7 @@ import { nowStamp } from "./lib/time.mjs";
 import { P, resolveLayout } from "./lib/paths.mjs";
 import { targetType } from "./lib/kinds.mjs";
 import { loadConfig } from "./lib/config.mjs";
-import { loadTree } from "./lib/tree.mjs";
+import { leafParentsOf, loadTree } from "./lib/tree.mjs";
 import { appendJsonl, idNum, readDispatch, readJsonl, readReports, stepNum } from "./lib/records.mjs";
 
 export class QueueError extends Error {
@@ -34,9 +34,8 @@ export const queueItems = (lines) => {
 // The status after the last event at or before `at` (inclusive); null before the item was opened.
 const statusAt = (item, at) => item.events.filter((e) => e.at <= at).at(-1)?.status ?? null;
 
-// The leaf-parents `all` stands for (decision S-2): kind leaf-parent and not retired.
-export const leafParentsOf = (tree) =>
-  [...tree.nodes.values()].filter((n) => n.kind === "leaf-parent" && n.status !== "retired").map((n) => n.id);
+// The leaf-parents `all` stands for (decision S-2) live in lib/tree.mjs; re-exported for earlier imports.
+export { leafParentsOf };
 
 // 6.5: an item matches a step when its target equals the step's target, is an element of the
 // step's target list (`all` matching every leaf-parent), or is the handoff id the step executes.

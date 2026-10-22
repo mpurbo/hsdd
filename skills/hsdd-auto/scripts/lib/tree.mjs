@@ -192,12 +192,19 @@ const NODE_ID = /^[a-z0-9][a-z0-9-]*(?:\.[a-z0-9-]+)+$/;
 
 const PENDING_ENTRY = /^(confirm|note|amend|request)\b/i;
 
-const pendingOf = (ls, hs, mask) => {
-  const sections = hs.filter((h) => h.level === 2 && /^governance updates\b/i.test(sectionName(h.text)));
-  const entries = sections.reduce((n, h) => n + ls.slice(h.line + 1, sectionEnd(hs, h, ls.length))
-    .filter((l, k) => !mask[h.line + 1 + k] && /^[-*+]\s+\S/.test(l) && PENDING_ENTRY.test(plain(l.replace(/^[-*+]\s+/, "")))).length, 0);
-  return { present: sections.length > 0, entries };
-};
+const pendingSections = (hs) => hs.filter((h) => h.level === 2 && /^governance updates\b/i.test(sectionName(h.text)));
+
+// The top-level confirm, note, amend and request bullets of every pending section, in file order:
+// [{ kind, text }], text as plain text without the bullet.
+const pendingEntriesOf = (ls, hs, mask) => pendingSections(hs).flatMap((h) => ls.slice(h.line + 1, sectionEnd(hs, h, ls.length))
+  .flatMap((l, k) => {
+    if (mask[h.line + 1 + k] || !/^[-*+]\s+\S/.test(l)) return [];
+    const text = plain(l.replace(/^[-*+]\s+/, ""));
+    const m = PENDING_ENTRY.exec(text);
+    return m ? [{ kind: m[1].toLowerCase(), text }] : [];
+  }));
+
+const pendingOf = (ls, hs, mask) => ({ present: pendingSections(hs).length > 0, entries: pendingEntriesOf(ls, hs, mask).length });
 
 const tableHeaders = (ls, from, to, mask) => {
   const out = [];
@@ -234,11 +241,13 @@ const phasesOf = (ls, hs, mask, nodeId, plan) => {
   });
 };
 
-const childrenOf = (ls, hs, mask, nodeId) =>
+// Embedded child summaries: a `### {id}: Name` heading over a node field block, with the block's raw fields.
+const summariesOf = (ls, hs, mask, nodeId) =>
   hs.filter((h) => h.level === 3).flatMap((h) => {
     const { id, name } = splitTitle(plain(h.text));
     if (!id || id === nodeId || !NODE_ID.test(id) || /\.\d+$/.test(id)) return [];
-    return isNodeBlock(fieldBlock(ls, h.line + 1, sectionEnd(hs, h, ls.length), mask)) ? [{ id, name }] : [];
+    const fb = isNodeBlock(fieldBlock(ls, h.line + 1, sectionEnd(hs, h, ls.length), mask));
+    return fb ? [{ id, name, heading: h.text, fields: fb.fields }] : [];
   });
 
 const value = (f, name) => (f[name] === undefined || f[name] === "" ? null : f[name]);
@@ -254,6 +263,7 @@ export const parseNodeSpec = (text, file) => {
   const f = ownBlock(ls, hs, mask, id)?.fields ?? {};
   const plan = hs.find((h) => h.level === 2 && /^phase plan\b/i.test(sectionName(h.text))) ?? null;
   const kindText = value(f, "Kind") === null ? null : plain(f.Kind).toLowerCase();
+  const summaries = summariesOf(ls, hs, mask, id);
   return {
     id,
     name: parsed.name,
@@ -277,8 +287,12 @@ export const parseNodeSpec = (text, file) => {
       .some((cells) => cells[0]?.toLowerCase() === "phase"),
     phases: phasesOf(ls, hs, mask, id, plan),
     pending: pendingOf(ls, hs, mask),
-    children: childrenOf(ls, hs, mask, id),
+    pendingEntries: pendingEntriesOf(ls, hs, mask),
+    children: summaries.map(({ id: childId, name }) => ({ id: childId, name })),
+    summaries,
     observedSurface: hs.some((h) => h.level === 2 && /^observed surface\b/i.test(sectionName(h.text))),
+    // The node's own field block as written: field name -> raw value, in file order.
+    fields: f,
   };
 };
 
@@ -427,6 +441,10 @@ const mentionOrderOf = (nodes, textOf, root) => {
 const citesIn = (re, files) => files.flatMap(({ file, text }) => unique([...text.matchAll(re)].map((m) => m[0])).map((id) => ({ id, file })));
 
 const byId = (a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
+
+// The leaf-parents `all` stands for (decision S-2): kind leaf-parent and not retired.
+export const leafParentsOf = (tree) =>
+  [...tree.nodes.values()].filter((n) => n.kind === "leaf-parent" && n.status !== "retired").map((n) => n.id);
 
 // Citations (adrCites, oqCites, contractCites) cover the spec, contract and ADR files,
 // the set checks C3, C5 and C6 read (spec 10.6); each id is listed once per file, files

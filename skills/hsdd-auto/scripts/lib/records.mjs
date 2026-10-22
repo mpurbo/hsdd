@@ -107,14 +107,17 @@ export const dispatchErrors = (front, step = front?.step_ref) => {
   return errors;
 };
 
-// Writes `---\n{front}---\n{body}`; returns the repository-relative path written.
+// The dispatch file's text: `---\n{front}---\n{body}`.
+export const dispatchText = (front, body) => `---\n${stringifyFrontMatter(front)}---\n${body}`;
+
+// Writes dispatchText(front, body); returns the repository-relative path written.
 export const writeDispatch = (repoRoot, step, front, body) => {
   const errors = dispatchErrors(front, step);
   if (errors.length > 0) throw new Error(`invalid dispatch for ${step}: ${errors.join("; ")}`);
   const rel = stepPaths(step).dispatch;
   const file = join(repoRoot, rel);
   mkdirSync(dirname(file), { recursive: true });
-  writeFileSync(file, `---\n${stringifyFrontMatter(front)}---\n${body}`);
+  writeFileSync(file, dispatchText(front, body));
   return rel;
 };
 
@@ -122,17 +125,21 @@ export const writeDispatch = (repoRoot, step, front, body) => {
 
 // `{step}.json`, then `{step}.r1.json`, `{step}.r2.json` ... in launch order. Renamed series
 // (`.lost{k}`, `.invalid{k}`) are history and never listed. Repository-relative paths.
-export const reportSeries = (repoRoot, step) => {
-  const dir = join(repoRoot, P.stepsDir);
-  if (!existsSync(dir)) return [];
+// Pure: the series among `names`, the file names under hsdd/auto/steps.
+export const seriesOf = (names, step) => {
   const rank = (name) => {
     const m = new RegExp(`^${step}(?:\\.r(\\d+))?\\.json$`).exec(name);
     return m === null ? null : Number(m[1] ?? 0);
   };
-  return readdirSync(dir)
+  return names
     .flatMap((n) => (rank(n) === null ? [] : [{ n, r: rank(n) }]))
     .sort((a, b) => a.r - b.r)
     .map(({ n }) => `${P.stepsDir}/${n}`);
+};
+
+export const reportSeries = (repoRoot, step) => {
+  const dir = join(repoRoot, P.stepsDir);
+  return existsSync(dir) ? seriesOf(readdirSync(dir), step) : [];
 };
 
 export const readReports = (repoRoot, step) =>

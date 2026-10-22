@@ -30,8 +30,8 @@ export { contractOrder, producerOrder };
 const notRetired = (n) => n.status !== "retired";
 
 // Every spec file (each is a node's) in stage 3's citation order: the root spec, then the parent
-// specs producer-first, then the other specs producer-first.
-const specFileOrder = (tree) => {
+// specs producer-first, then the other specs producer-first. dispatch.mjs takes `{proposing_spec}` from it.
+export const specFileOrder = (tree) => {
   const others = [...tree.nodes.keys()].filter((id) => id !== tree.root);
   const parents = others.filter((id) => tree.nodes.get(id).decomposesInto.length > 0);
   const rest = others.filter((id) => !parents.includes(id));
