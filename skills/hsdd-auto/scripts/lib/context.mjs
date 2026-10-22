@@ -8,7 +8,7 @@ import { loadTree } from "./tree.mjs";
 import { checkRegistries } from "./registry.mjs";
 import { loadIntakeRecords, segmentRecord } from "./intake.mjs";
 import {
-  branchExists, changedSince, currentBranch, defaultBranch as defaultBranchOf, headSha, listTree, revExists, showFile,
+  branchExists, changedPaths, changedSince, currentBranch, defaultBranch as defaultBranchOf, headSha, listTree, revExists, showFile,
 } from "./git.mjs";
 import { committedJsonl, listDispatches, readDispatch, readJsonl } from "./records.mjs";
 
@@ -99,5 +99,7 @@ export const loadContext = (repoRoot, { registry = checkRegistries } = {}) => {
       return new Set(changedSince(repoRoot, revExists(repoRoot, `${commit}^`) ? `${commit}^` : EMPTY_TREE_SHA));
     }),
     registry: memoize(() => registry(repoRoot, layout)),
+    // Paths with uncommitted changes in the working tree, untracked included (git status).
+    uncommitted: memoize(() => changedPaths(repoRoot)),
   };
 };
