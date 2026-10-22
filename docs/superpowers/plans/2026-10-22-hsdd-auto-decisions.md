@@ -58,4 +58,11 @@ Plan: `docs/superpowers/plans/2026-10-22-hsdd-auto.md`.
 
 ## Decisions taken during the build
 
-(Appended as tasks surface them.)
+| ID | Decision | Confidence | Grounding |
+|----|----------|------------|-----------|
+| B-1 | A step template's first line is `<!-- default_invocation: ... -->`; `dispatch.mjs` reads and strips it and uses it for `{invocation}` when the step has no handoff prompt. | high | C.2 says `{invocation}` falls back to "the kind's default invocation from C.3" without saying where it lives; keeping it in the template keeps all kind text in one file, which §13.5 versions with the skill. |
+| B-2 | Every commit of the build carries the trailer `Co-Authored-By: Claude Opus 5.5`, including commits written by subagents on other models; pushed history is never rewritten to change it. | high | One trailer per the plan; amending pushed commits is destructive. |
+| B-3 | `formatScalar` quotes any string containing `#`, and `appendSegmentEntry` keeps CRLF line endings when the file uses them. | high | §5.2: writers quote "any string containing `: `, `#`, ..."; "rewrites nothing else" holds for a file edited on Windows only if the appended line matches its line endings. |
+| B-4 | `targetType` treats a string whose last segment ends in a known document extension (md, txt, pdf, docx, yaml and similar) as the request path, after checking known nodes and contracts. | medium | A request at the repository root (`request.md`) has no `/`. Alternative: any short alphabetic extension; rejected because an unknown dotted node id (`shop.web.admin`) would read as a request. |
+| B-5 | `cites-superseded` matches a baseline source's version as a whole token (never directly after `@`) and its path as a substring. | medium | A plain substring match of a short version such as `v1` would hit `order-api@v10` and every contract at `v1`, making the condition always true. Alternative: plain substring as §12.2's "contains" reads literally; rejected for that false-positive rate. |
+| B-6 | The A1 gate check admits, beyond the dispatch file's `write_set`, the step's report series, its sidecar, `experiments_dir`, the judgement set and `owner_files`, and only then applies the never list; the `write_set` itself is exactly §7.3's table. | high | §10.6 A1 lists those allowances beside the write set, and §7.3 says subagent steps "may also write" reports and experiments. |
