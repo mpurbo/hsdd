@@ -65,6 +65,50 @@ test("loadConfig code rules", () => {
   assert.match(errorsOf({ sources: { normative: [{ path: "ref/new.md", cite: "Spec", version: "v1" }], baseline: [{ path: "ref/old.md", cite: "Spec" }] } }), /ref\/old\.md/);
   assert.equal(errorsOf({ sources: { normative: [{ path: "ref/new.md", cite: "Spec" }] } }), null);
 });
+test("loadConfig reads a hand-written block-style run.yaml with comments", () => {
+  const text = [
+    "# Run configuration, written by hand.",
+    "version: 1",
+    "run: shop          # the run's name",
+    "branch: auto/shop",
+    "base: main",
+    "",
+    "# Where the skills are installed.",
+    `skills_dir: ${SCRIPTS.replace(/\/hsdd-auto\/scripts$/, "")}`,
+    "owner_facts:",
+    "  # one fact per line",
+    "  - One team builds the shop.",
+    "  - \"Payments: an external provider # not ours\"",
+    "sources:",
+    "  # the normative source first",
+    "  normative:",
+    "    - path: ref/spec.md",
+    "      cite: Spec",
+    "      # a comment between keys of one entry",
+    "      version: v1",
+    "  baseline:",
+    "    - path: ref/spec-v0.md",
+    "      cite: Spec",
+    "      version: v0",
+    "read_only:",
+    "  - ref/",
+    "prose_rules:",
+    "  banned_chars: [\"\\u2014\"]",
+    "  level: error",
+    "segments:",
+    "",
+  ].join("\n");
+  const dir = makeRepo({ files: { "hsdd/auto/run.yaml": text } });
+  const c = loadConfig(dir);
+  assert.equal(c.run, "shop");
+  assert.deepEqual(c.owner_facts, ["One team builds the shop.", "Payments: an external provider # not ours"]);
+  assert.deepEqual(c.sources.normative, [{ path: "ref/spec.md", cite: "Spec", version: "v1" }]);
+  assert.deepEqual(c.sources.baseline, [{ path: "ref/spec-v0.md", cite: "Spec", version: "v0" }]);
+  assert.deepEqual(c.read_only, ["ref/"]);
+  assert.equal(c.prose_rules.level, "error");
+  assert.deepEqual(c.prose_rules.banned_chars, ["\u2014"]);
+  assert.deepEqual(c.segments, []);
+});
 test("loadConfig reports schema, parse and missing-file errors as ConfigError", () => {
   assert.match(errorsOf({ version: 2 }), /version/);
   assert.match(errorsOf({ skills_dir: "" }), /skills_dir/);

@@ -82,18 +82,25 @@ export const resolveLayout = (repoRoot) => {
 
 const escapeRe = (s) => s.replace(/[.+^${}()|[\]\\?]/g, "\\$&");
 
-export const globToRegExp = (pattern) => {
-  if (pattern.endsWith("/")) return new RegExp(`^${escapeRe(pattern)}.+$`);
+// `**/` is any directory prefix, `**` anything, `*` anything within one segment
+// (at least one character when the star is the whole segment). A pattern ending
+// in `/` names a directory and matches everything below it.
+const translateGlob = (pattern) => {
   let out = "";
   for (let i = 0; i < pattern.length; i++) {
     const c = pattern[i];
     if (c === "*" && pattern[i + 1] === "*") {
       if (pattern[i + 2] === "/") { out += "(?:.*/)?"; i += 2; } else { out += ".*"; i += 1; }
-    } else if (c === "*") out += "[^/]*";
-    else out += escapeRe(c);
+    } else if (c === "*") {
+      const wholeSegment = (i === 0 || pattern[i - 1] === "/") && (i + 1 === pattern.length || pattern[i + 1] === "/");
+      out += wholeSegment ? "[^/]+" : "[^/]*";
+    } else out += escapeRe(c);
   }
-  return new RegExp(`^${out}$`);
+  return out;
 };
+
+export const globToRegExp = (pattern) =>
+  new RegExp(`^${translateGlob(pattern)}${pattern.endsWith("/") ? ".+" : ""}$`);
 
 export const matchesAny = (path, patterns) => patterns.some((p) => globToRegExp(p).test(path));
 

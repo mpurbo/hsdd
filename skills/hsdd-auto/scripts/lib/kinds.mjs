@@ -56,15 +56,22 @@ export const RAISED_WHEN = Object.freeze({
 
 // ---------- targets ----------
 
+// A request path's last segment ends in a document extension. The list is closed on
+// purpose: a dotted node id that is not in the tree yet (`shop.web.admin`, a graft's
+// target) ends in letters too and must stay a node.
+const DOC_EXTENSION = /\.(?:md|mdx|markdown|txt|text|pdf|doc|docx|odt|rtf|html|htm|json|yaml|yml|xml|csv|rst|adoc|org|tex)$/i;
+const isRequestFile = (target) => DOC_EXTENSION.test(target.slice(target.lastIndexOf("/") + 1));
+
 // tree needs only nodes.has(id) and contracts.has(slug).
 export const targetType = (target, tree) => {
   if (/^ADR-\d+$/.test(target)) return "adr";
   if (/^H\d+[a-z]?$/.test(target)) return "handoff";
   if (target === "run") return "run";
   if (target === "all") return "all";
-  if (target.includes(",")) return "list";
   if (tree.nodes.has(target)) return "node";
   if (tree.contracts.has(target)) return "contract";
+  if (isRequestFile(target)) return "request";
+  if (target.includes(",")) return "list";
   if (target.includes("/")) return "request";
   return target.includes(".") ? "node" : "contract";
 };

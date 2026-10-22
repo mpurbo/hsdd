@@ -65,6 +65,16 @@ test("globs", () => {
   assert.ok(globToRegExp("x(1).md").test("x(1).md"));
   assert.ok(!matchesAny("hsdd/contract", ["hsdd/contract/**"]));
 });
+test("a trailing-slash glob with a star translates the star and matches everything below", () => {
+  assert.ok(matchesAny("vendor/a/x.md", ["vendor/*/"]));
+  assert.ok(matchesAny("vendor/a/b/x.md", ["vendor/*/"]));
+  assert.ok(!matchesAny("vendorx/a", ["vendor/*/"]));
+  assert.ok(!matchesAny("vendor//x", ["vendor/*/"]));
+  assert.ok(!matchesAny("vendor/a", ["vendor/*/"]));
+  assert.ok(matchesAny("lib/x/y/z.md", ["lib/**/"]));
+  assert.ok(matchesAny("pkg-1/sub/x", ["pkg-*/"]));
+  assert.ok(!matchesAny("pkg-1", ["pkg-*/"]));
+});
 test("expandHome", () => {
   assert.ok(!expandHome("~/x").startsWith("~"));
   assert.equal(expandHome("rel/x"), "rel/x");
@@ -160,6 +170,19 @@ test("targetType", () => {
   assert.equal(targetType("unknown.node", tree), "node");
   assert.equal(targetType("unknown-slug", tree), "contract");
   assert.equal(targetType("docs/my request.md", tree), "request");
+});
+test("targetType: a file name with a document extension is the request path", () => {
+  assert.equal(targetType("request.md", tree), "request");
+  assert.equal(targetType("ref/a,b.md", tree), "request");
+  assert.equal(targetType("brief.txt", tree), "request");
+  assert.equal(targetType("rfc-12.pdf", tree), "request");
+  assert.equal(targetType("shop.api", tree), "node");
+  assert.equal(targetType("unknown.node", tree), "node");
+  assert.equal(targetType("shop.web.admin", tree), "node");
+  assert.equal(targetType("shop.api,shop.web", tree), "list");
+  const mdNode = { nodes: new Map([["notes.md", {}]]), contracts: new Map([["report.txt", {}]]) };
+  assert.equal(targetType("notes.md", mdNode), "node");
+  assert.equal(targetType("report.txt", mdNode), "contract");
 });
 test("RAISED_WHEN quotes 8.2", () => {
   assert.equal(RAISED_WHEN.collision, "Two nodes' entries conflict at reconcile.");
