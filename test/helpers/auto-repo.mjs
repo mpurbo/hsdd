@@ -4,12 +4,13 @@ import { execFileSync, spawnSync } from "node:child_process";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { appendSegmentEntry, formatFlow, formatScalar, stringifyFrontMatter } from "../../skills/hsdd-auto/scripts/lib/yaml.mjs";
+import { appendSegmentEntry, formatFlow, formatScalar } from "../../skills/hsdd-auto/scripts/lib/yaml.mjs";
 import { nowStamp } from "../../skills/hsdd-auto/scripts/lib/time.mjs";
 import { validate } from "../../skills/hsdd-auto/scripts/lib/schema.mjs";
 import { P, resolveLayout, stepPaths } from "../../skills/hsdd-auto/scripts/lib/paths.mjs";
 import { KINDS, skillFor, writeSet } from "../../skills/hsdd-auto/scripts/lib/kinds.mjs";
 import { loadConfig } from "../../skills/hsdd-auto/scripts/lib/config.mjs";
+import { writeDispatch } from "../../skills/hsdd-auto/scripts/lib/records.mjs";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
 export const SCRIPTS = join(ROOT, "skills", "hsdd-auto", "scripts");
@@ -125,9 +126,7 @@ export const fakeStep = (dir, {
     head,
     launches: orchestrator ? [] : [{ at: started, reason: "initial" }],
   };
-  const dispatchErrors = validate("dispatch", front);
-  if (dispatchErrors.length > 0) throw new Error(`fakeStep: invalid dispatch front matter: ${dispatchErrors.join("; ")}`);
-  write(dir, paths.dispatch, `---\n${stringifyFrontMatter(front)}---\n${orchestrator ? "" : "fake prompt\n\nread_check: 00000000\n"}`);
+  writeDispatch(dir, step, front, orchestrator ? "" : "fake prompt\n\nread_check: 00000000\n");
 
   const line = {
     step_ref: step, segment, kind, skill: front.skill, target, started, finished: nowStamp(), commit,
