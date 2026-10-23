@@ -68,10 +68,6 @@ test("conventions template names hsdd-auto's report step as a management writer"
   assert.ok(t.includes("and `hsdd-auto`'s report step, for an intake record's `## Produced`"));
 });
 
-test("no em dash in the new sections", () => {
-  for (const s of SIX) assert.ok(!unattended(s).section.includes("\u2014"), s);
-});
-
 test("hsdd-phase-plan append mode may rewrite an unshipped phase in place", () => {
   const t = norm(skill("hsdd-phase-plan"));
   assert.ok(t.includes("When the invoking prompt names an unshipped phase, append mode may rewrite it in place; the phase keeps its id, and the new emission date line of the pending section names the rewrite."));
@@ -106,9 +102,48 @@ test("hsdd-intake carries the handoff block section with the kind table", () => 
   assert.ok(n.includes("ticket | incident | braindump"));
 });
 
-test("every skill's new text is free of em dashes and the banned phrase", () => {
-  for (const s of SIX) {
-    const added = unattended(s).section;
-    assert.ok(!added.includes("\u2014") && !/load-bearing/i.test(added), s);
+// The ask-point table of each skill, as spec 12.1 gives it: the bold skill heading, then its pipe lines.
+const specLines = spec.split("\n");
+const specTable = (s) => {
+  const i = specLines.findIndex((l) => l === `**\`${s}\`**`);
+  assert.ok(i >= 0, `no table heading for ${s}`);
+  const rows = [];
+  for (let k = i + 1; k < specLines.length; k++) {
+    if (specLines[k].startsWith("|")) rows.push(specLines[k]);
+    else if (rows.length > 0) break;
+  }
+  return rows;
+};
+
+for (const s of SIX) test(`${s} carries every row of its spec 12.1 table`, () => {
+  const rows = specTable(s);
+  assert.ok(rows.length >= 4, `rows found for ${s}`);
+  const section = norm(unattended(s).section);
+  for (const row of rows) assert.ok(section.includes(norm(row)), `${s}: ${row.slice(0, 70)}`);
+});
+
+// Every section or paragraph the build added, from its marker to the next `## ` heading (or end of file).
+const ADDED = {
+  "hsdd-spec": ["## Touch and Citation Touch", "## Unattended runs"],
+  "hsdd-adr": ["**Amendments.**", "## Unattended runs"],
+  "hsdd-contract": ["**Citation touch.**", "## Unattended runs"],
+  "hsdd-phase-plan": ["## Unattended runs"],
+  "hsdd-reconcile": ["## Align Mode", "## Unattended runs"],
+  "hsdd-intake": ["## Handoff block", "## Unattended runs"],
+};
+test("everything the build added is free of em dashes and the banned phrase", () => {
+  for (const [s, markers] of Object.entries(ADDED)) {
+    const text = skill(s);
+    for (const m of markers) {
+      const i = text.indexOf(m);
+      assert.ok(i >= 0, `${s}: ${m}`);
+      const j = text.indexOf("\n## ", i + m.length);
+      const body = text.slice(i, j < 0 ? undefined : j);
+      assert.ok(!body.includes("\u2014") && !/load-bearing/i.test(body), `${s}: ${m}`);
+    }
+  }
+  for (const s of ["hsdd-adr", "hsdd-contract", "hsdd-spec"]) {
+    const text = skill(s), i = text.indexOf("**Citation touch.**");
+    assert.ok(i >= 0 && !text.slice(i, text.indexOf("\n## ", i)).includes("\u2014"), s);
   }
 });

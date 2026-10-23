@@ -428,8 +428,8 @@ const chain = () => ({
   "align all": { notes: ["every plan cites only current versions"] },
 });
 
-// A plan-mode repository at a fixture stage whose run configuration points skills_dir at a complete
-// installation (the six planning skills with `## Unattended runs`).
+// A plan-mode repository at a fixture stage whose run configuration uses the repository's own skills
+// directory (the six planning skills carry `## Unattended runs`).
 const repoAt = (stage, over = {}) => makeRepo({ stage, config: baseConfig({ ...over }) });
 
 // ---------- assertions shared by the scenarios ----------
