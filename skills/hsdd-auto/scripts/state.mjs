@@ -11,7 +11,7 @@ import { parseArgs } from "node:util";
 import { loadContext } from "./lib/context.mjs";
 import { loadConfig } from "./lib/config.mjs";
 import { P, filesUnder, judgementSet, matchesAny, ownerFileHash, ownerMatcher, resolveLayout, skillsRoot } from "./lib/paths.mjs";
-import { branchExists, changedPaths, currentBranch, git } from "./lib/git.mjs";
+import { branchExists, branchesHolding, changedPaths, currentBranch, git } from "./lib/git.mjs";
 import { dateOf, nowStamp } from "./lib/time.mjs";
 import { appendSegmentEntry, parseYaml } from "./lib/yaml.mjs";
 import { loadSchema, validate } from "./lib/schema.mjs";
@@ -234,6 +234,8 @@ export const defaults = (repoRoot, { home = homedir() } = {}) => {
     base: currentBranch(repoRoot),
     skills_dir: at < 0 ? null : labels[at],
     owner_files: defaultOwnerFiles(repoRoot),
+    // Local branches holding hsdd/auto/run.yaml: when not empty, the run exists and this is no first run (B1).
+    run_branches: branchesHolding(repoRoot, P.runYaml),
   };
 };
 

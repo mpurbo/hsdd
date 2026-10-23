@@ -176,6 +176,16 @@ test("appendSegmentEntry replaces [] and changes nothing else", () => {
   assert.equal(after, "# top\nsegments:\n  - { id: a }\ncommit:\n  trailers: []   # none\n");
 });
 
+test("appendSegmentEntry treats segments: null like an empty sequence", () => {
+  // Final review B3: the loader reads `segments: null` as no segments, so the append must accept it too.
+  const before = "# top\nsegments: null   # filled by the run\ncommit:\n  trailers: []\n";
+  const after = appendSegmentEntry(before, { id: "a" });
+  assert.equal(after, "# top\nsegments: # filled by the run\n  - { id: a }\ncommit:\n  trailers: []\n");
+  assert.deepEqual(parseYaml(after).segments, [{ id: "a" }]);
+  assert.equal(appendSegmentEntry("segments: null\n", { id: "b" }), "segments:\n  - { id: b }\n");
+  assert.throws(() => appendSegmentEntry("segments: nothing\n", { id: "c" }), YamlError);
+});
+
 test("appendSegmentEntry matches the existing indentation and appends after the last item", () => {
   const before = "a: 1\nsegments:\n- { id: x }\n\n# between\n- id: y\n  mode: plan\n\n# owner note\nz: 2\n";
   const after = appendSegmentEntry(before, { id: "w", instruction: "multi\nline" });

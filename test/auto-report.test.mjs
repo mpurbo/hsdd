@@ -8,10 +8,10 @@ import {
 } from "../skills/hsdd-auto/scripts/report.mjs";
 import { finalGate } from "../skills/hsdd-auto/scripts/gate.mjs";
 import { loadContext } from "../skills/hsdd-auto/scripts/lib/context.mjs";
-import { P, reportPath } from "../skills/hsdd-auto/scripts/lib/paths.mjs";
+import { P, reportPath, stepPaths } from "../skills/hsdd-auto/scripts/lib/paths.mjs";
 import { appendJsonl, readDispatch, writeDispatch } from "../skills/hsdd-auto/scripts/lib/records.mjs";
 import { nowStamp } from "../skills/hsdd-auto/scripts/lib/time.mjs";
-import { addSegment, fakeStep, gitIn, makeRepo, run } from "./helpers/auto-repo.mjs";
+import { addSegment, fakeStep, gitIn, makeRepo, openStep, run } from "./helpers/auto-repo.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ORDER = readFileSync(join(HERE, "fixtures", "auto", "intake", "2026-10-22-intake-order-v2.md"), "utf8");
@@ -103,6 +103,34 @@ test("decisions to look at first, in 10.9 order", () => {
   const up = section(text, "Upstream");
   assert.match(up, /\| DEC-007 \| upstream one \| a \| Spec §1; ref\/spec\.md \|/);
   assert.ok(!up.includes("DEC-002"));
+});
+
+test("the open report step's own sidecar decisions are in the decision sections", () => {
+  // Final review B2: the report step records its last plan decisions (8.10) before its commit appends them.
+  const dir = begun();
+  step(dir, 2, "align", "all");
+  ledger(dir, decision({ id: "DEC-001", question: "committed one", would_have_asked: true, stop_class: "judgement" }));
+  openStep(dir, { step: "S03", segment: SEG, kind: "report", target: SEG });
+  const sidecar = (over) => {
+    const { segment, step_ref, commit, ...rest } = decision(over);
+    return JSON.stringify(rest);
+  };
+  put(dir, stepPaths("S03").decisions, [
+    sidecar({ id: "DEC-002", question: "last plan decision", confidence: "low" }),
+    "not json",
+    sidecar({ id: "DEC-001", question: "a duplicate of a ledger id" }),
+  ].join("\n") + "\n");
+  const text = build(dir);
+  const first = section(text, "Decisions to look at first");
+  assert.match(first, /\| DEC-002 \| S03 plan \| last plan decision \| a \|/, first);
+  assert.match(first, /\| DEC-001 \| S01 plan \| committed one \|/, first);
+  assert.ok(!first.includes("a duplicate of a ledger id"), "a ledger id is not listed twice");
+  assert.match(section(text, "Every decision by blast radius"), /- DEC-002 \(S03 plan, low\): last plan decision/);
+  // Another segment's open step, or a step that is not the report, adds nothing.
+  const other = begun();
+  openStep(other, { step: "S02", segment: SEG, kind: "spec-touch", target: "shop.api" });
+  put(other, stepPaths("S02").decisions, `${sidecar({ id: "DEC-001", question: "a subagent's decision", confidence: "low" })}\n`);
+  assert.ok(!build(other).includes("a subagent's decision"));
 });
 
 test("braces and pipes in decision text reach the report as written", () => {

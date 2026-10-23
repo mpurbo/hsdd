@@ -5,6 +5,7 @@ import { parseYaml, YamlError } from "./yaml.mjs";
 import { validate } from "./schema.mjs";
 import { P, matchesAny } from "./paths.mjs";
 import { STOPPABLE, dirForms } from "./kinds.mjs";
+import { branchesHolding } from "./git.mjs";
 
 export class ConfigError extends Error {
   constructor(errors) {
@@ -82,7 +83,13 @@ export const withDefaults = (raw) => ({
 
 export const loadConfig = (repoRoot) => {
   const file = join(repoRoot, P.runYaml);
-  if (!existsSync(file)) throw new ConfigError([`${P.runYaml} does not exist`]);
+  if (!existsSync(file)) {
+    // Final review B1: run.yaml lives on the run branch; from another branch the run is not a first run.
+    const held = branchesHolding(repoRoot, P.runYaml);
+    throw new ConfigError([held.length === 0
+      ? `${P.runYaml} does not exist`
+      : `${P.runYaml} is not in this working tree; branch(es) ${held.join(", ")} hold one: check out the run branch and run /hsdd-auto again`]);
+  }
   let raw;
   try {
     raw = parseYaml(readFileSync(file, "utf8"));

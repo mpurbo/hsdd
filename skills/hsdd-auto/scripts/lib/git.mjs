@@ -83,3 +83,8 @@ export const changedSince = (repoRoot, rev) => {
   return uniqSorted([...tracked, ...untracked]);
 };
 
+// Local branches whose tree at their tip holds the path, in refname order ([] outside a repository).
+export const branchesHolding = (repoRoot, path) => {
+  const refs = git(repoRoot, ["for-each-ref", "--format=%(refname:short)", "refs/heads"], { allowFail: true });
+  return (refs ?? "").split("\n").filter(Boolean).filter((b) => raw(repoRoot, ["cat-file", "-e", `${b}:${path}`]).ok);
+};

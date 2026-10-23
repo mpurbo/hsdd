@@ -518,7 +518,7 @@ test("defaults proposes run, branch, base, skills_dir and owner files without ru
   const name = defaultsOf(dir, home).run;
   assert.match(name, /^my-shop-app-[a-z0-9]+$/);
   const d = defaultsOf(dir, home);
-  assert.deepEqual(d, { run: name, root: name, branch: `auto/${name}`, base: "trunk", skills_dir: null, owner_files: ["notes/a.md"] });
+  assert.deepEqual(d, { run: name, root: name, branch: `auto/${name}`, base: "trunk", skills_dir: null, owner_files: ["notes/a.md"], run_branches: [] });
   mkdirSync(join(home, ".claude/skills/hsdd-auto"), { recursive: true });
   assert.equal(defaultsOf(dir, home).skills_dir, "~/.claude/skills");
   mkdirSync(join(dir, ".agents/skills/hsdd-auto"), { recursive: true });
@@ -527,4 +527,43 @@ test("defaults proposes run, branch, base, skills_dir and owner files without ru
   assert.equal(cli.code, 0, cli.stderr);
   assert.equal(cli.stdout.trimEnd().split("\n").length, 1);
   assert.equal(JSON.parse(cli.stdout).branch, `auto/${name}`);
+});
+
+// Final review B1: run.yaml lives only on the run branch, so from another branch the run is not a first run.
+const runOnBranchOnly = () => {
+  const dir = makeRepo({ stage: "06-planned", config: cfg() });
+  gitIn(dir, "rm", "-q", "--cached", P.runYaml);
+  gitIn(dir, "commit", "-q", "-m", "main does not track run.yaml, as after a first run");
+  const entry = open(dir);
+  fakeStep(dir, { step: "S00", segment: entry.id, kind: "setup", target: entry.id });
+  commitAll(dir, "the setup step's artifact commit carries run.yaml");
+  gitIn(dir, "checkout", "-q", "main");
+  assert.ok(!existsSync(join(dir, P.runYaml)), "main's working tree has no run.yaml");
+  return dir;
+};
+
+test("state.mjs on another branch names the run branch that holds run.yaml", () => {
+  const dir = runOnBranchOnly();
+  assert.throws(() => loadConfig(dir), /hsdd\/auto\/run\.yaml is not in this working tree; branch\(es\) auto\/shop hold one: check out the run branch and run \/hsdd-auto again/);
+  const json = run(dir, "state.mjs", ["--json"]);
+  assert.equal(json.code, 1, json.stdout);
+  assert.equal(json.stdout, "", "no JSON document on a failure");
+  assert.match(json.stderr, /branch\(es\) auto\/shop hold one/);
+  const plain = run(dir, "state.mjs");
+  assert.match(plain.stderr, /check out the run branch/);
+  assert.ok(!existsSync(join(dir, P.runYaml)), "nothing is written on main");
+  assert.equal(branchOf(dir), "main");
+});
+
+test("state.mjs defaults lists the branches that hold run.yaml in run_branches", () => {
+  const dir = runOnBranchOnly();
+  gitIn(dir, "branch", "unrelated");
+  const cli = run(dir, "state.mjs", ["defaults"]);
+  assert.equal(cli.code, 0, cli.stderr);
+  assert.deepEqual(JSON.parse(cli.stdout).run_branches, ["auto/shop"]);
+  const fresh = makeRepo({ stage: "06-planned", config: cfg(), commit: false });
+  rmSync(join(fresh, P.runYaml));
+  assert.deepEqual(defaults(fresh).run_branches, [], "a repository with no commit holds no run.yaml on any branch");
+  const missing = run(fresh, "state.mjs", ["--json"]);
+  assert.match(missing.stderr, /hsdd\/auto\/run\.yaml does not exist/);
 });

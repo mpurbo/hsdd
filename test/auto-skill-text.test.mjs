@@ -283,6 +283,9 @@ test("SKILL.md states the waiting rule and the binding controller rules", () => 
     /`\{status\}` is `stopped` when `HEAD`'s artifact subject ends in ` \(stopped\)` or `STOP\.md` names the step, else `completed`/,
     // 9.3: a moved source joins read_only.
     /the new path joins `read_only` when no entry covers it/,
+    // Final review B1: run.yaml on a branch that is not checked out is no first run.
+    /Only when `hsdd\/auto\/run\.yaml` is missing and `state\.mjs defaults` prints an empty `run_branches`/,
+    /An empty `run_branches` means First run/,
   ]) assert.match(text, re);
 });
 

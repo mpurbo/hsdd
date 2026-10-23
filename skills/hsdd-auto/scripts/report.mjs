@@ -12,7 +12,8 @@ import { dateOf, nowStamp, stampMs } from "./lib/time.mjs";
 import { showFile } from "./lib/git.mjs";
 import { headings, parseContract, plain, sectionEnd, toLines } from "./lib/tree.mjs";
 import { segmentRecord } from "./lib/intake.mjs";
-import { idNum, readReports } from "./lib/records.mjs";
+import { idNum, readReports, sidecarEntries } from "./lib/records.mjs";
+import { validate } from "./lib/schema.mjs";
 import { finalGate } from "./gate.mjs";
 import { handoffStates } from "./next.mjs";
 import { planIngest, queueItems } from "./routed.mjs";
@@ -104,7 +105,20 @@ const treeRows = (ctx) => table(
 
 // ---------- 3 to 5: decisions ----------
 
-const decisionsOf = (ctx, covered) => ctx.decisions.filter((d) => covered.includes(d.segment)).sort((a, b) => idNum(a.id) - idNum(b.id));
+// The open report step's own sidecar decisions (final review B2): its last `plan` decisions (8.10) reach
+// the ledger only with its commit, after the report is written. Each valid line not yet in the ledger,
+// with `segment` and `step_ref` from the step's dispatch file.
+const openReportDecisions = (ctx, covered) => {
+  const front = ctx.inProgress === null ? null : ctx.dispatches.get(ctx.inProgress)?.front ?? null;
+  if (front === null || front.kind !== "report" || !covered.includes(front.segment)) return [];
+  const have = new Set(ctx.decisions.map((d) => d.id));
+  return sidecarEntries(ctx.repoRoot, ctx.inProgress).entries
+    .filter((e) => e.value !== null && validate("decision", e.value, "sidecarDecision").length === 0 && !have.has(e.value.id))
+    .map((e) => ({ ...e.value, segment: front.segment, step_ref: ctx.inProgress }));
+};
+
+const decisionsOf = (ctx, covered) => [...ctx.decisions.filter((d) => covered.includes(d.segment)), ...openReportDecisions(ctx, covered)]
+  .sort((a, b) => idNum(a.id) - idNum(b.id));
 
 // 10.9 item 3: every would_have_asked decision, then low confidence, tree or upstream, then setup; each once.
 export const decisionsFirst = (decisions) => {
@@ -254,8 +268,8 @@ const templateOf = (mode) => readFileSync(join(dirname(fileURLToPath(import.meta
 export const reportPathOf = (ctx, segmentId) => `${ctx.config.report_dir.replace(/\/+$/, "")}/${segmentId}.md`;
 
 // The report text for the segment: generated parts rebuilt, prose slots kept from `existing` (the
-// file's current text, or null). A report that covers earlier segments says so in the Outcome slot
-// while that slot is empty.
+// file's current text, or null). A report that covers earlier segments says so in a generated note
+// that renders outside the Outcome slot, which stays the orchestrator's to fill (F6).
 export const buildReport = (ctx, segmentId, existing = null) => {
   const { segment, index } = segmentOf(ctx, segmentId);
   const covered = coveredSegments(ctx, segmentId);

@@ -359,8 +359,10 @@ export const appendSegmentEntry = (text, entry) => {
   const cm = /(^|\s)#/.exec(rest);
   const value = (cm ? rest.slice(0, cm.index) : rest).trim();
   const comment = cm ? rest.slice(cm.index).trimStart() : "";
-  if (value !== "" && value !== "[]") fail(at + 1, "'segments' must be a block sequence to append to");
-  if (value === "[]") lines[at] = (comment ? `segments: ${comment}` : "segments:") + eolAt;
+  // `segments:`, `segments: []` and `segments: null` all mean no segments (the loader reads null as []).
+  const empty = value === "[]" || value === "null";
+  if (value !== "" && !empty) fail(at + 1, "'segments' must be a block sequence to append to");
+  if (empty) lines[at] = (comment ? `segments: ${comment}` : "segments:") + eolAt;
   let last = at;
   let indent = null;
   for (let j = at + 1; j < lines.length; j++) {

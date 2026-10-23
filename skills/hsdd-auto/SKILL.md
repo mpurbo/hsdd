@@ -97,12 +97,18 @@ settings cannot set it). Otherwise propose the memory paths
 
 ## First run
 
-Only when `hsdd/auto/run.yaml` is missing.
+Only when `hsdd/auto/run.yaml` is missing and `state.mjs defaults` prints
+an empty `run_branches`.
 
 1. Run `node hsdd/scripts/auto/state.mjs defaults` (from this skill's
    `scripts/`; it needs no `run.yaml`). It prints JSON: `run`, `root`,
    `branch`, `base`, `skills_dir` (null when no candidate holds
-   `hsdd-auto`) and `owner_files`. Read the root spec's `## Sources`,
+   `hsdd-auto`), `owner_files` and `run_branches` (the local branches whose
+   tree holds `hsdd/auto/run.yaml`). When `run_branches` is not empty, this
+   is no first run: `run.yaml` lives on the run branch, which is not checked
+   out. Ask nothing and write nothing; end with one message asking the owner
+   to check out that branch and run `/hsdd-auto` again. Never check it out
+   yourself (Git). Otherwise read the root spec's `## Sources`,
    `hsdd/conventions.md` and the owner's agent instruction files for the
    other defaults.
 2. Ask these in one batch, each with its proposed default:
@@ -178,7 +184,10 @@ Only when `hsdd/auto/run.yaml` is missing.
 
 ### 1. Open or resume a segment
 
-1. No `run.yaml`: First run.
+1. No `run.yaml`: run `state.mjs defaults`. An empty `run_branches` means
+   First run. Otherwise the run branch is not checked out (`state.mjs`
+   names it too): end with one message asking the owner to check out that
+   branch and run `/hsdd-auto` again.
 2. Read `node hsdd/scripts/auto/state.mjs --json`. A new segment opens only
    when there is none yet, or the current one is finished (`next` is
    `{"done": true}`), stopped (`next` is `blocked`) or ended by an owner
