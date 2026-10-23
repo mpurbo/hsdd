@@ -69,7 +69,7 @@ test("conventions template names hsdd-auto's report step as a management writer"
 });
 
 test("no em dash in the new sections", () => {
-  for (const s of SIX) assert.ok(!unattended(s).section.includes("\\u2014"), s);
+  for (const s of SIX) assert.ok(!unattended(s).section.includes("\u2014"), s);
 });
 
 test("hsdd-phase-plan append mode may rewrite an unshipped phase in place", () => {
