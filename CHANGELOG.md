@@ -14,6 +14,85 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   project, using the user's guide's examples, with brownfield adoption and
   change intake as chapters of their own.
 
+## [0.11.0] - Unreleased
+
+Unattended planning runs. `hsdd-auto` runs HSDD's planning chain without the
+owner at each ask point, one fresh subagent per skill invocation, and records
+every decision for one review sitting afterwards.
+
+Specification: `spec/hsdd-spec-v0_11.md`. Settled build decisions:
+`docs/superpowers/plans/2026-10-22-hsdd-auto-decisions.md`. Acceptance:
+`review/hsdd-v0_11-acceptance.md`.
+
+### Upgrading from 0.10.0
+
+- Reinstall the twelve skills. Nothing else changes unless `/hsdd-auto` runs.
+- A project that never runs `/hsdd-auto` is unaffected: the new
+  `## Unattended runs` sections are inert unless a skill is invoked with
+  `--unattended`.
+- A `hsdd/judgement/decisions.jsonl` written by a hand-built unattended run
+  continues under `hsdd-auto`; its lines read as legacy lines, with one
+  warning.
+
+### Added
+
+- **`hsdd-auto`**, the twelfth skill, with bundled zero-dependency scripts
+  (`state`, `next`, `dispatch`, `decide`, `ledger`, `gate`, `commit`,
+  `routed`, `report`, `adapter`) copied verbatim to `hsdd/scripts/auto/` by
+  the first `setup` step. The scripts compute the next step, render its
+  prompt, gate and commit it, mint and stamp every decision, and write the
+  report; the orchestrator keeps the judgement.
+- **Two modes.** `plan` plans an empty tree through reconcile. `intake`
+  routes one change request through `hsdd-intake` and every handoff its
+  record names.
+- **A stop policy per segment.** `stop` ends the run with `hsdd/judgement/STOP.md`
+  at a stop-set condition; `decide-and-record` decides it and records the
+  decision with `would_have_asked: true`. A class can be decided in advance
+  with `predecided`. `external` and four other hard stops end the run under
+  either policy.
+- **Run records:** `hsdd/auto/` (the run configuration, the plan, the queue,
+  every dispatch file, step reports, one report per segment) and
+  `hsdd/judgement/` (the decision ledger, the run log, `STOP.md`, and the
+  owner's `decision-reviews.jsonl`).
+- **A Claude Code adapter** (`adapter.mjs install`, `adapter.mjs check`):
+  permission deny rules and a Bash hook that keep a run inside its declared
+  inputs.
+- **Test coverage:** script tests for every script and
+  `test/auto-e2e.test.mjs`, which drives the scripts through simulated plan,
+  stop, procedural-stop, intake, rework and interruption runs.
+
+### Changed
+
+- `hsdd-spec`, `hsdd-adr`, `hsdd-contract`, `hsdd-phase-plan`,
+  `hsdd-reconcile` and `hsdd-intake` each gain an `## Unattended runs`
+  section: the skill's ask points as a table, a structured stop at an ask
+  point instead of a question, and each decision recorded when it is taken.
+- `hsdd-intake` gains an optional machine-readable handoff block in the
+  intake record; existing records stay conformant.
+- `hsdd-reconcile` gains a named align mode.
+- `hsdd-contract`, `hsdd-adr` and `hsdd-spec` gain the citation-touch rule
+  for moving citations when a source document or contract version changes.
+- The contract file gains the optional front-matter field `governed_by`.
+  Open-question and `Collides with` separators admit `:`, an en dash or
+  ` - ` beside the em dash, and an empty cell admits `none` and `-`.
+
+### Notes for the owner
+
+The build found these errata in the specification and worked around them
+without editing it. The decisions file records each.
+
+- C.3 writes the contract step's `G{n}`, which section 13.2 reads as a slot
+  named `n`; the template renders `G{n}` through `G{{n}}` (B-13).
+- Section 11.1 appends `/**` to every deny rule, which never matches a file
+  path; the adapter writes the path itself and the path with `/**` (B-22).
+- D1 (prose rules) on `run.yaml` blocked every segment at level `error`,
+  because the file lists the banned phrases and stores the owner's
+  instruction verbatim; D1 exempts `run.yaml`, `owner-files.json`,
+  `adapter.json` and the `orchestrator_files` (B-23).
+- C5's literal reading passes a citation of a contract version that does not
+  exist yet, because the Versioning line names the next version; C5 accepts
+  only the current version or an older one the section names (B-7).
+
 ## [0.10.0] - 2026-10-10
 
 The release that follows 0.7.1. The 0.8.0 and 0.9.0 entries below describe
