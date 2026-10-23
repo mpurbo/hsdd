@@ -16,7 +16,6 @@ const SHARED = quoted.join("\n");
 const ITEMS = SHARED.split(/\n(?=\d\. )/).slice(1).map((s) => norm(s));
 
 const SIX = ["hsdd-spec", "hsdd-adr", "hsdd-contract", "hsdd-phase-plan", "hsdd-reconcile", "hsdd-intake"];
-const BUILT = SIX.slice(0, 3);
 const GATE = { "hsdd-phase-plan": "## Phase Design Checklist" };
 
 function unattended(s) {
@@ -30,7 +29,7 @@ function unattended(s) {
 
 test("the spec's shared block has six numbered items", () => assert.equal(ITEMS.length, 6));
 
-for (const s of BUILT) test(`${s} has ## Unattended runs immediately before its quality gates`, () => {
+for (const s of SIX) test(`${s} has ## Unattended runs immediately before its quality gates`, () => {
   const { section, next } = unattended(s);
   assert.equal(next, GATE[s] ?? "## Quality Gates");
   assert.ok(norm(section).includes(norm(SHARED.split("\n\n")[0])), "opening paragraph");
@@ -70,5 +69,46 @@ test("conventions template names hsdd-auto's report step as a management writer"
 });
 
 test("no em dash in the new sections", () => {
-  for (const s of BUILT) assert.ok(!unattended(s).section.includes("—"), s);
+  for (const s of SIX) assert.ok(!unattended(s).section.includes("—"), s);
+});
+
+test("hsdd-phase-plan append mode may rewrite an unshipped phase in place", () => {
+  const t = norm(skill("hsdd-phase-plan"));
+  assert.ok(t.includes("When the invoking prompt names an unshipped phase, append mode may rewrite it in place; the phase keeps its id, and the new emission date line of the pending section names the rewrite."));
+});
+
+test("hsdd-reconcile has align as the step after 13", () => {
+  const t = skill("hsdd-reconcile");
+  const i13 = t.indexOf("\n13. **Sweep resolved questions.**");
+  const i14 = t.indexOf("\n14. **Align.**");
+  assert.ok(i13 > 0 && i14 > i13, "step 14 follows step 13");
+  assert.ok(t.indexOf("\n## Entry Handling") > i14);
+  const n = norm(t);
+  assert.ok(n.includes("/hsdd-reconcile align {node ids or all} after {what changed}"));
+  for (const part of ["moves every live citation of a contract version", "re-derives each phase gate's contract and guarantee arguments", "checks that every phase id named in a contract's `produced_by`", "as a routed item for the owning skill, never rewriting a phase's scope itself", "It drains nothing and flips nothing unless the invocation also names those steps."]) assert.ok(n.includes(part), part);
+  assert.ok(n.includes("- [ ] Every change align made is a citation or a gate argument."));
+  assert.ok(n.includes("No step kind invokes reconcile's grandfather marking, discharge or retirement (its steps 8 and 9)"));
+  assert.match(t.slice(0, t.indexOf("\n---\n", 4)), /align the plans after the contract moved/);
+  assert.ok(n.includes("step 13's sweep of resolved open questions and its trigger words are unchanged"));
+});
+
+test("hsdd-intake carries the handoff block section with the kind table", () => {
+  const t = skill("hsdd-intake");
+  const n = norm(t);
+  assert.ok(t.includes("\n## Handoff block\n"));
+  assert.ok(t.indexOf("\n## Handoff block\n") < t.indexOf("\n## Unattended runs\n"));
+  assert.ok(t.includes("```hsdd-handoffs") && n.includes('"version": 1'));
+  for (const kind of ["mid-level-spec", "graft", "promote", "spec-touch", "adr-update", "contract-touch", "citation-touch", "phase-plan-append", "align"]) assert.ok(t.includes(`\`${kind}\``), kind);
+  assert.ok(t.includes("| Kind | Skill | Target |"));
+  assert.ok(n.includes("**`cites-superseded`** holds when any of the target's files contains a superseded string"));
+  assert.ok(n.includes("A `structural` record's block has an empty `handoffs` list"));
+  assert.ok(n.includes("The handoff block, when present, lists the same handoffs as the prose, in the same order, with the same prompts."));
+  assert.ok(n.includes("ticket | incident | braindump"));
+});
+
+test("every skill's new text is free of em dashes and the banned phrase", () => {
+  for (const s of SIX) {
+    const added = unattended(s).section;
+    assert.ok(!added.includes("\u2014") && !/load-bearing/i.test(added), s);
+  }
 });

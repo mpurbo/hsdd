@@ -16,7 +16,7 @@ import { validate } from "../skills/hsdd-auto/scripts/lib/schema.mjs";
 import { nowStamp } from "../skills/hsdd-auto/scripts/lib/time.mjs";
 import { ownerState } from "../skills/hsdd-auto/scripts/gate.mjs";
 import {
-  PLANNING_SKILLS as PLANNING, SCRIPTS, SKILLS, addSegment, baseConfig, completeSkills, fakeStep, gitIn, makeRepo, openStep, run, writeRunYaml,
+  PLANNING_SKILLS as PLANNING, SCRIPTS, SKILLS, addSegment, baseConfig, fakeStep, gitIn, makeRepo, openStep, run, writeRunYaml,
 } from "./helpers/auto-repo.mjs";
 
 const SEG = "2026-10-22-plan";
@@ -27,7 +27,7 @@ const put = (dir, rel, text) => { mkdirSync(dirname(join(dir, rel)), { recursive
 const read = (dir, rel) => readFileSync(join(dir, rel), "utf8");
 const commitAll = (dir, msg = "owner edit") => { gitIn(dir, "add", "-A"); gitIn(dir, "commit", "-q", "--allow-empty", "-m", msg); };
 
-const cfg = (over = {}) => baseConfig({ skills_dir: completeSkills(), ...over });
+const cfg = (over = {}) => baseConfig(over);
 const instruction = (text = "Plan the shop.\n") => {
   const dir = mkdtempSync(join(tmpdir(), "hsdd-auto-instruction-"));
   const file = join(dir, "instruction.md");
@@ -249,11 +249,19 @@ test("preflight refuses the standalone-spec-repo profile and a skill without Una
   assert.deepEqual(preflight(ok, loadConfig(ok)), []);
   assert.equal(run(ok, "state.mjs", ["preflight"]).code, 0);
 
-  // The shipped skills do not carry the section yet (Tasks 19 and 20), and the message says what to do.
+  // The shipped skills all carry the section, so preflight passes against the real skills directory; a skill
+  // whose section is removed is refused by name, and the message says what to do.
   const bare = makeRepo({ stage: "06-planned", config: baseConfig() });
-  const bareRefusals = PLANNING.flatMap((name) => preflight(bare, loadConfig(bare)).filter((r) => r.startsWith(`${name}/SKILL.md`)));
-  const withSection = PLANNING.filter((name) => /^## Unattended runs\s*$/m.test(readFileSync(join(SKILLS, name, "SKILL.md"), "utf8")));
-  assert.equal(bareRefusals.length, PLANNING.length - withSection.length);
+  assert.deepEqual(preflight(bare, loadConfig(bare)), []);
+  const stripped = mkdtempSync(join(tmpdir(), "hsdd-auto-skills-stripped-"));
+  cpSync(SKILLS, stripped, { recursive: true });
+  for (const name of PLANNING) {
+    const file = join(stripped, name, "SKILL.md");
+    writeFileSync(file, readFileSync(file, "utf8").replace(/^## Unattended runs\s*$/m, "## Something else"));
+  }
+  const strippedRepo = makeRepo({ stage: "06-planned", config: cfg({ skills_dir: stripped }) });
+  const strippedRefusals = preflight(strippedRepo, loadConfig(strippedRepo));
+  for (const name of PLANNING) assert.ok(strippedRefusals.some((r) => r.startsWith(`${name}/SKILL.md`)), name);
 
   const profile = makeRepo({
     stage: "06-planned", config: cfg(),
@@ -274,7 +282,7 @@ test("preflight refuses the standalone-spec-repo profile and a skill without Una
   assert.deepEqual(preflight(prose, loadConfig(prose)), []);
 
   const own = mkdtempSync(join(tmpdir(), "hsdd-auto-skills-missing-"));
-  cpSync(completeSkills(), own, { recursive: true });
+  cpSync(SKILLS, own, { recursive: true });
   rmSync(join(own, "hsdd-adr", "SKILL.md"));
   const missing = makeRepo({ stage: "06-planned", config: cfg({ skills_dir: own }) });
   assert.deepEqual(preflight(missing, loadConfig(missing)).map((r) => r.replace(/ under skills_dir.*/, "")), ["hsdd-adr/SKILL.md is missing"]);

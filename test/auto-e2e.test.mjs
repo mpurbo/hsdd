@@ -10,7 +10,7 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { commitStepPhases, planSkeleton } from "../skills/hsdd-auto/scripts/commit.mjs";
 import { formatFlow, formatScalar, parseYaml } from "../skills/hsdd-auto/scripts/lib/yaml.mjs";
-import { SCRIPTS, baseConfig, completeSkills, gitIn, makeRepo } from "./helpers/auto-repo.mjs";
+import { SCRIPTS, SKILLS, baseConfig, gitIn, makeRepo } from "./helpers/auto-repo.mjs";
 import { FIXTURES, readDispatchFile, standIn } from "./helpers/auto-standin.mjs";
 
 const read = (dir, rel) => readFileSync(join(dir, rel), "utf8");
@@ -42,7 +42,7 @@ const edit = (from, to) => (old) => {
 // Before the first setup step copies them, the scripts run from the installed skill (spec 4.3).
 const scriptPath = (dir, script) => {
   const copy = join(dir, "hsdd/scripts/auto", script);
-  return existsSync(copy) ? copy : join(completeSkills(), "hsdd-auto", "scripts", script);
+  return existsSync(copy) ? copy : join(SKILLS, "hsdd-auto", "scripts", script);
 };
 
 // Runs a script and asserts its exit code (0 unless `code` says otherwise).
@@ -430,7 +430,7 @@ const chain = () => ({
 
 // A plan-mode repository at a fixture stage whose run configuration points skills_dir at a complete
 // installation (the six planning skills with `## Unattended runs`).
-const repoAt = (stage, over = {}) => makeRepo({ stage, config: baseConfig({ skills_dir: completeSkills(), ...over }) });
+const repoAt = (stage, over = {}) => makeRepo({ stage, config: baseConfig({ ...over }) });
 
 // ---------- assertions shared by the scenarios ----------
 
@@ -625,7 +625,7 @@ test("plan, stop: an axis stop ends the run, the owner's answer opens a segment,
     "run: shop",
     "branch: auto/shop   # the run branch",
     "base: main",
-    `skills_dir: ${completeSkills()}`,
+    `skills_dir: ${SKILLS}`,
     "owner_facts:",
     "  - \"Totals are integers in cents: no floating point anywhere (#money).\"",
     "sources:",
@@ -908,7 +908,7 @@ const ADR_002 = [
 test("intake: handoffs run or skip by their condition under a predecided breaking-amend, and ## Produced gains order-api@v2", () => {
   const web = readFileSync(join(FIXTURES, "tree/04-mid/hsdd/spec/shop.web.md"), "utf8").replace("- **Produces:** none\n", "- **Produces:** none\n- **Governed by:** [ADR-002]\n");
   const dir = makeRepo({
-    stage: "06-planned", config: baseConfig({ skills_dir: completeSkills() }),
+    stage: "06-planned", config: baseConfig(),
     files: { [REQUEST]: SPEC_V2, "hsdd/adr/002-customer-ids.md": ADR_002, "hsdd/spec/shop.web.md": web },
   });
   assert.equal(spawnSync(process.execPath, ["hsdd/scripts/gen-registry.mjs"], { cwd: dir }).status, 0);

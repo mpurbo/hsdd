@@ -20,22 +20,6 @@ const OVERLAYS = join(ROOT, "test", "fixtures", "auto", "tree");
 // The six planning skills hsdd-auto drives (spec 3.1), each of which must carry `## Unattended runs`.
 export const PLANNING_SKILLS = ["hsdd-spec", "hsdd-adr", "hsdd-contract", "hsdd-phase-plan", "hsdd-reconcile", "hsdd-intake"];
 
-// A copy of skills/ whose six planning skills carry `## Unattended runs` (Tasks 19 and 20 add the real
-// section; a skill that has it already is left as it is), so preflight and the bundled-script copy are
-// tested against a complete installation. Made once per test process.
-let completeCopy = null;
-export const completeSkills = () => {
-  if (completeCopy !== null) return completeCopy;
-  completeCopy = mkdtempSync(join(tmpdir(), "hsdd-auto-skills-"));
-  cpSync(SKILLS, completeCopy, { recursive: true });
-  for (const name of PLANNING_SKILLS) {
-    const file = join(completeCopy, name, "SKILL.md");
-    const text = readFileSync(file, "utf8");
-    if (!/^## Unattended runs\s*$/m.test(text)) writeFileSync(file, `${text.replace(/\s*$/, "")}\n\n## Unattended runs\n\nstub\n`);
-  }
-  return completeCopy;
-};
-
 export const baseConfig = (overrides = {}) => ({
   version: 1,
   run: "shop",
