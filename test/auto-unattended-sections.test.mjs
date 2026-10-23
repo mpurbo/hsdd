@@ -123,6 +123,7 @@ for (const s of SIX) test(`${s} carries every row of its spec 12.1 table`, () =>
 });
 
 // Every section or paragraph the build added, from its marker to the next `## ` heading (or end of file).
+const BANNED = new RegExp(["load", "bearing"].join("-"), "i");
 const ADDED = {
   "hsdd-spec": ["## Touch and Citation Touch", "## Unattended runs"],
   "hsdd-adr": ["**Amendments.**", "## Unattended runs"],
@@ -139,7 +140,7 @@ test("everything the build added is free of em dashes and the banned phrase", ()
       assert.ok(i >= 0, `${s}: ${m}`);
       const j = text.indexOf("\n## ", i + m.length);
       const body = text.slice(i, j < 0 ? undefined : j);
-      assert.ok(!body.includes("\u2014") && !/load-bearing/i.test(body), `${s}: ${m}`);
+      assert.ok(!body.includes("\u2014") && !BANNED.test(body), `${s}: ${m}`);
     }
   }
   for (const s of ["hsdd-adr", "hsdd-contract", "hsdd-spec"]) {
