@@ -343,9 +343,63 @@ const IDEAS = [
   ["Contracts as the only coupling", "Nodes depend on named, versioned contracts, never on each other's internals.", "Context becomes a dependency graph instead of a monolith. Think of each node as a function: consumed contracts are its typed inputs, produced contracts its outputs, and the dependency graph is the composition. Nodes are built against contract fixtures, not live implementations."],
   ["Human review at every leaf", "Each phase is sized so the agent run plus a human's review fits one sitting.", "Agents produce faster than people can read, so review is the pacing unit. The human owns correctness; the agent owns throughput. This holds as models improve, because the reviewer does not get a bigger context window."],
 ];
+// One small tree carries all three ideas: it grows a level (01), a contract joins two of its
+// nodes (02), and a person reviews one of its phases (03). Every render rebuilds the SVG, so a
+// card click replays its animation; with reduced motion the final picture shows at once.
+const IDEA_MID = [{ id: "acme.backend", cx: 230 }, { id: "acme.web", cx: 560 }];
+const IDEA_LEAVES = [
+  { id: "acme.backend.auth", cx: 130, parent: 230, phases: 3 },
+  { id: "acme.backend.billing", cx: 330, parent: 230, phases: 3 },
+  { id: "acme.web.signup", cx: 560, parent: 560, phases: 2 },
+];
+const IDEA_LABELS = [
+  "The acme tree grows: the root splits into backend and web, those split into leaf-parents, and the leaf-parents' children are phases.",
+  "acme.backend produces the auth-token@v1 contract and acme.web consumes it; neither sees the other's internals.",
+  "One reviewer examines one phase, acme.backend.auth.2, and signs it off in one sitting.",
+];
+function ideaDiagram(i) {
+  const grow = i === 0;
+  const wire = i === 1;
+  const review = i === 2;
+  // In 01 the third level and its phases arrive in sequence; elsewhere they are already there.
+  const enter = (body, delay) => (grow ? `<g class="appear" style="animation-delay:${delay}s">${body}</g>` : body);
+  const chipX = (leaf, n) => leaf.cx + (n - (leaf.phases - 1) / 2) * 42;
+  let tree = box({ x: 305, y: 14, w: 150, h: 40, kind: "root", title: "acme" });
+  for (const m of IDEA_MID) {
+    tree += elbow(380, 54, m.cx, 86, "", "ah-idea");
+    tree += box({ x: m.cx - 80, y: 88, w: 160, h: 40, kind: "internal", title: m.id, selected: wire });
+  }
+  let lower = "";
+  IDEA_LEAVES.forEach((leaf, k) => {
+    lower += enter(elbow(leaf.parent, 128, leaf.cx, 164, "", "ah-idea") + box({ x: leaf.cx - 88, y: 166, w: 176, h: 40, kind: "leafparent", title: leaf.id }), 0.3 + k * 0.15);
+    for (let n = 0; n < leaf.phases; n++) {
+      const x = chipX(leaf, n);
+      const picked = review && k === 0 && n === 1;
+      lower += enter(elbow(leaf.cx, 206, x, 220) + box({ x: x - 18, y: 222, w: 36, h: 18, kind: "phase", title: `.${n + 1}`, selected: picked, label: `${leaf.id}.${n + 1}` }), 0.9 + k * 0.15 + n * 0.08);
+    }
+  });
+  const legend = [["root", 38], ["internal", 112], ["leaf-parent", 190], ["phases", 235]]
+    .map(([text, y], n) => (n < 2 ? `<text x="752" y="${y}" text-anchor="end" class="t-label">${text}</text>` : enter(`<text x="752" y="${y}" text-anchor="end" class="t-label">${text}</text>`, n === 2 ? 0.6 : 1.3)))
+    .join("");
+  const contract = wire
+    ? `<path class="edge draw" d="M310 108 L480 108"/>`
+      + `<path class="edge hot flowing" d="M310 108 L476 108" marker-end="url(#ah-idea)"/>`
+      + `<text x="395" y="100" text-anchor="middle" class="t-id">auth-token@v1</text>`
+      + `<text x="316" y="124" class="t-label">produces</text><text x="474" y="124" text-anchor="end" class="t-label">consumes</text>`
+    : "";
+  const reviewer = review
+    ? `<rect class="pulse" x="108" y="218" width="44" height="26" rx="8"/>`
+      + `<g class="reviewer appear"><circle class="head" cx="238" cy="258" r="9"/><path d="M238 267 V290 M238 290 L227 308 M238 290 L249 308 M238 275 L253 286 M238 275 L221 265"/><circle cx="215" cy="259" r="7"/></g>`
+      + `<path class="edge dashed appear" style="animation-delay:.5s" d="M209 253 L154 240"/>`
+      + `<text x="264" y="282" class="t-label appear" style="animation-delay:.3s">one reviewer, one phase, one sitting</text>`
+      + `<text x="264" y="300" class="t-ok appear" style="animation-delay:1.3s">✓ signed, then the next phase</text>`
+    : "";
+  return svg("0 0 760 314", IDEA_LABELS[i], marker("ah-idea") + tree + `<g class="${wire ? "dimmed" : ""}">${lower}</g>` + legend + contract + reviewer, "ideas");
+}
 function ideasView(s) {
   const i = s.idea;
   return `<div class="cards">${IDEAS.map(([title, sum], n) => `<button class="card" ${act("idea", n)} aria-pressed="${i === n}"><span class="num">0${n + 1}</span><h3>${title}</h3><p>${sum}</p></button>`).join("")}</div>
+    ${ideaDiagram(i)}
     <div class="detail"><h3>${IDEAS[i][0]}</h3><p>${IDEAS[i][2]}</p></div>`;
 }
 
