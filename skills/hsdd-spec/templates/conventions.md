@@ -22,7 +22,7 @@ and per-phase contexts stay in each implementation repo (`hsdd-context/`).
 - `hsdd/templates/verification.md`            verification-doc template, copied from hsdd-config
 - `openspec/config.yaml` + `openspec/changes/` config and one change per phase
 - `hsdd-context/{phase-id}.md` (+ `hsdd-context/superpowers/{phase-id}.md`)  generic phase context and its superpowers derivative, written by hsdd-config in the implementation repo
-- `hsdd/management/`                          management layer (progress, execution plans, milestones, intake records, atlas), written only by hsdd-checkpoint, hsdd-milestone and hsdd-intake (intake records)
+- `hsdd/management/`                          management layer (progress, execution plans, milestones, intake records, atlas), written only by hsdd-checkpoint, hsdd-milestone and hsdd-intake (intake records), and `hsdd-auto`'s report step, for an intake record's `## Produced`
 - `hsdd/management/archive/`                  sealed milestone documents (closed campaigns)
 - `hsdd/summary/`                             optional reading aids (hsdd-summary); absent means none are rendered
 
