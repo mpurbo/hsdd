@@ -622,7 +622,8 @@ export const idFindings = (ctx, creating) => [
   ...c7(ctx.tree),
 ].filter((f) => f.level === "error");
 
-// S-1: a failure counts only when its file, or a file related to it, changed during the segment.
+// S-1: a failure counts only when its file, or a file related to it, changed during the segment, counted
+// from the first setup of the stopped or ended segments it continues (ctx.changedInSegment).
 const scoped = (ctx, findings) => {
   const errors = findings.filter((f) => f.level === "error");
   if (errors.length === 0) return [];

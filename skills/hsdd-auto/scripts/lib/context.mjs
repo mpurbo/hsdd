@@ -67,6 +67,26 @@ export const loadContext = (repoRoot, { registry = checkRegistries } = {}) => {
   const setupCommit = memoizeBy((segmentId) =>
     runLines.find((l) => l.segment === segmentId && l.kind === "setup")?.commit ?? null);
 
+  // The named segment and the earlier segments right before it that have no committed `report` run
+  // line, earliest first: the stopped and ended segments it continues (5.5, 8.3, 8.11), which its
+  // report covers (10.9). A segment opens only after the previous one finished, stopped or ended (8.1).
+  const reported = new Set(committedRunLines.filter((l) => l.kind === "report" && l.status === "completed").map((l) => l.segment));
+  const segmentChain = (segmentId) => {
+    const index = config.segments.findIndex((s) => s.id === segmentId);
+    if (index < 0) return [segmentId];
+    const before = config.segments.slice(0, index).map((s) => s.id);
+    const last = before.findLastIndex((id) => reported.has(id));
+    return [...before.slice(last + 1), segmentId];
+  };
+
+  // Files that differ between the named segment's own setup commit's parent and the working tree,
+  // untracked included.
+  const changedSinceSetup = memoizeBy((segmentId) => {
+    const commit = setupCommit(segmentId);
+    if (commit === null) return new Set();
+    return new Set(changedSince(repoRoot, revExists(repoRoot, `${commit}^`) ? `${commit}^` : EMPTY_TREE_SHA));
+  });
+
   return {
     repoRoot,
     config,
@@ -94,11 +114,14 @@ export const loadContext = (repoRoot, { registry = checkRegistries } = {}) => {
     verifiedPhases: verifiedPhasesOf(repoRoot, layout, defaultBranch),
     defaultBranch,
     setupCommit,
-    // Files that differ between the setup commit's parent and the working tree, untracked included.
+    segmentChain,
+    changedSinceSetup,
+    // The final scope (10.6, final review A1): files changed since the first setup commit of the
+    // segment's chain, so a stopped step's partial artifacts, whose own gate skipped the C checks, are
+    // in scope in the segment that continues it. The done definition and the final gate both read it.
     changedInSegment: memoizeBy((segmentId) => {
-      const commit = setupCommit(segmentId);
-      if (commit === null) return new Set();
-      return new Set(changedSince(repoRoot, revExists(repoRoot, `${commit}^`) ? `${commit}^` : EMPTY_TREE_SHA));
+      const first = segmentChain(segmentId).find((id) => setupCommit(id) !== null);
+      return first === undefined ? new Set() : changedSinceSetup(first);
     }),
     registry: memoize(() => registry(repoRoot, layout)),
     // Paths with uncommitted changes in the working tree, untracked included (git status).

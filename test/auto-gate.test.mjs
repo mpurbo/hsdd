@@ -6,6 +6,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { finalGate, formatFindings, stepGate } from "../skills/hsdd-auto/scripts/gate.mjs";
 import { loadContext } from "../skills/hsdd-auto/scripts/lib/context.mjs";
+import { unmetDone } from "../skills/hsdd-auto/scripts/next.mjs";
 import { RAISED_WHEN } from "../skills/hsdd-auto/scripts/lib/kinds.mjs";
 import { P, reportPath, stepPaths } from "../skills/hsdd-auto/scripts/lib/paths.mjs";
 import { appendJsonl, readDispatch, writeDispatch } from "../skills/hsdd-auto/scripts/lib/records.mjs";
@@ -542,6 +543,49 @@ test("pre-existing defect is a warning in the final gate", () => {
   put(during, REPORT, FILLED);
   const fd = final(during);
   assert.deepEqual(of(fd, "C6").map((f) => [f.level, f.file]), [["error", API]], show(fd));
+});
+
+// Final review A1: a stopped step's gate skips the C checks (10.6), so the defect it wrote is checked
+// only by the final gate of the segment that continues it, whose scope starts at the chain's first setup.
+const SEG_B = "2026-10-23-plan";
+const answered = ({ previous = "stopped" } = {}) => {
+  const dir = begun();
+  fakeStep(dir, { step: "S02", segment: SEG, kind: "spec-touch", target: "shop.api", status: "stopped", files: { [API]: read(dir, API).replace(...OQ9) } });
+  if (previous === "finished") {
+    fakeStep(dir, { step: "S03", segment: SEG, kind: "spec-touch", target: "shop.api", continues: "S02" });
+    fakeStep(dir, { step: "S04", segment: SEG, kind: "report", target: SEG });
+  }
+  const first = previous === "finished" ? 5 : 3;
+  const s = (n) => `S${String(first + n).padStart(2, "0")}`;
+  addSegment(dir, { ...segment(), id: SEG_B, instruction: "Answer: keep OQ9 open.", first_step: s(0) });
+  fakeStep(dir, { step: s(0), segment: SEG_B, kind: "setup", target: SEG_B });
+  fakeStep(dir, { step: s(1), segment: SEG_B, kind: "plan", target: SEG_B });
+  if (previous === "stopped") fakeStep(dir, { step: s(2), segment: SEG_B, kind: "spec-touch", target: "shop.api", continues: "S02" });
+  fakeStep(dir, { step: s(3), segment: SEG_B, kind: "align", target: "all" });
+  openStep(dir, { step: s(4), segment: SEG_B, kind: "report", target: SEG_B });
+  put(dir, `hsdd/auto/report/${SEG_B}.md`, FILLED);
+  return dir;
+};
+
+test("a defect a stopped step wrote in the answered segment is unmet in the continuation's segment", () => {
+  const dir = answered();
+  const ctx = loadContext(dir);
+  const done = unmetDone(ctx, { final: true }).filter((l) => l.startsWith("C6 "));
+  assert.ok(done.some((l) => l.includes("OQ9") && l.includes(API)), JSON.stringify(done));
+  const fs = final(dir);
+  assert.deepEqual(of(fs, "C6").map((f) => [f.level, f.file]), [["error", API]], show(fs));
+  assert.ok(of(fs, "F1").some((f) => f.level === "error" && /OQ9/.test(f.message)), show(of(fs, "F1")));
+  const cli = run(dir, "gate.mjs", ["--final"]);
+  assert.equal(cli.code, 1, cli.stdout);
+  assert.match(cli.stdout, /^ERROR C6 .*OQ9/m);
+});
+
+test("a finished segment's changes stay out of the next segment's final scope", () => {
+  const dir = answered({ previous: "finished" });
+  const ctx = loadContext(dir);
+  assert.deepEqual(unmetDone(ctx, { final: true }).filter((l) => l.startsWith("C6 ")), []);
+  const fs = final(dir);
+  assert.deepEqual(of(fs, "C6").map((f) => [f.level, f.file]), [["warn", API]], show(fs));
 });
 
 // ---------- intake segments ----------

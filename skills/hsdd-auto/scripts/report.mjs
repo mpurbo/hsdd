@@ -45,12 +45,12 @@ const segmentOf = (ctx, id) => {
   return { segment: ctx.segments[i], index: i };
 };
 
-const hasReport = (ctx, id) => ctx.committedRunLines.some((l) => l.segment === id && l.kind === "report" && l.status === "completed");
-
-// The named segment, and every earlier segment without a committed report, earliest first (10.9).
+// The named segment, and the earlier segments without a committed report that it continues, earliest
+// first (10.9): ctx.segmentChain, the chain the final gate's scope starts from. A segment an earlier
+// report already covered is not covered again.
 export const coveredSegments = (ctx, segmentId) => {
-  const { index } = segmentOf(ctx, segmentId);
-  return [...ctx.segments.slice(0, index).filter((s) => !hasReport(ctx, s.id)).map((s) => s.id), segmentId];
+  segmentOf(ctx, segmentId);
+  return ctx.segmentChain(segmentId);
 };
 
 // Step ids of the covered segments in numeric order, each with its segment.
@@ -304,7 +304,7 @@ export const producedAdditions = (ctx, segmentId) => {
     const was = showFile(ctx.repoRoot, base, c.file);
     return was !== null && versionNum(c.version) > versionNum(parseContract(was, c.file).version) ? [`${slug}@${c.version}`] : [];
   }).sort();
-  const changed = ctx.changedInSegment(first);
+  const changed = ctx.changedSinceSetup(first);
   const adrs = [...ctx.tree.adrs.values()].filter((a) => changed.has(a.file)).map((a) => a.id ?? a.file).sort();
   const nodes = unique(ctx.committedRunLines
     .filter((l) => l.kind === "graft" && l.status === "completed" && same.includes(l.segment) && ctx.tree.nodes.has(l.target))

@@ -179,6 +179,23 @@ test("a segment ended by an owner message is covered by the next report", () => 
 });
 const buildReportOf = (ctx) => buildReport(ctx, SEG2, null);
 
+test("a segment an earlier report covered is not covered again", () => {
+  // SEG stopped; SEG2 continued it and finished, so its report covered SEG; SEG3 covers itself only.
+  const SEG3 = "2026-10-24-plan";
+  const dir = begun();
+  step(dir, 2, "spec-touch", "shop.api", { status: "stopped" });
+  addSegment(dir, planSegment(SEG2, "S03"));
+  step(dir, 3, "setup", SEG2, {}, SEG2);
+  step(dir, 4, "spec-touch", "shop.api", { continues: "S02" }, SEG2);
+  step(dir, 5, "report", SEG2, {}, SEG2);
+  addSegment(dir, planSegment(SEG3, "S06"));
+  step(dir, 6, "setup", SEG3, {}, SEG3);
+  const ctx = ctxOf(dir);
+  assert.deepEqual(coveredSegments(ctx, SEG2), [SEG, SEG2]);
+  assert.deepEqual(coveredSegments(ctx, SEG3), [SEG3]);
+  assert.deepEqual(ctx.segmentChain(SEG3), [SEG3], "the final scope uses the same chain");
+});
+
 test("coveredSegments rejects a segment that is not in run.yaml", () => {
   assert.throws(() => coveredSegments(ctxOf(begun()), "nope"), /no segment nope/);
   const dir = begun();
