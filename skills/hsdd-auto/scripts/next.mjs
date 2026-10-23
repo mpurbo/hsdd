@@ -10,7 +10,7 @@ import { loadContext } from "./lib/context.mjs";
 import { KINDS, skillFor, targetType, writeSet } from "./lib/kinds.mjs";
 import { c3Cited, c5, c6, c7, inScope } from "./lib/checks.mjs";
 import { blockErrors, citesSuperseded, guardedHandoffTargets, supersededStrings, targetFiles } from "./lib/intake.mjs";
-import { P, ownerMatcher } from "./lib/paths.mjs";
+import { P, ownerMatcher, stepPaths } from "./lib/paths.mjs";
 import { contractOrder, contractRoles, firstCited, nodeFiles, ordered, producerOrder } from "./lib/order.mjs";
 import { idNum, stepNum } from "./lib/records.mjs";
 import { leafParentsOf, matches, queueItems } from "./routed.mjs";
@@ -61,6 +61,15 @@ const planWillCreate = (ctx) => ({
 
 // ---------- the derived view of a snapshot ----------
 
+// A committed subagent step whose dispatch file exists but cannot be read (final review A3): the
+// handoff and queue item it carried are unknown, so it is a stuck line, never a step that named none.
+const unreadableLine = (ctx, step) => {
+  const d = ctx.dispatches.get(step);
+  return d !== undefined && d.front === null
+    ? `the committed dispatch file ${stepPaths(step).dispatch} cannot be read (${d.error}); the handoff and queue item ${step} carried are unknown`
+    : null;
+};
+
 // A stopped step's chain blocks a fresh step for its (kind, target); reconcile and align by kind
 // alone, since their target only names the plans and the skill drains the whole tree (7.1).
 const KIND_WIDE = new Set(["reconcile", "align"]);
@@ -77,7 +86,10 @@ export const pendingStopped = (ctx) => {
     .sort((a, b) => stepNum(a.step_ref) - stepNum(b.step_ref))
     .map((l) => {
       const front = ctx.dispatches.get(l.step_ref)?.front ?? null;
-      return { step: l.step_ref, kind: l.kind, target: l.target, handoff: front?.handoff ?? null, queue_item: front?.queue_item ?? null };
+      return {
+        step: l.step_ref, kind: l.kind, target: l.target, handoff: front?.handoff ?? null, queue_item: front?.queue_item ?? null,
+        unreadable: unreadableLine(ctx, l.step_ref),
+      };
     });
 };
 
@@ -449,6 +461,7 @@ const intakeView = (ctx) => {
     intake: {
       lines, wrote, record, handoffs,
       problems: record ? recordProblems(record, errors) : [],
+      unreadable: lines.filter((l) => isSubagent(l.kind)).flatMap((l) => unreadableLine(ctx, l.step_ref) ?? []),
       states: statesOf(ctx, segs, lines, handoffs),
       replanned: replannedOf(ctx, lines),
     },
@@ -517,7 +530,10 @@ const nextHandoff = (v, pending) => {
 const handoffStage = {
   n: 3, name: "Handoffs",
   evaluate: (v) => {
-    const { handoffs, states } = v.intake;
+    const { handoffs, states, record, problems, unreadable } = v.intake;
+    // Final review A4: no handoff is known until the record routes the intake (stage 2 acts first).
+    if (record === null || problems.length > 0) return notDone(["no handoff is known until the intake record routes the intake (stage 2)"], () => null);
+    if (unreadable.length > 0) return notDone(unreadable, () => ({ stuck: unreadable }));
     const pending = handoffs.map((h, i) => ({ h, i })).filter(({ i }) => states[i].state === "pending");
     if (pending.length === 0) return DONE;
     const line = ({ h, i }) => {
@@ -761,6 +777,7 @@ export const selectNext = (ctx) => {
     () => (ctx.stopExists ? { blocked: P.stop } : null),
     () => { const line = endedLine(v); return line ? { stuck: [line] } : null; },
     () => { const it = v.items.find((x) => x.kind === "insert-step" && x.status === "open"); return it ? { decide: { item: it.id } } : null; },
+    () => { const bad = v.chains.flatMap((c) => c.unreadable ?? []); return bad.length > 0 ? { stuck: bad } : null; },
     () => continuation(v),
     () => insertedStep(v),
     () => stageRule(v),

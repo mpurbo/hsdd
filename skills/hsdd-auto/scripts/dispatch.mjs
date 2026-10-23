@@ -148,6 +148,22 @@ const charName = (ch) => {
 // Text with every banned character written as `<U+XXXX NAME>`, so the rule itself never contains one.
 const withoutChars = (text, banned) => [...String(text)].map((ch) => (banned.has(ch) ? `<${charName(ch)}>` : ch)).join("");
 
+// Final review A5: a period that ends one of these is not a sentence end; a letter right before the
+// abbreviation makes it part of a word ("canvas."), so that period still ends the sentence.
+const ABBREVIATIONS = ["e.g.", "i.e.", "etc.", "vs."];
+const endsAbbreviation = (text, end) => ABBREVIATIONS.some((a) => {
+  const start = end - a.length;
+  return start >= 0 && text.slice(start, end).toLowerCase() === a && (start === 0 || !/\p{L}/u.test(text[start - 1]));
+});
+
+// The text up to the first `.`, `!` or `?` followed by whitespace or the end that does not close an
+// abbreviation; the whole text when there is none.
+const firstSentence = (text) => {
+  const end = [...text.matchAll(/[.!?](?=\s|$)/g)].map((m) => m.index + 1)
+    .find((e) => text[e - 1] !== "." || !endsAbbreviation(text, e));
+  return end === undefined ? text : text.slice(0, end);
+};
+
 // The first sentence of the segment's paragraph under plan.md's `## Segments`, which opens with
 // `**{segment id}.**` (S-5); null when there is none.
 export const purposeOf = (planText, id) => {
@@ -162,7 +178,7 @@ export const purposeOf = (planText, id) => {
   if (at < 0) return null;
   const stop = section.findIndex((l, i) => i > at && l.trim() === "");
   const text = section.slice(at, stop < 0 ? section.length : stop).map((l) => l.trim()).join(" ").slice(opener.length).trim();
-  return /^(.*?[.!?])(?=\s|$)/.exec(text)?.[1] ?? (text || null);
+  return text === "" ? null : firstSentence(text);
 };
 
 const earlierSegmentLine = (ctx) => (s) => {
@@ -292,10 +308,15 @@ const reasonText = (ctx, next, routed) => {
   if (next.queue_item) return queueItems(ctx.queueLines).get(next.queue_item)?.text ?? null;
   if (next.kind === "align" && !next.handoff) return STAGE_REASON[ctx.segment.mode];
   if (routed.length > 0) return routed.map((it) => it.text).join("; ");
-  // Deliberate departure from 13.2's fail-on-unfillable rule: a step with no item to quote (a
-  // continuation whose items are closed) gives next.mjs's reason for selecting it.
-  return next.why ?? null;
+  // Deliberate departure from 13.2's fail-on-unfillable rule (B-16): a step with no item to quote (a
+  // continuation whose items are closed) gets fixed text that points at its items, never next.mjs's
+  // `why`, which is the selection's internal reason (final review A6).
+  return next.continues ? "the items this step continues" : "the reason in this step's routed items";
 };
+
+// Every template that uses `{reason}` ends the sentence after it, so a fill that ends in a period would
+// render two (smoke run S10, final wave F1): drop trailing whitespace and one trailing period.
+const asReason = (text) => (text === null ? null : text.trimEnd().replace(/\.$/, ""));
 
 const recordText = (ctx, next) => (ctx.segment.mode === "intake"
   ? recordPath(ctx)
@@ -307,7 +328,7 @@ export const instructionFills = (ctx, next, routed = routedItems(ctx, next)) => 
   target_file: targetFile(ctx, next.target),
   target_version: targetVersion(ctx, next.target),
   proposing_spec: proposingSpec(ctx, next),
-  reason: reasonText(ctx, next, routed),
+  reason: asReason(reasonText(ctx, next, routed)),
   record: recordText(ctx, next),
   request: ctx.segment.request ?? null,
   authority: ctx.segment.authority ?? null,

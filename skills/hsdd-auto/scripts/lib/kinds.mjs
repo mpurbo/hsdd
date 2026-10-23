@@ -119,7 +119,8 @@ export const writeSet = (kind, target, { layout, config, segmentId, record = nul
       return [`${contract}/**`, `${adr}/INDEX.md`, P.genRegistry];
     case "citation-touch": {
       const t = targetType(target, tree);
-      const own = t === "adr" ? [`${adr}/${target.slice(4)}-*.md`]
+      // An existing ADR's parsed file (its name need not be `{nnn}-*.md`); the glob only without one.
+      const own = t === "adr" ? [tree?.adrs?.get(target)?.file ?? `${adr}/${target.slice(4)}-*.md`]
         : t === "contract" ? [`${contract}/${target}.md`, `${contract}/fixture/${target}/**`, `${contract}/schema/${target}.schema.json`]
         : [`${spec}/${target}.md`];
       return dedupe([...own, ...registries]);

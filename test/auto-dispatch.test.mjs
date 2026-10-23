@@ -585,6 +585,48 @@ test("purposeOf takes the first sentence after the bold segment id", () => {
   assert.equal(purposeOf(null, "2026-10-20-plan"), null);
 });
 
+test("purposeOf does not end the sentence at a common abbreviation", () => {
+  // Final review A5.
+  const plan = [
+    "# Run plan: shop", "", "## Segments", "",
+    "**2026-10-20-plan.** Plan the tree, e.g. the API and the web app, i.e. both nodes, etc. as the owner said. Then more.", "",
+    "**2026-10-21-plan.** Compare the shop vs. the old one? Rest.", "",
+    "**2026-10-22-plan.** Ends at the end.", "",
+    "**2026-10-23-plan.** Mentions etc. and a version 1.2 number. Rest.", "",
+    "**2026-10-24-plan.** Draw the canvas. Rest.", "",
+  ].join("\n");
+  assert.equal(purposeOf(plan, "2026-10-20-plan"), "Plan the tree, e.g. the API and the web app, i.e. both nodes, etc. as the owner said.");
+  assert.equal(purposeOf(plan, "2026-10-21-plan"), "Compare the shop vs. the old one?");
+  assert.equal(purposeOf(plan, "2026-10-22-plan"), "Ends at the end.");
+  assert.equal(purposeOf(plan, "2026-10-23-plan"), "Mentions etc. and a version 1.2 number.");
+  assert.equal(purposeOf(plan, "2026-10-24-plan"), "Draw the canvas.", "a word ending in vs. is not the abbreviation");
+});
+
+test("a reason ending in a period renders one period in the default invocation", () => {
+  // Smoke run S10: "Touch `notes.storage`: ... not a storage failure.." (final wave F1).
+  const dir = queue(planRepo("06-planned"), item("Q-001", "consider", "shop.api", { text: "Name the error as a parse failure, not a storage failure.  " }));
+  const ctx = dispatchContext(dir);
+  const next = selectNext(ctx).step;
+  assert.equal(next.kind, "spec-touch");
+  assert.equal(instructionFills(ctx, next).reason, "Name the error as a parse failure, not a storage failure");
+  const fills = stepFills(ctx, next, { step: "S02", head: "abcdef0" });
+  assert.equal(fills.invocation, "Touch `shop.api`: Name the error as a parse failure, not a storage failure.");
+  const plain = queue(planRepo("06-planned"), item("Q-001", "consider", "shop.api", { text: "keep it short" }));
+  const pctx = dispatchContext(plain);
+  assert.equal(stepFills(pctx, selectNext(pctx).step, { step: "S02", head: "abcdef0" }).invocation, "Touch `shop.api`: keep it short.");
+});
+
+test("the reason fallback is fixed text, never next.mjs's why", () => {
+  // Final review A6: no item text to quote (B-16 fallback).
+  const dir = planRepo("06-planned");
+  const ctx = dispatchContext(dir);
+  const base = { kind: "spec-touch", skill: "hsdd-spec", target: "shop.api", handoff: null, queue_item: null, write_set: [], inputs: [], why: "stage 7 Consistency: internal reason" };
+  assert.equal(instructionFills(ctx, { ...base, continues: "S05" }, []).reason, "the items this step continues");
+  assert.equal(instructionFills(ctx, { ...base, continues: null }, []).reason, "the reason in this step's routed items");
+  assert.equal(stepFills(ctx, { ...base, continues: null }, { step: "S09", head: "abcdef0" }).invocation,
+    "Touch `shop.api`: the reason in this step's routed items.");
+});
+
 test("--redispatch refuses once HEAD has moved past the dispatch head", () => {
   const dir = planRepo("00-empty");
   assert.equal(run(dir, "dispatch.mjs", ["--next"]).code, 0);

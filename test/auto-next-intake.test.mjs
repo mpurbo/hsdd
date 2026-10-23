@@ -514,3 +514,49 @@ test("unmet handoff lines name each pending handoff", () => {
 test("handoffStates is empty outside an intake segment with a record", () => {
   assert.deepEqual(handoffStates(ctxOf(begun())), []);
 });
+
+// ---------- final review A3, A4 ----------
+
+const corrupt = (dir, stepId) => {
+  put(dir, `hsdd/auto/dispatch/${stepId}.md`, "no front matter\n");
+  commitAll(dir, `corrupt ${stepId}`);
+};
+
+test("an unreadable committed dispatch file is stuck, never a handoff or item it did not name", () => {
+  // An executed handoff: its step's dispatch file is the only record of which handoff it executed.
+  const executed = routed();
+  h1(executed, 3);
+  corrupt(executed, "S03");
+  const r = next(executed);
+  assert.deepEqual(Object.keys(r), ["stuck"], JSON.stringify(r));
+  assert.ok(r.stuck.some((l) => l.includes("hsdd/auto/dispatch/S03.md") && /cannot be read/.test(l)), JSON.stringify(r.stuck));
+  assert.equal(stages(ctxOf(executed))[3].done, false, "stage 3 is not done while a step's handoff is unknown");
+  assert.ok(unmetDone(ctxOf(executed), { final: true }).some((l) => /^stage 3 Handoffs: .*hsdd\/auto\/dispatch\/S03\.md/.test(l)));
+
+  // A stopped step: its continuation would lose the handoff and queue item its dispatch file carried.
+  const stopped = routed();
+  h1(stopped, 3, { status: "stopped" });
+  corrupt(stopped, "S03");
+  const s = next(stopped);
+  assert.deepEqual(Object.keys(s), ["stuck"], JSON.stringify(s));
+  assert.ok(s.stuck.some((l) => l.includes("hsdd/auto/dispatch/S03.md")), JSON.stringify(s.stuck));
+});
+
+test("stage 3 is not done while the record is missing, rejected or structural", () => {
+  const before = begun();
+  assert.equal(stages(ctxOf(before))[3].done, false, "no record yet");
+  const out = run(before, "next.mjs", ["--stages"]);
+  assert.equal(out.code, 0, out.stderr);
+  assert.deepEqual(JSON.parse(out.stdout)[3], { n: 3, name: "Handoffs", done: false });
+  assert.ok(unmetDone(ctxOf(before), { final: true }).some((l) => /^stage 3 Handoffs: /.test(l)));
+  assert.equal(stepOf(before).kind, "intake", "stage 2 still acts first");
+
+  const structural = routed({}, STRUCTURAL.replace("ref/marketplace.md (draft)", `${REQUEST} (accepted-rfc)`));
+  assert.equal(stages(ctxOf(structural))[3].done, false, "a structural record routes no handoff");
+
+  const rejected = routed({}, ORDER.replace(/```hsdd-handoffs[\s\S]*?```\n/, "```hsdd-handoffs\n{ not json\n```\n"));
+  assert.equal(stages(ctxOf(rejected))[3].done, false, "a block C8 rejects routes no handoff");
+
+  assert.equal(stages(ctxOf(routed()))[3].done, false, "pending handoffs");
+  assert.equal(stages(ctxOf(handedOff()))[3].done, true);
+});

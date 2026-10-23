@@ -111,6 +111,12 @@ test("write sets follow 7.3", () => {
   assert.ok(writeSet("citation-touch", "order-api", ctx).includes("hsdd/contract/fixture/order-api/**"));
   assert.ok(writeSet("citation-touch", "order-api", ctx).includes("hsdd/contract/schema/order-api.schema.json"));
   assert.ok(writeSet("citation-touch", "ADR-003", ctx).includes("hsdd/adr/003-*.md"));
+  // Final review A2: an existing ADR's own file, whatever its name; the glob only for an ADR without a file.
+  const withAdr = { ...ctx, tree: { ...tree, adrs: new Map([["ADR-003", { id: "ADR-003", file: "hsdd/adr/0003-order-ids.md" }]]) } };
+  const adrSet = writeSet("citation-touch", "ADR-003", withAdr);
+  assert.ok(adrSet.includes("hsdd/adr/0003-order-ids.md"), JSON.stringify(adrSet));
+  assert.ok(!adrSet.includes("hsdd/adr/003-*.md"), JSON.stringify(adrSet));
+  assert.ok(writeSet("citation-touch", "ADR-004", withAdr).includes("hsdd/adr/004-*.md"));
   assert.ok(writeSet("citation-touch", "shop.api", ctx).includes("hsdd/spec/shop.api.md"));
   assert.ok(writeSet("citation-touch", "shop.api", ctx).includes("hsdd/adr/INDEX.md"));
   assert.ok(writeSet("setup", "2026-10-22-plan", ctxWith({ orchestrator_files: ["CLAUDE.md"] })).includes("CLAUDE.md"));
