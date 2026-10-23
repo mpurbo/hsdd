@@ -7,13 +7,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Added
-
-- `docs/guide/`: an interactive, offline HTML guide for newcomers. A start
-  page and nine short chapters, from the problem HSDD solves to running a
-  project, using the user's guide's examples, with brownfield adoption and
-  change intake as chapters of their own.
-
 ## [0.11.0] - Unreleased
 
 Unattended planning runs. `hsdd-auto` runs HSDD's planning chain without the
@@ -57,6 +50,10 @@ Specification: `spec/hsdd-spec-v0_11.md`. Settled build decisions:
 - **A Claude Code adapter** (`adapter.mjs install`, `adapter.mjs check`):
   permission deny rules and a Bash hook that keep a run inside its declared
   inputs.
+- `docs/guide/`: an interactive, offline HTML guide for newcomers. A start
+  page and ten short chapters, from the problem HSDD solves to handing
+  planning to an agent, using the user's guide's examples, with brownfield
+  adoption, change intake and unattended runs as chapters of their own.
 - **Test coverage:** script tests for every script and
   `test/auto-e2e.test.mjs`, which drives the scripts through simulated plan,
   stop, procedural-stop, intake, rework and interruption runs.

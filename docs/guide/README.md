@@ -20,15 +20,17 @@ full checkout of this repository.
 | 7 | Route every change | A PRD is never a root: intake classes, promotion, collisions, the mixed tree, the legal bypass. |
 | 8 | Evidence and milestones | Roles, the weekly checkpoint, evidence up and work down, milestones. |
 | 9 | Get started | The skill map, install and first prompts, what HSDD claims and does not. |
+| 10 | Run unattended | `hsdd-auto`: who does what in a run, the two modes, the decision record, the stop policy, and reviewing a segment in one sitting. |
 
 Each chapter is a few steps. Every step pairs an explanation with an
 interactive illustration: a tree to unfold, an edge type to change, a phase
 to size, a verification doc to sign, an as-built spec to read region by
-region, a change request to route.
+region, a change request to route, a stop policy to switch.
 
 ## Controls
 
-- `←` `→` step through; `0`–`9` jump to a chapter.
+- `←` `→` step through; `0`–`9` jump to chapters 0 to 9 (chapter 10 is
+  reached from the contents or by stepping).
 - `G` opens the glossary, `?` the common questions, `T` cycles the theme
   (system, light, dark).
 - Words with a dotted underline open their glossary entry.
@@ -37,8 +39,9 @@ region, a change request to route.
 
 ## Sources
 
-The content follows `spec/hsdd-spec-v0_10.md` and `docs/users-guide.md`.
-The examples are the user's guide's own: `linkcheck` (single level), `acme`
+The content follows `spec/hsdd-spec-v0_10.md` and `docs/users-guide.md`;
+chapter 10 follows the v0.11 delta, `spec/hsdd-spec-v0_11.md`. The examples
+are the user's guide's own: `linkcheck` (single level), `acme`
 (multi-level, greenfield) and `legacy-pay` (brownfield). Node headers,
 dates, ticket names and milestone dates are illustrations, not a real
 project. Every step's "Go deeper" line links the spec section or user's
@@ -46,7 +49,8 @@ guide passage it summarizes.
 
 When the specification changes, update the affected step and check its
 "Go deeper" anchors; the spec's file name carries its version, so a new
-version also means updating the `SPEC` constant in `guide.js`.
+version also means updating the `SPEC` constant in `guide.js` (and
+`SPEC11` for chapter 10, while v0.11 stays a delta).
 
 ## How it is built
 

@@ -222,8 +222,8 @@ timer. See the [v0.11 specification](spec/hsdd-spec-v0_11.md).
 
 - [Interactive guide](docs/guide/index.html): a visual, step-by-step
   introduction for newcomers, from the tree and contracts to brownfield
-  adoption and change intake. Open it in a browser from a checkout; it works
-  offline.
+  adoption, change intake and unattended runs. Open it in a browser from a
+  checkout; it works offline.
 - [Methodology specification](spec/hsdd-spec-v0_10.md): the single current
   specification, with the full model and every settled decision and its
   provenance. The superseded delta series
