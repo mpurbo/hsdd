@@ -13,7 +13,8 @@ Every `Result:` is filled by the owner's run, never by the builder.
 
 ## Preface: what has and has not run
 
-The builder ran no live acceptance. The script-level evidence is
+The builder ran one smoke run of run 1 (see the section after this
+preface) and no other live run. The script-level evidence is
 `test/auto-e2e.test.mjs`, which drives every script through its CLI as the
 orchestrator drives it, with a scripted stand-in for each step subagent. It
 covers seven scenarios:
@@ -33,6 +34,20 @@ host, and the cost needs real token usage. The stand-ins prove the scripts
 and the loop; they say nothing about whether a real subagent decides well.
 The owner runs these cold.
 
+## Builder's smoke run (not a substitute for the runs below)
+
+On 2026-10-23 the builder ran run 1 (plan, decide-and-record) once against a scratch sandbox: a fresh repository holding a three-section specification for a notes library and command-line tool. The builder's session was the orchestrator, following `skills/hsdd-auto/SKILL.md`; each subagent step was a fresh general-purpose subagent. Two harness deviations, neither part of hsdd-auto: the session's working directory was this repository, so each launch prompt carried one extra line naming the sandbox root; and the host's Skill tool could not load the HSDD skills in that session, so each dispatch carried one cited context line telling the step to read the skill's `SKILL.md` by path.
+
+What it showed:
+
+- The run reached `DONE` with a clean tree: 13 steps (9 by subagents), 26 commits (two per step, including an empty artifact commit for an align that changed nothing), 41 decisions with `ledger.mjs validate` clean (every decision inside its step window), all 13 dispatch files committed, and the report's prose slots filled. The tree: a root with two leaf-parents (three and four phases), one ADR, one contract that reached `stable` with `phase_ids: final` and replayable fixtures, two experiments.
+- One subagent was lost mid-launch to a host network error. `state.mjs` showed the step open with no report and no artifact commit; `dispatch.mjs --redispatch` recorded the launch, listed the fourteen files the lost launch had changed and drew a new read check; the fresh subagent verified the partial work and finished the step (run 6's first case, met for real).
+- The routing paths worked: a reviewed finding routed as a `must-address` item became a `spec-touch` in the consistency stage; a `consider` item on `run` was closed through a `--plan --for close` step; `next.mjs` ordered a reconcile before the next phase plan.
+- Steps disclosed their own slips in `reads_outside` (reading the run's own scripts to learn the gate's rules; a heading grep that showed three of a sibling's phase headings), and one step corrected a fact the orchestrator had typed into a routed item (a wrong guarantee number) by checking the contract. Each was recorded as a decision.
+- One defect was found and fixed: a rendered invocation could end in a doubled period.
+
+Not exercised: the `stop` policy, case A and case C stops, intake, rework to `gate-twice`, host enforcement in a later session, and the cost measurement. Runs 2 to 8 below remain the owner's.
+
 ## 1. Plan, decide-and-record
 
 ### Setup
@@ -50,15 +65,15 @@ questions, then `/hsdd-auto --stop-policy decide-and-record` plans the tree.
   prints nothing apart from the owner files.
 - `git log --oneline` shows two commits per step: an artifact commit, then
   a judgement commit.
-- `node hsdd/scripts/auto/ledger.mjs validate` exits 0. Every decision
-  carries an `at` stamp inside its step's window and an id minted by
-  `decide.mjs`, with no gap in the ids.
+- `node hsdd/scripts/auto/ledger.mjs validate` exits 0 and prints no gap
+  warning. Every decision carries an `at` stamp inside its step's window and
+  an id minted by `decide.mjs`.
 - Every step has a committed `hsdd/auto/dispatch/{step}.md`.
-- `hsdd/auto/report/{segment id}.md` has no empty prose slot, and lists the
-  `would_have_asked` decisions first.
-- `node hsdd/scripts/auto/state.mjs` shows `hsdd/scripts/auto/` as an exact
-  copy of the skill's scripts (`diff -r skills/hsdd-auto/scripts
-  hsdd/scripts/auto` prints nothing).
+- `hsdd/auto/report/{segment id}.md` has no empty prose slot, and the
+  report's "Decisions to look at first" section lists every answer the run
+  gave on your behalf (the `would_have_asked` decisions).
+- `diff -r {skills_dir}/hsdd-auto/scripts hsdd/scripts/auto` prints nothing
+  (gate check A3 verifies the same at every commit).
 
 Result:
 

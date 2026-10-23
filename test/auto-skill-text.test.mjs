@@ -286,6 +286,8 @@ test("SKILL.md states the waiting rule and the binding controller rules", () => 
     // Final review B1: run.yaml on a branch that is not checked out is no first run.
     /Only when `hsdd\/auto\/run\.yaml` is missing and `state\.mjs defaults` prints an empty `run_branches`/,
     /An empty `run_branches` means First run/,
+    // Final review C3: the adapter outlives the run.
+    /the adapter stays installed after the run: `node hsdd\/scripts\/auto\/adapter\.mjs uninstall` removes exactly what install added/,
   ]) assert.match(text, re);
 });
 

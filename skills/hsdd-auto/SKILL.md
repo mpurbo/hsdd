@@ -715,8 +715,11 @@ End with one message to the owner: the report's path, the number of steps
 and decisions, the `would_have_asked` decisions by id, the
 next-host-session decision by id when the segment recorded one (host
 enforcement starts with the next host session), whether anything stopped,
-the output of `state.mjs done`, and a reminder that `/hsdd-summary`
-re-renders the reading aids, which the run does not drive.
+the output of `state.mjs done`, a reminder that `/hsdd-summary`
+re-renders the reading aids, which the run does not drive, and that the
+adapter stays installed after the run:
+`node hsdd/scripts/auto/adapter.mjs uninstall` removes exactly what install
+added.
 
 **Every ending.** However the session ends (`done`, a case A stop,
 `blocked`, a hard stop, an owner's request to stop), run

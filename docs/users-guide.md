@@ -1109,17 +1109,20 @@ never implements a phase, never runs `hsdd-config` and never passes a review
 gate. Start it from a clean working tree in the repository that holds
 `hsdd/`, with Node.js 20 or later and the six planning skills installed.
 
-**First run.** With no `hsdd/auto/run.yaml`, `/hsdd-auto` asks ten questions
-in one batch, each with a proposed default: the run's name, root, branch,
-base and skills directory; who builds what; the sources; read-only and
-out-of-bounds paths; owner facts; toolchain prefixes; stop policy and stop
-set; owner files; prose rules; commit trailers. The proposals come from
+**First run.** With no `hsdd/auto/run.yaml` on any local branch,
+`/hsdd-auto` asks ten questions in one batch, each with a proposed default:
+the run's name, root, branch, base and skills directory; who builds what;
+the sources; read-only and out-of-bounds paths; owner facts; toolchain
+prefixes; stop policy and stop set; owner files; prose rules; commit
+trailers. The proposals come from
 `node hsdd/scripts/auto/state.mjs defaults` plus the root spec's
 `## Sources`, `hsdd/conventions.md` and your agent instruction files. It
 writes the answers to `hsdd/auto/run.yaml` and never asks again. Answer
 "decide" to who builds what and the root step decides the axis itself and
 records it with `would_have_asked: true`. Later configuration changes are
-`setup` decisions of a new segment.
+`setup` decisions of a new segment. `run.yaml` lives on the run branch: run
+`/hsdd-auto` from another branch and it names the branch that holds the file
+and asks you to check it out, instead of asking the questions again.
 
 **A plan segment.** `/hsdd-auto` plans an empty tree through reconcile: the
 root decomposition, the ADRs and contracts it names, each mid-level node,
@@ -1153,23 +1156,26 @@ with it.
 
 **Reviewing a segment.** Review moves from each ask point to one sitting.
 
-1. Read `hsdd/auto/report/{segment id}.md`. It lists first every answer the
-   run gave on your behalf (the `would_have_asked` decisions), then the
-   steps, the assumptions about your intent and what the generated record
-   leaves out.
+1. Read `hsdd/auto/report/{segment id}.md`. The report's "Decisions to look
+   at first" section lists every answer the run gave on your behalf (the
+   `would_have_asked` decisions); the other sections cover the steps, the
+   assumptions about your intent and what the generated record leaves out.
 2. For each decision you disagree with, or that the run should have asked
    you, append a line to `hsdd/judgement/decision-reviews.jsonl`:
    `decision`, `at`, `review` (`agree`, `disagree` or `should-have-asked`)
    and a `reason` for the last two. The run never writes this file.
-3. A decision you reverse is a change request: route it with
-   `/hsdd-auto intake`, or run the owning skill yourself.
+3. Guidance: to reverse a decision, write the reversal as a short request
+   document and route it with `/hsdd-auto intake {path}`, or run the owning
+   skill yourself.
 4. `/hsdd-summary` re-renders the reading aids afterwards; the run does not
    drive it.
 
 On Claude Code, the first `setup` installs permission deny rules and a Bash
 hook that keep a run inside its declared inputs. Hosts read them at session
 start, so they apply from the next session; the setup records that as a
-decision. For the strongest memory isolation, start the session with
+decision. The adapter stays installed after the run:
+`node hsdd/scripts/auto/adapter.mjs uninstall` removes exactly what install
+added. For the strongest memory isolation, start the session with
 `CLAUDE_CONFIG_DIR` set to a directory used only for the run.
 
 ### Open questions

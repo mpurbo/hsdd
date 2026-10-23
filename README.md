@@ -200,9 +200,9 @@ decides it and records the decision with `would_have_asked: true`. Everything
 lands in `hsdd/auto/` (plan, dispatch files, step reports, one report per
 segment) and `hsdd/judgement/` (the decision ledger, the run log, your
 `decision-reviews.jsonl`). Human review moves from each ask point to one
-sitting over the ledger: the segment's report lists every answer the run gave
-on your behalf first. Nothing starts a run on a timer. See the
-[v0.11 specification](spec/hsdd-spec-v0_11.md).
+sitting over the ledger: the report's "Decisions to look at first" section
+lists every answer the run gave on your behalf. Nothing starts a run on a
+timer. See the [v0.11 specification](spec/hsdd-spec-v0_11.md).
 
 ## Quickstart
 

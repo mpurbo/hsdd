@@ -56,7 +56,7 @@ test("every step template carries the C.1 skeleton and its C.3 text", () => {
     const doneBlock = between("### Done when\n", "\n- Your report validates");
     assert.equal(flat(doneBlock), `- ${cap(done)}`, `${k}: Done when block`);
     assert.ok(!t.includes("{default_invocation}"), k);
-    assert.ok(!t.includes("—"), `${k}: em dash`);
+    assert.ok(!t.includes("\u2014"), `${k}: em dash`);
   }
 });
 
@@ -99,7 +99,7 @@ test("report templates carry the ten items in order", () => {
     const pos = common.map((n) => at(t, n));
     assert.deepEqual(pos, [...pos].sort((a, b) => a - b), m);
     assert.ok(t.startsWith("# {report_title}\n"), m);
-    assert.ok(!t.includes("—"), m);
+    assert.ok(!t.includes("\u2014"), m);
     assert.equal((t.match(/<!-- slot:/g) ?? []).length, (t.match(/<!-- \/slot -->/g) ?? []).length, m);
     assert.ok(t.includes("decision-reviews.jsonl"), m);
   }
