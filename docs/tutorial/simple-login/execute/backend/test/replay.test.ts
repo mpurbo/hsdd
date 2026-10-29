@@ -2,8 +2,16 @@ import { mkdtempSync, readdirSync, writeFileSync, copyFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
+import Fastify from "fastify";
 import { describe, expect, it } from "vitest";
-import { type ContractSlug, loadFixtures, responseValidator } from "./replay.ts";
+import {
+  type ContractSlug,
+  type PlaceholderHooks,
+  fillHeaders,
+  loadFixtures,
+  replayFixture,
+  responseValidator,
+} from "./replay.ts";
 
 const SLUGS: ContractSlug[] = ["auth-api", "profile-api"];
 const fixtureDir = (slug: ContractSlug) =>
@@ -38,5 +46,57 @@ describe("contract fixtures and schemas", () => {
     copyFileSync(join(fixtureDir("auth-api"), "login-success.json"), join(dir, "login-success.json"));
     writeFileSync(join(dir, "README.md"), "# notes\n");
     expect(loadFixtures("auth-api", dir).map((f) => f.name)).toEqual(["login-success"]);
+  });
+});
+
+describe("placeholders and replay modes", () => {
+  const hooks: PlaceholderHooks = {
+    token: async (username) => `T-${username}`,
+    expiredToken: async (username) => `X-${username}`,
+  };
+
+  /** A throwaway app that answers every request with one fixed response. */
+  const echo = async (response: { status: number; body: unknown }) => {
+    const app = Fastify();
+    app.route({ method: ["GET", "POST"], url: "/*", handler: (_req, reply) => reply.code(response.status).send(response.body) });
+    await app.ready();
+    return app;
+  };
+
+  it("fills token and expired-token placeholders through the hooks", async () => {
+    await expect(fillHeaders({ authorization: "Bearer {{token:ayu}}" }, hooks)).resolves.toEqual({
+      authorization: "Bearer T-ayu",
+    });
+    await expect(fillHeaders({ authorization: "Bearer {{expired-token:ayu}}" }, hooks)).resolves.toEqual({
+      authorization: "Bearer X-ayu",
+    });
+  });
+
+  for (const slug of SLUGS) {
+    it(`${slug}: every fixture reproduces against an app that returns it`, async () => {
+      for (const fixture of loadFixtures(slug)) {
+        const app = await echo(fixture.response);
+        await expect(replayFixture(app, slug, fixture, hooks)).resolves.toEqual([]);
+        await app.close();
+      }
+    });
+  }
+
+  it("reports an exact fixture whose real body differs, naming the fixture", async () => {
+    const [fixture] = loadFixtures("profile-api").filter((f) => f.name === "me-ayu");
+    const app = await echo({ status: 200, body: { ...(fixture!.response.body as object), displayName: "Someone Else" } });
+    const problems = await replayFixture(app, "profile-api", fixture!, hooks);
+    expect(problems).toHaveLength(1);
+    expect(problems[0]).toContain("me-ayu");
+    await app.close();
+  });
+
+  it("turns a placeholder the hooks cannot fill into a problem, without throwing", async () => {
+    const [fixture] = loadFixtures("profile-api").filter((f) => f.name === "me-budi");
+    const app = await echo(fixture!.response);
+    const failing: PlaceholderHooks = { ...hooks, token: async (u) => Promise.reject(new Error(`no account ${u}`)) };
+    const problems = await replayFixture(app, "profile-api", fixture!, failing);
+    expect(problems).toEqual([expect.stringContaining("me-budi")]);
+    await app.close();
   });
 });
