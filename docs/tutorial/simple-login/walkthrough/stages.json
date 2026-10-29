@@ -5,5 +5,9 @@
   "contracts": "78a16b7",
   "plan": "4b29815",
   "reconcile": "c28b097",
-  "context": "67865d4"
+  "context": "67865d4",
+  "lanes": "59f82ac",
+  "gate": "59f82ac",
+  "integrate": "HEAD",
+  "worth": "HEAD"
 }

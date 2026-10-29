@@ -387,7 +387,7 @@ dialog::backdrop { background: rgba(12, 19, 34, 0.45); }
 .axis div { display: flex; justify-content: space-between; }
 
 /* ---------- responsive ---------- */
-@media (max-width: 1280px) {
+@media (max-width: 1599px) {
   .shell { grid-template-columns: 220px minmax(0, 1fr); }
   .repo { display: none; }
   .repo.open {
