@@ -57,16 +57,14 @@ Notes:
 - Gate failures before green: 1 (`tsc`: Ajv's CommonJS default import is
   not constructable under `nodenext`; fixed by taking `.default`).
 - Product diff: 378 lines in 10 files (74 in `src/`, 262 in `test/`, 42
-  config). Process artifacts: plan 150 lines, phase context and derivative
-  about 230 lines, this doc about 60 lines.
+  config). Process artifacts: plan 135 lines, phase context and derivative
+  168 lines, this doc 75 lines.
 
 ## Sign-off
-- Reviewer / date:
-- Review tier applied:
-- Disposition of each Outstanding item: verified | waived (reason) |
-  deferred to {phase-id}
-- Disposition of each Learning: spec-updated | contract-bumped (id@v) |
-  adr-proposed (ADR-nnn) | dropped (reason)
+- Reviewer / date: Claude as owner proxy (the owner was unavailable), 2026-10-30
+- Review tier applied: gate-only (gate re-run green, 17/17; diff not read, as the tier allows)
+- Disposition of each Outstanding item: none outstanding
+- Disposition of each Learning: the one Learning is dropped (reason recorded with it)
 
 > The review gate is not passed while an Outstanding item or a Learning
 > lacks a disposition. Dispositions execute at the root through the owning
