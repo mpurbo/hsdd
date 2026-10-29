@@ -62,3 +62,8 @@ export async function signIn(page: Page, username: string, password: string): Pr
   await page.getByLabel("Password").fill(password);
   await page.getByRole("button", { name: "Sign in" }).click();
 }
+
+/** Presses Sign out on the Home screen. */
+export async function signOut(page: Page): Promise<void> {
+  await page.getByRole("button", { name: "Sign out" }).click();
+}
