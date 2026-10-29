@@ -1,13 +1,13 @@
 ---
 id: auth-api
 version: v1
-status: draft
+status: stable
 kind: api
 owner: simple-login.backend
 compatibility: versioned
-produced_by: [simple-login.backend.1]
-consumers: [simple-login.web.1, simple-login.integration.1]
-phase_ids: provisional
+produced_by: [simple-login.backend.2]
+consumers: [simple-login.web.1, simple-login.web.2, simple-login.integration.1]
+phase_ids: final
 ---
 
 # Contract: auth-api
@@ -39,6 +39,10 @@ Responses (all bodies JSON):
 - Error envelope: `{ "error": { "code": string, "message": string } }`, no
   other fields.
 
+Development address: the service listens on `http://127.0.0.1:3000`; the
+`PORT` environment variable overrides the port. A dev proxy or a test
+targets this address, not `localhost`.
+
 ## Guarantees / invariants
 
 - `expiresAt` is exactly 30 minutes after the moment the token was issued
@@ -47,13 +51,18 @@ Responses (all bodies JSON):
   `expiresAt`, and rejected after it.
 - An unknown username and a wrong password give the same status, the same
   body, byte for byte.
+- Usernames match exactly: case-sensitive, with no trimming. `Ayu` and
+  `ayu ` are unknown usernames. Clients send what the user typed.
 - The token is opaque: consumers store it and send it back, never parse it.
 - No response contains the password or a password hash.
 - Consumers branch on `error.code`, never on `error.message`.
 
 ## Versioning
 
-- v1 current. Breaking changes require v2 and a migration note here; v1
+- v1 current. 2026-10-29: the development address and the exact-match
+  username rule were added by hsdd-reconcile from the phase plans; both are
+  compatible additions, so the version stays v1.
+- Breaking changes require v2 and a migration note here; v1
   stays until every consumer migrates.
 
 ## Validation

@@ -33,7 +33,7 @@ directory holding `hsdd/`).
 
 - **Consumes:** [auth-api@v1, profile-api@v1]
 - **Produces:** none
-- **Scope:** the root `package.json`: `install:all` (installs `backend/` and `web/`), `dev` (starts the real backend and the web dev server together, and Ctrl-C stops both; a small Node script, no extra dependency), and `test` (backend gate, backend replay, web gate, then `e2e`); a Playwright suite (Chromium, or the installed Chrome) whose `webServer` starts the real backend and the real web dev server; browser tests for AC-1.1, AC-1.2, AC-1.3, AC-2.1, AC-2.2, AC-2.3 (seeded with a token the backend never issued, which profile-api@v1 guarantees answers like an expired one), AC-3.1, and the PRD's success metric (Home within 3 seconds of Sign in); a contract replay through the dev proxy: every `exact` fixture request sent to the web dev server's `/api` gets the fixture's response, with tokens from real sign-ins; a `README.md` with the run instructions and the demo accounts. The backend's development address follows the assumption in the `request` below.
+- **Scope:** the root `package.json`: `install:all` (installs `backend/` and `web/`), `dev` (starts the real backend and the web dev server together, and Ctrl-C stops both; a small Node script, no extra dependency), and `test` (backend gate, backend replay, web gate, then `e2e`); a Playwright suite (Chromium, or the installed Chrome) whose `webServer` starts the real backend and the real web dev server; browser tests for AC-1.1, AC-1.2, AC-1.3, AC-2.1, AC-2.2, AC-2.3 (seeded with a token the backend never issued, which profile-api@v1 guarantees answers like an expired one), AC-3.1, and the PRD's success metric (Home within 3 seconds of Sign in); a contract replay through the dev proxy: every `exact` fixture request sent to the web dev server's `/api` gets the fixture's response, with tokens from real sign-ins; a `README.md` with the run instructions and the demo accounts. The backend's development address is `http://127.0.0.1:3000` (auth-api@v1).
 - **Size estimate:** ~6 files (~280 lines), <= 6 OpenSpec tasks
 - **Gate:** `npm test`
 - **Verification:** from a fresh clone, `npm run install:all && npm run dev`, open `http://localhost:5173`, sign in as `ayu`, see the profile, reload, still signed in, sign out; then the same with a wrong password.
@@ -59,11 +59,4 @@ flowchart TD
 
 ## Governance updates (pending reconcile)
 
-> Emitted by hsdd-phase-plan on 2026-10-29. Drained by hsdd-reconcile;
-> do not apply by hand.
-
-- confirm `auth-api@v1` consumers: [simple-login.integration.1]
-- confirm `profile-api@v1` consumers: [simple-login.integration.1]
-- request `auth-api@v1`: what is the service's development address? The browser test has to start the service and wait for it.
-  - assumption: `http://localhost:3000` (the RFC §1 diagram)
-  - contingent phases: none
+> Reconciled 2026-10-29 by hsdd-reconcile. Drained entries are in git history.

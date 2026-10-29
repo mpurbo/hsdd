@@ -1,13 +1,13 @@
 ---
 id: profile-api
 version: v1
-status: draft
+status: stable
 kind: api
 owner: simple-login.backend
 compatibility: versioned
-produced_by: [simple-login.backend.1]
-consumers: [simple-login.web.1, simple-login.integration.1]
-phase_ids: provisional
+produced_by: [simple-login.backend.2]
+consumers: [simple-login.web.1, simple-login.web.3, simple-login.integration.1]
+phase_ids: final
 ---
 
 # Contract: profile-api
@@ -41,6 +41,9 @@ The profile:
 - Error envelope: `{ "error": { "code": string, "message": string } }`, no
   other fields.
 
+Development address: the same process as `auth-api@v1`,
+`http://127.0.0.1:3000`, with `PORT` overriding the port.
+
 ## Guarantees / invariants
 
 - The profile has exactly the five fields above; it never contains a
@@ -52,7 +55,10 @@ The profile:
 
 ## Versioning
 
-- v1 current. Breaking changes require v2 and a migration note here; v1
+- v1 current. 2026-10-29: the development address was added by
+  hsdd-reconcile from the phase plans; a compatible addition, so the
+  version stays v1.
+- Breaking changes require v2 and a migration note here; v1
   stays until every consumer migrates.
 
 ## Validation

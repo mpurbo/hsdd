@@ -214,3 +214,53 @@ Nothing here was staged. The development address really is missing from
 both contracts (the API Interface says paths, not where the service runs),
 and the web planner, reading only the RFC diagram, really would assume
 `localhost`.
+
+Commit `4b29815`.
+
+## Step 5: Drain the governance updates (hsdd-reconcile)
+
+**Prompt:** "Reconcile the phase plans: drain the pending governance
+updates."
+
+Reconcile is the single writer of governance after planning. It runs once,
+at the root, after every planning branch has merged.
+
+1. **Scan.** Three pending sections: backend (2 confirms, 3 amends), web
+   (2 confirms, 2 requests), integration (2 confirms, 1 request).
+2. **Group by contract and look for collisions before applying anything.**
+   - auth-api@v1, development address: the backend's `amend` says
+     `http://127.0.0.1:3000`; the web and integration `request`s assumed
+     `http://localhost:3000`. That is a collision (a request assumption
+     that conflicts with another node's entry), so it goes to the human,
+     with both sides quoted. **[owner proxy]** Decided for
+     `127.0.0.1`: the backend binds that address only (backend D2), and
+     `localhost` may resolve to the IPv6 `::1` first, which would make a
+     proxy pointed at `localhost` fail in a way that is slow to diagnose.
+     The losing plans were updated to match: web.1's and integration.1's
+     Scope lines now name `http://127.0.0.1:3000`.
+   - auth-api@v1, username matching: the web `request` ("is matching
+     case-sensitive; should a client trim?") is answered by the backend's
+     `amend` (exact match, no trimming). The web's assumption ("send it as
+     typed") held. No collision, and web.2's Scope now cites the contract
+     instead of an assumption.
+3. **Applied the confirms.** auth-api@v1: `produced_by:
+   [simple-login.backend.2]`, `consumers: [simple-login.web.1,
+   simple-login.web.2, simple-login.integration.1]`. profile-api@v1: the
+   same producer; consumers web.1, web.3, integration.1. Both sides
+   confirmed, so `phase_ids: provisional` became `final`.
+4. **Applied the answers and amends to the contract bodies.** A
+   "Development address" paragraph in both Interfaces, and an exact-match
+   guarantee in auth-api@v1. Both are compatible additions, so the version
+   stays `v1`; the Versioning section records the change.
+5. **Flipped status.** `phase_ids: final`, no open request, and the schema
+   and fixtures exist on disk, so both contracts went `draft` to `stable`.
+   From now on, any phase may build against them.
+6. **Stamped each drained section** with one line, regenerated the
+   registries, and found no open question to sweep (OQ1 is untouched).
+
+**Why this matters for the tutorial.** Three planners, working from the
+same frozen snapshot without seeing each other, found the same gap (where
+the service runs) and two of them guessed differently from the third. In a
+single-spec workflow that disagreement surfaces at integration time as a
+proxy that cannot connect. Here it surfaced as one line in a reconcile
+report, before any code.

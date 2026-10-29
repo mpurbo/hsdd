@@ -56,7 +56,7 @@ holding `hsdd/`).
 - **Consumes:** [auth-api@v1, profile-api@v1]
 - **Produces:** none
 - **Governed by:** [ADR-001]
-- **Scope:** the `web/` package (React 19, TypeScript, Vite, Vitest with jsdom and Testing Library; `npm run gate` = `tsc --noEmit`, then `vitest run`, then `vite build`); the Vite dev proxy from `/api` to the backend's development address (assumption, see the `request` below); the API client, `signIn(username, password)` and `fetchProfile(token)`, returning a result value (a session or a profile, or a failure reason: `invalid-credentials`, `invalid-input`, `unauthorized`, `unavailable`) decided by status and `error.code`, never by message; the session store over `sessionStorage` (D2); a test helper that answers stubbed `fetch` calls with the auth-api and profile-api fixture responses; a placeholder `App`.
+- **Scope:** the `web/` package (React 19, TypeScript, Vite, Vitest with jsdom and Testing Library; `npm run gate` = `tsc --noEmit`, then `vitest run`, then `vite build`); the Vite dev proxy from `/api` to the backend's development address, `http://127.0.0.1:3000` (auth-api@v1); the API client, `signIn(username, password)` and `fetchProfile(token)`, returning a result value (a session or a profile, or a failure reason: `invalid-credentials`, `invalid-input`, `unauthorized`, `unavailable`) decided by status and `error.code`, never by message; the session store over `sessionStorage` (D2); a test helper that answers stubbed `fetch` calls with the auth-api and profile-api fixture responses; a placeholder `App`.
 - **Size estimate:** ~10 files (~300 lines), <= 6 OpenSpec tasks
 - **Gate:** `npm --prefix web run gate`
 - **Verification:** the client's tests feed every one of the ten fixtures through the stub and get the right result; `npm --prefix web run dev` serves the placeholder page.
@@ -68,7 +68,7 @@ holding `hsdd/`).
 - **Consumes:** [auth-api@v1]
 - **Produces:** none
 - **Governed by:** [ADR-001]
-- **Scope:** the Login screen per the PRD wireframe: username and password fields, a Sign in button disabled while either field is empty (AC-1.3), busy while the request is in flight; on success it hands the session to its parent (AC-1.1); on `invalid-credentials` it shows the AC-1.2 message and keeps the typed username; on `unavailable` the D3 network message; it also shows a notice its parent passes in (phase 3 uses it for the expiry message). The username is sent as typed (assumption, see the `request` below). Its own stylesheet.
+- **Scope:** the Login screen per the PRD wireframe: username and password fields, a Sign in button disabled while either field is empty (AC-1.3), busy while the request is in flight; on success it hands the session to its parent (AC-1.1); on `invalid-credentials` it shows the AC-1.2 message and keeps the typed username; on `unavailable` the D3 network message; it also shows a notice its parent passes in (phase 3 uses it for the expiry message). The username is sent as typed (auth-api@v1 matches it exactly). Its own stylesheet.
 - **Size estimate:** ~4 files (~220 lines), <= 5 OpenSpec tasks
 - **Gate:** `npm --prefix web run gate`
 - **Verification:** component tests cover AC-1.1 to AC-1.3 against the auth-api fixtures; the screen matches the PRD wireframe.
@@ -110,15 +110,4 @@ flowchart TD
 
 ## Governance updates (pending reconcile)
 
-> Emitted by hsdd-phase-plan on 2026-10-29. Drained by hsdd-reconcile;
-> do not apply by hand.
-
-- confirm `auth-api@v1` consumers: [simple-login.web.1, simple-login.web.2]
-- confirm `profile-api@v1` consumers: [simple-login.web.1, simple-login.web.3]
-- request `auth-api@v1`: where does the service listen in development? The dev proxy needs the address and neither contract states it.
-  - assumption: `http://localhost:3000` (the RFC §1 diagram)
-  - contingent phases: none
-  - profile-api@v1 is served by the same process; one answer covers both.
-- request `auth-api@v1`: is username matching case-sensitive, and should a client trim or lowercase what the user typed?
-  - assumption: the client sends the username exactly as typed
-  - contingent phases: none
+> Reconciled 2026-10-29 by hsdd-reconcile. Drained entries are in git history.

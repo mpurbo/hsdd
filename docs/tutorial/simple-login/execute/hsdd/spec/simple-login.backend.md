@@ -97,13 +97,4 @@ flowchart TD
 
 ## Governance updates (pending reconcile)
 
-> Emitted by hsdd-phase-plan on 2026-10-29. Drained by hsdd-reconcile;
-> do not apply by hand.
-
-- confirm `auth-api@v1` produced_by: [simple-login.backend.2]
-- confirm `profile-api@v1` produced_by: [simple-login.backend.2]
-- amend `auth-api@v1`: username matching is exact: case-sensitive, no trimming of whitespace (D1).
-  - consumers may rely on it: `Ayu` and `ayu ` both get 401 `INVALID_CREDENTIALS`. Backward-compatible: it narrows nothing the contract allowed.
-- amend `auth-api@v1`: in development the service listens on `http://127.0.0.1:3000`; the `PORT` environment variable overrides the port (D2).
-  - consumers need it to point a dev proxy or a test at the service; additive.
-- amend `profile-api@v1`: the same development address as `auth-api@v1` (D2).
+> Reconciled 2026-10-29 by hsdd-reconcile. Drained entries are in git history.
