@@ -436,3 +436,71 @@ prescribes:
 - **Review gate [owner proxy]:** full-review: the diff read twice (author
   and fresh reviewer), the manual check run, the edge cases confirmed.
   Signed off.
+
+### The web lane: simple-login.web.1 to web.3, 23:54 to 00:47 WIB
+
+Run by a separate agent in its own git worktree. Its brief named the three
+derivative files as its only specification and listed what it must not
+open (the backend's spec and code, the integration plan). It followed the
+same sequence: writing-plans, Plan check, executing-plans with TDD, gate,
+verification doc, and one fresh reviewer per phase.
+
+| Phase | Tier | Wall-clock | Tasks | Tests after | Product lines (src + test + config) | Process lines (plan + verification doc) |
+|-------|------|------------|------:|------------:|-------------------------------------|------------------------------------------|
+| web.1 | spot-check | 23:54 to 00:15 | 5 | 35 | 604 (182 + 344 + 78) | 488 |
+| web.2 | spot-check | 00:15 to 00:31 | 5 | 51 | 385 (188 + 197) | 439 |
+| web.3 | full-review | 00:31 to 00:47 | 6 | 79 | 456 (245 + 211) | 570 |
+
+**The contract edge, in practice.** web.1 finished at 00:15, before the
+backend had a single route (backend.2's routes landed at 00:04 on a
+different branch the web agent never saw). The web app's only knowledge
+of the backend was the two contracts and their fixtures; its fetch stub
+answers each request with the fixture for that method and path.
+
+**What went wrong, and was caught:**
+
+- The worktree was cut from `main`, not from `feat/tutorial`, so it had no
+  `docs/tutorial/`. The agent's attempt to fast-forward its branch was
+  refused by the session's permission classifier, so it restored the
+  tutorial inputs into its working tree, untracked, and committed only
+  what it created. It checked that the 34 restored governance files were
+  byte-identical to `feat/tutorial`. The lane was merged with a merge
+  commit (`3894bc0`); the two lanes touched disjoint paths, so the merge
+  was clean by construction.
+- Vite rewrites `new URL(literal, import.meta.url)` into an asset URL,
+  which broke the fixture loader in tests; switched to `node:path`.
+- user-event and Testing Library's async helpers hang under Vitest fake
+  timers; the busy-state tests fake the clock only while the request is in
+  flight.
+- **Reviews:** web.1's reviewer found no request timeout (a hung backend
+  would leave the form busy forever); re-graded to Important and fixed
+  test-first with a 10-second abort. web.2's reviewer found that iOS
+  capitalizes the first letter of the username field, and auth-api@v1
+  matches usernames exactly, so `ayu` typed on a phone would fail; fixed
+  with `autocapitalize="none"`. That second one is the exact-match `amend`
+  from reconcile paying off in a place nobody planned for.
+
+**Learnings that changed the tree (dispositions executed at the root by
+the owner proxy at the gate):**
+
+- web.2: D3 named no message for `invalid-input`. `spec-updated`: D3 now
+  says it shows the AC-1.2 message.
+- web.3: the spec was silent on a network failure while checking a stored
+  session. `spec-updated`: new D5 (keep the session, show Login with the
+  network message, retry on the next load); the Overview sentence gained
+  the exception.
+- web.3: auth-api@v1 says "characters" without defining them. The agent
+  proposed `dropped` (moot with built-in accounts). But the backend's
+  final review had met the same ambiguity from the other side (it counted
+  UTF-16 units and fixed it to code points). Two lanes, one ambiguity:
+  **[owner proxy]** clarified auth-api@v1 through hsdd-contract (a
+  character is a code point, as JSON Schema counts), a compatible change,
+  still v1. The disposition vocabulary has no word for "amended without a
+  bump"; recorded as `dropped`, superseded, with the reason.
+
+**Review gates [owner proxy]:** web.1 and web.2 at spot-check (gate re-run
+in the main checkout after the merge, 79 of 79, build clean); web.3 at
+full-review (the composition and the state machine read in full). The
+real-backend walk was deferred to integration.1, which exists for it. The
+screen-reader passes were waived: there is no assistive technology here;
+they are listed for the owner below.
