@@ -394,3 +394,45 @@ prescribes:
   executing-plans asks for a fresh-reviewer final review; the HSDD tier was
   ruled to govern instead (ledgered), so the fresh reviewer is spent on the
   full-review phases.
+
+### simple-login.backend.2 (full-review), 00:01 to 00:22 WIB
+
+- **Switch:** the context carried both contracts (as `produces`), ADR-001,
+  and the Contract replay discipline line. Spec `7b3e10a`, clean.
+- **Plan:** `docs/superpowers/plans/2026-10-30-simple-login.backend.2.md`,
+  6 tasks under a cap of 7. Full-review tier, so the plan carries design
+  rationale: async scrypt, the dummy hash, `now < expiresAt`, taking raw
+  bodies so every malformed request reaches one parser, the
+  case-insensitive Bearer scheme, logging without headers or bodies.
+- **Tasks:** password verification; the session store; pure parsing of
+  the body and the header; the two routes plus the contract replay; the
+  server entry and log hygiene; the verification doc.
+- **TDD evidence:** the replay test was written before the routes and
+  failed with ten `status 404, expected …` lines; then all ten fixtures
+  reproduced.
+- **Gate:** 70 tests, replay 10 of 10. Manual check with `curl` against
+  the real server on `127.0.0.1:3000`: a token, Ayu's profile, two
+  byte-identical 401 bodies (wrong password, unknown user), 401 with no
+  token, and no password or token in the server log.
+- **Diff:** 525 lines in 14 files (187 source, 334 test). The plan said
+  ~380: the Phase Equivalent counts tests, and a test-first security phase
+  is test-heavy. It still fit one review sitting.
+- **Final review:** a fresh reviewer (the superpowers code-reviewer, on
+  the most capable model) read the whole phase diff, re-ran the gate,
+  booted the server and probed every Review Focus item over real sockets.
+  0 Critical, 0 Important, 6 Minor. Two Minors were re-graded by their
+  effect on a user and fixed test-first: lengths were counted in UTF-16
+  units where the contract says characters (a 40-emoji username got 400
+  instead of 401), and `engines` said Node 24 while `import.meta.main`
+  needs 24.2 (the server would exit silently). Four were deferred and
+  listed.
+- **What went wrong:** backend.1's test "no routes yet" failed once the
+  routes existed; it asserted a phase-1 fact and was replaced (ruling in
+  the ledger).
+- **Learnings (all `dropped`, each with a reason):** the Scope cites
+  node-local D1 and D2, which the switch does not inject (their content
+  reached the session only through the contracts); the size estimate
+  undershot; the two fixed findings.
+- **Review gate [owner proxy]:** full-review: the diff read twice (author
+  and fresh reviewer), the manual check run, the edge cases confirmed.
+  Signed off.
