@@ -50,7 +50,7 @@ the profile moves no paths.
   invoking prompt, not from this file.
 
 ## Coding method
-**Coding method:** openspec
+**Coding method:** superpowers
 
 `openspec` (default) or `superpowers`. Before every phase, hsdd-config writes
 the generic phase context, then the derivative for this method;
