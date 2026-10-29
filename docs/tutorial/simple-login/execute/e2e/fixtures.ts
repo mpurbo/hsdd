@@ -1,7 +1,9 @@
 // The browser suite's shared rig: a real backend process the tests can
 // restart, and the PRD's own words as selectors.
 import { type ChildProcess, spawn } from "node:child_process";
+import { readFileSync, readdirSync } from "node:fs";
 import { connect } from "node:net";
+import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { test as base, expect, type Page } from "@playwright/test";
 
@@ -67,4 +69,24 @@ export async function signIn(page: Page, username: string, password: string): Pr
 /** Presses Sign out on the Home screen. */
 export async function signOut(page: Page): Promise<void> {
   await page.getByRole("button", { name: "Sign out" }).click();
+}
+
+/** A contract fixture: one request and the response it must get. */
+export type Fixture = {
+  name: string;
+  request: { method: string; path: string; headers: Record<string, string>; body?: unknown };
+  response: { status: number; body: unknown };
+  replay: "exact" | "schema";
+};
+
+/** Every `exact` fixture of the two contracts this node consumes. */
+export function loadExactFixtures(): Array<{ slug: string; fixture: Fixture }> {
+  return ["auth-api", "profile-api"].flatMap((slug) => {
+    const dir = join(ROOT, "hsdd", "contract", "fixture", slug);
+    return readdirSync(dir)
+      .filter((file) => file.endsWith(".json"))
+      .sort()
+      .map((file) => ({ slug, fixture: JSON.parse(readFileSync(join(dir, file), "utf8")) as Fixture }))
+      .filter(({ fixture }) => fixture.replay === "exact");
+  });
 }
