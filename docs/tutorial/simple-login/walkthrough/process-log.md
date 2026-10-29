@@ -451,11 +451,12 @@ verification doc, and one fresh reviewer per phase.
 | web.2 | spot-check | 00:15 to 00:31 | 5 | 51 | 385 (188 + 197) | 439 |
 | web.3 | full-review | 00:31 to 00:47 | 6 | 79 | 456 (245 + 211) | 570 |
 
-**The contract edge, in practice.** web.1 finished at 00:15, before the
-backend had a single route (backend.2's routes landed at 00:04 on a
-different branch the web agent never saw). The web app's only knowledge
-of the backend was the two contracts and their fixtures; its fetch stub
-answers each request with the fixture for that method and path.
+**The contract edge, in practice.** web.1 started at 23:54, when the
+backend had no code at all. backend.2's routes landed at 00:04 on a
+branch the web agent never saw, and no web phase needed them: the web
+app's only knowledge of the backend was the two contracts and their
+fixtures, and its fetch stub answers each request with the fixture for
+that method and path.
 
 **What went wrong, and was caught:**
 
@@ -504,3 +505,168 @@ full-review (the composition and the state machine read in full). The
 real-backend walk was deferred to integration.1, which exists for it. The
 screen-reader passes were waived: there is no assistive technology here;
 they are listed for the owner below.
+
+### simple-login.integration.1 (full-review), 00:51 to 01:19 WIB
+
+- **Switch:** both contracts as `consumes` (with the auth-api@v1
+  clarification from the web.3 gate already in), ADR-001 through the
+  contracts. Dependencies backend.2 and web.3 both had signed-off
+  verification docs, so the next-runnable check was clean.
+- **Plan:** `docs/superpowers/plans/2026-10-30-simple-login.integration.1.md`,
+  6 tasks. Design rationale: AC-2.3 by restarting the backend instead of
+  seeding browser storage (seeding needs the web app's storage key, a web
+  internal; profile-api@v1 guarantees an unknown token answers exactly
+  like an expired one, and ADR-001 says a restart signs everyone out); the
+  backend as a restartable Playwright worker fixture, the web dev server
+  as a `webServer`; the installed Chrome; the PRD's words as selectors.
+- **Tasks:** root scripts and the dev runner; the browser rig and AC-1.1;
+  the rest of US-1 to US-3; AC-2.3 through a restart; the contract replay
+  through the dev proxy; the verification doc.
+- **TDD for tests of behavior that already exists:** each task's red came
+  from missing wiring (config, fixture, helpers). To show a green test can
+  still bite, a mutation check changed one message in the web app: both
+  AC-1.2 tests failed, then passed after the revert.
+- **Gate:** `npm test`: backend 70, replay 10, web 79 and build, runner 3,
+  browser 18 (9 acceptance tests, 9 fixtures replayed through the proxy).
+  12 seconds end to end. Then a fresh clone: `npm run install:all` and
+  `npm test`, both green.
+- **The headline:** every browser test passed on its first green run. The
+  two halves, built in two lanes that never saw each other, needed no
+  change to meet. The labels the PRD names were the labels the web agent
+  had used; the address reconcile settled was the address both sides used.
+- **What went wrong, and was caught:**
+  - The first Playwright run, before its config existed, collected the dev
+    runner's node test, started both servers and killed the runner hard;
+    two orphan servers held the ports. Found by the next run ("5173 is
+    already used"), killed, and the config now limits Playwright to `e2e/`.
+  - The first version of a runner test passed before the runner existed
+    (a missing script also exits non-zero); strengthened to require the
+    runner to name the server that failed.
+- **Final review:** a fresh reviewer ran `npm test`, drove `npm run dev`
+  through a real terminal, killed the backend mid-run, and probed every
+  Review Focus item. 0 Critical, 2 Important, 6 Minor. Fixed test-first:
+  an exported `PORT` moved the backend off the proxy's target (and the
+  fixture orphaned it); a developer's running `npm run dev` made the
+  runner test fail on the wrong assertion. Two Minors were re-graded by
+  effect and fixed: AC-1.2 matched a substring, so a message that says
+  which field was wrong would have passed the PRD's "never says which";
+  and a dangling timer added 20 seconds to every `npm test`. Four were
+  deferred.
+- **Review gate [owner proxy]:** full-review, signed off. web.3's deferred
+  real-backend walk was verified here.
+
+## Closing notes for the owner
+
+### Decisions taken on your behalf **[owner proxy]**
+
+Each is a call HSDD leaves to a person. All are recorded where they were
+made; listed here so you can check them in one place.
+
+1. **The "who builds what?" stop** was not needed: the PRD you asked for
+   states the team, and I wrote that line into it. A participant whose PRD
+   omits it will be asked.
+2. **ADR-001 accepted** on the strength of the RFC's accepted status.
+3. **Reconcile collision:** `127.0.0.1` over `localhost` for the
+   development address; the web and integration plans updated to match.
+4. **Self-contained gate:** web.2 and web.3 contexts gained the contract
+   their own contract names, headed `· referenced ·` (no such word in the
+   template).
+5. **superpowers vs the HSDD tier:** no fresh-reviewer final review for
+   the gate-only phase; one for every other phase.
+6. **Every Sign-off** (six phases), including re-grading reviewer Minors
+   by effect: four Minors became Important and were fixed.
+7. **Gate dispositions that changed the tree:** web D3 (the `invalid-input`
+   message) and D5 (a network failure while checking a stored session) via
+   spec edits; auth-api@v1 defines a character as a code point (a
+   compatible clarification, still v1), after both lanes met the ambiguity.
+8. **Waived:** two screen-reader passes (no assistive technology here).
+9. **AC-2.3 by backend restart** rather than seeding storage.
+
+### Rulings made during execution (from the executing-plans ledgers)
+
+- backend.1: lockfiles are git-ignored, because the repository's local
+  pre-commit guard matched a guarded word inside a random integrity hash.
+  Cost: installs float within the `package.json` ranges.
+- backend.1: Ajv and ajv-formats are CommonJS; under `nodenext` their
+  classes are taken from `.default`. Cost: none.
+- backend.2: backend.1's "no routes yet" test asserted a phase-1 fact and
+  was replaced by "serves only the two API routes". Cost: none.
+- backend.2 and integration.1: the fresh review ran before the
+  verification-doc task, so the doc records the reviewed state. Cost: none.
+- integration.1: `node --test` takes a glob, not a directory, on Node 24.
+- integration.1: a runner test that passed before the runner existed was
+  strengthened.
+- integration.1: AC-2.3 by restart (see the plan's design rationale).
+  Cost: the true 30-minute expiry is covered only by the backend suite,
+  through the injected clock.
+- integration.1: the config limits Playwright to `e2e/` and the runner
+  stops on SIGHUP. Cost: a hard-killed runner can still orphan its
+  servers.
+
+### Deferred minors
+
+- backend: expired sessions stay in memory until presented again; a thrown
+  5xx escapes the error envelope; the error handler matches `/api/login`
+  by prefix; three test gaps (same-user double sign-in at route level, log
+  hygiene on error paths, a chunked over-limit body).
+- web (from the web agent's reviews): an unreadable `sessionStorage` is
+  untested; `unavailable` fall-through branches have no fixture-backed test;
+  the failure-message mapping is not exhaustive; focus after `unavailable`;
+  live-region announcement; stylesheet order; time-zone test restore.
+- integration: the AC-1.1 clock starts at the first keystroke; the runner
+  is POSIX-only; no spawn error handler; the fixture discards backend logs.
+
+### Open for a person
+
+- A VoiceOver pass on the Login notice and error messages (web.2, web.3).
+- OQ1, deployment beyond a laptop (one origin or CORS), still OPEN.
+
+### Findings about HSDD itself
+
+These came from running the v0.10 skills as written. None blocked the run;
+each needed a judgment the skills do not make.
+
+1. **Selection misses the Validation section.** hsdd-config injects a
+   contract's Interface and Guarantees only. backend.1 builds the replay
+   rig, needs the fixture format and placeholder rules from `## Validation`,
+   and, consuming no contract, got no contract text at all. It had to pull
+   through the Links.
+2. **The self-contained gate has no word for "referenced".** Contracts
+   that cite each other make the gate pull in contracts a phase neither
+   consumes nor produces.
+3. **Node-local decisions are not injected.** A phase Scope that says "per
+   D1" points at text the context does not carry. Here the content survived
+   only because reconcile had copied it into a contract.
+4. **No disposition for a compatible contract clarification.** The
+   Learning vocabulary has `contract-bumped`, not "amended, same version".
+5. **superpowers' final review vs the HSDD tier.** executing-plans requires
+   a fresh-reviewer review of every plan; a gate-only tier says the gate is
+   enough. The derivative could say which governs.
+6. **Phase Equivalent sizing undershoots test-first phases.** Product diffs
+   ran 385 to 604 lines against a ~400 ceiling; tests count, and the plans'
+   estimates did not allow for them.
+7. **Worktree base.** The agent harness cut the parallel lane's worktree
+   from `main`, not from the current branch. HSDD's execution protocol says
+   phase branches come off the node's integration branch; with agents, the
+   brief has to say so.
+8. **Naming.** This tutorial's `hsdd/context/` is one character away from
+   the generated `hsdd-context/`. Worth a different input folder name if
+   the tutorial is reused.
+
+### The numbers
+
+| | Lines |
+|---|---:|
+| Source (backend, web, the dev runner, the Playwright config) | 962 |
+| Tests (unit, contract replay, browser, runner) | 1,664 |
+| Planning artifacts (4 specs, 2 contracts, 2 schemas, 10 fixtures, ADR, conventions, registries) | 1,292 |
+| Superpowers plans (6) | 1,538 |
+| Verification docs (6) | 731 |
+| Generated phase contexts and derivatives (12 files, verbatim selection) | 1,824 |
+
+Authored process (planning, plans, verification docs): 3,561 lines, about
+3.7 times the source. Add the generated contexts and it is 5,385.
+
+Agent wall-clock: 23:39 to 01:19 WIB, 1 hour 40 minutes, for the whole run
+including the two parallel lanes and four fresh reviews. Planning, PRD to
+stable contracts: 8 minutes (23:42 to 23:50).

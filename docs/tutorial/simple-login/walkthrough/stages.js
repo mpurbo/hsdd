@@ -3,7 +3,6 @@
 "use strict";
 (() => {
 const { esc, act, c, chip, tierChip, fileBtn, fields, list, seg, panel, key, wrong, proxy, say, marker, box, path, svg, loopStrip } = window.WL;
-const R = window.WALK_RESULTS || {};
 
 // ---------- shared facts about the run ----------
 const NODES = {
@@ -42,7 +41,7 @@ const FIXTURES = {
 
 // ---------- visuals ----------
 function screensView(withShots) {
-  const shots = withShots && R.screens;
+  const shots = withShots && window.WALK_RUN && window.WALK_RUN.screens;
   if (shots) {
     return `<div class="screens">${shots.map((s) => `<figure class="screen" style="margin:0"><div class="screen-bar"><i></i><i></i><i></i><span>${esc(s.url)}</span></div><img src="${s.src}" alt="${esc(s.alt)}"><figcaption class="hint" style="padding:6px 10px">${esc(s.caption)}</figcaption></figure>`).join("")}</div>`;
   }
@@ -340,7 +339,7 @@ const STAGES = [
         "Pick a phase in the panel to see what it sees, and what it never sees.",
       ])}
       ${wrong(["The self-contained gate tripped twice: web.2 and web.3 each named the other contract inside a guarantee. Fixed in the file, as the skill says: each gained the referenced contract's text.", "backend.1 builds the replay rig but consumes no contract, so its context had no fixture format; the session had to follow the links."])}
-      ${say(["This is the token saving: a phase reads one file of 70 to 200 lines, not the whole tree.", "It is also the discipline carrier: TDD and the verification doc travel in the file, not in someone's memory."])}`,
+      ${say(["This is the token saving: a phase reads one file of 65 to 190 lines, not the whole tree.", "It is also the discipline carrier: TDD and the verification doc travel in the file, not in someone's memory."])}`,
     self: () => `
       ${prompt("Set up HSDD for superpowers.")}
       ${prompt("/hsdd-phase simple-login.backend.1")}

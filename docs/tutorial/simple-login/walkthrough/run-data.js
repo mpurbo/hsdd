@@ -3,7 +3,7 @@
 "use strict";
 window.WALK_RUN = {
   // Minutes after 23:30 WIB, 29 October 2026.
-  axis: { start: 20, end: 100, ticks: ["23:50", "00:10", "00:30", "00:50", "01:10"] },
+  axis: { start: 20, end: 110, ticks: ["23:50", "00:20", "00:50", "01:20"] },
   phases: [
     {
       id: "simple-login.backend.1", lane: "backend", tier: "gate-only", start: 24, end: 29, clock: "23:54 to 23:59 (5 min)", tasks: 5,
@@ -41,11 +41,11 @@ window.WALK_RUN = {
       wrong: ["The spec was silent on a network failure while checking a stored session; the gate turned the phase's choice into D5."],
     },
     {
-      id: "simple-login.integration.1", lane: "integration", tier: "full-review", start: 81, end: 100, clock: "00:51 to 01:10", tasks: 6,
+      id: "simple-login.integration.1", lane: "integration", tier: "full-review", start: 81, end: 109, clock: "00:51 to 01:19 (28 min, 10 of them the fresh review)", tasks: 6,
       plan: "docs/superpowers/plans/2026-10-30-simple-login.integration.1.md",
-      tests: "18 browser tests (9 acceptance, 9 fixtures through the proxy) + 2 runner tests", gate: "npm test: every gate, the replay, the runner, the browser suite",
-      diff: "450 lines: 79 source, 295 test, 76 config and README", review: "fresh reviewer (see the verification doc)",
-      wrong: ["Before the config existed, Playwright collected the dev-runner's node test, started both servers and killed the runner hard: two orphan servers held the ports. The config now limits Playwright to e2e/ and the runner also stops on SIGHUP."],
+      tests: "18 browser tests (9 acceptance, 9 fixtures through the proxy) + 3 runner tests", gate: "npm test: every gate, the replay, the runner, the browser suite (12 s)",
+      diff: "481 lines: 82 source, 323 test, 76 config and README", review: "fresh reviewer: 2 important, 6 minor; 4 fixed test-first",
+      wrong: ["Before the config existed, Playwright collected the dev-runner's node test, started both servers and killed the runner hard: two orphan servers held the ports. The config now limits Playwright to e2e/ and the runner also stops on SIGHUP.", "Review: an exported PORT moved the backend off the proxy's target and orphaned it; fixed in the fixture and the runner.", "Review: AC-1.2 matched a substring, so a message saying which field was wrong would pass; it now matches the whole message."],
     },
   ],
   gateWrong: ["Two lanes met the same contract ambiguity from opposite sides: the backend counted UTF-16 units, the web form's maxLength does too, and auth-api@v1 said only 'characters'. At the web.3 gate the contract was clarified (a character is a code point), a compatible change, still v1."],
@@ -61,14 +61,14 @@ window.WALK_RUN = {
     say: "A mutation check proves the green is real: changing one message in the web app made both AC-1.2 tests fail.",
   },
   metrics: {
-    stats: [["959", "lines of source"], ["1,636", "lines of tests"], ["8", "minutes of agent time, PRD to stable contracts"], ["0", "defects found when the halves met"]],
+    stats: [["962", "lines of source"], ["1,664", "lines of tests"], ["8", "minutes of agent time, PRD to stable contracts"], ["0", "defects found when the halves met"]],
     rows: [
       { id: "simple-login.backend.1", src: 74, test: 262, proc: 375 },
       { id: "simple-login.backend.2", src: 187, test: 334, proc: 620 },
       { id: "simple-login.web.1", src: 182, test: 344, proc: 817 },
       { id: "simple-login.web.2", src: 188, test: 197, proc: 770 },
       { id: "simple-login.web.3", src: 245, test: 211, proc: 908 },
-      { id: "simple-login.integration.1", src: 79, test: 295, proc: 600 },
+      { id: "simple-login.integration.1", src: 82, test: 323, proc: 602 },
     ],
     planning: "1,292 lines across 4 node specs, 2 contracts with schemas and 10 fixtures, 1 ADR and the conventions",
   },
@@ -84,16 +84,18 @@ window.WALK_RUN = {
     ["No message named for an invalid request; no rule for a network failure on load", "web.2, web.3 gates", "Learnings, executed as spec updates"],
     ["'Character' undefined in auth-api@v1", "web.3 gate", "the same ambiguity seen from both lanes"],
     ["Orphan servers after a hard-killed runner", "integration.1", "the phase's own red run"],
+    ["An exported PORT moves the backend off the proxy's target", "integration.1", "fresh reviewer"],
+    ["AC-1.2 test would pass a message that says which field was wrong", "integration.1", "fresh reviewer, re-graded by effect"],
   ],
   worth: {
     present: [
-      "Process outweighs product here: about 3,450 authored lines of specs, contracts, plans and verification docs, plus 1,824 lines of generated phase contexts, against 959 lines of source.",
-      "What it bought: eleven defects and disagreements caught, four of them before any code; two lanes that never waited for each other; and a browser suite that passed on its first run when the halves met.",
+      "Process outweighs product here: 3,561 authored lines of specs, contracts, plans and verification docs, plus 1,824 lines of generated phase contexts, against 962 lines of source.",
+      "What it bought: thirteen defects and disagreements caught, four of them before any code; two lanes that never waited for each other; and a browser suite that passed on its first run when the halves met.",
       "Each phase fitted one review sitting, and the tier told the reviewer how deep to read.",
       "A product this small, built by one person, does not need HSDD. The same mechanics pay off when lanes are different teams, when the system no longer fits one context, and when the tree outlives the first release.",
     ],
     say: [
-      "Ask the room: which of the eleven catches would your current process have found, and when?",
+      "Ask the room: which of the thirteen catches would your current process have found, and when?",
       "The contexts are generated, so the reading cost per phase is one file, not the tree.",
       "The 8 minutes of planning were agent time. In a team, the human reviews of the specs and contracts are the real cost; they are also where the localhost mismatch was cheapest to fix.",
     ],

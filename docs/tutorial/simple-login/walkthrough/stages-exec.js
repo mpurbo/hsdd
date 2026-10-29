@@ -85,7 +85,7 @@ const EXEC = [
         "Click a phase on the timeline for its numbers.",
       ])}
       ${say([
-        "The web lane finished its first phase before the backend had a single route. That is the contract edge at work.",
+        "The web lane started its API client at 23:54, when the backend had no code at all, and never looked at the backend afterwards. That is the contract edge at work.",
         "Look at the merge: the two lanes touched disjoint files, so it was clean by construction.",
       ])}`,
     self: () => `
@@ -109,7 +109,7 @@ const EXEC = [
         "The verification doc is written at apply time from a fixed template, never during planning.",
         "gate-only: the gate passing is the review. spot-check: glance at the diff. full-review: read the diff, run the manual checks.",
         "Every Learning ends with exactly one disposition; the gate is not passed while one lacks it.",
-        "Full-review phases also got superpowers' fresh-context final review: a second reader the author's blind spots cannot reach.",
+        "Every phase above gate-only also got superpowers' fresh-context final review: a second reader the author's blind spots cannot reach. Four of its Minors were re-graded by their effect on a user and fixed.",
       ])}
       ${RUN.gateWrong ? wrong(RUN.gateWrong) : ""}
       ${proxy("Every Sign-off in this run is Claude acting for the absent owner. In your project this is the step a person must own.")}`,
