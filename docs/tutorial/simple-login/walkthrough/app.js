@@ -1,0 +1,197 @@
+// simple-login walkthrough: state, rendering and the imperative shell.
+// The state is one value; views are functions of it; the shell at the end
+// owns events, the address, focus and storage.
+"use strict";
+(() => {
+const { esc, act, markdown } = window.WL;
+const STAGES = window.WALK_STAGES;
+const DATA = window.WALK_DATA || { stages: {}, blobs: [] };
+
+// ---------- storage (per-viewer conveniences only) ----------
+const store = {
+  get(k, d) { try { const v = localStorage.getItem(`sl-walk:${k}`); return v === null ? d : JSON.parse(v); } catch { return d; } },
+  set(k, v) { try { localStorage.setItem(`sl-walk:${k}`, JSON.stringify(v)); } catch { /* storage unavailable: fine */ } },
+};
+
+// ---------- state ----------
+const indexOf = (id) => Math.max(0, STAGES.findIndex((s) => s.id === id));
+let state = {
+  stage: indexOf(location.hash.slice(1)),
+  mode: store.get("mode", "present"),
+  ui: {},
+  visited: store.get("visited", []),
+  file: null,
+  raw: false,
+};
+window.WALK_CHECKS = store.get("checks", {});
+
+// ---------- the repository as a stage left it ----------
+function filesAt(stageIndex) {
+  for (let i = stageIndex; i >= 0; i--) {
+    const hit = DATA.stages[STAGES[i].id];
+    if (hit) return hit.files;
+  }
+  return [];
+}
+function blobAt(stageIndex, path) {
+  const hit = filesAt(stageIndex).find(([p]) => p === path);
+  if (hit) return DATA.blobs[hit[1]];
+  for (let i = STAGES.length - 1; i >= 0; i--) {
+    const later = filesAt(i).find(([p]) => p === path);
+    if (later) return DATA.blobs[later[1]];
+  }
+  return undefined;
+}
+
+function treeHtml(stageIndex) {
+  const now = filesAt(stageIndex);
+  if (!now.length) return `<p class="repo-sum">Run <code>node build-data.mjs</code> to embed the repository.</p>`;
+  const before = new Map(stageIndex > 0 ? filesAt(stageIndex - 1) : []);
+  const changed = (p, b) => !before.has(p) || before.get(p) !== b;
+  const root = {};
+  for (const [p, b] of now) {
+    const parts = p.split("/");
+    let node = root;
+    parts.slice(0, -1).forEach((d) => (node = node[d + "/"] ||= {}));
+    node[parts.at(-1)] = { path: p, blob: b };
+  }
+  const lines = (b) => (DATA.blobs[b].match(/\n/g) || []).length;
+  const render = (node) => `<ul>${Object.keys(node).sort((a, z) => (a.endsWith("/") === z.endsWith("/") ? a.localeCompare(z) : a.endsWith("/") ? -1 : 1)).map((k) => {
+    const v = node[k];
+    if (k.endsWith("/")) return `<li><div class="dir">${esc(k)}</div>${render(v)}</li>`;
+    return `<li class="${changed(v.path, v.blob) ? "new" : ""}"><button ${act("open", v.path)} title="${esc(v.path)}"><span>${esc(k)}</span><span class="n">${lines(v.blob)}</span></button></li>`;
+  }).join("")}</ul>`;
+  const fresh = now.filter(([p, b]) => changed(p, b)).length;
+  return `<p class="repo-sum">${now.length} files${fresh ? `, ${fresh} new or changed in this stage` : ""}. Click to read.</p><div class="tree">${render(root).replace(/^<ul>/, '<ul class="tree-root" style="padding:0;border:0;margin:0">')}</div>`;
+}
+
+// ---------- views ----------
+function stagesNav() {
+  const groups = [...new Set(STAGES.map((s) => s.group))];
+  return groups.map((g) => `<div class="group"><p>${esc(g)}</p><ol>${STAGES.map((s, i) => [s, i]).filter(([s]) => s.group === g).map(([s, i]) =>
+    `<li class="${state.visited.includes(s.id) ? "done" : ""}"><a href="#${s.id}" ${act("go", i)} ${i === state.stage ? 'aria-current="step"' : ""}><span class="num">${i}</span><span>${esc(s.title)}<small>${esc(s.short)}</small></span></a></li>`).join("")}</ol></div>`).join("")
+    + `<div class="stages-foot"><span><kbd>←</kbd> <kbd>→</kbd> step · <kbd>M</kbd> mode · <kbd>T</kbd> theme</span><span>Full record: <button class="filelink" ${act("open-log", "")}>process-log.md</button></span></div>`;
+}
+
+function stageView() {
+  const s = STAGES[state.stage];
+  const body = state.mode === "present" ? s.present(state) : s.self(state);
+  return `<header class="st-head">
+      <p class="eyebrow"><span>Stage ${state.stage} of ${STAGES.length - 1}</span>${s.skill ? `<span class="chip process">${esc(s.skill)}</span>` : ""}<span>${state.mode === "present" ? "What happened" : "Do it yourself"}</span></p>
+      <h1>${esc(s.title)}</h1>
+      <p class="lede">${s.lede}</p>
+      ${window.WL.loopStrip(s.loop || [])}
+    </header>
+    <div class="scene"><section class="explain" aria-label="${state.mode === "present" ? "What happened" : "Your turn"}">${body}</section><section class="visual" aria-label="Illustration">${s.visual(state)}</section></div>`;
+}
+
+function fileView() {
+  if (!state.file) return "";
+  const text = state.file === "@log" ? DATA.log : blobAt(state.stage, state.file);
+  if (text === undefined) return `<p>This file does not exist at this stage of the run.</p>`;
+  const isMd = /\.md$/.test(state.file) || state.file === "@log";
+  return isMd && !state.raw ? markdown(text) : `<pre class="raw">${esc(text)}</pre>`;
+}
+
+// ---------- actions: (state, value) -> state ----------
+const ui = (k) => (s, v) => ({ ...s, ui: { ...s.ui, [k]: v } });
+const ACTIONS = {
+  go: (s, v) => ({ ...s, stage: Number(v) }),
+  mode: (s, v) => ({ ...s, mode: v }),
+  open: (s, v) => ({ ...s, file: v, raw: false }),
+  "open-log": (s) => ({ ...s, file: "@log", raw: false }),
+  raw: (s) => ({ ...s, raw: !s.raw }),
+  node: ui("node"), edges: ui("edges"), adr: ui("adr"), slug: (s, v) => ({ ...s, ui: { ...s.ui, slug: v, fixture: undefined } }),
+  fixture: ui("fixture"), side: ui("side"), floor: ui("floor"), rstep: ui("rstep"), phase: ui("phase"), lanephase: ui("lanephase"), metric: ui("metric"),
+};
+
+// ---------- shell ----------
+const $ = (id) => document.getElementById(id);
+function render(focusStage = false) {
+  const s = STAGES[state.stage];
+  document.title = `${s.title} · simple-login walkthrough`;
+  $("stages").innerHTML = stagesNav();
+  $("stage").innerHTML = stageView();
+  $("repo-tree").innerHTML = treeHtml(state.stage);
+  $("where").textContent = `${state.stage}. ${s.title} · ${s.short}`;
+  $("prev").disabled = state.stage === 0;
+  $("next").disabled = state.stage === STAGES.length - 1;
+  document.querySelectorAll("#mode button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.value === state.mode)));
+  if (focusStage) $("stage").focus({ preventScroll: true });
+}
+function renderFile() {
+  const dlg = $("viewer");
+  if (!state.file) { if (dlg.open) dlg.close(); return; }
+  $("viewer-path").textContent = state.file === "@log" ? "walkthrough/process-log.md" : `execute/${state.file}`;
+  $("viewer-raw").textContent = state.raw ? "Formatted" : "Raw";
+  $("viewer-raw").hidden = !(/\.md$/.test(state.file) || state.file === "@log");
+  $("viewer-body").innerHTML = fileView();
+  if (!dlg.open) dlg.showModal();
+}
+function go(i) {
+  const next = Math.min(STAGES.length - 1, Math.max(0, i));
+  if (next === state.stage) return;
+  const id = STAGES[state.stage].id;
+  state = { ...state, stage: next, visited: state.visited.includes(id) ? state.visited : [...state.visited, id] };
+  store.set("visited", state.visited);
+  try { history.replaceState(null, "", `#${STAGES[next].id}`); } catch { location.hash = STAGES[next].id; }
+  render(true);
+  window.scrollTo({ top: 0 });
+}
+
+document.addEventListener("click", async (e) => {
+  const el = e.target.closest("[data-action]");
+  if (!el) return;
+  const { action, value } = el.dataset;
+  if (action === "go") { e.preventDefault(); go(Number(value)); closeDrawers(); return; }
+  if (action === "copy") {
+    try { await navigator.clipboard.writeText(value); el.textContent = "Copied"; }
+    catch { const pre = el.closest(".prompt").querySelector("pre"); getSelection().selectAllChildren(pre); el.textContent = "Selected"; }
+    setTimeout(() => (el.textContent = "Copy"), 1400);
+    return;
+  }
+  if (action === "check") {
+    const [stage, i] = value.split(":");
+    const cur = { ...(window.WALK_CHECKS[stage] || {}), [i]: el.checked };
+    window.WALK_CHECKS = { ...window.WALK_CHECKS, [stage]: cur };
+    store.set("checks", window.WALK_CHECKS);
+    return;
+  }
+  const fn = ACTIONS[action];
+  if (!fn) return;
+  state = fn(state, value);
+  if (action === "mode") store.set("mode", state.mode);
+  if (["open", "open-log", "raw"].includes(action)) { renderFile(); return; }
+  render();
+});
+$("viewer").addEventListener("close", () => { state = { ...state, file: null }; });
+$("viewer-close").addEventListener("click", () => $("viewer").close());
+
+function closeDrawers() { $("stages").classList.remove("open"); $("repo").classList.remove("open"); }
+$("stages-toggle").addEventListener("click", () => { $("repo").classList.remove("open"); $("stages").classList.toggle("open"); });
+$("tree-toggle").addEventListener("click", () => { $("stages").classList.remove("open"); $("repo").classList.toggle("open"); });
+$("prev").addEventListener("click", () => go(state.stage - 1));
+$("next").addEventListener("click", () => go(state.stage + 1));
+
+const THEMES = ["system", "light", "dark"];
+let theme = store.get("theme", "system");
+function applyTheme() {
+  if (theme === "system") document.documentElement.removeAttribute("data-theme");
+  else document.documentElement.setAttribute("data-theme", theme);
+  $("theme").setAttribute("aria-label", `Theme: ${theme}`);
+  $("theme").title = `Theme: ${theme} (T)`;
+}
+$("theme").addEventListener("click", () => { theme = THEMES[(THEMES.indexOf(theme) + 1) % 3]; store.set("theme", theme); applyTheme(); });
+
+document.addEventListener("keydown", (e) => {
+  if (e.metaKey || e.ctrlKey || e.altKey || /input|textarea|select/i.test(e.target.tagName) || $("viewer").open) return;
+  if (e.key === "ArrowRight") go(state.stage + 1);
+  else if (e.key === "ArrowLeft") go(state.stage - 1);
+  else if (e.key === "m" || e.key === "M") { state = { ...state, mode: state.mode === "present" ? "self" : "present" }; store.set("mode", state.mode); render(); }
+  else if (e.key === "t" || e.key === "T") $("theme").click();
+});
+window.addEventListener("hashchange", () => { const i = indexOf(location.hash.slice(1)); if (i !== state.stage) { state = { ...state, stage: i }; render(true); } });
+
+applyTheme();
+render();
+})();
