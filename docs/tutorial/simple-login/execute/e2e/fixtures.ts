@@ -45,7 +45,8 @@ export const test = base.extend<object, { backend: Backend }>({
       let child = await startBackend();
       await use({
         restart: async () => {
-          throw new Error("not implemented");
+          await stopBackend(child);
+          child = await startBackend();
         },
       });
       await stopBackend(child);

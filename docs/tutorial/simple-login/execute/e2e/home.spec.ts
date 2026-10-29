@@ -35,3 +35,15 @@ test("AC-3.1: Sign out returns to Login, and a reload stays there", async ({ pag
   await page.reload();
   await expect(page.getByRole("button", { name: "Sign in" })).toBeVisible();
 });
+
+test("AC-2.3: a session the backend no longer knows returns to Login with the expiry message", async ({ page, backend }) => {
+  await page.goto("/");
+  await signIn(page, "ayu", "sunrise-42");
+  await expect(page.getByRole("heading", { name: "Hello, Ayu Lestari" })).toBeVisible();
+  // ADR-001: a restart signs everyone out. profile-api@v1: the now-unknown
+  // token answers exactly like an expired one.
+  await backend.restart();
+  await page.reload();
+  await expect(page.getByText("Your session has expired. Please sign in again.")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Sign in" })).toBeVisible();
+});
