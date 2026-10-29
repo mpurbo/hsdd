@@ -9,7 +9,8 @@
   },
   "scripts": {
     "test": "vitest run",
-    "gate": "tsc --noEmit && vitest run"
+    "gate": "tsc --noEmit && vitest run",
+    "replay": "vitest run test/contract.replay.test.ts"
   },
   "dependencies": {
     "fastify": "^5.12.7"
