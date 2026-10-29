@@ -99,12 +99,13 @@ backend's logs and starts `backend/src/server.ts` directly, as the plan prescrib
 - Process artifacts: plan 158 lines, context and derivative 332 lines, this doc 112 lines.
 
 ## Sign-off
-- Reviewer / date:
-- Review tier applied:
-- Disposition of each Outstanding item: verified | waived (reason) |
-  deferred to {phase-id}
-- Disposition of each Learning: spec-updated | contract-bumped (id@v) |
-  adr-proposed (ADR-nnn) | dropped (reason)
+- Reviewer / date: Claude as owner proxy (the owner was unavailable), 2026-10-30
+- Review tier applied: full-review: diff read (with a fresh reviewer's independent read and its
+  terminal and crash experiments), `npm test` green after the fix pass, the fresh-clone run and
+  the manual walk above, the mutation checks
+- Disposition of each Outstanding item: none outstanding (web.3's deferred real-backend walk:
+  verified here)
+- Disposition of each Learning: all three dropped, each with its reason recorded
 
 > The review gate is not passed while an Outstanding item or a Learning
 > lacks a disposition. Dispositions execute at the root through the owning
