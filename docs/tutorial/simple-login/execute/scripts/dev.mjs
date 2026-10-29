@@ -50,7 +50,7 @@ for (const c of children) {
   });
 }
 
-for (const signal of ["SIGINT", "SIGTERM"]) {
+for (const signal of ["SIGINT", "SIGTERM", "SIGHUP"]) {
   process.on(signal, () => {
     if (exitCode === null) exitCode = 0;
     stopAll();
