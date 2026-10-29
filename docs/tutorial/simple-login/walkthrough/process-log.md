@@ -338,3 +338,59 @@ because governance was frozen after reconcile and the generic context is
 pure selection from it; the next-runnable check's warning that web.2's and
 web.3's dependencies had no verification doc yet is expected and was
 accepted.
+
+Commit `67865d4`.
+
+## Step 8: Execute the phases, two lanes in parallel (superpowers)
+
+The root DAG has `contract` edges from backend to web, so the two lanes
+start together. To make the isolation real rather than claimed, the web
+lane was given to a separate agent in its own git worktree, whose only
+specification was the three `hsdd-context/superpowers/simple-login.web.*.md`
+files. It was told not to open the backend's spec or code (the backend did
+not exist yet anyway). Claude ran the backend lane in the main checkout.
+
+Every phase follows the same superpowers sequence the derivative
+prescribes:
+
+1. `superpowers:writing-plans`, given the derivative's path, never
+   brainstorming (the design was already reviewed in HSDD). The plan copies
+   the eight Global Constraints verbatim and is saved under
+   `docs/superpowers/plans/`.
+2. The derivative's Plan check (five boxes).
+3. `superpowers:executing-plans`, inline, with
+   `superpowers:test-driven-development` on every task: the failing test is
+   written and seen to fail before any code.
+4. The gate, then the verification doc from `hsdd/templates/verification.md`
+   with Sign-off left blank.
+5. The HSDD review gate at the phase's tier, then Sign-off.
+
+### simple-login.backend.1 (gate-only), 23:54 to 23:59 WIB
+
+- **Plan:** `docs/superpowers/plans/2026-10-29-simple-login.backend.1.md`,
+  5 tasks (the derivative's cap). Review Focus listed five failure modes no
+  task's tests would otherwise exercise (a different working directory, a
+  sixth fixture added later, a README in a fixture directory, a one-field
+  body difference, a placeholder for an unknown account); each got a test.
+- **Tasks:** package skeleton, domain types and `buildApp`; the built-in
+  accounts as scrypt data; the replay rig's loading and schema validation;
+  the rig's placeholders and replay modes; the verification doc.
+- **TDD evidence:** every task's test failed first (`Cannot find module`,
+  then `fillHeaders is not a function`), then passed.
+- **Gate:** `npm --prefix backend run gate`: `tsc` clean, 17 tests passed.
+- **Diff:** 378 lines in 10 files (74 source, 262 test, 42 config).
+- **What went wrong:**
+  - The first commit was rejected by the repository's local pre-commit
+    guard: a base64 integrity hash in `package-lock.json` happened to
+    contain a guarded word. Lockfiles are now git-ignored in the tutorial;
+    the guard was not bypassed. The web agent was warned before it hit the
+    same wall.
+  - `tsc` rejected Ajv's default import under `nodenext` (Ajv is CommonJS).
+    Fixed by taking the class from `.default`; recorded as a ruling.
+- **Learning (dispositioned `dropped`):** the context carried no contract
+  text, yet the phase builds the replay rig; see step 7.
+- **Review gate [owner proxy]:** gate-only, so the gate re-run (17/17) was
+  the review; the diff was not read, as the tier allows. superpowers'
+  executing-plans asks for a fresh-reviewer final review; the HSDD tier was
+  ruled to govern instead (ledgered), so the fresh reviewer is spent on the
+  full-review phases.
