@@ -264,3 +264,77 @@ the service runs) and two of them guessed differently from the third. In a
 single-spec workflow that disagreement surfaces at integration time as a
 proxy that cannot connect. Here it surfaced as one line in a reconcile
 report, before any code.
+
+Commit `c28b097`.
+
+## Step 6: Set up the coding method (hsdd-config, Setup)
+
+**Prompt:** "Set up HSDD for superpowers."
+
+- `hsdd/conventions.md`: `**Coding method:** superpowers`. Every phase
+  switch now writes the superpowers derivative next to the generic context.
+- `hsdd/templates/verification.md` copied verbatim from hsdd-config. Every
+  phase's verification doc is written from it.
+- Companion skills found: superpowers (writing-plans, executing-plans,
+  subagent-driven-development, test-driven-development,
+  verification-before-completion, requesting-code-review). No language
+  skill is named in conventions, so the derivative has constraints 1 to 8
+  and no constraint 9.
+
+Commit `995f28a`.
+
+## Step 7: Switch the phase context (hsdd-config, the switch)
+
+**Prompt:** "/hsdd-phase simple-login.backend.1" (and so on per phase).
+
+Each switch writes two files outside `hsdd/`:
+
+- `hsdd-context/{phase-id}.md`, the generic phase context: the phase's
+  bullet block, its node's purpose and boundaries, the full Interface and
+  Guarantees of every contract it touches, the Decision and Consequences of
+  every ADR that governs it, the fixed Discipline lines, and links. Every
+  line is a verbatim excerpt or fixed template text; the switch writes no
+  sentence of its own.
+- `hsdd-context/superpowers/{phase-id}.md`, the derivative: eight Global
+  Constraints (test-first, the task cap from the Size estimate, the gate,
+  the verification doc, the governance freeze), a Plan check, and the
+  generic context between markers. The equality check (`diff` of the two
+  bodies) printed nothing for every phase.
+
+The excerpts were copied by a scratch helper that follows the skill's
+template, so nothing was retyped; the helper is not part of HSDD and was
+not committed.
+
+**What each phase sees.** backend.1 sees no contract at all (it consumes
+and produces none) and only ADR-001. web.1 sees both contracts and
+ADR-001. Nobody sees another node's spec, another phase's plan, or any
+code outside its own directory.
+
+**The self-contained gate tripped, twice.** Rule 2 says every contract,
+ADR and OQ id a context names must have its text inline. web.2 consumes
+only auth-api@v1, but auth-api's guarantees say a token "is accepted by
+`profile-api@v1` until `expiresAt`"; web.3 consumes only profile-api@v1,
+whose Interface names `auth-api@v1` as the token's source. Both contexts
+named a contract they did not carry. Fixed in the file, as the skill
+says (never the rule): each gained the referenced contract's subsection.
+The template's direction field allows only `consumes` or `produces`, so the
+subsection is headed `· referenced ·`. **Finding for HSDD:** contracts that
+cite each other make the gate pull in contracts a phase neither consumes
+nor produces, and the template has no word for that. Recorded for the
+owner in the closing notes below.
+
+**A second finding, from backend.1.** backend.1 builds the contract replay
+rig, so it needs the fixture format and the placeholder rules. Those live
+in each contract's `## Validation` section, which the switch never
+injects (only Interface and Guarantees). And backend.1 consumes and
+produces no contract, so its context carries no contract text at all. The
+coding session had to follow the Links to the contract files. That is
+"pull", which the skill reserves for provenance and escalation.
+
+**Contexts for the web lane were written up front.** In a team, each phase
+is switched just before it starts. Here web.1 to web.3 were switched
+together, before the web lane was handed to a separate agent (step 8),
+because governance was frozen after reconcile and the generic context is
+pure selection from it; the next-runnable check's warning that web.2's and
+web.3's dependencies had no verification doc yet is expected and was
+accepted.
