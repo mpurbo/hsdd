@@ -12,14 +12,14 @@ test("AC-1.1: the right password reaches Home within 3 seconds", async ({ page }
 test("AC-1.2: a wrong password shows the message and stays on Login", async ({ page }) => {
   await page.goto("/");
   await signIn(page, "ayu", "sunset-42");
-  await expect(page.getByText("Incorrect username or password.")).toBeVisible();
+  await expect(page.getByText("Incorrect username or password.", { exact: true })).toBeVisible();
   await expect(page.getByRole("button", { name: "Sign in" })).toBeVisible();
 });
 
 test("AC-1.2: an unknown user gets the same message", async ({ page }) => {
   await page.goto("/");
   await signIn(page, "citra", "sunrise-42");
-  await expect(page.getByText("Incorrect username or password.")).toBeVisible();
+  await expect(page.getByText("Incorrect username or password.", { exact: true })).toBeVisible();
 });
 
 test("AC-1.3: Sign in is disabled while either field is empty", async ({ page }) => {

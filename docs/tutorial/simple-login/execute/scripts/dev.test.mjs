@@ -31,9 +31,17 @@ const startRunner = () => {
   child.stderr.on("data", (d) => (child.output += d));
   return child;
 };
+/** A developer's own `npm run dev` would answer the probes; say so instead of testing it. */
+async function assertPortsFree() {
+  for (const [port, host] of [[3000, "127.0.0.1"], [5173, "localhost"]]) {
+    assert.equal(await portOpen(port, host), false, `port ${port} is in use: stop \`npm run dev\` before running the tests`);
+  }
+}
+
 const exited = (child) => new Promise((resolve) => child.once("exit", (code) => resolve(code)));
 
 test("starts both servers, and Ctrl-C stops both", { timeout: 40_000 }, async () => {
+  await assertPortsFree();
   const runner = startRunner();
   const done = exited(runner);
   let gone = false;
@@ -66,11 +74,15 @@ test("starts both servers, and Ctrl-C stops both", { timeout: 40_000 }, async ()
 });
 
 test("when one server cannot start, stops the other and exits non-zero", { timeout: 40_000 }, async () => {
+  await assertPortsFree();
   const blocker = createServer().listen(3000, "127.0.0.1");
   await new Promise((r) => blocker.once("listening", r));
   try {
     const runner = startRunner();
-    const code = await Promise.race([exited(runner), sleep(20_000).then(() => "timeout")]);
+    let timer;
+    const timeout = new Promise((resolve) => (timer = setTimeout(() => resolve("timeout"), 20_000)));
+    const code = await Promise.race([exited(runner), timeout]);
+    clearTimeout(timer);
     if (code === "timeout") runner.kill("SIGKILL");
     assert.notEqual(code, "timeout", "the runner exited by itself");
     assert.notEqual(code, 0);
@@ -79,4 +91,14 @@ test("when one server cannot start, stops the other and exits non-zero", { timeo
   } finally {
     blocker.close();
   }
+});
+
+test("ignores an exported PORT: the backend stays on the contract's address", { timeout: 40_000 }, async () => {
+  await assertPortsFree();
+  const runner = spawn(process.execPath, ["scripts/dev.mjs"], { cwd: root, stdio: "ignore", env: { ...process.env, PORT: "4001" } });
+  const done = exited(runner);
+  const up = await until(async () => portOpen(3000, "127.0.0.1"), 15_000);
+  runner.kill("SIGINT");
+  await done;
+  assert.equal(up, true, "the backend listens on 127.0.0.1:3000 even with PORT=4001 exported");
 });

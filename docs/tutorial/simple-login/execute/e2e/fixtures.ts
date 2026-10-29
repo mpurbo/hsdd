@@ -31,8 +31,14 @@ export type Backend = { restart(): Promise<void> };
 
 async function startBackend(): Promise<ChildProcess> {
   if (await portOpen()) throw new Error(`port ${PORT} is already in use: stop the running backend before the browser suite`);
-  const child = spawn(process.execPath, ["backend/src/server.ts"], { cwd: ROOT, stdio: "ignore" });
-  await waitForPort(true);
+  // PORT is pinned: an exported PORT would move the backend off the address the proxy targets.
+  const child = spawn(process.execPath, ["backend/src/server.ts"], { cwd: ROOT, stdio: "ignore", env: { ...process.env, PORT: String(PORT) } });
+  try {
+    await waitForPort(true);
+  } catch (error) {
+    child.kill("SIGTERM");
+    throw error;
+  }
   return child;
 }
 

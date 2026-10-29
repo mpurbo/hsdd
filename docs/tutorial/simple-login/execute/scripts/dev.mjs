@@ -7,9 +7,12 @@ import { fileURLToPath } from "node:url";
 
 const root = fileURLToPath(new URL("..", import.meta.url));
 const npm = process.platform === "win32" ? "npm.cmd" : "npm";
+// The backend's port is pinned to the contracts' development address
+// (127.0.0.1:3000), which the web app's proxy targets; an exported PORT must
+// not move it.
 const SERVERS = [
-  ["backend", ["--prefix", "backend", "start"]],
-  ["web", ["--prefix", "web", "run", "dev", "--", "--strictPort"]],
+  ["backend", ["--prefix", "backend", "start"], { PORT: "3000" }],
+  ["web", ["--prefix", "web", "run", "dev", "--", "--strictPort"], {}],
 ];
 
 const prefix = (name, stream, out) => {
@@ -21,10 +24,10 @@ const prefix = (name, stream, out) => {
   });
 };
 
-const children = SERVERS.map(([name, args]) => {
+const children = SERVERS.map(([name, args, env]) => {
   // Each child leads its own process group, so stopping it also stops what
   // npm started under it (node, vite).
-  const child = spawn(npm, args, { cwd: root, stdio: ["ignore", "pipe", "pipe"], detached: true });
+  const child = spawn(npm, args, { cwd: root, env: { ...process.env, ...env }, stdio: ["ignore", "pipe", "pipe"], detached: true });
   prefix(name, child.stdout, process.stdout);
   prefix(name, child.stderr, process.stderr);
   return { name, child, running: true };
