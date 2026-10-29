@@ -8,6 +8,7 @@
     "node": ">=24"
   },
   "scripts": {
+    "start": "node src/server.ts",
     "test": "vitest run",
     "gate": "tsc --noEmit && vitest run",
     "replay": "vitest run test/contract.replay.test.ts"

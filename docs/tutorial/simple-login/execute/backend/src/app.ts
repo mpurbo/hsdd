@@ -1,4 +1,4 @@
-import Fastify, { type FastifyInstance } from "fastify";
+import Fastify, { type FastifyInstance, type FastifyServerOptions } from "fastify";
 import type { Account, Clock, RandomBytes } from "./domain.ts";
 import { VALIDATION_FAILED, registerRoutes } from "./routes.ts";
 import { createSessionStore } from "./sessions.ts";
@@ -8,10 +8,12 @@ export type AppDeps = {
   clock: Clock;
   randomBytes: RandomBytes;
   accounts: readonly Account[];
+  /** Off unless given. Fastify's default serializers log method, URL and address, never headers or bodies. */
+  logger?: FastifyServerOptions["logger"];
 };
 
-export function buildApp({ clock, randomBytes, accounts }: AppDeps): FastifyInstance {
-  const app = Fastify({ logger: false });
+export function buildApp({ clock, randomBytes, accounts, logger = false }: AppDeps): FastifyInstance {
+  const app = Fastify({ logger });
 
   // Bodies arrive as raw strings and are parsed by the routes' pure parsers,
   // so a wrong content type or malformed JSON gets the contract's envelope.
