@@ -1,4 +1,5 @@
 import { randomBytes } from "node:crypto";
+import { readFileSync } from "node:fs";
 import type { AddressInfo } from "node:net";
 import { Writable } from "node:stream";
 import { describe, expect, it } from "vitest";
@@ -34,5 +35,12 @@ describe("start", () => {
     });
     expect(res.status).toBe(200);
     await app.close();
+  });
+});
+
+describe("package", () => {
+  it("declares the Node version whose import.meta.main the server entry relies on", async () => {
+    const pkg = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8"));
+    expect(pkg.engines.node).toBe(">=24.2");
   });
 });

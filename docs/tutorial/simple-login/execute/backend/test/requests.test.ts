@@ -38,6 +38,12 @@ describe("parseLoginRequest", () => {
     });
   }
 
+  it("counts characters, not UTF-16 units: 40 emoji are 40 characters", () => {
+    const emoji = "\u{1F600}".repeat(40);
+    expect(parseLoginRequest(JSON_TYPE, JSON.stringify({ username: emoji, password: "p" })).ok).toBe(true);
+    expect(parseLoginRequest(JSON_TYPE, JSON.stringify({ username: "\u{1F600}".repeat(65), password: "p" })).ok).toBe(false);
+  });
+
   it("accepts the limits exactly: 64-character username, 128-character password", () => {
     const body = JSON.stringify({ username: "a".repeat(64), password: "p".repeat(128) });
     expect(parseLoginRequest(JSON_TYPE, body).ok).toBe(true);

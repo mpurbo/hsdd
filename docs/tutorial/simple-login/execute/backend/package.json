@@ -5,7 +5,7 @@
   "type": "module",
   "description": "simple-login backend: sign-in and profile over HTTP, all in memory.",
   "engines": {
-    "node": ">=24"
+    "node": ">=24.2"
   },
   "scripts": {
     "start": "node src/server.ts",

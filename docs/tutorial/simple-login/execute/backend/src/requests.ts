@@ -8,8 +8,10 @@ const INVALID = { ok: false, error: "invalid" } as const;
 const isJson = (contentType: string | undefined) =>
   contentType !== undefined && contentType.split(";")[0]!.trim().toLowerCase() === "application/json";
 
+// Lengths count characters (code points), as the contract and its schema do,
+// not UTF-16 units: an emoji is one character.
 const within = (value: unknown, max: number): value is string =>
-  typeof value === "string" && value.length >= 1 && value.length <= max;
+  typeof value === "string" && value.length >= 1 && [...value].length <= max;
 
 /** auth-api@v1: a JSON object with a 1..64 character username and a 1..128 character password. */
 export function parseLoginRequest(contentType: string | undefined, raw: string): Result<Credentials, "invalid"> {
