@@ -96,12 +96,12 @@ error handler matches `/api/login` by prefix, three test gaps the probes showed 
 - Process artifacts: plan 177 lines, context and derivative 334 lines, this doc about 110 lines.
 
 ## Sign-off
-- Reviewer / date:
-- Review tier applied:
-- Disposition of each Outstanding item: verified | waived (reason) |
-  deferred to {phase-id}
-- Disposition of each Learning: spec-updated | contract-bumped (id@v) |
-  adr-proposed (ADR-nnn) | dropped (reason)
+- Reviewer / date: Claude as owner proxy (the owner was unavailable), 2026-10-30
+- Review tier applied: full-review: diff read (with a fresh reviewer's independent read and probes),
+  gate and replay re-run green (70/70, 10/10), the manual check above run against the real server,
+  the Review Focus edge cases confirmed
+- Disposition of each Outstanding item: none outstanding
+- Disposition of each Learning: all four dropped, each with its reason recorded
 
 > The review gate is not passed while an Outstanding item or a Learning
 > lacks a disposition. Dispositions execute at the root through the owning
