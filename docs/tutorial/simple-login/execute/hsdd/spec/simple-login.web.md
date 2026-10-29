@@ -19,3 +19,106 @@ Login, a token shows Home). The token lives in `sessionStorage`. In
 development the Vite server proxies `/api` to the backend on port 3000, so
 the browser sees one origin. The node knows the backend only through
 auth-api@v1 and profile-api@v1.
+
+## Phase Plan
+
+**Default gate:** `npm --prefix web run gate`
+
+| Phase | Name | Tier | Size | Depends on |
+|------:|------|------|------|------------|
+| simple-login.web.1 | App skeleton, API client, session storage | spot-check | ~10 files (~300 lines), ≤6 tasks | none |
+| simple-login.web.2 | Login screen | spot-check | ~4 files (~220 lines), ≤5 tasks | 1 |
+| simple-login.web.3 | Home screen and the session flow | full-review | ~5 files (~300 lines), ≤6 tasks | 1, 2 |
+
+Ordering policy: `interfaces-first` (from `hsdd/conventions.md`). Phase 1
+is the typed boundary to the backend (the API client and its fixtures) and
+the browser storage behind it; phases 2 and 3 are the screens; phase 3 also
+composes the app. Commands run from the repository root (the directory
+holding `hsdd/`).
+
+### Decisions
+
+- **D1. Expiry is noticed when `GET /api/me` answers 401,** on load or
+  reload; the app runs no timer of its own. profile-api@v1 makes an expired
+  token indistinguishable from an unknown one, and a client clock can
+  drift. Trade-off: a user idle on Home past expiry keeps seeing the page
+  until the next load.
+- **D2. The session lives in `sessionStorage`** under one key,
+  `simple-login.session`, as `{ token, expiresAt }` (RFC §6).
+- **D3. One message per failure.** `INVALID_CREDENTIALS` shows "Incorrect
+  username or password." (AC-1.2); a 401 on `/api/me` shows "Your session
+  has expired. Please sign in again." (AC-2.3); a network failure or an
+  unexpected status shows "Could not reach the server. Please try again."
+- **D4. No router** (RFC §6): the screen is a function of the session value.
+
+### simple-login.web.1: App skeleton, API client, session storage
+
+- **Consumes:** [auth-api@v1, profile-api@v1]
+- **Produces:** none
+- **Governed by:** [ADR-001]
+- **Scope:** the `web/` package (React 19, TypeScript, Vite, Vitest with jsdom and Testing Library; `npm run gate` = `tsc --noEmit`, then `vitest run`, then `vite build`); the Vite dev proxy from `/api` to the backend's development address (assumption, see the `request` below); the API client, `signIn(username, password)` and `fetchProfile(token)`, returning a result value (a session or a profile, or a failure reason: `invalid-credentials`, `invalid-input`, `unauthorized`, `unavailable`) decided by status and `error.code`, never by message; the session store over `sessionStorage` (D2); a test helper that answers stubbed `fetch` calls with the auth-api and profile-api fixture responses; a placeholder `App`.
+- **Size estimate:** ~10 files (~300 lines), <= 6 OpenSpec tasks
+- **Gate:** `npm --prefix web run gate`
+- **Verification:** the client's tests feed every one of the ten fixtures through the stub and get the right result; `npm --prefix web run dev` serves the placeholder page.
+- **Review tier:** spot-check
+- **Dependencies:** none (builds against the contracts' fixtures, not the backend)
+
+### simple-login.web.2: Login screen
+
+- **Consumes:** [auth-api@v1]
+- **Produces:** none
+- **Governed by:** [ADR-001]
+- **Scope:** the Login screen per the PRD wireframe: username and password fields, a Sign in button disabled while either field is empty (AC-1.3), busy while the request is in flight; on success it hands the session to its parent (AC-1.1); on `invalid-credentials` it shows the AC-1.2 message and keeps the typed username; on `unavailable` the D3 network message; it also shows a notice its parent passes in (phase 3 uses it for the expiry message). The username is sent as typed (assumption, see the `request` below). Its own stylesheet.
+- **Size estimate:** ~4 files (~220 lines), <= 5 OpenSpec tasks
+- **Gate:** `npm --prefix web run gate`
+- **Verification:** component tests cover AC-1.1 to AC-1.3 against the auth-api fixtures; the screen matches the PRD wireframe.
+- **Review tier:** spot-check
+- **Dependencies:** simple-login.web.1 (the API client and its fixture stub)
+
+### simple-login.web.3: Home screen and the session flow
+
+- **Consumes:** [profile-api@v1]
+- **Produces:** none
+- **Governed by:** [ADR-001]
+- **Scope:** the Home screen per the PRD wireframe: "Hello, {displayName}", username, email, member since as a long date ("14 March 2024"), and Sign out (AC-2.1); the app composition: on load, a stored session is checked with `fetchProfile` and shows Home (AC-2.2); `unauthorized` clears the session and shows Login with the expiry message (AC-2.3, D1); signing in stores the session and shows Home; Sign out clears it and shows Login (AC-3.1). Its own stylesheet.
+- **Size estimate:** ~5 files (~300 lines), <= 6 OpenSpec tasks
+- **Gate:** `npm --prefix web run gate`
+- **Verification:** with `fetch` stubbed by the fixtures, the app walks Login, Home, reload, Home, Sign out, Login; the unauthorized fixture shows the expiry message; nothing but the token and its expiry is ever written to storage.
+- **Review tier:** full-review
+- **Dependencies:** simple-login.web.1 (API client, session store), simple-login.web.2 (the Login screen)
+
+### Phase dependency graph
+
+```mermaid
+%%{init:{'theme':'base','themeVariables':{'primaryTextColor':'#1e293b','lineColor':'#475569','edgeLabelBackground':'#ffffff','tertiaryTextColor':'#1e293b'}}}%%
+flowchart TD
+    W1["simple-login.web.1<br/>Skeleton, API client, storage"]
+    W2["simple-login.web.2<br/>Login screen"]
+    W3["simple-login.web.3<br/>Home screen, session flow"]
+    C["auth-api@v1, profile-api@v1<br/>(fixtures)"]
+
+    W1 --> W2
+    W1 --> W3
+    W2 --> W3
+    C -. "contract: stubbed fetch" .-> W1
+
+    style W1 fill:#d1fae5,stroke:#059669,color:#1e293b
+    style W2 fill:#d1fae5,stroke:#059669,color:#1e293b
+    style W3 fill:#d1fae5,stroke:#059669,color:#1e293b
+    style C fill:#e0e7ff,stroke:#4f46e5,color:#1e293b
+```
+
+## Governance updates (pending reconcile)
+
+> Emitted by hsdd-phase-plan on 2026-10-29. Drained by hsdd-reconcile;
+> do not apply by hand.
+
+- confirm `auth-api@v1` consumers: [simple-login.web.1, simple-login.web.2]
+- confirm `profile-api@v1` consumers: [simple-login.web.1, simple-login.web.3]
+- request `auth-api@v1`: where does the service listen in development? The dev proxy needs the address and neither contract states it.
+  - assumption: `http://localhost:3000` (the RFC §1 diagram)
+  - contingent phases: none
+  - profile-api@v1 is served by the same process; one answer covers both.
+- request `auth-api@v1`: is username matching case-sensitive, and should a client trim or lowercase what the user typed?
+  - assumption: the client sends the username exactly as typed
+  - contingent phases: none

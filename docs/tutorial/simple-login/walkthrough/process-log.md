@@ -146,3 +146,71 @@ draft failed: Ajv's `strictTypes` rejects a subschema that uses
 the type to every such subschema; all ten fixtures then validated. Had
 this slipped through, the backend's first replay would have failed, which
 is the point of making the contract executable.
+
+Commit `78a16b7`.
+
+## Step 4: Plan the phases, three leaf-parents (hsdd-phase-plan)
+
+**Prompts:** "simple-login.backend is small enough to phase. Write its phase
+plan." Then the same for `simple-login.web` and `simple-login.integration`.
+
+In a team these three runs happen in parallel, one git worktree per node.
+Here they ran one after another in the same session, but each plan was
+written only from the frozen governance snapshot (conventions, the three
+node specs, the two contracts, ADR-001) and the node's own sources. No
+planner used another node's plan: that is the sibling-isolation rule, and
+it is why the three plans below disagree in one place (see step 5).
+
+| Node | Phases | Tiers | Notes |
+|------|--------|-------|-------|
+| simple-login.backend | 2 | gate-only, full-review | the draft had 3; the sizing floor merged two full-review phases |
+| simple-login.web | 3 | spot-check, spot-check, full-review | no merge candidates: web.1 and web.2 share a tier but not their contracts |
+| simple-login.integration | 1 | full-review | a single composition phase with `hard` dependencies |
+
+**Six phases in total.** Each one is a Phase Equivalent: at most 8 tasks
+and about 400 changed lines, sized to one review sitting.
+
+**The sizing floor at work (backend).** The first draft split the backend
+into skeleton (gate-only), password and session logic (full-review), and
+HTTP routes (full-review). The floor's four conditions all held for the
+last two (same tier, same consumed contracts, nothing depends on one
+without the other, together still ≤ 8 tasks), so they merged. The skeleton
+stayed separate on its tier boundary. The plan records that in one
+paragraph.
+
+**Reading the sources changed the plan.** hsdd-phase-plan reads the
+sources, not just the node spec's summary of them. Three details exist only
+in the RFC, and each landed in a phase's Scope so the coding session sees
+it: the dummy-hash comparison for unknown users (RFC §4), "no password or
+token in any log line" (RFC §9), and the injected clock and random source
+(RFC §7).
+
+**Each phase's gate.** Backend: `npm --prefix backend run gate`, and for
+backend.2, which produces both contracts, the contract replay
+`npm --prefix backend run replay`. Web: `npm --prefix web run gate`
+(types, tests, build). Integration: `npm test`, which runs everything
+including the browser suite.
+
+**Node-local decisions.** Backend D1 (usernames match exactly) and D2 (it
+listens on `127.0.0.1:3000`, `PORT` overrides). Web D1 (expiry is noticed
+on a 401, no client timer), D2 (the `sessionStorage` key), D3 (one message
+per failure), D4 (no router).
+
+**Governance updates, emitted, not applied.** The governance freeze means
+no planner edits a contract. Each plan ends with a
+`## Governance updates (pending reconcile)` section instead:
+
+- backend: `confirm` both contracts' `produced_by` = backend.2; `amend`
+  auth-api@v1 with D1 (exact username match); `amend` both contracts with
+  D2 (the development address `http://127.0.0.1:3000`).
+- web: `confirm` consumers (web.1, web.2 for auth-api; web.1, web.3 for
+  profile-api); `request` "where does the service listen in development?"
+  assuming `http://localhost:3000`; `request` "is username matching
+  case-sensitive; should a client trim?" assuming "send it as typed".
+- integration: `confirm` integration.1 as a consumer of both; `request`
+  the development address, also assuming `http://localhost:3000`.
+
+Nothing here was staged. The development address really is missing from
+both contracts (the API Interface says paths, not where the service runs),
+and the web planner, reading only the RFC diagram, really would assume
+`localhost`.
