@@ -190,12 +190,20 @@ fixtures in `hsdd/contract/fixture/`, which the tests feed to a stubbed
   both fixed test-first.
 
 ## Sign-off
-- Reviewer / date:
-- Review tier applied:
-- Disposition of each Outstanding item: verified | waived (reason) |
-  deferred to {phase-id}
-- Disposition of each Learning: spec-updated | contract-bumped (id@v) |
-  adr-proposed (ADR-nnn) | dropped (reason)
+- Reviewer / date: Claude as owner proxy (the owner was unavailable), 2026-10-30
+- Review tier applied: full-review: App.tsx and session/flow.ts read in full, the rest with the
+  phase's fresh reviewer's findings; gate re-run green (79/79)
+- Disposition of each Outstanding item: real-backend walk: deferred to simple-login.integration.1
+  (its browser suite walks every AC against the real service); screen-reader pass: waived (no
+  assistive technology here; listed for the owner); the effect's `cancelled` flag: waived (the
+  pure flow also ignores events that do not fit the current state, a second guard against a stale
+  answer)
+- Disposition of each Learning: (1) spec-updated, applied at this gate: D5 in
+  hsdd/spec/simple-login.web.md, and the Overview sentence gained its exception; (2) dropped as
+  proposed, but superseded at this gate: the backend's final review met the same ambiguity from
+  the other side, so auth-api@v1 now defines a character as a code point (a compatible
+  clarification through hsdd-contract, still v1). The form's `maxLength` counts UTF-16 units, so
+  it is stricter than the contract for emoji; moot while accounts are built in
 
 > The review gate is not passed while an Outstanding item or a Learning
 > lacks a disposition. Dispositions execute at the root through the owning

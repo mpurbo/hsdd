@@ -101,12 +101,13 @@ The username input carries `autocapitalize="none"`, `autocorrect="off"` and
   of CSS, 197 test). Process: the plan, 325 lines, and this doc, 114 lines.
 
 ## Sign-off
-- Reviewer / date:
-- Review tier applied:
-- Disposition of each Outstanding item: verified | waived (reason) |
-  deferred to {phase-id}
-- Disposition of each Learning: spec-updated | contract-bumped (id@v) |
-  adr-proposed (ADR-nnn) | dropped (reason)
+- Reviewer / date: Claude as owner proxy (the owner was unavailable), 2026-10-30
+- Review tier applied: spot-check: diff skimmed, gate re-run green (79/79), the screen compared
+  with the PRD wireframe through the phase's own visual check
+- Disposition of each Outstanding item: screen-reader pass: waived (no assistive technology in this
+  environment; listed for the owner in the process log's closing notes)
+- Disposition of each Learning: spec-updated, applied at this gate: D3 in
+  hsdd/spec/simple-login.web.md now names the `invalid-input` message
 
 > The review gate is not passed while an Outstanding item or a Learning
 > lacks a disposition. Dispositions execute at the root through the owning

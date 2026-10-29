@@ -24,6 +24,8 @@ phase_ids: final
 
 - `username`: string, 1 to 64 characters.
 - `password`: string, 1 to 128 characters.
+- A character is a Unicode code point, which is what JSON Schema's
+  `maxLength` counts: an emoji is one character, not two.
 
 Responses (all bodies JSON):
 
@@ -62,6 +64,9 @@ targets this address, not `localhost`.
 - v1 current. 2026-10-29: the development address and the exact-match
   username rule were added by hsdd-reconcile from the phase plans; both are
   compatible additions, so the version stays v1.
+- 2026-10-30: "character" defined as a Unicode code point, after both the
+  backend's final review and the web.3 gate met the ambiguity. The schema
+  already counted code points; a clarification, so the version stays v1.
 - Breaking changes require v2 and a migration note here; v1
   stays until every consumer migrates.
 

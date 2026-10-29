@@ -15,7 +15,8 @@
 
 A React 19 single-page app in TypeScript, built with Vite. Two screens and
 no router: the app is a function of the session value (no token shows
-Login, a token shows Home). The token lives in `sessionStorage`. In
+Login, a token shows Home, except while the backend cannot be reached:
+see D5). The token lives in `sessionStorage`. In
 development the Vite server proxies `/api` to the backend on port 3000, so
 the browser sees one origin. The node knows the backend only through
 auth-api@v1 and profile-api@v1.
@@ -49,7 +50,14 @@ holding `hsdd/`).
   username or password." (AC-1.2); a 401 on `/api/me` shows "Your session
   has expired. Please sign in again." (AC-2.3); a network failure or an
   unexpected status shows "Could not reach the server. Please try again."
+  `VALIDATION_FAILED` (`invalid-input`) shows the AC-1.2 message; the form
+  cannot send such a request, so it means credentials that match nothing.
+  (Added at the simple-login.web.2 gate, 2026-10-30.)
 - **D4. No router** (RFC §6): the screen is a function of the session value.
+- **D5. A network failure while checking a stored session keeps the
+  session** and shows Login with the D3 network message; the next load
+  retries it. Only a 401 clears it (D1). (Added at the simple-login.web.3
+  gate, 2026-10-30.)
 
 ### simple-login.web.1: App skeleton, API client, session storage
 

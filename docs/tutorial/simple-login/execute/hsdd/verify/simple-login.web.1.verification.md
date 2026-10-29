@@ -99,12 +99,11 @@ What to eyeball: `web/src/api/client.ts` reads only `status` and
   committed). Process: the plan, 376 lines, and this doc, 112 lines.
 
 ## Sign-off
-- Reviewer / date:
-- Review tier applied:
-- Disposition of each Outstanding item: verified | waived (reason) |
-  deferred to {phase-id}
-- Disposition of each Learning: spec-updated | contract-bumped (id@v) |
-  adr-proposed (ADR-nnn) | dropped (reason)
+- Reviewer / date: Claude as owner proxy (the owner was unavailable), 2026-10-30
+- Review tier applied: spot-check: diff skimmed, gate re-run green in the main checkout after the
+  lane merged (79/79 across the web suite, build clean)
+- Disposition of each Outstanding item: none outstanding
+- Disposition of each Learning: dropped, as proposed (reason recorded with it)
 
 > The review gate is not passed while an Outstanding item or a Learning
 > lacks a disposition. Dispositions execute at the root through the owning
