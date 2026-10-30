@@ -7,7 +7,7 @@
 - **Consumes:** [auth-api@v1, profile-api@v1]
 - **Produces:** none
 - **Governed by:** [ADR-001]
-- **Sources:** hsdd/context/prd-simple-login.md (US-1, US-2, US-3, Screens), hsdd/context/rfc-simple-login.md (§1 Summary, §2 API, §6 Frontend stack, §7 Testing)
+- **Sources:** hsdd/context/prd-simple-login.md (US-1, US-2, US-3, Screens), hsdd/context/rfc-simple-login.md (§1 Summary, §2 API, §6 Frontend stack, §7 Testing), hsdd/context/update-1-add-phone.md (AC-2.1 amended, AC-2.4, Screen, Scope)
 - **Decomposes into:** phases (see hsdd-phase-plan)
 - **Isolation strategy:** `fetch` is stubbed with the auth-api and profile-api fixtures; the backend never needs to run
 
@@ -30,12 +30,22 @@ auth-api@v1 and profile-api@v1.
 | simple-login.web.1 | App skeleton, API client, session storage | spot-check | ~10 files (~300 lines), ≤6 tasks | none |
 | simple-login.web.2 | Login screen | spot-check | ~4 files (~220 lines), ≤5 tasks | 1 |
 | simple-login.web.3 | Home screen and the session flow | full-review | ~5 files (~300 lines), ≤6 tasks | 1, 2 |
+| simple-login.web.4 | Phone number on Home | spot-check | ~9 files (~70 lines), ≤4 tasks | 1, 3 |
 
 Ordering policy: `interfaces-first` (from `hsdd/conventions.md`). Phase 1
 is the typed boundary to the backend (the API client and its fixtures) and
 the browser storage behind it; phases 2 and 3 are the screens; phase 3 also
 composes the app. Commands run from the repository root (the directory
 holding `hsdd/`).
+
+Appended 2026-10-30 for hsdd/management/2026-10-30-intake-add-phone.md
+(append mode: web.1 to web.3 have shipped and are unchanged). Under the
+same policy, simple-login.web.4 moves the typed boundary to profile-api@v2
+and then the Home screen onto it, in one phase: split, the two halves would
+be adjacent spot-check phases over the same contract, below the sizing
+floor. Its process artifacts will still outweigh a ~70-line diff (the
+floor's smell), but its only neighbour, web.3, has shipped and is never
+reopened, so it stays one small phase.
 
 ### Decisions
 
@@ -95,6 +105,18 @@ holding `hsdd/`).
 - **Review tier:** full-review
 - **Dependencies:** simple-login.web.1 (API client, session store), simple-login.web.2 (the Login screen)
 
+### simple-login.web.4: Phone number on Home
+
+- **Consumes:** [profile-api@v2]
+- **Produces:** none
+- **Governed by:** [ADR-001]
+- **Scope:** per hsdd/management/2026-10-30-intake-add-phone.md, the web app moves from profile-api@v1 to profile-api@v2 and Home shows the signed-in user's phone number (AC-2.1 amended, AC-2.4). The `Profile` type gains `phone`; `fetchProfile` requires it as a string, so a 200 without it is `unavailable` like any other malformed 200 (web.1), and it keeps ignoring fields it does not know (profile-api@v2). Home gains a `Phone` row between Email and Member since, per the request's Screen, showing `phone` as plain text exactly as received, never reformatted. The fixture stub loads `profile-api.v2`, and every test that reads a profile fixture (the client and its every-fixture guard, the stub's own listing, Home, the session flow, App) moves to the v2 fixtures; afterwards no web test reads `hsdd/contract/fixture/profile-api/`, so v1's retirement cannot break this node's gate. Login, the session flow, storage and the messages do not change (D1 to D5 stand).
+- **Size estimate:** ~9 files (~70 lines, mostly tests), <= 4 OpenSpec tasks
+- **Gate:** node default
+- **Verification:** with `fetch` stubbed by the profile-api@v2 fixtures, Home shows `+62 812 3456 7890` for Ayu and `+62 813 9876 5432` for Budi, character for character, in the request's row order; the screen matches the request's Screen at 360 px; the load check and the walk behave as in web.3.
+- **Review tier:** spot-check
+- **Dependencies:** simple-login.web.1 (the API client and its fixture stub), simple-login.web.3 (the Home screen and the App tests); across nodes, profile-api@v2 through its fixtures only (drafted 2026-10-30, `stable` once hsdd-reconcile drains the three plans), never the backend
+
 ### Phase dependency graph
 
 ```mermaid
@@ -104,18 +126,40 @@ flowchart TD
     W2["simple-login.web.2<br/>Login screen"]
     W3["simple-login.web.3<br/>Home screen, session flow"]
     C["auth-api@v1, profile-api@v1<br/>(fixtures)"]
+    W4["simple-login.web.4<br/>Phone number on Home"]
+    C2["profile-api@v2<br/>(fixtures)"]
 
     W1 --> W2
     W1 --> W3
     W2 --> W3
     C -. "contract: stubbed fetch" .-> W1
+    W1 --> W4
+    W3 --> W4
+    C2 -. "contract: stubbed fetch" .-> W4
 
     style W1 fill:#d1fae5,stroke:#059669,color:#1e293b
     style W2 fill:#d1fae5,stroke:#059669,color:#1e293b
     style W3 fill:#d1fae5,stroke:#059669,color:#1e293b
     style C fill:#e0e7ff,stroke:#4f46e5,color:#1e293b
+    style W4 fill:#d1fae5,stroke:#059669,color:#1e293b
+    style C2 fill:#e0e7ff,stroke:#4f46e5,color:#1e293b
 ```
 
 ## Governance updates (pending reconcile)
 
 > Reconciled 2026-10-29 by hsdd-reconcile. Drained entries are in git history.
+
+> Emitted by hsdd-phase-plan on 2026-10-30. Drained by hsdd-reconcile;
+> do not apply by hand.
+
+- confirm `profile-api@v2` consumers: [simple-login.web.4]
+  - matches the contract's provisional entry for this node; web.4 is this
+    node's only v2 phase, for hsdd/management/2026-10-30-intake-add-phone.md
+  - web.4 also ends this node's use of `profile-api@v1` (web.1, web.3):
+    once it ships, no web code or test reads v1 or its fixtures, which is
+    this node's half of v1's "every v1 consumer has a v2 phase shipped"
+  - not edited by this plan: the node's `- **Consumes:**` field and the
+    Overview's last sentence here, and the node section, Child nodes
+    table, Contract matrix and DAG in `hsdd/spec/simple-login.md`, all
+    still name `profile-api@v1` (true until web.4 ships); the root spec's
+    copy of `- **Sources:**` also lacks the request path added here

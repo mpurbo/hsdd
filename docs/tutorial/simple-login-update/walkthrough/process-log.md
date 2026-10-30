@@ -94,3 +94,45 @@ which is the only skill that closes an intake record.
   outside the contract. Node specs' `Produces`/`Consumes` and the root's
   contract matrix and DAG still say v1; they are left for the phase plans
   and reconcile, and logged where they are handled.
+
+### 13:25 to 13:09 · hsdd-phase-plan ×3, append mode, in parallel
+
+Three fresh agents, one per landing node. Each was allowed its own node
+spec, the root spec's shared node sections, every contract and ADR, the
+intake record, the sources and its own code, and forbidden the sibling
+plans: the skill's sibling-isolation rule.
+
+| Phase | Name | Tier | Size | Consumes / produces |
+|---|---|---|---|---|
+| simple-login.backend.3 | Phone number in the profile | spot-check | ~7 files, ~40 lines, ≤3 tasks | produces profile-api@v2 |
+| simple-login.web.4 | Phone number on Home | spot-check | ~9 files, ~70 lines, ≤4 tasks | consumes profile-api@v2 |
+| simple-login.integration.2 | Phone number end to end | spot-check | ~4 files, ~35 lines, ≤4 tasks | consumes auth-api@v1, profile-api@v2 |
+
+- **Append mode held.** Numbering continued from each node's highest
+  shipped phase; no shipped phase, summary row or graph edge was edited.
+  Each new Scope names the intake record, and each node's  gained
+  .
+- **Pending entries:**  from all three (producer
+  backend.3, consumers web.4 and integration.2, matching v2's provisional
+  ids), , and
+  two s. No , so nothing is contingent.
+- **Caught: the red window.** The integration planner worked out that once
+  backend.3 serves v2, integration.1's exact replay of v1's `200` fixtures
+  fails, so the root `npm test` is red until integration.2 lands. The web
+  planner reached the same place from its side: web.4 requires `phone`, so
+  against a v1 backend it shows the network message. Both wrote it into
+  their plans: the three phases land together.
+- **Caught: a contradiction in the v2 draft.** Two planners noticed that
+  v2 declares `additive-only` and "consumers ignore fields they do not
+  know" while its schema still closes the profile with
+  `additionalProperties: false`. Neither consumes the schema at run time,
+  so neither emitted a `request`; the fix belongs to `hsdd-contract`
+  before the flip to `stable`.
+- **All three hit the same gap.** Append mode may edit only the node's
+  `Sources`, so every planner left its node's `Produces`/`Consumes` (and
+  the root spec's copies) at v1, and had to smuggle that into a `note` or a
+  `confirm` sub-bullet: no entry type carries a node-spec change to the
+  root. They also each had to decide whether "the request's path" meant the
+  intake record or the ticket (all three chose the ticket), and each met
+  the sizing floor's merge-candidate smell with no partner to merge with,
+  since the neighbour phase had shipped.
