@@ -255,7 +255,7 @@ git -c user.name="Purbo Mamad" -c user.email="m.purbo@gmail.com" commit -m "feat
 
 - [ ] **Step 1: Write the doc from the template at spot-check depth**
 
-Title `# Verification: simple-login.web.4 — Phone number on Home` (the template's own form). Sections: Commands to run (`npm --prefix web install`, `npm --prefix web run gate`, the `grep` showing no test reads `profile-api/`), Expected output (exit 0, test count, the two phones), Observed (dated 2026-10-30: the gate's counts, the grep, the 360 px check), Outstanding (what could not be checked here), Learnings (`- none` or entries each with one disposition), Metrics (optional), Sign-off with every field left blank.
+Title `# Verification: simple-login.web.4 · Phone number on Home` (the separator web.1 to web.3 use). Sections: Commands to run (`npm --prefix web install`, `npm --prefix web run gate`, the `grep` showing no test reads `profile-api/`), Expected output (exit 0, test count, the two phones), Observed (dated 2026-10-30: the gate's counts, the grep, the 360 px check), Outstanding (what could not be checked here), Learnings (`- none` or entries each with one disposition), Metrics (optional), Sign-off with every field left blank.
 
 - [ ] **Step 2: Check it**
 
