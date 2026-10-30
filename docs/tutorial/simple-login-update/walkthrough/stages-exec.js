@@ -77,7 +77,7 @@ function worthView() {
   const max = Math.max(...m.rows.map((r) => r.prod + r.proc));
   const w = (n) => `${(n / max) * 100}%`;
   return `<div class="stat-row">${m.stats.map(([v, label]) => `<div class="stat"><b>${esc(v)}</b><span>${esc(label)}</span></div>`).join("")}</div>
-    <div class="legend"><span><i style="background:var(--impl)"></i>product (source, tests, README)</span><span><i style="background:color-mix(in srgb, var(--process) 55%, var(--card))"></i>process (records, contract, plans, contexts, verification)</span></div>
+    <div class="legend"><span><i style="background:var(--impl)"></i>product (source, tests, README)</span><span><i style="background:color-mix(in srgb, var(--process) 55%, var(--card))"></i>process (records, contract, specs, plans, verification)</span></div>
     <div class="bars">${m.rows.map((r) => `<div class="bar-row"><span title="${esc(r.label)}">${esc(r.label)}</span><div class="stack"><i class="p-src" style="width:${w(r.prod)}"></i><i class="p-proc" style="width:${w(r.proc)}"></i></div><span class="num">${r.prod} / ${r.proc}</span></div>`).join("")}</div>
     <p class="hint">Lines added or changed, product / process. ${esc(m.note)}</p>
     <div class="table-wrap"><table class="data"><thead><tr><th>Caught</th><th>When</th><th>By</th></tr></thead><tbody>

@@ -316,6 +316,7 @@ table.data td.num, table.data th.num { text-align: right; font-variant-numeric: 
 .tree button .n { color: var(--faint); font-size: 11px; }
 .tree .new > button { background: var(--done-bg); }
 .tree .new > button::after { content: "new"; font-family: var(--sans); font-size: 10px; font-weight: 700; color: var(--done); margin-left: auto; }
+.tree .new.edited > button::after { content: "changed"; }
 .tree .new > button .n { display: none; }
 .tree .more { color: var(--faint); padding: 1px 4px; font-family: var(--sans); font-size: 12px; }
 
@@ -438,3 +439,7 @@ dialog::backdrop { background: rgba(12, 19, 34, 0.45); }
 .chip.ghost { background: var(--sunk); border-color: var(--rule); color: var(--muted); }
 table.data tr.locked td { color: var(--muted); }
 .dg .edge.contract.hot { stroke: var(--accent); stroke-width: 2.6; }
+.raw.diff .op { display: inline-block; width: 1.4em; font-weight: 650; color: var(--muted); user-select: none; }
+.raw.diff .d-add .op { color: var(--done); }
+.raw.diff .d-del .op { color: var(--fail); }
+.raw.diff .d-del { text-decoration: none; }

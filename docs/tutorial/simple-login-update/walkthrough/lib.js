@@ -140,7 +140,7 @@ function diffLines(a, b) {
   return ops;
 }
 function diffView(before, after) {
-  if (before === undefined) return `<p class="diff-sum">New file since the template: ${(after.match(/\n/g) || []).length} lines.</p><pre class="raw diff">${after.split("\n").map((l) => `<span class="d-add">+ ${esc(l)}</span>`).join("\n")}</pre>`;
+  if (before === undefined) return `<p class="diff-sum">New file since the template: ${(after.match(/\n/g) || []).length} lines.</p><pre class="raw diff">${after.split("\n").map((l, k) => `<span class="d-add"><i></i><i>${k + 1}</i><b class="op">+</b>${esc(l)}</span>`).join("")}</pre>`;
   if (before === after) return `<p class="diff-sum">Unchanged since the template.</p>`;
   const ops = diffLines(before, after);
   if (!ops) return `<p class="diff-sum">Too large to diff here; open the file in the repository.</p>`;
@@ -150,9 +150,9 @@ function diffView(before, after) {
   ops.forEach((o, k) => {
     if (!keep[k]) { if (rows.at(-1) !== null) rows.push(null); return; }
     const cls = o[0] === "+" ? "d-add" : o[0] === "-" ? "d-del" : "d-ctx";
-    rows.push(`<span class="${cls}"><i>${o[2] ?? ""}</i><i>${o[3] ?? ""}</i>${o[0]} ${esc(o[1])}</span>`);
+    rows.push(`<span class="${cls}"><i>${o[2] ?? ""}</i><i>${o[3] ?? ""}</i><b class="op">${o[0] === "-" ? "−" : o[0]}</b>${esc(o[1])}</span>`);
   });
-  return `<p class="diff-sum">Against the template: <b class="d-add">+${added}</b> <b class="d-del">−${removed}</b> lines.</p><pre class="raw diff">${rows.map((r) => r ?? `<span class="d-gap">⋯</span>`).join("\n")}</pre>`;
+  return `<p class="diff-sum">Against the template: <b class="d-add">+${added}</b> <b class="d-del">−${removed}</b> lines.</p><pre class="raw diff">${rows.map((r) => r ?? `<span class="d-gap">⋯</span>`).join("")}</pre>`;
 }
 
 // ---------- the update loop strip ----------

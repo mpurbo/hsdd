@@ -48,6 +48,13 @@ The [process log](walkthrough/process-log.md) has every step, every
 decision taken on the owner's behalf (marked **[owner proxy]**), every
 failure and how it was caught, and the findings about HSDD itself.
 
+## Next: a change to the finished project
+
+[`../simple-login-update/`](../simple-login-update/) takes this project as
+its starting point and adds one field, the phone number on Home, through
+HSDD's change flow: intake, a contract version bump, appended phases,
+reconcile, and the checkpoint that closes the change.
+
 ## Regenerating the walkthrough's data
 
 `walkthrough/data.js` embeds the repository as each stage left it, read

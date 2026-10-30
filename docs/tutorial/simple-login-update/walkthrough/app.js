@@ -64,7 +64,7 @@ function treeHtml(stageIndex) {
   const render = (node) => `<ul>${Object.keys(node).sort((a, z) => (a.endsWith("/") === z.endsWith("/") ? a.localeCompare(z) : a.endsWith("/") ? -1 : 1)).map((k) => {
     const v = node[k];
     if (k.endsWith("/")) return `<li><div class="dir">${esc(k)}</div>${render(v)}</li>`;
-    return `<li class="${changed(v.path, v.blob) ? "new" : ""}"><button ${act("open", v.path)} title="${esc(v.path)}"><span>${esc(k)}</span><span class="n">${lines(v.blob)}</span></button></li>`;
+    return `<li class="${!before.has(v.path) ? "new" : changed(v.path, v.blob) ? "new edited" : ""}"><button ${act("open", v.path)} title="${esc(v.path)}"><span>${esc(k)}</span><span class="n">${lines(v.blob)}</span></button></li>`;
   }).join("")}</ul>`;
   const fresh = now.filter(([p, b]) => changed(p, b)).length;
   const filter = `<div class="tree-filter">${window.WL.seg("filter", state.filter, [["changed", "Changed since the template"], ["all", "All files"]])}</div>`;
