@@ -49,8 +49,8 @@ targets this address, not `localhost`.
 
 - `expiresAt` is exactly 30 minutes after the moment the token was issued
   (ADR-001).
-- A token from a 200 response is accepted by `profile-api@v1` until
-  `expiresAt`, and rejected after it.
+- A token from a 200 response is accepted by `profile-api@v1` and
+  `profile-api@v2` until `expiresAt`, and rejected after it.
 - An unknown username and a wrong password give the same status, the same
   body, byte for byte.
 - Usernames match exactly: case-sensitive, with no trimming. `Ayu` and
@@ -67,6 +67,9 @@ targets this address, not `localhost`.
 - 2026-10-30: "character" defined as a Unicode code point, after both the
   backend's final review and the web.3 gate met the ambiguity. The schema
   already counted code points; a clarification, so the version stays v1.
+- 2026-10-30: the token guarantee also names `profile-api@v2`, drafted for
+  `hsdd/management/2026-10-30-intake-add-phone.md`. The same tokens work at
+  the same endpoint; a compatible clarification, so the version stays v1.
 - Breaking changes require v2 and a migration note here; v1
   stays until every consumer migrates.
 

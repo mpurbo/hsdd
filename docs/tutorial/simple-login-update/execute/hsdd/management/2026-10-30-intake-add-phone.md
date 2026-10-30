@@ -54,7 +54,12 @@ Handoff prompts, in order:
 - `/hsdd-reconcile`
 
 ## Produced
-- none yet
+- contract drafted: `profile-api@v2` (`hsdd/contract/profile-api.v2.md`,
+  schema and five fixtures), `additive-only`
+- contract clarified: `auth-api@v1` (its token guarantee names
+  `profile-api@v2`; compatible, version kept)
+- ADR links: ADR-001 `affects` gains `profile-api@v2`
 
 ## Change log
 - 2026-10-30: created, routed cross-node
+- 2026-10-30: hsdd-contract drafted profile-api@v2; hsdd-adr linked ADR-001

@@ -6,3 +6,4 @@
 |----|---------|------|--------|-------|-----------|
 | `auth-api` | v1 | api | stable | `simple-login.backend` | 3 |
 | `profile-api` | v1 | api | stable | `simple-login.backend` | 3 |
+| `profile-api` | v2 | api | draft | `simple-login.backend` | 2 |

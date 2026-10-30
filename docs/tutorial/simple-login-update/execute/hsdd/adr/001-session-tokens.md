@@ -1,7 +1,7 @@
 ---
 id: ADR-001
 status: accepted
-affects: [simple-login.backend, simple-login.web, auth-api@v1, profile-api@v1]
+affects: [simple-login.backend, simple-login.web, auth-api@v1, profile-api@v1, profile-api@v2]
 date: 2026-10-29
 ---
 

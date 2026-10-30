@@ -58,6 +58,9 @@ Development address: the same process as `auth-api@v1`,
 - v1 current. 2026-10-29: the development address was added by
   hsdd-reconcile from the phase plans; a compatible addition, so the
   version stays v1.
+- 2026-10-30: v2 drafted in `hsdd/contract/profile-api.v2.md` (adds
+  `phone`); its Versioning section carries the migration note. v1 stays
+  `stable` until every v1 consumer has a v2 phase shipped.
 - Breaking changes require v2 and a migration note here; v1
   stays until every consumer migrates.
 

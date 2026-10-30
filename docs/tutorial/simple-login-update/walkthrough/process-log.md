@@ -50,3 +50,47 @@ which is the only skill that closes an intake record.
 - **Finding (authority).** The skill's authority values are accepted RFC,
   draft, ticket, incident, braindump. An approved PRD amendment, the most
   ordinary product change, is none of them; the record says `ticket`.
+
+### 13:02 · hsdd-contract and hsdd-adr: profile-api@v2
+
+- **v2 is a separate file beside v1.** `hsdd/contract/profile-api.v2.md`
+  (id `profile-api`, version `v2`, `draft`, `phase_ids: provisional`),
+  `schema/profile-api.v2.schema.json`, five fixtures under
+  `fixture/profile-api.v2/`. v1's file, schema and fixtures are untouched:
+  v1 stays `stable` until its consumers migrate. The registry generator
+  projects both versions as two rows without change.
+- **Checked, not assumed.** v2's two `200` fixtures validate against the
+  v2 schema and fail v1's (`additionalProperties: false`); the three
+  `401` fixtures pass both and are byte copies. A phone without the
+  international format is rejected by v2's pattern.
+- **[owner proxy] v2 declares `additive-only`.** Compatibility is declared
+  per version, so drafting v2 forces the choice. v1's closed, versioned
+  shape is why one display field cost a new version; under
+  `additive-only` the next optional field amends v2 in place. The price is
+  a new guarantee, "consumers ignore fields they do not know", which the
+  web client already honors (it reads five named fields).
+- **[owner proxy] One endpoint, one shape.** `GET /api/me` cannot serve
+  v1 and v2 side by side, and the PRD's "exactly two endpoints" rules out
+  `/api/v2/me`. The migration note says so: the producer serves v2 only
+  from its v2 phase on, the deprecation window is the gap between the
+  producer's and the last consumer's v2 phases, and this intake ships them
+  together.
+- **v2 states its fixture format in full** instead of "same shape as
+  auth-api@v1's", as v1 did. Since v0.10.1 a cross-reference pulls the
+  other contract into every phase context as `referenced`.
+- **The bump ripples.** Text that names `profile-api@v1` was found in
+  auth-api's token guarantee, ADR-001's `affects`, all three node specs
+  and the root spec. Within this step: auth-api@v1 gets a compatible
+  clarification (its guarantee names v2 too; version kept), and ADR-001's
+  `affects` gains v2, as hsdd-adr's bidirectional-link rule requires
+  once v2 says `Governed by: [ADR-001]`. Registries regenerated: three
+  contract rows, one ADR row.
+- **Finding (layout).** hsdd-contract says a breaking change "creates
+  `v{n+1}`" while "the old version remains `stable`", but names one file
+  per slug (`{slug}.md`, `{slug}.schema.json`, `fixture/{slug}/`). Where
+  two live versions sit is left to the run; this one chose a `.v2`
+  suffix on all three paths.
+- **Finding (ripple).** No skill lists what a version bump must update
+  outside the contract. Node specs' `Produces`/`Consumes` and the root's
+  contract matrix and DAG still say v1; they are left for the phase plans
+  and reconcile, and logged where they are handled.

@@ -1,0 +1,21 @@
+{
+  "name": "me-ayu",
+  "description": "Ayu's token returns Ayu's profile, phone number included.",
+  "request": {
+    "method": "GET",
+    "path": "/api/me",
+    "headers": { "authorization": "Bearer {{token:ayu}}" }
+  },
+  "response": {
+    "status": 200,
+    "body": {
+      "id": "u_001",
+      "username": "ayu",
+      "displayName": "Ayu Lestari",
+      "email": "ayu@example.com",
+      "phone": "+62 812 3456 7890",
+      "memberSince": "2024-03-14"
+    }
+  },
+  "replay": "exact"
+}
