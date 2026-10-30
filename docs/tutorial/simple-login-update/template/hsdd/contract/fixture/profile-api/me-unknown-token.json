@@ -1,0 +1,14 @@
+{
+  "name": "me-unknown-token",
+  "description": "A well-formed token the backend never issued.",
+  "request": {
+    "method": "GET",
+    "path": "/api/me",
+    "headers": { "authorization": "Bearer AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" }
+  },
+  "response": {
+    "status": 401,
+    "body": { "error": { "code": "UNAUTHORIZED", "message": "Sign in to continue." } }
+  },
+  "replay": "exact"
+}
