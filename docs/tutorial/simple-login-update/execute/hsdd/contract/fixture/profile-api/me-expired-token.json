@@ -1,0 +1,14 @@
+{
+  "name": "me-expired-token",
+  "description": "A token past its expiresAt gets the same 401 as an unknown one.",
+  "request": {
+    "method": "GET",
+    "path": "/api/me",
+    "headers": { "authorization": "Bearer {{expired-token:ayu}}" }
+  },
+  "response": {
+    "status": 401,
+    "body": { "error": { "code": "UNAUTHORIZED", "message": "Sign in to continue." } }
+  },
+  "replay": "exact"
+}

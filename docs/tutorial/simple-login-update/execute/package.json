@@ -1,0 +1,19 @@
+{
+  "name": "@simple-login/root",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "simple-login: runs the backend and the web app together, and tests them end to end.",
+  "engines": {
+    "node": ">=24.2"
+  },
+  "scripts": {
+    "install:all": "npm --prefix backend install && npm --prefix web install && npm install",
+    "dev": "node scripts/dev.mjs",
+    "e2e": "playwright test",
+    "test": "npm --prefix backend run gate && npm --prefix backend run replay && npm --prefix web run gate && node --test \"scripts/*.test.mjs\" && npm run e2e"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.64.1"
+  }
+}

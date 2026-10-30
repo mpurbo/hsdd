@@ -1,0 +1,15 @@
+{
+  "name": "login-unknown-user",
+  "description": "A username that does not exist gets the same answer as a wrong password.",
+  "request": {
+    "method": "POST",
+    "path": "/api/login",
+    "headers": { "content-type": "application/json" },
+    "body": { "username": "citra", "password": "sunrise-42" }
+  },
+  "response": {
+    "status": 401,
+    "body": { "error": { "code": "INVALID_CREDENTIALS", "message": "Incorrect username or password." } }
+  },
+  "replay": "exact"
+}
