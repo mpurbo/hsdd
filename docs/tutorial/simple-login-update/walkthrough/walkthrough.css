@@ -414,6 +414,7 @@ dialog::backdrop { background: rgba(12, 19, 34, 0.45); }
   .axis > span { display: none; }
 }
 @media (max-width: 480px) {
+  .brand { display: none; }
   .mode button { padding: 4px 9px; }
   .tool .label-text { display: none; }
   .fields { grid-template-columns: minmax(0, 1fr); }
