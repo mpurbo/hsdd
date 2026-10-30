@@ -1,0 +1,168 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:simple-login:contract:auth-api:v1",
+  "title": "auth-api@v1: responses of POST /api/login",
+  "description": "Validates one response as { status, body }. $defs.LoginRequest describes a valid request body.",
+  "type": "object",
+  "required": [
+    "status",
+    "body"
+  ],
+  "properties": {
+    "status": {
+      "type": "integer"
+    },
+    "body": true
+  },
+  "additionalProperties": false,
+  "oneOf": [
+    {
+      "type": "object",
+      "properties": {
+        "status": {
+          "const": 200
+        },
+        "body": {
+          "$ref": "#/$defs/LoginSuccess"
+        }
+      }
+    },
+    {
+      "type": "object",
+      "properties": {
+        "status": {
+          "const": 400
+        },
+        "body": {
+          "$ref": "#/$defs/ValidationFailed"
+        }
+      }
+    },
+    {
+      "type": "object",
+      "properties": {
+        "status": {
+          "const": 401
+        },
+        "body": {
+          "$ref": "#/$defs/InvalidCredentials"
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "LoginRequest": {
+      "type": "object",
+      "required": [
+        "username",
+        "password"
+      ],
+      "properties": {
+        "username": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "password": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        }
+      }
+    },
+    "LoginSuccess": {
+      "type": "object",
+      "required": [
+        "token",
+        "tokenType",
+        "expiresAt"
+      ],
+      "properties": {
+        "token": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_-]{43}$"
+        },
+        "tokenType": {
+          "const": "Bearer"
+        },
+        "expiresAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "additionalProperties": false
+    },
+    "ErrorEnvelope": {
+      "type": "object",
+      "required": [
+        "error"
+      ],
+      "properties": {
+        "error": {
+          "type": "object",
+          "required": [
+            "code",
+            "message"
+          ],
+          "properties": {
+            "code": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "ValidationFailed": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/ErrorEnvelope"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "error": {
+              "type": "object",
+              "properties": {
+                "code": {
+                  "const": "VALIDATION_FAILED"
+                },
+                "message": {
+                  "const": "Username and password are required."
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "InvalidCredentials": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/ErrorEnvelope"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "error": {
+              "type": "object",
+              "properties": {
+                "code": {
+                  "const": "INVALID_CREDENTIALS"
+                },
+                "message": {
+                  "const": "Incorrect username or password."
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

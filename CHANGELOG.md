@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `docs/tutorial/simple-login-update/`: a second recorded run, one change
+  to the finished simple-login project (the user's phone number on Home)
+  taken through HSDD's change flow with the v0.10.1 skills: hsdd-intake,
+  a breaking contract change minting `profile-api@v2` beside v1, phases
+  appended on three nodes, reconcile, two parallel superpowers lanes and an
+  integration phase, and the first hsdd-checkpoint closing the intake
+  record. The `template/` (the finished project plus the change request),
+  the `execute/` repository after the change, and an interactive
+  `walkthrough/` with a diff against the template and a full process log,
+  including twelve findings about the change flow.
+
 ## [0.10.1] - 2026-10-30
 
 Two phase-context corrections, found by the simple-login tutorial run, and
