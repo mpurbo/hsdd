@@ -170,3 +170,25 @@ plans: the skill's sibling-isolation rule.
   skill updates node `Produces`/`Consumes`, the root's copies of them, or
   the root's matrix and DAG after a version bump. Three planners noticed and
   each had to route it through an entry type that does not fit.
+
+### 13:12 · hsdd-config: three phase contexts (v0.10.1)
+
+- Switched `simple-login.backend.3`, `simple-login.web.4` and
+  `simple-login.integration.2` with method `superpowers`. No stop fired:
+  each Gate resolves (web.4's `node default` to the plan's default gate),
+  ADR-001 has its file, both contracts the phases consume or produce are
+  `stable` with final ids, the verification template is byte-identical to
+  the skill's. The dependency phases have signed verification docs.
+- **v0.10.1 at work.** Each contract subsection carries Interface,
+  Guarantees and Validation. Each migration phase's Scope names
+  `profile-api@v1`, the version it leaves, so v1 comes in as `referenced`
+  with its full text, and `auth-api@v1` follows through v2's Interface
+  ("`{token}` came from `auth-api@v1`"). The Discipline section gains the
+  Referenced line.
+- **The cost of that.** Each context is about 250 lines (backend.3 250,
+  web.4 248, integration.2 247), against 65 to 190 in the first run. For a
+  migration phase the old version's text is useful (its Validation names
+  the fixture paths the phase must stop reading), but it is the trade-off
+  v0.10.1 chose: full text over a one-line stub.
+- Self-contained gate: every `@v`, `ADR-` and OQ id in each file has its
+  subsection. Equality check: empty for all three.
