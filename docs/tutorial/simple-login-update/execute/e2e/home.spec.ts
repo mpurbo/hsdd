@@ -3,6 +3,8 @@ import { expect, profileFixture, signIn, signOut, test } from "./fixtures.ts";
 
 const AYU = profileFixture("me-ayu");
 const BUDI = profileFixture("me-budi");
+/** The whole raw text, character for character: `exact: true` normalizes whitespace. */
+const exactly = (text: string) => new RegExp(`^${text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`);
 
 test("AC-2.1: Home shows the signed-in user's details", async ({ page }) => {
   await page.goto("/");
@@ -11,16 +13,16 @@ test("AC-2.1: Home shows the signed-in user's details", async ({ page }) => {
   await expect(page.getByText("ayu@example.com")).toBeVisible();
   await expect(page.getByText("14 March 2024")).toBeVisible();
   await expect(page.getByText("ayu", { exact: true })).toBeVisible();
-  await expect(page.getByText(AYU.phone!, { exact: true })).toBeVisible();
+  await expect(page.getByText(exactly(AYU.phone!))).toBeVisible();
 });
 
 test("AC-2.4: Home shows each account's phone number exactly as stored", async ({ page }) => {
   await page.goto("/");
   await signIn(page, "ayu", "sunrise-42");
-  await expect(page.getByText(AYU.phone!, { exact: true })).toBeVisible();
+  await expect(page.getByText(exactly(AYU.phone!))).toBeVisible();
   await signOut(page);
   await signIn(page, "budi", "harbor-17");
-  await expect(page.getByText(BUDI.phone!, { exact: true })).toBeVisible();
+  await expect(page.getByText(exactly(BUDI.phone!))).toBeVisible();
 });
 
 test("Budi sees Budi's profile, not Ayu's", async ({ page }) => {
@@ -28,7 +30,7 @@ test("Budi sees Budi's profile, not Ayu's", async ({ page }) => {
   await signIn(page, "budi", "harbor-17");
   await expect(page.getByRole("heading", { name: "Hello, Budi Santoso" })).toBeVisible();
   await expect(page.getByText("9 January 2025")).toBeVisible();
-  await expect(page.getByText(BUDI.phone!, { exact: true })).toBeVisible();
+  await expect(page.getByText(exactly(BUDI.phone!))).toBeVisible();
   await expect(page.getByText("ayu@example.com")).toHaveCount(0);
   await expect(page.getByText(AYU.phone!)).toHaveCount(0);
 });
