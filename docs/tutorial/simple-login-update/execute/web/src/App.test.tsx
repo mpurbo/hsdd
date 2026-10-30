@@ -41,6 +41,19 @@ describe('App: the load check (AC-2.2, AC-2.3, D1)', () => {
     expect(sessionStorage.getItem('simple-login.session')).toBe(JSON.stringify(stored))
   })
 
+  it('keeps the session and shows the network message when GET /api/me answers 200 without a phone (D3, D5)', async () => {
+    store()
+    const ayu = loadFixture('profile-api.v2', 'me-ayu')
+    const body = Object.fromEntries(
+      Object.entries(ayu.response.body as Record<string, unknown>).filter(([key]) => key !== 'phone'),
+    )
+    stubFetch({ ...ayu, response: { status: 200, body } })
+    render(<App />)
+    expect(await screen.findByRole('status')).toHaveTextContent('Could not reach the server. Please try again.')
+    expect(screen.queryByRole('heading', { name: 'Hello, Ayu Lestari' })).toBeNull()
+    expect(sessionStorage.getItem('simple-login.session')).toBe(JSON.stringify(stored))
+  })
+
   it('shows a loading line, not Login, while the stored session is checked', () => {
     store()
     stubFetchHanging()

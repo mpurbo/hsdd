@@ -1,4 +1,4 @@
-// The web node's own types for auth-api@v1 and profile-api@v1 (no shared code
+// The web node's own types for auth-api@v1 and profile-api@v2 (no shared code
 // package: each node writes its types from the contract's Interface).
 
 /** What the web app keeps of a 200 from POST /api/login (D2). The token is opaque. */
@@ -7,12 +7,13 @@ export interface Session {
   readonly expiresAt: string
 }
 
-/** The five fields of a 200 from GET /api/me. */
+/** The six fields of a 200 from GET /api/me (profile-api@v2). `phone` is shown as given, never reformatted. */
 export interface Profile {
   readonly id: string
   readonly username: string
   readonly displayName: string
   readonly email: string
+  readonly phone: string
   readonly memberSince: string
 }
 

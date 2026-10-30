@@ -1,6 +1,7 @@
-// API client for auth-api@v1 and profile-api@v1. An effectful shell (`send`)
+// API client for auth-api@v1 and profile-api@v2. An effectful shell (`send`)
 // over pure deciders that read only the status and `error.code`, never
-// `error.message`. Anything the contracts do not name is `unavailable` (D3).
+// `error.message`. Anything the contracts do not name is `unavailable` (D3);
+// fields a contract does not name are ignored.
 import type { Profile, ProfileFailure, Result, Session, SignInFailure } from './types'
 
 /**
@@ -55,19 +56,20 @@ function decideSignIn(answer: Answer | null): Result<Session, SignInFailure> {
   return fail('unavailable')
 }
 
-const PROFILE_FIELDS = ['id', 'username', 'displayName', 'email', 'memberSince'] as const
+const PROFILE_FIELDS = ['id', 'username', 'displayName', 'email', 'phone', 'memberSince'] as const
 
 function decideProfile(answer: Answer | null): Result<Profile, ProfileFailure> {
   if (answer === null) return fail('unavailable')
   const { status, body } = answer
   if (status === 200) {
-    const [id, username, displayName, email, memberSince] = PROFILE_FIELDS.map((key) => stringField(body, key))
+    const [id, username, displayName, email, phone, memberSince] = PROFILE_FIELDS.map((key) => stringField(body, key))
     return id !== undefined &&
       username !== undefined &&
       displayName !== undefined &&
       email !== undefined &&
+      phone !== undefined &&
       memberSince !== undefined
-      ? ok({ id, username, displayName, email, memberSince })
+      ? ok({ id, username, displayName, email, phone, memberSince })
       : fail('unavailable')
   }
   if (status === 401 && errorCode(body) === 'UNAUTHORIZED') return fail('unauthorized')
