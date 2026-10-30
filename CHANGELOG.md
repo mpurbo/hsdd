@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.10.1] - 2026-10-30
+
+Two phase-context corrections, found by the simple-login tutorial run, and
+the documentation added since 0.10.0. Specification:
+`spec/hsdd-spec-v0_10.md`, now at 0.10.1; its §15.1 states the upgrade.
+Acceptance: `review/hsdd-v0_10-acceptance.md`, A6 and A7.
+
+### Upgrading from 0.10.0
+
+- Reinstall the skills. Only `hsdd-config` and `hsdd-phase-plan` changed.
+- Nothing under `hsdd/` changes, and the upgrade triggers no adoption run:
+  a 0.10.0 project's newest progress report already has its
+  grandfathered-contracts row.
+- Forward-only: phases switched after the upgrade get the Validation
+  blocks and `referenced` subsections. A phase context already written is a
+  record and is not rewritten.
+- A superpowers phase already in progress keeps the context it started
+  with. Re-running its switch rewrites constraint 7, which its plan copied
+  verbatim from the old derivative.
+
 ### Added
 
 - `docs/tutorial/simple-login/`: a complete, recorded HSDD run on a small
@@ -48,9 +68,10 @@ its tree with the v0.10.0 skill before the fix.
   consumes nor produces (a replay rig built ahead of the producing phase)
   names it as `{contract-id}@{version}` in its Scope, so the switch finds
   it.
-- `spec/hsdd-spec-v0_10.md` states the same (§1.5, §1.6, §3.4, §3.6, §5.3,
-  §9.2, §9.7, §9.8, §16.1, and a glossary entry for referenced contract),
-  as do the user's guide sample context, the README and the HTML guide.
+- `spec/hsdd-spec-v0_10.md` states the same in place (§1.5, §1.6, §3.4,
+  §3.6, §5.3, §9.2, §9.7, §9.8, §16.1, a glossary entry for referenced
+  contract), with the upgrade in §15.1 and two rows in §18.1. The user's
+  guide sample context, the README and the HTML guide agree.
 
 ## [0.10.0] - 2026-10-10
 

@@ -9,8 +9,9 @@ record names.
 **Spec:** `spec/hsdd-spec-v0_10.md` chapter 15;
 `docs/superpowers/plans/2026-10-10-v0_10-release.md` (this release's plan).
 Criteria A1 to A4 and B1 to C3 are carried from the v0.9 record unchanged;
-A5, D1 to D7 and E1 to E5 cover what v0.10.0 adds. Every `Result:` is filled
-by the owner's run, never by the implementer.
+A5, D1 to D7 and E1 to E5 cover what v0.10.0 adds; A6 and A7 cover what
+v0.10.1 corrects. Every `Result:` is filled by the owner's run, never by the
+implementer.
 
 ## A. Phase context and coding methods
 
@@ -72,6 +73,33 @@ by the owner's run, never by the implementer.
 - **Fails if:** the template is missing, retyped (any diff), or the report
   does not mention the copy. In the second case: the old copy is left in
   place, or any verification doc changed.
+- **Result:**
+
+### A6. Every contract subsection carries its Validation (v0.10.1)
+
+- **Run:** `/hsdd-phase {a pending phase that consumes a stable contract} --method superpowers`.
+- **Expected:** every contract subsection has Interface, Guarantees and
+  Validation, each verbatim from the contract file; the Discipline line and
+  the derivative's constraint 7 say to test against the fixtures their
+  Validation names.
+- **Fails if:** a subsection has no Validation block although its contract
+  has a `## Validation` section, or any Validation line differs from the
+  source.
+- **Result:**
+
+### A7. A contract named but not consumed is `referenced` (v0.10.1)
+
+- **Run:** the switch on a phase whose consumed contract's text names a
+  contract the phase neither consumes nor produces. If the field project has
+  no such phase, use a scratch copy of `docs/tutorial/simple-login/execute/`
+  without its `hsdd-context/`, and `simple-login.web.3`.
+- **Expected:** the named contract has a `· referenced ·` subsection with
+  Interface, Guarantees and Validation; the Discipline section has a
+  Referenced line naming it; every `consumes` and `produces` heading matches
+  the Phase block's Consumes and Produces; the self-contained gate reports no
+  missing id.
+- **Fails if:** the named contract is headed `consumes` or `produces`, is
+  left out, or gets a stub instead of its text.
 - **Result:**
 
 ## B. The plan page

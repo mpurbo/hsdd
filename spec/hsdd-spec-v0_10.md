@@ -1,8 +1,8 @@
 # HSDD: Hierarchical Spec-Driven Development
 
-**Version:** 0.10.0
+**Version:** 0.10.1
 **Status:** Current specification
-**Date:** 2026-10-10
+**Date:** 2026-10-30
 **Owner:** Purbo Mohamad
 
 This is the complete specification. It supersedes v0.7.1, the last released
@@ -11,8 +11,9 @@ which consolidated the delta series v0.3 through v0.7.1 and added brownfield
 adoption and change intake, and v0.9.0, which added phase contexts, coding
 methods and reading aids. Their content is in this document. Chapter 15
 states, rule by rule, which of it the skills implement in v0.10.0 and which
-is specified without a skill. Every earlier version remains in `spec/` as
-history. Nothing here requires reading them.
+is specified without a skill. v0.10.1 corrects two phase-context rules in
+place (§9.7); §15.1 states its effect on a 0.10.0 project. Every earlier
+version remains in `spec/` as history. Nothing here requires reading them.
 
 ---
 
@@ -2425,6 +2426,15 @@ v0.10.0, or says the rule is specified without a skill.
 | As-built drift and stale caveats at the checkpoint (§6.3, §12.7) | Runs only when the tree has a node with an `## Observed surface`; a tree without one never runs the script. | `hsdd-checkpoint` |
 | `hsdd-intake`, intake records, cross-intake collisions, intake closure (§11.2, §11.5, §11.7) | From the next change request forward; no back-application. | `hsdd-intake`; `hsdd-checkpoint` closes records |
 
+**v0.10.1** corrects two phase-context rules and changes no artifact under
+`hsdd/`. Neither triggers an adoption run: a 0.10.0 project's newest
+progress report already has its grandfathered-contracts row.
+
+| Change | Effect on a 0.10.0 project | Implemented in v0.10.1 by |
+|--------|----------------------------|---------------------------|
+| Every contract subsection carries the contract's Validation section (§9.7) | Forward-only: phases switched after the upgrade get it; a phase context already written is a record and is not rewritten. | `hsdd-config` |
+| `referenced` subsections for a contract the context names that the phase neither consumes nor produces (§9.7) | Forward-only, as above. A superpowers phase already in progress keeps the context it started with: re-running its switch rewrites constraint 7, which its plan copied verbatim from the old derivative. | `hsdd-config`; `hsdd-phase-plan` (a Scope names such a contract by `{contract-id}@{version}`) |
+
 **The one case worth calling out:** a fully-governed ≥0.6.1 project usually
 still has system surface that was never in the tree, namely the code the
 HSDD-built part sits inside. `hsdd-adopt` runs on *that*, grafting as-built
@@ -2591,7 +2601,7 @@ natural seed; it lacks only the baseline and the write-up.
 
 ## 18. Settled Decisions
 
-The merged decision record of every release through v0.10.0, current answers
+The merged decision record of every release through v0.10.1, current answers
 only. **Provenance is a required column** — `field-tested` (validated on a
 real project), `pressure-tested` (held under the adversarial 0.6.0
 campaign), or `reasoned-only` — because new material must not inherit
@@ -2666,6 +2676,8 @@ add is `reasoned-only`, and the table says so instead of letting it borrow.
 | The grandfather clause's end | On touch, not on a date: set closed at upgrade; a phase that touches the contract cannot pass its gate until the artifact exists, written at the root through `hsdd-contract`, and the next reconcile after that gate removes the mark on the checkpoint's discharge finding; count reported and falling, closure checked by membership (§15.2). | reasoned-only |
 | Phase context shape | One generic, method-neutral, self-contained file per phase, selected verbatim, never authored (§9.7). | reasoned-only |
 | Derivatives | Wrap the generic body word for word; a `diff` proves they agree (§9.3, §9.8). | reasoned-only |
+| Contract text in a phase context | Interface, Guarantees and Validation, verbatim; Validation locates the fixtures both gates use (§9.7). | reasoned-only |
+| A contract the context names that the phase neither consumes nor produces | Inlined in full, headed `referenced`, collected until no named contract lacks a subsection; a Scope names it by `{contract-id}@{version}` (§9.7, §3.4). | reasoned-only |
 | Coding method | Project default in conventions, per-phase override at the switch (§9.9). | reasoned-only |
 | Reading aids | Optional, derived, stamped HTML pages under `hsdd/summary/`; never authoritative, never a gate (chapter 13). | reasoned-only |
 | Summary extraction | A script parses what the templates fix; the agent fills only the items it flags, from the source; a schema and cross-checks validate (§13.2). | reasoned-only |

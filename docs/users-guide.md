@@ -1150,6 +1150,11 @@ than errors, and the first atlas is generated however messy the tree is.
 Historical documents are never rewritten — conformance starts from the next
 document forward.
 
+Upgrading from v0.10.0 to v0.10.1 changes no artifact: reinstall the
+skills, and the next phase switch adds each contract's Validation section
+and any `referenced` contract to the phase context. A superpowers phase
+already in progress keeps the context it started with.
+
 Upgrading an existing (≥0.6.1) project to v0.10.0 rides the same
 behaviors: the first checkpoint after upgrading (its newest progress report
 has no grandfathered-contracts row) runs them, although the project already
