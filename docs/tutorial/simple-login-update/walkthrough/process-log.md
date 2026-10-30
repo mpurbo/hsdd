@@ -302,3 +302,156 @@ reason v1's "exactly the five fields" guarantee made the change a version.
 - **Signed off [owner proxy]**, spot-check. Its Outstanding is empty: the
   red root `npm test` (deferred from backend.3) and the real-backend walk
   (deferred from web.4) both ran here.
+
+### 13:53 to 14:08 · hsdd-checkpoint: the first checkpoint closes the intake
+
+A fresh agent ran the checkpoint cold, with the skill and the tree, and two
+facts from the owner's side: this branch is the project's main line (a
+verification doc committed on it counts as "on spec-repo main"), and there
+is one implementation repository. As the project's first checkpoint, it
+applied the adoption behaviors.
+
+- **Intake closed.** It found the three phases whose Scope cites the
+  record, appended them to `## Produced`, confirmed each has its
+  verification doc on the main line, and set `Status: closed (2026-10-30)`
+  with a change-log line. Only the checkpoint does this; hsdd-intake never
+  closes its own record.
+- **Evidence pass:** registries regenerated into a copy and diffed
+  (byte-identical); every pending section drained; nine phases verified
+  done; root `npm test` re-run green (backend 72, replay 10, web 90, runner
+  3, browser 20; ports free before and after); grandfather set `empty`.
+- **Wrote:** `2026-10-30-progress.md`, `2026-10-30-execution-plan.md`,
+  `atlas.md`. Nine findings (2 Medium, 7 Low), eight plan steps, and a
+  proposed Sync A on Monday 2 November with five decisions.
+- **The two Medium findings.** F-1: profile-api@v1 is still `stable` with no
+  producer, and its "exactly the five fields" guarantee is false: routed to
+  decision A-1 (a sunset date), then `hsdd-contract`. F-2: all nine
+  sign-offs, the six of the first run included, are by "Claude as owner
+  proxy", as are the waivers and the dropped Learnings: routed to decision
+  A-2 (ratify or re-review), then the owner.
+- **Low findings** include ADR-001's `affects` omitting the root,
+  auth-api@v1's `consumers` omitting web.3 and web.4 (whose App tests read
+  its fixture), the first run's open VoiceOver check, the same `exact: true`
+  blind spot in integration.1's AC-1.2 tests, and the integration docs
+  citing screenshots outside the project root (waived).
+- **Left for the owner, on purpose.** The sync's decisions (A-1 to A-5) are
+  the owner's next-week agenda. One of them is whether to accept the proxy
+  sign-offs; taking it by proxy would answer its own question.
+
+## Closing notes for the owner
+
+### Decisions taken as owner proxy
+
+1. Intake: the request's authority recorded as `ticket` (no value fits an
+   approved PRD amendment).
+2. Contract: v2 as a separate file beside v1, `.v2` suffix on the contract,
+   schema and fixture paths.
+3. Contract: v2 declares `additive-only`. Cost if wrong: a later
+   non-optional change needs v3 anyway, and consumers carry a guarantee
+   (ignore unknown fields) they must keep.
+4. Contract: one endpoint, one shape. The producer serves v2 only from
+   backend.3, and the migration window is this intake. Cost if wrong: a
+   real deployment with an independently released web app would see the
+   network message during the skew (web.4's ruling).
+5. Reconcile: v2's schema stays closed and the contract says why, instead
+   of opening it for `additive-only`.
+6. Reconcile: the node headers and the root spec updated to list both
+   versions, with no step that names this edit.
+7. Execution: integration.2's red run borrowed the pre-web.4 `web/src`.
+8. Execution: the integration review's whitespace finding re-graded from
+   Minor to Important and fixed.
+9. Gates: the three sign-offs, all spot-check.
+10. Checkpoint brief: this branch as the main line; one repository.
+
+The web lane's agent made ten rulings of its own, each with its cost, in
+its ledger; the five that reach a user are in its entry above.
+
+### Deferred minors
+
+- backend.3: the byte-for-byte probe value is already canonical;
+  `ContractSlug` still admits the v1 slug; the plan expected a tsc error a
+  spread does not raise.
+- web.4: the plan's `--window-size=360` step; one commit subject; the phone
+  tests compare `textContent` only; a duplicated test construction; the
+  six-way `!== undefined` chain in `client.ts`.
+- integration.2: the red outputs were not in the task logs (they are in the
+  verification doc); `phone!` is a no-op and nothing type-checks `e2e/`;
+  the README's phone cells are plain text.
+
+### Open for the owner
+
+- Sync A's five decisions in `hsdd/management/2026-10-30-execution-plan.md`:
+  v1's sunset date, the proxy sign-offs, the verification follow-ups, a
+  milestone document, the proposed guardrails.
+- The VoiceOver check of the Login messages (H-2), still open from the
+  first run, and OQ1 (deployment beyond a laptop).
+
+### Findings about HSDD's change flow
+
+These came from running the v0.10.1 skills as written on a change to a
+finished tree. None blocked the run; each needed a judgment the skills do
+not make.
+
+1. **Authority.** hsdd-intake's authority values have none for an approved
+   PRD amendment, the most ordinary change.
+2. **Two live versions.** hsdd-contract keeps v{n} `stable` beside v{n+1}
+   but names one file per slug. Where the second version's contract,
+   schema and fixtures live is left to the run.
+3. **The ripple has no owner.** A bump leaves the node specs' `Produces` and
+   `Consumes`, the root's copies, its contract matrix and its DAG naming the
+   old version. Append mode may edit only `Sources`, no reconcile step names
+   the edit, and no pending-entry type carries it: three planners each
+   bent a `note` or a `confirm` sub-bullet to say so.
+4. **One endpoint, two versions.** "The old version remains `stable` until
+   every consumer migrates" assumes versions can coexist. At one endpoint
+   they cannot: the deprecation window collapses to the intake, and v1 is
+   `stable` with no producer until someone deprecates it (the checkpoint's
+   F-1).
+5. **A migrated version never loses its consumers.** v1's `consumers` will
+   name web.1, web.3 and integration.1 forever; nothing removes a phase
+   that migrated, so "no live consumer" cannot be read from frontmatter
+   when retirement comes.
+6. **"The request's path".** Append mode adds it to `Sources`; all three
+   planners had to decide whether that meant the intake record or the
+   change request (all chose the request).
+7. **A pointer is not content.** web.4's Scope said "per the request's
+   Screen"; the context carried neither the Screen nor a link to it.
+   hsdd-phase-plan already says binding details from a source belong in the
+   Scope; nothing checks it. The first run's D{n} finding is the same
+   family.
+8. **The sizing floor in append mode** fires on every small appended phase
+   and has no partner to merge with, because the neighbour shipped; append
+   mode could say what to record.
+9. **"On spec-repo main"** decides shipped-ness and closure; on a project
+   whose main line is a branch, the planners, the closure rule and the
+   checkpoint each needed it ruled.
+10. **`referenced` costs lines.** v0.10.1's full-text rule put the old
+    version into every migration phase's context (about 250 lines each,
+    against 65 to 190 in the first run). Useful here; worth watching.
+11. **Red after a hard edge.** An integration phase starts after its
+    dependencies merged, so superpowers' "see it fail" needs an older tree
+    to fail against.
+12. **Who signs.** The verification template says dispositions are made "by
+    the human running the gate", but the checkpoint's audit checks only that
+    the fields are filled; it counted proxy sign-offs as done and raised
+    F-2 instead.
+
+### The numbers
+
+| | Lines added |
+|---|---:|
+| Source (backend, web) | 25 |
+| Tests (backend, web and its fixture stub, browser) | 163 |
+| README | 5 |
+| Intake record and the checkpoint's documents | 619 |
+| Contract v2 (contract 100, schema 132, fixtures 84) and edits to v1, auth-api, registries | 327 |
+| Spec edits (three appended phases, reconcile's ripple) and ADR-001 | 137 |
+| Superpowers plans (3) | 507 |
+| Verification docs (3) | 290 |
+| Generated phase contexts and derivatives (6 files) | 1,610 |
+
+Authored process (records, contract, specs, plans, verification docs):
+1,880 lines for 25 lines of source and 163 of tests. Wall-clock 12:55 to
+14:08 WIB, 1 hour 13 minutes, including two parallel lanes, three fresh
+reviews and the checkpoint; the change request to stable contracts and
+phase contexts took 13 minutes (12:59 to 13:12).
