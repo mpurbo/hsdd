@@ -124,11 +124,13 @@ filled; everything else is literal.
 replaced by the plan's default gate command in backticks}
 
 ## Contracts
-### {contract-id}@{version} · {consumes|produces} · {status}
+### {contract-id}@{version} · {consumes|produces|referenced} · {status}
 **Interface**
 {the contract's Interface section body, verbatim}
 **Guarantees**
 {the contract's Guarantees section body, verbatim}
+**Validation**
+{the contract's Validation section body, verbatim}
 
 ## Decisions
 ### ADR-{nnn}: {title} · {status}
@@ -146,8 +148,12 @@ replaced by the plan's default gate command in backticks}
 - Governance freeze: change nothing under hsdd/ except this phase's
   verification doc; contracts, ADRs, specs and conventions change only
   through hsdd-contract, hsdd-adr and hsdd-reconcile.
-- Consume contracts only: build against the Interface and Guarantees above,
-  never against another node's internals.
+- Consume contracts only: build against the Interface and Guarantees of
+  each contract above that this phase consumes or produces, test against
+  the fixtures their Validation names, and never build against another
+  node's internals.
+- Referenced: {each referenced contract-id@version}. Not consumed or
+  produced by this phase; use each only as this phase's Scope says.
 - Contract wrong mid-phase: pause at a task boundary; write the gap, in
   request or amend wording, under the verification doc's Outstanding and
   stop; the human records it in the node's plan, renegotiates at the root
@@ -180,11 +186,18 @@ replaced by the plan's default gate command in backticks}
   has no field block, use the `### {node-id}: …` block embedded in the parent's
   spec.
 - **Contracts:** every contract the phase's Consumes or Produces names, in that
-  order, one subsection each. A contract named with `(ext)` or otherwise
-  external and with no file under `hsdd/contract/` gets the subsection heading
-  `### {contract-id}@{version} · consumes · external` (or `produces`) and the
-  single line `External contract; no file in hsdd/contract/.`, and the switch
-  warns. When the phase names no contract, omit the section.
+  order, one subsection each. Then every other contract the file names as
+  `{contract-id}@{version}`, in the Phase block or inside a contract
+  subsection, gets a `referenced` subsection, in the order the file first
+  names it. A referenced subsection can name another contract: repeat until
+  every contract id in the file has a subsection. Each subsection carries the
+  contract's Interface, Guarantees and Validation; a contract with no
+  `## Validation` section has no Validation block. A contract named with
+  `(ext)` or otherwise external and with no file under `hsdd/contract/` gets
+  the subsection heading `### {contract-id}@{version} · consumes · external`
+  (or `produces`, or `referenced`) and the single line
+  `External contract; no file in hsdd/contract/.`, and the switch warns. When
+  the file names no contract, omit the section.
 - **Decisions:** the ADRs the phase's Governed by names, the ADRs each
   contract in the Contracts section names in its own Governed by, and every
   ADR whose `affects` frontmatter names such a contract; each once, in ADR
@@ -199,6 +212,8 @@ replaced by the plan's default gate command in backticks}
   line; a contract with `validation: grandfathered` also gets its own
   Grandfathered line. Omit each line when it has nothing to say. The emitted
   lines carry no parenthetical.
+- **Referenced line:** names every `referenced` contract, in the Contracts
+  section's order. Omit it when there is none.
 - **Links:** one line per contract with a file in `hsdd/contract/`; an external
   contract gets no Links line.
 - **Spec SHA:** `git -C hsdd rev-parse --short HEAD`. If
@@ -214,8 +229,9 @@ replaced by the plan's default gate command in backticks}
    sentence of your own into the file. Do not summarize a contract, reorder its
    guarantees, or drop a line you judge unimportant.
 2. **Self-contained.** Every contract, ADR and OQ id the file names has its
-   text inline in its section. Other phases' ids appear only in the Phase
-   block's Dependencies and Collides with lines.
+   text inline in its section; a contract the phase neither consumes nor
+   produces is inlined as `referenced`. Other phases' ids appear only in the
+   Phase block's Dependencies and Collides with lines.
 3. **Push, not pull.** The links are for provenance and escalation. They never
    replace an inline excerpt.
 4. **No truncation.** A context too large to read signals a phase that touches
@@ -307,8 +323,10 @@ other id makes OpenSpec reject the config. Quote any rule containing `: `.
 6. Nothing under hsdd/ changes except that verification doc. Contracts, ADRs,
    specs and conventions change only through hsdd-contract, hsdd-adr and
    hsdd-reconcile.
-7. Build against the Interface and Guarantees in the Contracts section below
-   (if any), never against another node's internals.
+7. Build against the Interface and Guarantees of each consumed or produced
+   contract in the Contracts section below (if any), test against the
+   fixtures their Validation names, and never build against another node's
+   internals. Use a `referenced` contract only as the phase's Scope says.
 8. Review tier {review tier}: {tier line}.
 {9. When writing {language}, use {skill}. One numbered line per installed tech skill.}
 
@@ -399,7 +417,9 @@ Run this after writing-plans' self-review, before choosing an execution method.
 8. **Write the generic phase context** from the template above.
 9. **Self-contained gate.** Check rule 2 against the file you wrote: list every
    `@v`, `ADR-` and `OQ` id in it and confirm each has its subsection or line.
-   Fix the file, never the rule.
+   A contract id with none gets a `referenced` subsection, which can name
+   further ids: list again until none is missing. Fix the file, never the
+   rule.
 10. **Write the derivative** for the method: replace the content between the
    markers in `openspec/config.yaml`, or write
    `hsdd-context/superpowers/{phase-id}.md`. Do not touch the project-wide
@@ -453,6 +473,10 @@ review gate is not passed while an Outstanding item lacks a disposition**
 - [ ] Every line in it is a verbatim excerpt, template text, or a link.
 - [ ] The self-contained gate passed: every contract, ADR and OQ id named has
       its text inline, or its external one-liner.
+- [ ] Every contract subsection is headed `consumes` or `produces` exactly as
+      the Phase block's Consumes and Produces say, or `referenced` for any
+      other contract the file names, and carries the contract's Validation
+      section when it has one.
 - [ ] The derivative for the method was written, and the equality check
       printed nothing.
 - [ ] For OpenSpec, the project-wide context and `rules:` are unchanged.
@@ -477,6 +501,7 @@ review gate is not passed while an Outstanding item lacks a disposition**
 | "Inject the whole node spec to be safe" | That defeats context isolation. The phase, its contracts and its decisions; links for the rest. |
 | "This contract section is long, I'll summarize it" | Rule 1. A summary is your sentence, and the session will treat it as the contract. Copy it, or fix the phase plan if it is too much. |
 | "The links are enough; the agent can open the contract" | Push, not pull. A link is for provenance; the text the phase depends on is inline. |
+| "The phase uses this contract's fixtures, so I'll head it `consumes`" | The heading repeats the Phase block. A contract missing from Consumes and Produces is `referenced`, whatever the phase does with it; a phase that should consume it is a plan change, through hsdd-phase-plan. |
 | "The ADR is referenced but has no file; I'll paraphrase it" | A referenced ADR with no file was never materialized. Author it with hsdd-adr. If the decision is unknown, author it `proposed` with a TODO; never invent an `accepted` decision. |
 | "The contract is provisional but close enough" | Provisional means reconcile has not confirmed both sides; open `request` entries may still reshape it. Warn, and stop for phases contingent on an open request. |
 | "The config conflict looks meaningful, I'll hand-merge both phase blocks" | The phase block is ephemeral working state. Take either side and re-run the switch. |

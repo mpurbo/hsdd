@@ -477,6 +477,9 @@ The phase switch injects only what `auth.2` needs. The OpenSpec session for
   **Guarantees**
   - `exp > iat`
   - `sub` never changes for a merchant.
+  **Validation**
+  - schema: hsdd/contract/schema/auth-token.schema.json
+  - fixture: hsdd/contract/fixture/auth-token/
 
   ## Decisions
   ### ADR-001: Auth provider · accepted
@@ -492,8 +495,10 @@ The phase switch injects only what `auth.2` needs. The OpenSpec session for
   - Governance freeze: change nothing under hsdd/ except this phase's
     verification doc; contracts, ADRs, specs and conventions change only
     through hsdd-contract, hsdd-adr and hsdd-reconcile.
-  - Consume contracts only: build against the Interface and Guarantees above,
-    never against another node's internals.
+  - Consume contracts only: build against the Interface and Guarantees of
+    each contract above that this phase consumes or produces, test against
+    the fixtures their Validation names, and never build against another
+    node's internals.
   - Contract wrong mid-phase: pause at a task boundary; write the gap, in
     request or amend wording, under the verification doc's Outstanding and
     stop; the human records it in the node's plan, renegotiates at the root

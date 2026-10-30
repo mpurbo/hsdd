@@ -105,8 +105,8 @@ window.WALK_RUN = {
     ],
   },
   findings: [
-    "hsdd-config injects only a contract's Interface and Guarantees. backend.1 builds the replay rig, needs the fixture format from the Validation section, and consumes no contract, so its context carried no contract text at all.",
-    "The self-contained gate pulls in a contract named inside another contract's text, and the template has no direction for it; this run used 'referenced'.",
+    "hsdd-config injects only a contract's Interface and Guarantees. backend.1 builds the replay rig, needs the fixture format from the Validation section, and consumes no contract, so its context carried no contract text at all. Fixed after this run: every contract subsection now carries its Validation section, and a phase like backend.1 names the contracts in its Scope (auth-api@v1) to receive them as referenced.",
+    "The self-contained gate pulls in a contract named inside another contract's text, and the template has no direction for it; this run used 'referenced'. Fixed after this run: the skill now uses that word.",
     "A phase's Scope may cite node-local D1 or D2, which the switch never injects; here their content survived only because reconcile had copied it into the contracts.",
     "The Learning dispositions have no word for a compatible contract clarification that keeps the version.",
     "superpowers' executing-plans requires a fresh-reviewer final review; HSDD's gate-only tier says the gate is enough. The run ruled for the tier; the derivative could say which governs.",

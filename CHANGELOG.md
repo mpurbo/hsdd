@@ -22,6 +22,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   project, using the user's guide's examples, with brownfield adoption and
   change intake as chapters of their own.
 
+### Fixed
+
+Two defects in the v0.10.0 phase context, found by the simple-login
+tutorial run (`docs/tutorial/simple-login/walkthrough/process-log.md`,
+"Findings about HSDD itself", 1 and 2) and reproduced on scratch copies of
+its tree with the v0.10.0 skill before the fix.
+
+- `hsdd-config` now copies each contract's `## Validation` section into
+  its subsection, after Interface and Guarantees. The Discipline line and
+  superpowers constraint 7 tell the session to test against the fixtures
+  it names. Before, a consuming phase was told to test against fixtures
+  its context never located, and a phase building the replay rig had no
+  fixture format or placeholder rules.
+- `hsdd-config` has a third direction, `referenced`, for a contract the
+  file names that the phase neither consumes nor produces: named in the
+  Phase block, or inside another contract's text. It gets the same
+  subsection, is collected until no contract id lacks one, and is named in
+  a Discipline line: use it only as the Scope says. Before, the Contracts
+  rule (Consumes and Produces only) and the self-contained gate (every
+  named id inline) contradicted each other, and rule 1 forbade inventing a
+  label; both reproductions headed such contracts `consumes`, contradicting
+  the Phase block.
+- `hsdd-phase-plan`: a phase that works with a contract it neither
+  consumes nor produces (a replay rig built ahead of the producing phase)
+  names it as `{contract-id}@{version}` in its Scope, so the switch finds
+  it.
+- `spec/hsdd-spec-v0_10.md` states the same (§1.5, §1.6, §3.4, §3.6, §5.3,
+  §9.2, §9.7, §9.8, §16.1, and a glossary entry for referenced contract),
+  as do the user's guide sample context, the README and the HTML guide.
+
 ## [0.10.0] - 2026-10-10
 
 The release that follows 0.7.1. The 0.8.0 and 0.9.0 entries below describe

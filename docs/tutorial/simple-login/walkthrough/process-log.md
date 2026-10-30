@@ -630,10 +630,13 @@ each needed a judgment the skills do not make.
    contract's Interface and Guarantees only. backend.1 builds the replay
    rig, needs the fixture format and placeholder rules from `## Validation`,
    and, consuming no contract, got no contract text at all. It had to pull
-   through the Links.
+   through the Links. Fixed after this run: every contract subsection now
+   carries its Validation section, and a phase like backend.1 names the
+   contracts in its Scope (`auth-api@v1`) to receive them as referenced.
 2. **The self-contained gate has no word for "referenced".** Contracts
    that cite each other make the gate pull in contracts a phase neither
-   consumes nor produces.
+   consumes nor produces. Fixed after this run: the skill now names that
+   direction `referenced`, the word this run chose.
 3. **Node-local decisions are not injected.** A phase Scope that says "per
    D1" points at text the context does not carry. Here the content survived
    only because reconcile had copied it into a contract.

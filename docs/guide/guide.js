@@ -81,7 +81,7 @@ const GLOSSARY = [
   ["tier", "Review tier", "How much human attention a phase gets at its gate, set by risk: gate-only, spot-check, or full-review. The tier also sets how many artifacts the coding cycle writes."],
   ["freeze", "Governance freeze", "During phase planning, contracts, ADRs, conventions.md and the registries are read-only, at the root and in every worktree. Planners write the changes they need into their own plan file, as data."],
   ["reconcile", "Reconcile", "hsdd-reconcile, the single writer for governance. At the root it applies the pending updates that phase plans emitted (confirm, request, amend, note), resolves requests with you, flips contracts to stable, and regenerates the registries."],
-  ["context", "Phase context", "The self-contained file /hsdd-phase writes before a phase runs: the phase, the Interface and Guarantees of its contracts, its decisions, the discipline, and links pinned to a spec commit. It is then wrapped for OpenSpec or superpowers."],
+  ["context", "Phase context", "The self-contained file /hsdd-phase writes before a phase runs: the phase, the Interface, Guarantees and Validation of its contracts, its decisions, the discipline, and links pinned to a spec commit. It is then wrapped for OpenSpec or superpowers."],
   ["method", "Coding method", "How a project runs each phase's coding cycle: openspec or superpowers. HSDD decides what each cycle sees and in what order cycles run; the cycle itself is unchanged."],
   ["verification", "Verification doc", "hsdd/verify/{phase-id}.verification.md: commands, expected and observed output, outstanding items, learnings, and the human sign-off. Merged to main, it is the only admissible proof that a phase is done."],
   ["learning", "Learning", "A finding at the gate about the tree rather than the phase. Each one gets a disposition before sign-off: spec-updated, contract-bumped, adr-proposed, or dropped. Writing none is fine; leaving it blank is not."],
@@ -430,9 +430,9 @@ A signed JWT with the claims { sub, exp, iat, scopes }.
 }
 const PARTS = {
   meta: ["Frontmatter: metadata for the registry", "A script projects every contract's frontmatter into hsdd/contract/INDEX.md. Nobody maintains the index by hand, so it cannot drift. phase_ids starts provisional and only hsdd-reconcile flips it to final."],
-  interface: ["Interface and Guarantees: what consumers receive", "This half is what a consuming phase's context gets, by id. A consumer never sees the producing node's code or spec, only this."],
+  interface: ["Interface and Guarantees: what consumers receive", "This half, with the Validation section, is what a consuming phase's context gets, by id. A consumer never sees the producing node's code or spec, only the contract."],
   versioning: ["Versioning: v1, v2, no semver", "Compatibility is declared per version: additive-only, versioned, or frozen. A breaking change mints the next version with a migration note, and the old version stays until consumers move."],
-  validation: ["Validation: stable means machine-checkable", "A contract cannot be stable without a schema or fixtures. The producing phase's gate replays them against real output; consuming phases test against the same fixtures. The mocks are the fixtures, so a contract change breaks consumer tests loudly instead of drifting silently."],
+  validation: ["Validation: stable means machine-checkable", "A contract cannot be stable without a schema or fixtures. The producing phase's gate replays them against real output; consuming phases test against the same fixtures. The mocks are the fixtures, so a contract change breaks consumer tests loudly instead of drifting silently. Every phase context carries this section, so the session knows where the fixtures are and what they look like."],
 };
 
 const EDGE_TYPES = {
@@ -471,7 +471,7 @@ function lanesView(s) {
 
 const CONTEXT_FILES = [
   ["in", "hsdd/spec/acme.backend.auth.md", "only the acme.backend.auth.2 section, plus where it sits: purpose, owns, does not own, isolation strategy"],
-  ["in", "hsdd/contract/auth-token.md", "only the Interface and Guarantees"],
+  ["in", "hsdd/contract/auth-token.md", "only the Interface, Guarantees and Validation"],
   ["in", "hsdd/adr/001-auth-provider.md", "only the Decision and Consequences"],
   ["in", "Discipline", "test-first, the governance freeze, consume contracts only, how to write the verification doc"],
   ["in", "Links pinned to the spec commit", "paths to the full files, for a human or a deliberate lookup"],
@@ -1042,7 +1042,7 @@ const CHAPTERS = [
         ${key("A graph of mostly contract, event, and shared-model edges parallelizes. Hard edges are the critical path; keep them rare.")}
         ${deeper([spec("§3.2", "32-dependency-types")])}` },
       { title: "Each session sees only its slice", visual: contextView, body: () => `
-        <p>Before a phase runs, ${c("/hsdd-phase")} assembles its ${t("context", "phase context")}: the phase itself, the Interface and Guarantees of its contracts, and the decisions that govern it.</p>
+        <p>Before a phase runs, ${c("/hsdd-phase")} assembles its ${t("context", "phase context")}: the phase itself, the Interface, Guarantees and Validation of its contracts, and the decisions that govern it.</p>
         <p>Toggle the session type to compare with a single spec.</p>
         ${key("Isolation shapes attention: a session is unlikely to wander into a sibling's concern or invent an interface it was never given. It is probabilistic, not enforced.")}
         ${deeper([spec("§3.6", "36-context-isolation-the-payoff")])}` },
