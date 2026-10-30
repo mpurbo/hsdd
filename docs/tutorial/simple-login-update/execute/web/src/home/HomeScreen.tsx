@@ -7,7 +7,11 @@ export interface HomeScreenProps {
   readonly onSignOut: () => void
 }
 
-/** The PRD's Home wireframe (AC-2.1). Presentational: the parent owns the session. */
+/**
+ * The PRD's Home wireframe with update 1's Phone row (AC-2.1 amended, AC-2.4).
+ * `phone` is shown exactly as received, never reformatted (profile-api@v2).
+ * Presentational: the parent owns the session.
+ */
 export function HomeScreen({ profile, onSignOut }: HomeScreenProps) {
   return (
     <main className="home">
@@ -18,6 +22,8 @@ export function HomeScreen({ profile, onSignOut }: HomeScreenProps) {
           <dd>{profile.username}</dd>
           <dt>Email</dt>
           <dd>{profile.email}</dd>
+          <dt>Phone</dt>
+          <dd>{profile.phone}</dd>
           <dt>Member since</dt>
           <dd>{formatMemberSince(profile.memberSince)}</dd>
         </dl>

@@ -54,6 +54,17 @@ describe('App: the load check (AC-2.2, AC-2.3, D1)', () => {
     expect(sessionStorage.getItem('simple-login.session')).toBe(JSON.stringify(stored))
   })
 
+  it.each([
+    ['me-ayu', 'Hello, Ayu Lestari', '+62 812 3456 7890'],
+    ['me-budi', 'Hello, Budi Santoso', '+62 813 9876 5432'],
+  ])('%s: Home shows the phone number from GET /api/me, character for character (AC-2.4)', async (name, heading, phone) => {
+    store()
+    stubFetch(loadFixture('profile-api.v2', name))
+    render(<App />)
+    expect(await screen.findByRole('heading', { name: heading })).toBeInTheDocument()
+    expect(screen.getByText('Phone').nextElementSibling?.textContent).toBe(phone)
+  })
+
   it('shows a loading line, not Login, while the stored session is checked', () => {
     store()
     stubFetchHanging()

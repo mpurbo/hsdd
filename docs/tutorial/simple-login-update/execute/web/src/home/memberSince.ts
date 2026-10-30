@@ -1,4 +1,4 @@
-// profile-api@v1 `memberSince` is a calendar date, `YYYY-MM-DD`. The PRD shows
+// profile-api@v2 `memberSince` is a calendar date, `YYYY-MM-DD`. The PRD shows
 // it as "14 March 2024". No `Date` is built: `new Date('2024-03-14')` is UTC
 // midnight, which is still 13 March west of UTC, and a fixed table avoids any
 // locale or ICU dependency.
