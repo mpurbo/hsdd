@@ -93,12 +93,12 @@ and to how an AI agent works against it.
   DAG is the composition, and internals are private. Nodes are built against
   contract fixtures, not live implementations.
 - **Bounded context per session, as a consequence.** Each phase's session
-  receives its own phase, the Interface and Guarantees of the contracts it
-  consumes and produces, and the decisions that govern it. Per-session
-  context is bounded and proportional to the phase, not the system; total
-  tokens across a project still scale with phase count, and planning carries
-  its own overhead. HSDD bounds the per-session cost; it does not reduce the
-  total.
+  receives its own phase, the Interface, Guarantees and Validation of the
+  contracts it consumes and produces, and the decisions that govern it.
+  Per-session context is bounded and proportional to the phase, not the
+  system; total tokens across a project still scale with phase count, and
+  planning carries its own overhead. HSDD bounds the per-session cost; it
+  does not reduce the total.
 - **Less drift and hallucination, probabilistically.** Per-phase context
   shapes attention: a session is unlikely to wander into a sibling's concern
   or fabricate an interface it was never given. The defense is prose and

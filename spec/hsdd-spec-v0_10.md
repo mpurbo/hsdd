@@ -1,8 +1,8 @@
 # HSDD: Hierarchical Spec-Driven Development
 
-**Version:** 0.10.0
+**Version:** 0.10.1
 **Status:** Current specification
-**Date:** 2026-10-10
+**Date:** 2026-10-30
 **Owner:** Purbo Mohamad
 
 This is the complete specification. It supersedes v0.7.1, the last released
@@ -11,8 +11,9 @@ which consolidated the delta series v0.3 through v0.7.1 and added brownfield
 adoption and change intake, and v0.9.0, which added phase contexts, coding
 methods and reading aids. Their content is in this document. Chapter 15
 states, rule by rule, which of it the skills implement in v0.10.0 and which
-is specified without a skill. Every earlier version remains in `spec/` as
-history. Nothing here requires reading them.
+is specified without a skill. v0.10.1 corrects two phase-context rules in
+place (§9.7); §15.1 states its effect on a 0.10.0 project. Every earlier
+version remains in `spec/` as history. Nothing here requires reading them.
 
 ---
 
@@ -128,7 +129,7 @@ of another. Each skill has a slash command; `hsdd-config`'s is `/hsdd-phase`.
 | `hsdd-adr` | Author, accept, update, and supersede cross-cutting Architecture Decision Records; owns the ADR directory the way `hsdd-contract` owns contracts, with the registry projected deterministically. | `hsdd/adr/*.md` |
 | `hsdd-phase-plan` | Turn a leaf-parent into ordered, OpenSpec-sized phases with gates, verification, review tiers, and a phase DAG. | leaf-parent phase plan |
 | `hsdd-reconcile` | The single writer for governance effects: drain the pending updates parallel phase planning emits, resolve contract requests, finalize phase ids. | updated governance files |
-| `hsdd-config` | Per-phase context switch: write one self-contained, method-neutral phase context (the phase, the full text of the contracts it consumes and produces, its governing decisions, links), then wrap it for the project's coding method: OpenSpec's `config.yaml` or a superpowers spec. | `hsdd-context/{phase-id}.md`, `openspec/config.yaml` or `hsdd-context/superpowers/{phase-id}.md` |
+| `hsdd-config` | Per-phase context switch: write one self-contained, method-neutral phase context (the phase, the Interface, Guarantees and Validation of the contracts it consumes, produces or references, its governing decisions, links), then wrap it for the project's coding method: OpenSpec's `config.yaml` or a superpowers spec. | `hsdd-context/{phase-id}.md`, `openspec/config.yaml` or `hsdd-context/superpowers/{phase-id}.md` |
 | `hsdd-adopt` | Bring an existing codebase into the tree: seam extraction by bundled script, as-built node specs, `v0` contracts (chapter 6). | as-built specs, `v0` contracts |
 | `hsdd-intake` | Route an incoming change request into the existing tree and record the routing (chapter 11). | intake record, handoff |
 | `hsdd-checkpoint` | One evidence pass across the spec repo and every implementation repo, compiled into the management documents (chapter 12). | progress report, execution plan, atlas |
@@ -173,7 +174,7 @@ and the registry regenerates.
 | Structure | one flat spec | recursive node tree, multi-level |
 | Decomposition | none | nodes split until phases fit a window |
 | Coupling | implicit, whole-spec context | explicit, versioned contracts by id |
-| Context per session | the full spec | one phase + the Interface and Guarantees of its contracts + its governing ADRs' decisions |
+| Context per session | the full spec | one phase + the Interface, Guarantees and Validation of its contracts + its governing ADRs' decisions |
 | Parallelism | one cycle at a time | independent phases/nodes run in parallel |
 | Dependency model | implicit | typed DAG (hard, contract, event, shared-model) |
 | Cycle engine | OpenSpec | OpenSpec or superpowers, unchanged, run once per phase |
@@ -505,6 +506,9 @@ never writes them, and both gates replay them.
   not hand-rolled mocks. **The mocks are the fixtures.** When the contract
   bumps, the fixtures change, and consumer tests fail loudly instead of
   drifting silently.
+- **Ahead of the producer:** a phase that builds the replay before the
+  producing phase does names the contract as `{contract-id}@{version}` in
+  its Scope, and its context carries the contract as `referenced` (§9.7).
 
 Quality gate in `hsdd-contract`: any code-level artifact both sides consume
 names its canonical path and its owner: the owning phase for code,
@@ -545,8 +549,10 @@ a checkpoint finding.**
 ### 3.6 Context isolation: the payoff
 
 The coding session for a phase receives its own phase section, the
-**Interface** and **Guarantees** of the contracts it consumes and produces,
-and the Decision and Consequences of its governing ADRs. It never sees the
+**Interface**, **Guarantees** and **Validation** of the contracts it
+consumes and produces, and the Decision and Consequences of its governing
+ADRs. A contract that this text names and the phase neither consumes nor
+produces comes too, marked `referenced` (§9.7). It never sees the
 producing node's implementation, sibling phases, or the full subsystem
 spec.
 
@@ -555,17 +561,17 @@ spec.
 flowchart LR
     subgraph producer ["Producer node (hidden internals)"]
         pi["auth.2 implementation<br/>(JWT signing, key rotation, ...)"]
-        c["Contract: auth-token@v1<br/>Interface + Guarantees"]
+        c["Contract: auth-token@v1<br/>Interface + Guarantees + Validation"]
         pi -. exposes .-> c
     end
 
     subgraph consumer ["Consumer phase session"]
         sess["billing.2 OpenSpec session"]
-        ctx["Injected context:<br/>billing.2 phase + auth-token@v1 interface only"]
+        ctx["Injected context:<br/>billing.2 phase + auth-token@v1 contract text only"]
         ctx --> sess
     end
 
-    c -- by id, interface only --> ctx
+    c -- by id, contract text only --> ctx
     pi -. never injected .-x sess
 
     style producer fill:none,stroke:#2563eb,stroke-dasharray: 5 5,stroke-width:2px,color:#2563eb
@@ -794,7 +800,7 @@ Each skill has named natural-language triggers:
 | "acme.backend.auth is small enough to phase. Write its phase plan." | `hsdd-phase-plan` | Ordered phases with gates and review tiers. |
 | "Record this as an ADR." | `hsdd-adr` | Materialize the accepted decision as a file. |
 | "Set up OpenSpec config for this project." | `hsdd-config` (init) | `config.yaml` with project context + skill mapping. |
-| "Switch the phase context to acme.backend.auth.2." | `hsdd-config` (switch) | Write the generic phase context (the phase, the Interface and Guarantees of its contracts, its ADRs' decisions) and the derivative for the coding method. Run before `opsx: new` or `writing-plans`. |
+| "Switch the phase context to acme.backend.auth.2." | `hsdd-config` (switch) | Write the generic phase context (the phase, the Interface, Guarantees and Validation of its contracts, its ADRs' decisions) and the derivative for the coding method. Run before `opsx: new` or `writing-plans`. |
 | "Reconcile the worktrees." | `hsdd-reconcile` | Drain pending governance updates (chapter 8). |
 | "Start acme.backend.auth.2 with superpowers." | `hsdd-config` (switch, `--method superpowers`) | Generic context plus `hsdd-context/superpowers/acme.backend.auth.2.md`; the session starts at `writing-plans`. |
 | "Render the plan page." | `hsdd-summary` | Extract, fill the unparsed items, validate, write the prose, render `hsdd/summary/summary.html` (chapter 13). |
@@ -1268,8 +1274,9 @@ the verification-doc template to `hsdd/templates/verification.md` when it is
 missing, and replaces a pre-v0.10 copy that has no `## Learnings`, whatever
 the method, so the current template exists before the first coding session. It
 is the operational form of context isolation: the phase's own section plus the
-Interface and Guarantees of the contracts it consumes and produces and the
-Decision and Consequences of its governing ADRs. Never producer internals,
+Interface, Guarantees and Validation of the contracts it consumes, produces
+and references, and the Decision and Consequences of its governing ADRs.
+Never producer internals,
 never another phase's section, never the full node spec. Phases carry no
 Sources field and no source document is injected, because the planner is the
 one who read the sources (§7.6). The phase block is typically 80 to 150 lines,
@@ -1385,7 +1392,13 @@ Five rules govern it:
 2. **Self-contained.** Every contract, ADR and open-question id the file
    names has its text inline, except other phases' ids, which appear only in
    the phase's Dependencies and Collides with lines. An external contract
-   with no file gets a one-line entry saying so.
+   with no file gets a one-line entry saying so. A contract the file names
+   that the phase neither consumes nor produces, in the phase's own fields
+   or inside another contract's text, is inlined under the direction
+   `referenced`, and the phase uses it only as its Scope says. Every
+   contract subsection carries the contract's Interface, Guarantees and
+   Validation: consumers test against the fixtures and producers replay
+   them, so the session needs their paths and format.
 3. **Push, not pull.** The links are for provenance and escalation; they
    never replace an inline excerpt (§18.2).
 4. **No truncation.** A context too large to read signals a phase that
@@ -1407,7 +1420,9 @@ implementer and task reviewer, so they are where HSDD's rules travel:
 test-first in every task's own text, at most as many tasks as the phase's
 size estimate, the gate before the last task, the verification doc as the
 last task at the tier's depth, the governance freeze, contracts consumed by
-Interface and Guarantees only, the tier's artifact profile, and the
+Interface and Guarantees only and tested against their fixtures, a
+referenced contract used only as the phase's Scope says, the tier's
+artifact profile, and the
 project's tech skills. The run is `writing-plans`, the plan check, then
 `subagent-driven-development` (or `executing-plans`), then the verification
 doc. The definition of done does not change: a verification doc merged to
@@ -2411,6 +2426,15 @@ v0.10.0, or says the rule is specified without a skill.
 | As-built drift and stale caveats at the checkpoint (§6.3, §12.7) | Runs only when the tree has a node with an `## Observed surface`; a tree without one never runs the script. | `hsdd-checkpoint` |
 | `hsdd-intake`, intake records, cross-intake collisions, intake closure (§11.2, §11.5, §11.7) | From the next change request forward; no back-application. | `hsdd-intake`; `hsdd-checkpoint` closes records |
 
+**v0.10.1** corrects two phase-context rules and changes no artifact under
+`hsdd/`. Neither triggers an adoption run: a 0.10.0 project's newest
+progress report already has its grandfathered-contracts row.
+
+| Change | Effect on a 0.10.0 project | Implemented in v0.10.1 by |
+|--------|----------------------------|---------------------------|
+| Every contract subsection carries the contract's Validation section (§9.7) | Forward-only: phases switched after the upgrade get it; a phase context already written is a record and is not rewritten. | `hsdd-config` |
+| `referenced` subsections for a contract the context names that the phase neither consumes nor produces (§9.7) | Forward-only, as above. A superpowers phase already in progress keeps the context it started with: re-running its switch rewrites constraint 7, which its plan copied verbatim from the old derivative. | `hsdd-config`; `hsdd-phase-plan` (a Scope names such a contract by `{contract-id}@{version}`) |
+
 **The one case worth calling out:** a fully-governed ≥0.6.1 project usually
 still has system surface that was never in the tree, namely the code the
 HSDD-built part sits inside. `hsdd-adopt` runs on *that*, grafting as-built
@@ -2505,8 +2529,8 @@ This section is the single home for the isolation and token claims (§1.6
 points here; no other chapter restates them).
 
 **Isolation.** Per-phase context shapes attention: a session receives its own
-phase, the Interface and Guarantees of the contracts it consumes and produces,
-and the decisions that govern it, so it is unlikely to wander into a sibling's
+phase, the Interface, Guarantees and Validation of the contracts it consumes
+and produces, and the decisions that govern it, so it is unlikely to wander into a sibling's
 concern or fabricate an interface it was never given. The defense is prose and
 structure, tested under adversarial pressure and found to hold, but it is
 **probabilistic, not enforced**. HSDD does not mechanically prevent a session
@@ -2577,7 +2601,7 @@ natural seed; it lacks only the baseline and the write-up.
 
 ## 18. Settled Decisions
 
-The merged decision record of every release through v0.10.0, current answers
+The merged decision record of every release through v0.10.1, current answers
 only. **Provenance is a required column** — `field-tested` (validated on a
 real project), `pressure-tested` (held under the adversarial 0.6.0
 campaign), or `reasoned-only` — because new material must not inherit
@@ -2652,6 +2676,8 @@ add is `reasoned-only`, and the table says so instead of letting it borrow.
 | The grandfather clause's end | On touch, not on a date: set closed at upgrade; a phase that touches the contract cannot pass its gate until the artifact exists, written at the root through `hsdd-contract`, and the next reconcile after that gate removes the mark on the checkpoint's discharge finding; count reported and falling, closure checked by membership (§15.2). | reasoned-only |
 | Phase context shape | One generic, method-neutral, self-contained file per phase, selected verbatim, never authored (§9.7). | reasoned-only |
 | Derivatives | Wrap the generic body word for word; a `diff` proves they agree (§9.3, §9.8). | reasoned-only |
+| Contract text in a phase context | Interface, Guarantees and Validation, verbatim; Validation locates the fixtures both gates use (§9.7). | reasoned-only |
+| A contract the context names that the phase neither consumes nor produces | Inlined in full, headed `referenced`, collected until no named contract lacks a subsection; a Scope names it by `{contract-id}@{version}` (§9.7, §3.4). | reasoned-only |
 | Coding method | Project default in conventions, per-phase override at the switch (§9.9). | reasoned-only |
 | Reading aids | Optional, derived, stamped HTML pages under `hsdd/summary/`; never authoritative, never a gate (chapter 13). | reasoned-only |
 | Summary extraction | A script parses what the templates fix; the agent fills only the items it flags, from the source; a schema and cross-checks validate (§13.2). | reasoned-only |
@@ -2715,9 +2741,9 @@ the completion of acceptance criterion 1's traceability contract:
   (`interfaces-first` default) (§7.4).
 - **Companion skill:** a general-purpose discipline skill that HSDD composes
   with rather than re-implements.
-- **Context isolation:** injecting only a phase's own section, the Interface
-  and Guarantees of its contracts, and its governing ADRs' decisions into
-  the phase's session; probabilistic, not enforced (§16.1).
+- **Context isolation:** injecting only a phase's own section, the Interface,
+  Guarantees and Validation of its contracts, and its governing ADRs'
+  decisions into the phase's session; probabilistic, not enforced (§16.1).
 - **Profile:** an opt-in layout variant declared in conventions; the
   standalone-spec-repo profile mounts the tree as a submodule at `hsdd/`
   (§14.4).
@@ -2754,6 +2780,9 @@ the completion of acceptance criterion 1's traceability contract:
   on; it gets an Entry / Agenda / Exit / Unblocks section (§12.4).
 - **Generic phase context:** the self-contained, method-neutral file
   `hsdd-config` writes for a phase before its coding session (§9.7).
+- **Referenced contract:** a contract a phase context names, in the phase's
+  own fields or inside another contract's text, that the phase neither
+  consumes nor produces; inlined so the context stays self-contained (§9.7).
 - **Derivative:** the generic phase context wrapped for one coding method:
   OpenSpec's `config.yaml` or the superpowers spec (§9.3, §9.8).
 - **Coding method:** how a project executes phases, `openspec` or

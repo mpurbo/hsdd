@@ -237,7 +237,10 @@ that validates the phase's real output against
 project has no such command yet, the phase's Scope includes creating it and
 the Gate names it. A `Gate` of `node default` on a producing phase reads
 `node default plus contract replay for {slug}`. Consuming phases test
-against those fixtures, never against hand-rolled mocks.
+against those fixtures, never against hand-rolled mocks. A phase that works
+with a contract it neither consumes nor produces (a replay rig built ahead
+of the producing phase) names it as `{contract-id}@{version}` in its Scope;
+`hsdd-config` then gives that phase the contract's text as `referenced`.
 
 ## Review Tiers
 

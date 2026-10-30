@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.10.1] - 2026-10-30
+
+Two phase-context corrections, found by the simple-login tutorial run, and
+the documentation added since 0.10.0. Specification:
+`spec/hsdd-spec-v0_10.md`, now at 0.10.1; its §15.1 states the upgrade.
+Acceptance: `review/hsdd-v0_10-acceptance.md`, A6 and A7.
+
+### Upgrading from 0.10.0
+
+- Reinstall the skills. Only `hsdd-config` and `hsdd-phase-plan` changed.
+- Nothing under `hsdd/` changes, and the upgrade triggers no adoption run:
+  a 0.10.0 project's newest progress report already has its
+  grandfathered-contracts row.
+- Forward-only: phases switched after the upgrade get the Validation
+  blocks and `referenced` subsections. A phase context already written is a
+  record and is not rewritten.
+- A superpowers phase already in progress keeps the context it started
+  with. Re-running its switch rewrites constraint 7, which its plan copied
+  verbatim from the old derivative.
+
 ### Added
 
 - `docs/tutorial/simple-login/`: a complete, recorded HSDD run on a small
@@ -21,6 +41,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   page and nine short chapters, from the problem HSDD solves to running a
   project, using the user's guide's examples, with brownfield adoption and
   change intake as chapters of their own.
+
+### Fixed
+
+Two defects in the v0.10.0 phase context, found by the simple-login
+tutorial run (`docs/tutorial/simple-login/walkthrough/process-log.md`,
+"Findings about HSDD itself", 1 and 2) and reproduced on scratch copies of
+its tree with the v0.10.0 skill before the fix.
+
+- `hsdd-config` now copies each contract's `## Validation` section into
+  its subsection, after Interface and Guarantees. The Discipline line and
+  superpowers constraint 7 tell the session to test against the fixtures
+  it names. Before, a consuming phase was told to test against fixtures
+  its context never located, and a phase building the replay rig had no
+  fixture format or placeholder rules.
+- `hsdd-config` has a third direction, `referenced`, for a contract the
+  file names that the phase neither consumes nor produces: named in the
+  Phase block, or inside another contract's text. It gets the same
+  subsection, is collected until no contract id lacks one, and is named in
+  a Discipline line: use it only as the Scope says. Before, the Contracts
+  rule (Consumes and Produces only) and the self-contained gate (every
+  named id inline) contradicted each other, and rule 1 forbade inventing a
+  label; both reproductions headed such contracts `consumes`, contradicting
+  the Phase block.
+- `hsdd-phase-plan`: a phase that works with a contract it neither
+  consumes nor produces (a replay rig built ahead of the producing phase)
+  names it as `{contract-id}@{version}` in its Scope, so the switch finds
+  it.
+- `spec/hsdd-spec-v0_10.md` states the same in place (§1.5, §1.6, §3.4,
+  §3.6, §5.3, §9.2, §9.7, §9.8, §16.1, a glossary entry for referenced
+  contract), with the upgrade in §15.1 and two rows in §18.1. The user's
+  guide sample context, the README and the HTML guide agree.
 
 ## [0.10.0] - 2026-10-10
 
