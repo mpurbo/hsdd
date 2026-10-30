@@ -95,9 +95,15 @@ What to eyeball:
   doc.
 
 ## Sign-off
-- Reviewer / date:
-- Review tier applied:
-- Disposition of each Outstanding item: verified | waived (reason) |
-  deferred to {phase-id}
-- Disposition of each Learning: spec-updated | contract-bumped (id@v) |
-  adr-proposed (ADR-nnn) | dropped (reason)
+- Reviewer / date: Claude as owner proxy (by the owner's choice before the run), 2026-10-30
+- Review tier applied: spot-check: the diff glanced (web/ only, 5 product
+  files), the gate confirmed (90 tests, build), the fresh reviewer's report
+  and the lane's rulings read, the 360 px screenshots looked at
+- Disposition of each Outstanding item: Home against the real backend:
+  deferred to simple-login.integration.2. The 360 px eyeball: verified from
+  the two 360 px screenshots (rows in the request's order, the number on
+  one line)
+- Disposition of each Learning: the missing Screen: dropped (the shipped
+  Scope is not rewritten; recorded in the process log as a finding about
+  phase planning: the Scope pointed at the request instead of carrying the
+  row order)

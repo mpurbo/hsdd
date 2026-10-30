@@ -232,3 +232,38 @@ Every acceptance-criterion test passed: the v1 web app reads the five
 fields it knows and ignores `phone`, so the product kept working. Only the
 contract replay saw the break, which is the planners' prediction, and the
 reason v1's "exactly the five fields" guarantee made the change a version.
+
+### 13:13 to 13:35 · simple-login.web.4 (web lane, a separate agent)
+
+- **Isolation.** The agent's whole specification was web.4's two context
+  files and the files their Links name; it was forbidden `backend/`,
+  `e2e/`, other phases' contexts and other nodes' specs. It worked in its
+  own worktree, `tutorial-update-web4`, cut from this branch at a5d40eb.
+- **Plan:** 4 tasks of a cap of 4 (the stub serves `profile-api.v2` only
+  and refuses v1; `fetchProfile` requires `phone`; Home's `Phone` row and a
+  360 px check; the verification doc). Plan check: all five boxes,
+  constraints compared by `diff`.
+- **Red, then green, three times.** Task 1: the stub's refusal test and a
+  `tsc` error; Task 2: 7 tests and a `tsc` error; Task 3: 7 tests. Gate:
+  90 tests (79 before), build OK. Product +19 −10 in 5 files; tests and the
+  stub +102 −20. Afterwards only the stub's refusal test names the v1
+  fixture set.
+- **Final review** (a fresh reviewer): 0 Critical, 0 Important, 5 Minor,
+  ready to merge, no fix pass. Rulings the agent made, each with its cost in
+  its ledger: a 200 with an empty or off-pattern `phone` is shown as given
+  (the producer's replay owns the pattern); during a v1/v2 skew the user
+  would see the network message although the server answered (the Scope
+  pins a phone-less 200 as `unavailable`; this intake ships together); no
+  `tel:` link (the Scope says plain text); the number may wrap below about
+  320 px. The 360 px check renders Home in a 360 px iframe, because headless
+  Chrome on macOS will not lay a page out narrower than about 500 px.
+- **Caught: the request's Screen was not in the context.** web.4's Scope
+  says "per the request's Screen" and its Verification "matches the
+  request's Screen at 360 px", but neither context carries the change
+  request, and the Links do not name it. The agent reached it through the
+  node spec's `Sources` line and ledgered the read. hsdd-phase-plan already
+  says a binding detail found only in a source must land in the Scope or
+  Verification line; the planner wrote a pointer instead of the content.
+  The same family as the first run's finding about D{n} decisions.
+- **Merged** with `--no-ff` at 13:37 after checking the two branches touched
+  disjoint files.
