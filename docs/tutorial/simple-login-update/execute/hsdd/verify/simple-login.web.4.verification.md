@@ -86,8 +86,9 @@ What to eyeball:
 
 ## Metrics
 
-- Agent wall-clock: 13:13 to 13:27 for plan and Tasks 1 to 3 (final
-  review and fix pass after).
+- Agent wall-clock: 13:13 to 13:35. Plan and Plan check 7 min, Tasks 1
+  to 4 7 min, final whole-branch review by a fresh reviewer 7 min (0
+  Critical, 0 Important, 5 Minor deferred; no fix pass).
 - Gate failures before green: none unplanned; each RED above was planned.
 - Product diff: `web/` +121 −30 over 11 files (production +19 −10, tests
   and the fixture stub +102 −20). Process artifacts: plan 271 lines, this
