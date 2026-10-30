@@ -222,3 +222,13 @@ plans: the skill's sibling-isolation rule.
   Process: plan 127 lines, context and derivative 540, verification doc 80.
 - **Outstanding:** the root `npm test` is red until integration.2 lands
   (the browser suite still replays v1's exact bodies).
+
+### 13:23 · The red window, observed
+
+With backend.3 merged and the web app still on v1, the browser suite
+(`npx playwright test`) gave 16 passed and 2 failed: the proxy replay of
+v1's `me-ayu` and `me-budi`, each diff a single extra line, `+ "phone": …`.
+Every acceptance-criterion test passed: the v1 web app reads the five
+fields it knows and ignores `phone`, so the product kept working. Only the
+contract replay saw the break, which is the planners' prediction, and the
+reason v1's "exactly the five fields" guarantee made the change a version.
