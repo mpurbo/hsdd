@@ -1,5 +1,5 @@
 // The phase gate's contract replay: every fixture of auth-api@v1 and
-// profile-api@v1, sent to the real routes, must reproduce.
+// profile-api@v2, sent to the real routes, must reproduce.
 import { randomBytes } from "node:crypto";
 import { describe, expect, it } from "vitest";
 import { ACCOUNTS } from "../src/accounts.ts";
@@ -34,7 +34,7 @@ function realService() {
   return { app, hooks };
 }
 
-const SLUGS: ContractSlug[] = ["auth-api", "profile-api"];
+const SLUGS: ContractSlug[] = ["auth-api", "profile-api.v2"];
 
 describe("contract replay against the real routes", () => {
   for (const slug of SLUGS) {

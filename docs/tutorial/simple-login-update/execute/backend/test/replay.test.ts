@@ -13,7 +13,7 @@ import {
   responseValidator,
 } from "./replay.ts";
 
-const SLUGS: ContractSlug[] = ["auth-api", "profile-api"];
+const SLUGS: ContractSlug[] = ["auth-api", "profile-api.v2"];
 const fixtureDir = (slug: ContractSlug) =>
   fileURLToPath(new URL(`../../hsdd/contract/fixture/${slug}/`, import.meta.url));
 
@@ -83,19 +83,19 @@ describe("placeholders and replay modes", () => {
   }
 
   it("reports an exact fixture whose real body differs, naming the fixture", async () => {
-    const [fixture] = loadFixtures("profile-api").filter((f) => f.name === "me-ayu");
+    const [fixture] = loadFixtures("profile-api.v2").filter((f) => f.name === "me-ayu");
     const app = await echo({ status: 200, body: { ...(fixture!.response.body as object), displayName: "Someone Else" } });
-    const problems = await replayFixture(app, "profile-api", fixture!, hooks);
+    const problems = await replayFixture(app, "profile-api.v2", fixture!, hooks);
     expect(problems).toHaveLength(1);
     expect(problems[0]).toContain("me-ayu");
     await app.close();
   });
 
   it("turns a placeholder the hooks cannot fill into a problem, without throwing", async () => {
-    const [fixture] = loadFixtures("profile-api").filter((f) => f.name === "me-budi");
+    const [fixture] = loadFixtures("profile-api.v2").filter((f) => f.name === "me-budi");
     const app = await echo(fixture!.response);
     const failing: PlaceholderHooks = { ...hooks, token: async (u) => Promise.reject(new Error(`no account ${u}`)) };
-    const problems = await replayFixture(app, "profile-api", fixture!, failing);
+    const problems = await replayFixture(app, "profile-api.v2", fixture!, failing);
     expect(problems).toEqual([expect.stringContaining("me-budi")]);
     await app.close();
   });

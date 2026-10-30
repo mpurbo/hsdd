@@ -11,12 +11,14 @@ export type Account = {
   username: string;
   displayName: string;
   email: string;
+  /** Exactly as stored, never reformatted: "+62 812 3456 7890". */
+  phone: string;
   /** A calendar date, YYYY-MM-DD. */
   memberSince: string;
   password: PasswordHash;
 };
 
-/** What profile-api@v1 returns: an account without its password. */
+/** What profile-api@v2 returns: an account without its password. */
 export type Profile = Omit<Account, "password">;
 
 export type Session = { token: string; accountId: string; expiresAt: Date };

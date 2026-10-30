@@ -4,7 +4,7 @@ import { ACCOUNTS, toProfile } from "../src/accounts.ts";
 
 const fixtureBody = (name: string): unknown =>
   JSON.parse(
-    readFileSync(new URL(`../../hsdd/contract/fixture/profile-api/${name}.json`, import.meta.url), "utf8"),
+    readFileSync(new URL(`../../hsdd/contract/fixture/profile-api.v2/${name}.json`, import.meta.url), "utf8"),
   ).response.body;
 
 describe("built-in accounts", () => {
@@ -30,5 +30,13 @@ describe("built-in accounts", () => {
 
   it("a profile never carries the password", () => {
     expect(toProfile(ACCOUNTS[0]!)).not.toHaveProperty("password");
+  });
+
+  it("a profile has exactly the six profile-api@v2 fields", () => {
+    for (const account of ACCOUNTS) {
+      expect(Object.keys(toProfile(account)).sort()).toEqual(
+        ["displayName", "email", "id", "memberSince", "phone", "username"],
+      );
+    }
   });
 });

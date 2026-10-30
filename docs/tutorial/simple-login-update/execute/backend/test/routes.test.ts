@@ -65,6 +65,13 @@ describe("GET /api/me", () => {
     expect((await me(`Bearer ${ayu}`)).json().username).toBe("ayu");
   });
 
+  it("returns the stored phone byte for byte", async () => {
+    const odd = { ...ACCOUNTS[0]!, phone: "+1 555 0100" };
+    app = buildApp({ clock: () => new Date(NOW), randomBytes, accounts: [odd] });
+    const token = await tokenFor("ayu", "sunrise-42");
+    expect((await me(`Bearer ${token}`)).json().phone).toBe("+1 555 0100");
+  });
+
   it("accepts the scheme in lower case", async () => {
     service();
     const token = await tokenFor("ayu", "sunrise-42");

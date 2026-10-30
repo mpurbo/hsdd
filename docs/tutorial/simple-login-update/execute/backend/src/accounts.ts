@@ -8,6 +8,7 @@ export const ACCOUNTS: readonly Account[] = [
     username: "ayu",
     displayName: "Ayu Lestari",
     email: "ayu@example.com",
+    phone: "+62 812 3456 7890",
     memberSince: "2024-03-14",
     password: {
       salt: "41bd1b70afb78cb94af0bc1671a727ee",
@@ -19,6 +20,7 @@ export const ACCOUNTS: readonly Account[] = [
     username: "budi",
     displayName: "Budi Santoso",
     email: "budi@example.com",
+    phone: "+62 813 9876 5432",
     memberSince: "2025-01-09",
     password: {
       salt: "21be5d709ae5ec27c3a3f21fcddfee08",

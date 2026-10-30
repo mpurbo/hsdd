@@ -13,7 +13,7 @@ import ajvFormats from "ajv-formats";
 const Ajv2020 = ajv2020.default;
 const addFormats = ajvFormats.default;
 
-export type ContractSlug = "auth-api" | "profile-api";
+export type ContractSlug = "auth-api" | "profile-api" | "profile-api.v2";
 
 export type Fixture = {
   name: string;

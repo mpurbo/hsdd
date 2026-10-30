@@ -7,7 +7,7 @@ import type { SessionStore } from "./sessions.ts";
 
 const apiError = (code: ErrorCode, message: string): ApiError => ({ error: { code, message } });
 
-// The exact bodies auth-api@v1 and profile-api@v1 fix.
+// The exact bodies auth-api@v1 and profile-api@v2 fix.
 export const VALIDATION_FAILED = apiError("VALIDATION_FAILED", "Username and password are required.");
 export const INVALID_CREDENTIALS = apiError("INVALID_CREDENTIALS", "Incorrect username or password.");
 export const UNAUTHORIZED = apiError("UNAUTHORIZED", "Sign in to continue.");
