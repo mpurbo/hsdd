@@ -1,12 +1,17 @@
 // Test helper: answers stubbed `fetch` calls with the contract fixtures in
-// hsdd/contract/fixture/. Only a fixture's `response` is used to answer; its
-// `request.method` and `request.path` pick which fixture answers a call.
+// hsdd/contract/fixture/: auth-api@v1's and profile-api@v2's. profile-api@v1's
+// are refused, so no test of this node can depend on them (simple-login.web.4).
+// Only a fixture's `response` is used to answer; its `request.method` and
+// `request.path` pick which fixture answers a call.
 import { readdirSync, readFileSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { vi } from 'vitest'
 
-export type FixtureApi = 'auth-api' | 'profile-api'
+/** The fixture directories this node's tests may read. */
+const FIXTURE_APIS = ['auth-api', 'profile-api.v2'] as const
+
+export type FixtureApi = (typeof FIXTURE_APIS)[number]
 
 export interface Fixture {
   name: string
@@ -31,7 +36,11 @@ export interface FetchStub {
 // rewrites that pattern into a dev-server asset URL.
 const fixtureRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../../../hsdd/contract/fixture')
 
-const fixtureDir = (api: FixtureApi): string => join(fixtureRoot, api)
+// Checked at run time too, so a cast cannot reach a refused directory.
+function fixtureDir(api: FixtureApi): string {
+  if (!FIXTURE_APIS.includes(api)) throw new Error(`no fixture set ${api}`)
+  return join(fixtureRoot, api)
+}
 
 export function loadFixture(api: FixtureApi, name: string): Fixture {
   return JSON.parse(readFileSync(join(fixtureDir(api), `${name}.json`), 'utf8')) as Fixture

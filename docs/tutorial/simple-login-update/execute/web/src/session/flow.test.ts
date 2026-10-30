@@ -7,7 +7,7 @@ const session: Session = {
   token: 'q8Vn3xR2bT0kLw7YcZ1pHs5mJd9fAe4uGi6oNr2vXyQ',
   expiresAt: '2026-10-29T10:30:00.000Z',
 }
-const profile = loadFixture('profile-api', 'me-ayu').response.body as Profile
+const profile = loadFixture('profile-api.v2', 'me-ayu').response.body as Profile
 const checking: AppState = { kind: 'checking', session }
 const signedIn: AppState = { kind: 'signed-in', session, profile }
 const signedOut: AppState = { kind: 'signed-out' }

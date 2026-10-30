@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { listFixtures, loadFixture, stubFetch, stubFetchHanging, stubFetchUnreachable } from './fetchStub'
+import { listFixtures, loadFixture, stubFetch, stubFetchHanging, stubFetchUnreachable, type FixtureApi } from './fetchStub'
 
 describe('fixture-backed fetch stub', () => {
   it('lists the five fixtures of each API', () => {
@@ -10,13 +10,19 @@ describe('fixture-backed fetch stub', () => {
       'login-unknown-user',
       'login-wrong-password',
     ])
-    expect(listFixtures('profile-api').map((f) => f.name)).toEqual([
+    expect(listFixtures('profile-api.v2').map((f) => f.name)).toEqual([
       'me-ayu',
       'me-budi',
       'me-expired-token',
       'me-no-token',
       'me-unknown-token',
     ])
+  })
+
+  it('refuses the profile-api@v1 fixtures: this node consumes profile-api@v2', () => {
+    const retired = 'profile-api' as FixtureApi
+    expect(() => loadFixture(retired, 'me-ayu')).toThrow('no fixture set profile-api')
+    expect(() => listFixtures(retired)).toThrow('no fixture set profile-api')
   })
 
   it('answers a matching call with the fixture response and records it', async () => {

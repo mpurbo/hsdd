@@ -31,7 +31,7 @@ describe('API client', () => {
   it('maps every fixture', () => {
     // A fixture added to the contract fails here until it is mapped below.
     expect(Object.keys(signInCases).sort()).toEqual(listFixtures('auth-api').map((f) => f.name))
-    expect(Object.keys(profileCases).sort()).toEqual(listFixtures('profile-api').map((f) => f.name))
+    expect(Object.keys(profileCases).sort()).toEqual(listFixtures('profile-api.v2').map((f) => f.name))
   })
 
   it.each(Object.entries(signInCases))('signIn: %s', async (name, expected) => {
@@ -42,7 +42,7 @@ describe('API client', () => {
   })
 
   it.each(Object.entries(profileCases))('fetchProfile: %s', async (name, expected) => {
-    stubFetch(loadFixture('profile-api', name))
+    stubFetch(loadFixture('profile-api.v2', name))
     expect(await fetchProfile(TOKEN)).toEqual(expected)
   })
 
@@ -60,7 +60,7 @@ describe('API client', () => {
   })
 
   it('fetchProfile sends the token back verbatim', async () => {
-    const stub = stubFetch(loadFixture('profile-api', 'me-ayu'))
+    const stub = stubFetch(loadFixture('profile-api.v2', 'me-ayu'))
     await fetchProfile(TOKEN)
     expect(stub.calls).toEqual([
       { method: 'GET', path: '/api/me', headers: { authorization: `Bearer ${TOKEN}` }, body: undefined },

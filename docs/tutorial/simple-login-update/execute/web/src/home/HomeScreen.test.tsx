@@ -5,7 +5,7 @@ import type { Profile } from '../api/types'
 import { loadFixture } from '../test/fetchStub'
 import { HomeScreen } from './HomeScreen'
 
-const profileOf = (name: string): Profile => loadFixture('profile-api', name).response.body as Profile
+const profileOf = (name: string): Profile => loadFixture('profile-api.v2', name).response.body as Profile
 const rows = () => screen.getAllByRole('term').map((dt) => [dt.textContent, dt.nextElementSibling?.textContent])
 
 describe('HomeScreen (AC-2.1)', () => {
