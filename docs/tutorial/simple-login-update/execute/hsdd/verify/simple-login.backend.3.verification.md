@@ -77,10 +77,13 @@ plan expected a second tsc error that a spread does not produce.
   doc 80 lines.
 
 ## Sign-off
-- Reviewer / date:
-- Review tier applied:
-- Disposition of each Outstanding item:
-- Disposition of each Learning:
+- Reviewer / date: Claude as owner proxy (by the owner's choice before the run), 2026-10-30
+- Review tier applied: spot-check: the diff glanced (8 files, all under
+  `backend/`), the gate and the replay confirmed green from a clean install,
+  the fresh reviewer's report and mutations read
+- Disposition of each Outstanding item: the red root `npm test`: deferred to
+  simple-login.integration.2
+- Disposition of each Learning: both dropped, each with its reason recorded
 
 > The review gate is not passed while an Outstanding item or a Learning
 > lacks a disposition. Dispositions execute at the root through the owning

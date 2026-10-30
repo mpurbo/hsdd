@@ -31,7 +31,7 @@ which is the only skill that closes an intake record.
 
 ## Timeline
 
-### 13:05 · hsdd-intake: route the change
+### 12:59 · hsdd-intake: route the change
 
 - **Read open intakes first.** None: the project has no
   `hsdd/management/` yet. No atlas either, so the landing was read from
@@ -95,7 +95,7 @@ which is the only skill that closes an intake record.
   contract matrix and DAG still say v1; they are left for the phase plans
   and reconcile, and logged where they are handled.
 
-### 13:25 to 13:09 · hsdd-phase-plan ×3, append mode, in parallel
+### 13:03 to 13:09 · hsdd-phase-plan ×3, append mode, in parallel
 
 Three fresh agents, one per landing node. Each was allowed its own node
 spec, the root spec's shared node sections, every contract and ADR, the
@@ -192,3 +192,33 @@ plans: the skill's sibling-isolation rule.
   v0.10.1 chose: full text over a one-line stub.
 - Self-contained gate: every `@v`, `ADR-` and OQ id in each file has its
   subsection. Equality check: empty for all three.
+
+### 13:13 to 13:23 · simple-login.backend.3 (backend lane, this session)
+
+- **Lanes.** backend.3 ran here; web.4 ran at the same time as a separate
+  agent in its own git worktree, cut from this branch (`tutorial-update-web4`
+  at a5d40eb), not from `main`: the first run's worktree-base finding,
+  avoided by creating the worktree before the hand-off.
+- **Plan** (`superpowers:writing-plans` from the derivative): 2 tasks of a
+  cap of 3. Task 1 moves `GET /api/me` to profile-api@v2 test-first; Task 2
+  is the gate and the verification doc. Plan check: all five boxes.
+- **Red, then green.** The new tests failed first: 6 `tsc` errors
+  (`"profile-api.v2"` not a `ContractSlug`) and 5 of 72 vitest failures (the
+  account-to-fixture comparisons, the six-field key set, the v2 `me-ayu` and
+  `me-budi` replays). After `phone` joined `Account` and both accounts:
+  gate 72/72, replay 10/10 (auth-api ×5, profile-api.v2 ×5, no v1).
+- **Rulings (ledger).** The rig's own tests also move to v2, so this node's
+  gate no longer reads v1's files (cost if wrong: one line). The routes test
+  that returns an injected `"+1 555 0100"` byte for byte passed before the
+  change, because `toProfile` copies every field but `password`; kept as
+  AC-2.4's regression guard (cost if wrong: none).
+- **Final review** (fresh reviewer, opus): 0 Critical, 0 Important, 3 Minor,
+  ready to merge. It probed five unusual phone strings (all verbatim) and
+  ran two mutations (an extra `Account` field, a token in the profile), both
+  caught by the gate. Deferred minors: the probe value is already canonical;
+  `ContractSlug` still admits the v1 slug; the plan expected a tsc error a
+  spread does not raise.
+- **Product diff:** 41 lines (+30 −11), source +6 −2, tests +24 −9.
+  Process: plan 127 lines, context and derivative 540, verification doc 80.
+- **Outstanding:** the root `npm test` is red until integration.2 lands
+  (the browser suite still replays v1's exact bodies).
