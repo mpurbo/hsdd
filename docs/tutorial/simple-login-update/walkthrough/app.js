@@ -116,8 +116,8 @@ const ACTIONS = {
   filter: (s, v) => ({ ...s, filter: v }),
   "open-log": (s) => ({ ...s, file: "@log", raw: false, diff: false }),
   raw: (s) => ({ ...s, raw: !s.raw }),
-  node: ui("node"), edges: ui("edges"), adr: ui("adr"), slug: (s, v) => ({ ...s, ui: { ...s.ui, slug: v, fixture: undefined } }),
-  fixture: ui("fixture"), side: ui("side"), floor: ui("floor"), rstep: ui("rstep"), phase: ui("phase"), lanephase: ui("lanephase"), metric: ui("metric"),
+  klass: ui("klass"), policy: ui("policy"), ripple: ui("ripple"), lnode: ui("lnode"), rstep: ui("rstep"), phase: ui("phase"),
+  lanephase: ui("lanephase"), vphase: ui("vphase"), cstep: ui("cstep"), metric: ui("metric"),
 };
 
 // ---------- shell ----------

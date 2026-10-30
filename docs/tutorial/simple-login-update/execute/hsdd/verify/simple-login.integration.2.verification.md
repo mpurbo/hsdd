@@ -76,10 +76,13 @@ between Email and Member since; as `budi`, `+62 813 9876 5432`.
 - Process artifacts: plan 109 lines, context and derivative 534 lines, this doc 90 lines.
 
 ## Sign-off
-- Reviewer / date:
-- Review tier applied:
-- Disposition of each Outstanding item:
-- Disposition of each Learning:
+- Reviewer / date: Claude as owner proxy (by the owner's choice before the run), 2026-10-30
+- Review tier applied: spot-check: the diff glanced (e2e/ and README only), `npm test`
+  green from the root with the ports free afterwards, the fresh reviewer's report and its
+  mutants read, the two Home screenshots looked at
+- Disposition of each Outstanding item: none outstanding (backend.3's red `npm test` and
+  web.4's real-backend walk: verified here)
+- Disposition of each Learning: dropped, with its reason recorded
 
 > The review gate is not passed while an Outstanding item or a Learning
 > lacks a disposition. Dispositions execute at the root through the owning

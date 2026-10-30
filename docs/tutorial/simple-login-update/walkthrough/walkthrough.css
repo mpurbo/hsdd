@@ -434,3 +434,6 @@ dialog::backdrop { background: rgba(12, 19, 34, 0.45); }
 .raw.diff .d-del { color: var(--ink); background: var(--fail-bg); text-decoration: line-through; text-decoration-color: color-mix(in srgb, var(--fail) 45%, transparent); }
 .raw.diff .d-ctx { color: var(--muted); }
 .raw.diff .d-gap { color: var(--faint); text-align: center; background: var(--sunk); }
+.chip.ghost { background: var(--sunk); border-color: var(--rule); color: var(--muted); }
+table.data tr.locked td { color: var(--muted); }
+.dg .edge.contract.hot { stroke: var(--accent); stroke-width: 2.6; }

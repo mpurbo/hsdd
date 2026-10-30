@@ -267,3 +267,38 @@ reason v1's "exactly the five fields" guarantee made the change a version.
   The same family as the first run's finding about D{n} decisions.
 - **Merged** with `--no-ff` at 13:37 after checking the two branches touched
   disjoint files.
+
+### 13:37 to 13:52 · simple-login.integration.2 (this session, after both lanes)
+
+- **Plan:** 3 tasks of a cap of 4: AC-2.1 and AC-2.4 in the browser; the
+  proxy replay moves to profile-api@v2; the gate and the verification doc.
+  The phone values are read from v2's fixtures at test time, so the browser
+  test and the contract cannot disagree.
+- **[owner proxy] Seeing red after the lanes merged.** The integration
+  node's edges are `hard`, so its dependencies ship first, and web.4 was
+  already merged when Task 1's red step came. Ruling (ledgered): check out
+  `web/src` from b6d64b3 (before web.4) for that run only, then restore.
+  Result: AC-2.1, AC-2.4 and the Budi test failed on the missing phone,
+  the other 3 passed; with web.4, 6 passed. Task 2's red: the replay-set
+  test and the v1 `me-ayu`/`me-budi` replays failed; green after the slug
+  moved: `npm test` exit 0, browser 20.
+- **Mutation:** a web app that drops the spaces fails AC-2.1, AC-2.4, Budi.
+- **Final review** (fresh reviewer, opus): 0 Critical, 0 Important, 3
+  Minor. It re-ran both red steps from a clean copy and ran eight mutants.
+  **Re-graded Important by effect and fixed test-first:** Playwright's
+  `exact: true` collapses and trims whitespace, so a web app that writes
+  non-breaking spaces passed a test named "exactly as stored", and a person
+  copying the number would get them. The phone assertions now match the
+  whole raw text; the non-breaking-space mutant fails, the real app passes,
+  `npm test` green. Deferred minors: the red outputs were not in the task
+  logs (now in the verification doc); `profileFixture`'s return type makes
+  `phone!` a no-op and nothing type-checks `e2e/`; the README shows the
+  numbers in plain text where the other cells use code font.
+- **Manual check:** `npm run dev`, a scripted Chrome session as each
+  account; Home lists the phone between Email and Member since, exactly as
+  the change request writes it. Screenshots in `walkthrough/screens/`.
+- **Product diff:** 54 lines (+42 −12): tests +37 −7, README +5 −5. Process:
+  plan 109 lines, context and derivative 534, verification doc 90.
+- **Signed off [owner proxy]**, spot-check. Its Outstanding is empty: the
+  red root `npm test` (deferred from backend.3) and the real-backend walk
+  (deferred from web.4) both ran here.
