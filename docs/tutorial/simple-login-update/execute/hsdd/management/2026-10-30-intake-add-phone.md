@@ -6,7 +6,7 @@
 - **Lands on:** [simple-login.backend, simple-login.web, simple-login.integration] · **Contracts:** [profile-api@v1]
 - **Promotes:** none
 - **Collisions:** none
-- **Status:** open
+- **Status:** closed (2026-10-30)
 
 ## Request
 Product (approved 2026-10-30) amends the simple-login PRD: Home shows the
@@ -59,8 +59,12 @@ Handoff prompts, in order:
 - contract clarified: `auth-api@v1` (its token guarantee names
   `profile-api@v2`; compatible, version kept)
 - ADR links: ADR-001 `affects` gains `profile-api@v2`
+- phases appended: `simple-login.backend.3`, `simple-login.web.4`,
+  `simple-login.integration.2` (each phase's Scope cites this record;
+  appended by hsdd-checkpoint)
 
 ## Change log
 - 2026-10-30: created, routed cross-node
 - 2026-10-30: hsdd-contract drafted profile-api@v2; hsdd-adr linked ADR-001
 - 2026-10-30: phases appended on the three landing nodes (hsdd-phase-plan); reconciled, profile-api@v2 stable
+- 2026-10-30: hsdd-checkpoint appended the three phases to Produced; each has its verification doc on main (`feat/tutorial-update` at a82f99a); closed. profile-api@v1's move to `deprecated` is routed in 2026-10-30-execution-plan.md (A-1, C-1)
