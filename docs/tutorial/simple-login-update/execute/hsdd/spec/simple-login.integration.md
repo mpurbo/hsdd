@@ -4,7 +4,7 @@
 - **Purpose:** prove the real service and the real web app work together, end to end
 - **Owns:** the root `package.json` scripts, the end-to-end browser test, the run instructions
 - **Does not own:** any code under `backend/` or `web/`
-- **Consumes:** [auth-api@v1, profile-api@v1]
+- **Consumes:** [auth-api@v1, profile-api@v1, profile-api@v2]
 - **Produces:** none
 - **Sources:** hsdd/context/prd-simple-login.md (Success, Team and delivery, Demo accounts), hsdd/context/rfc-simple-login.md (§1 Summary, §7 Testing, §8 Repository layout), hsdd/context/update-1-add-phone.md (Change: AC-2.1 amended, AC-2.4; Demo accounts)
 - **Decomposes into:** phases (see hsdd-phase-plan)
@@ -99,32 +99,4 @@ flowchart TD
 
 > Reconciled 2026-10-29 by hsdd-reconcile. Drained entries are in git history.
 
-> Emitted by hsdd-phase-plan on 2026-10-30. Drained by hsdd-reconcile;
-> do not apply by hand.
-
-- confirm `auth-api@v1` consumers: [simple-login.integration.2]
-  - The browser suite signs in through the real `POST /api/login`, and the
-    proxy replay fills the `{{token:…}}` and `{{expired-token:…}}`
-    placeholders with real sign-ins.
-- confirm `profile-api@v2` consumers: [simple-login.integration.2]
-  - Matches the draft's provisional entry for this node.
-  - This plan's hard dependencies use the draft's other provisional ids,
-    `simple-login.backend.3` (`produced_by`) and `simple-login.web.4`
-    (`consumers`). If reconcile finalizes different ids, integration.2's
-    Dependencies line, its summary-table row and the graph need the same
-    rename.
-- note: `simple-login.integration.2` is this node's migration off
-  `profile-api@v1`. Once it ships, no phase of this node reads
-  `hsdd/contract/fixture/profile-api/`; `simple-login.integration.1` stays
-  in v1's `consumers` as history. Input for moving v1 to `deprecated`.
-  - The node header's `- **Consumes:**` line in this file, and this node's
-    child-table row, node section and contract-matrix entry in
-    `hsdd/spec/simple-login.md`, still name `profile-api@v1`; this plan
-    leaves them as hsdd-spec wrote them. The root spec's copy of this
-    node's `- **Sources:**` also lacks `hsdd/context/update-1-add-phone.md`,
-    which this file's header now carries.
-  - Sequencing: once `simple-login.backend.3` serves v2, integration.1's
-    replay of v1's `exact` `200` fixtures fails and the root `npm test` is
-    red until integration.2 merges. profile-api@v2's Versioning already
-    says "this intake ships them together"; land the three phases on one
-    root merge.
+> Reconciled 2026-10-30 by hsdd-reconcile. Drained entries are in git history.

@@ -1,13 +1,13 @@
 ---
 id: profile-api
 version: v2
-status: draft
+status: stable
 kind: api
 owner: simple-login.backend
 compatibility: additive-only
 produced_by: [simple-login.backend.3]
 consumers: [simple-login.web.4, simple-login.integration.2]
-phase_ids: provisional
+phase_ids: final
 ---
 
 # Contract: profile-api (v2)
@@ -79,6 +79,10 @@ Development address: the same process as `auth-api@v1`,
 - schema: hsdd/contract/schema/profile-api.v2.schema.json
 - fixture: hsdd/contract/fixture/profile-api.v2/
 - The schema validates one response as `{ "status": number, "body": ... }`.
+  The profile is closed (`additionalProperties: false`), so a leaked field
+  fails the producer's replay. An `additive-only` amendment adds its new
+  optional field to the schema in the same edit, and every existing fixture
+  must still validate against the amended schema.
 - Each fixture is one JSON file: `{ "name", "description", "request":
   { "method", "path", "headers" }, "response": { "status", "body" },
   "replay" }`. `replay` is `exact` (the producer's real status and body

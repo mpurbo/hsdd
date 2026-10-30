@@ -4,6 +4,6 @@
 
 | id | version | kind | status | owner | consumers |
 |----|---------|------|--------|-------|-----------|
-| `auth-api` | v1 | api | stable | `simple-login.backend` | 3 |
+| `auth-api` | v1 | api | stable | `simple-login.backend` | 4 |
 | `profile-api` | v1 | api | stable | `simple-login.backend` | 3 |
-| `profile-api` | v2 | api | draft | `simple-login.backend` | 2 |
+| `profile-api` | v2 | api | stable | `simple-login.backend` | 2 |

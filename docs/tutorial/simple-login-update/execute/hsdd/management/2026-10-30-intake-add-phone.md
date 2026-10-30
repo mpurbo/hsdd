@@ -63,3 +63,4 @@ Handoff prompts, in order:
 ## Change log
 - 2026-10-30: created, routed cross-node
 - 2026-10-30: hsdd-contract drafted profile-api@v2; hsdd-adr linked ADR-001
+- 2026-10-30: phases appended on the three landing nodes (hsdd-phase-plan); reconciled, profile-api@v2 stable

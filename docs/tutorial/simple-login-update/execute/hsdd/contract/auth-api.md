@@ -6,7 +6,7 @@ kind: api
 owner: simple-login.backend
 compatibility: versioned
 produced_by: [simple-login.backend.2]
-consumers: [simple-login.web.1, simple-login.web.2, simple-login.integration.1]
+consumers: [simple-login.web.1, simple-login.web.2, simple-login.integration.1, simple-login.integration.2]
 phase_ids: final
 ---
 

@@ -5,7 +5,7 @@
 - **Owns:** the built-in accounts, password verification, the session store, `POST /api/login`, `GET /api/me`, the `backend/` directory
 - **Does not own:** screens, where the browser keeps the token, the dev proxy
 - **Consumes:** none
-- **Produces:** [auth-api@v1, profile-api@v1]
+- **Produces:** [auth-api@v1, profile-api@v1, profile-api@v2]
 - **Governed by:** [ADR-001]
 - **Sources:** hsdd/context/prd-simple-login.md (US-1, US-2, Demo accounts, Scope), hsdd/context/rfc-simple-login.md (§2 API, §3 Session model, §4 Passwords, §5 Backend stack, §7 Testing, §9 Security notes), hsdd/context/update-1-add-phone.md (Change: AC-2.1 amended, AC-2.4; Demo accounts; Scope)
 - **Decomposes into:** phases (see hsdd-phase-plan)
@@ -17,7 +17,8 @@ A Fastify service on Node.js 24, written in TypeScript. It holds the two
 demo accounts from the PRD in memory, checks passwords against scrypt
 hashes, issues opaque bearer tokens with a fixed 30-minute lifetime
 (ADR-001), and answers exactly two endpoints. Everything it promises the
-web app is in auth-api@v1 and profile-api@v1; nothing else about it is
+web app is in auth-api@v1 and profile-api@v1, which simple-login.backend.3
+replaces with profile-api@v2; nothing else about it is
 visible outside this node.
 
 ## Phase Plan
@@ -135,23 +136,4 @@ flowchart TD
 
 > Reconciled 2026-10-29 by hsdd-reconcile. Drained entries are in git history.
 
-> Emitted by hsdd-phase-plan on 2026-10-30. Drained by hsdd-reconcile;
-> do not apply by hand.
-
-- confirm `profile-api@v2` produced_by: [simple-login.backend.3]
-  - Matches the draft's provisional `produced_by`. From this phase on the
-    backend serves v2 only (profile-api@v2, Versioning), so profile-api@v1's
-    `produced_by` stays [simple-login.backend.2] as history and no later
-    backend phase replays v1's fixtures.
-- note: from simple-login.backend.3 on, this node produces profile-api@v2 in
-  place of profile-api@v1. Two copies of that fact still read v1 and were not
-  edited by this run: this file's `- **Produces:**` header and Overview, and
-  the root spec's backend node section, child-node table and contract matrix
-  (`hsdd/spec/simple-login.md`).
-  - hsdd-phase-plan in append mode edits only the node header's
-    `- **Sources:**` field; the other header fields are hsdd-spec's and are
-    duplicated in the root spec, so whoever applies this keeps both copies
-    in step. The Sources append (update 1's ticket) is not mirrored in the
-    root spec's backend section either.
-  - Not a conventions fact; filed as a `note` because no other entry type
-    carries a node-spec change to the root.
+> Reconciled 2026-10-30 by hsdd-reconcile. Drained entries are in git history.

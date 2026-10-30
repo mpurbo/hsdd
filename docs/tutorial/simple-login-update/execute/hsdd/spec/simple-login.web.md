@@ -4,7 +4,7 @@
 - **Purpose:** let a user sign in, see their profile and sign out in the browser
 - **Owns:** the Login screen, the Home screen, the API client, token storage in the browser, the Vite dev proxy, the `web/` directory
 - **Does not own:** accounts, password checks, sessions on the server
-- **Consumes:** [auth-api@v1, profile-api@v1]
+- **Consumes:** [auth-api@v1, profile-api@v1, profile-api@v2]
 - **Produces:** none
 - **Governed by:** [ADR-001]
 - **Sources:** hsdd/context/prd-simple-login.md (US-1, US-2, US-3, Screens), hsdd/context/rfc-simple-login.md (§1 Summary, §2 API, §6 Frontend stack, §7 Testing), hsdd/context/update-1-add-phone.md (AC-2.1 amended, AC-2.4, Screen, Scope)
@@ -19,7 +19,8 @@ Login, a token shows Home, except while the backend cannot be reached:
 see D5). The token lives in `sessionStorage`. In
 development the Vite server proxies `/api` to the backend on port 3000, so
 the browser sees one origin. The node knows the backend only through
-auth-api@v1 and profile-api@v1.
+auth-api@v1 and profile-api@v1, which simple-login.web.4 replaces with
+profile-api@v2.
 
 ## Phase Plan
 
@@ -149,17 +150,4 @@ flowchart TD
 
 > Reconciled 2026-10-29 by hsdd-reconcile. Drained entries are in git history.
 
-> Emitted by hsdd-phase-plan on 2026-10-30. Drained by hsdd-reconcile;
-> do not apply by hand.
-
-- confirm `profile-api@v2` consumers: [simple-login.web.4]
-  - matches the contract's provisional entry for this node; web.4 is this
-    node's only v2 phase, for hsdd/management/2026-10-30-intake-add-phone.md
-  - web.4 also ends this node's use of `profile-api@v1` (web.1, web.3):
-    once it ships, no web code or test reads v1 or its fixtures, which is
-    this node's half of v1's "every v1 consumer has a v2 phase shipped"
-  - not edited by this plan: the node's `- **Consumes:**` field and the
-    Overview's last sentence here, and the node section, Child nodes
-    table, Contract matrix and DAG in `hsdd/spec/simple-login.md`, all
-    still name `profile-api@v1` (true until web.4 ships); the root spec's
-    copy of `- **Sources:**` also lacks the request path added here
+> Reconciled 2026-10-30 by hsdd-reconcile. Drained entries are in git history.

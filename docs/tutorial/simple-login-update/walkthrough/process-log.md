@@ -110,12 +110,12 @@ plans: the skill's sibling-isolation rule.
 
 - **Append mode held.** Numbering continued from each node's highest
   shipped phase; no shipped phase, summary row or graph edge was edited.
-  Each new Scope names the intake record, and each node's  gained
-  .
-- **Pending entries:**  from all three (producer
+  Each new Scope names the intake record, and each node's `Sources` gained
+  `hsdd/context/update-1-add-phone.md`.
+- **Pending entries:** `confirm profile-api@v2` from all three (producer
   backend.3, consumers web.4 and integration.2, matching v2's provisional
-  ids), , and
-  two s. No , so nothing is contingent.
+  ids), `confirm auth-api@v1 consumers: [simple-login.integration.2]`, and
+  two `note`s. No `request`, so nothing is contingent.
 - **Caught: the red window.** The integration planner worked out that once
   backend.3 serves v2, integration.1's exact replay of v1's `200` fixtures
   fails, so the root `npm test` is red until integration.2 lands. The web
@@ -136,3 +136,37 @@ plans: the skill's sibling-isolation rule.
   intake record or the ticket (all three chose the ticket), and each met
   the sizing floor's merge-candidate smell with no partner to merge with,
   since the neighbour phase had shipped.
+
+### 13:11 · hsdd-reconcile
+
+- **Collisions: none.** Grouped by contract, the three `confirm
+  profile-api@v2` entries agree with v2's provisional ids, and the one
+  `auth-api@v1` entry only adds a consumer.
+- **Before the flip, a ruling on the planners' catch. [owner proxy]** The
+  closed schema stays closed, and v2's Validation now says why: a leaked
+  field fails the producer's replay, and an `additive-only` amendment adds
+  its optional field to the schema in the same edit, with every existing
+  fixture still validating (hsdd-contract's own test for `additive-only`).
+  The contradiction was in the wording, not the design. It was edited
+  through hsdd-contract while v2 was still `draft`.
+- **Applied:** v2 `phase_ids: final` and `status: stable` (artifact present,
+  no open request); `auth-api@v1` gains consumer
+  `simple-login.integration.2`. Each pending section stamped "Reconciled
+  2026-10-30". Registries regenerated: auth-api v1 with 4 consumers,
+  profile-api v1 (3) and v2 (2), all `stable`.
+- **[owner proxy] The ripple, applied here.** The planners' `note`s asked
+  for the node headers and the root spec to stop saying v1 only. No
+  reconcile step names that edit; the phase context's Discipline line names
+  hsdd-reconcile as the writer of spec changes, so it was done here. While
+  v1 is still live the headers list both versions: backend `Produces`, web
+  and integration `Consumes`, the root's child table, node sections,
+  isolation strategy, DAG (a second `profile-api` edge), edge table and
+  contract matrix. The root's `Sources` and each node section's copy of
+  `Sources` gain update 1, and the Overview mentions the phone number. v1
+  leaves these lists when it is deprecated, after the last consumer
+  migrates.
+- **Finding (no owner for spec ripple).** Append mode may edit only
+  `Sources`; reconcile's steps touch contracts, conventions and OQs; no
+  skill updates node `Produces`/`Consumes`, the root's copies of them, or
+  the root's matrix and DAG after a version bump. Three planners noticed and
+  each had to route it through an entry type that does not fit.
