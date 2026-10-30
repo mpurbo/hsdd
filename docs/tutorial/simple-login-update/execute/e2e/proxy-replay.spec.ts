@@ -1,10 +1,17 @@
 // Contract replay through the web dev server's /api proxy: every exact
-// fixture of auth-api@v1 and profile-api@v1 sent to localhost:5173 must get
+// fixture of auth-api@v1 and profile-api@v2 sent to localhost:5173 must get
 // the fixture's answer from the real backend behind it.
 import { expect, loadExactFixtures, test } from "./fixtures.ts";
 
 /** The PRD's demo accounts. */
 const PASSWORDS: Record<string, string> = { ayu: "sunrise-42", budi: "harbor-17" };
+
+test("replays nine exact fixtures, none of profile-api@v1", () => {
+  const slugs = loadExactFixtures().map(({ slug }) => slug);
+  expect(slugs).toHaveLength(9);
+  expect(slugs.filter((s) => s === "auth-api")).toHaveLength(4);
+  expect(slugs.filter((s) => s === "profile-api.v2")).toHaveLength(5);
+});
 
 for (const { slug, fixture } of loadExactFixtures()) {
   test(`replay through the proxy: ${slug}/${fixture.name}`, async ({ request, backend }) => {
@@ -21,7 +28,7 @@ for (const { slug, fixture } of loadExactFixtures()) {
       const expired = value.match(/\{\{expired-token:([^}]+)\}\}/);
       if (expired) {
         const old = await signIn(expired[1]!);
-        // profile-api@v1: an unknown token answers byte for byte like an expired one.
+        // profile-api@v2: an unknown token answers byte for byte like an expired one.
         await backend.restart();
         filled = value.replace(expired[0], old);
       }

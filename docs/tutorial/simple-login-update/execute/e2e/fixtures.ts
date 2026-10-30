@@ -8,7 +8,7 @@ import { fileURLToPath } from "node:url";
 import { test as base, expect, type Page } from "@playwright/test";
 
 const ROOT = fileURLToPath(new URL("..", import.meta.url));
-// The development address from auth-api@v1 and profile-api@v1.
+// The development address from auth-api@v1 and profile-api@v2.
 const HOST = "127.0.0.1";
 const PORT = 3000;
 
@@ -93,7 +93,7 @@ export function profileFixture(name: "me-ayu" | "me-budi"): Record<string, strin
 
 /** Every `exact` fixture of the two contracts this node consumes. */
 export function loadExactFixtures(): Array<{ slug: string; fixture: Fixture }> {
-  return ["auth-api", "profile-api"].flatMap((slug) => {
+  return ["auth-api", "profile-api.v2"].flatMap((slug) => {
     const dir = join(ROOT, "hsdd", "contract", "fixture", slug);
     return readdirSync(dir)
       .filter((file) => file.endsWith(".json"))

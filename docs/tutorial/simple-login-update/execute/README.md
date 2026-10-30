@@ -20,10 +20,10 @@ npm run dev           # backend on http://127.0.0.1:3000, web app on http://loca
 
 Open <http://localhost:5173>. Ctrl-C stops both servers.
 
-| Username | Password |
-|----------|----------|
-| `ayu` | `sunrise-42` |
-| `budi` | `harbor-17` |
+| Username | Password | Phone |
+|----------|----------|-------|
+| `ayu` | `sunrise-42` | +62 812 3456 7890 |
+| `budi` | `harbor-17` | +62 813 9876 5432 |
 
 Restarting the backend signs everyone out (sessions live in memory, ADR-001).
 
@@ -34,7 +34,7 @@ npm test
 ```
 
 In order: the backend's gate (type check and unit tests), the contract
-replay (all ten fixtures of `auth-api@v1` and `profile-api@v1` against the
+replay (all ten fixtures of `auth-api@v1` and `profile-api@v2` against the
 real routes), the web app's gate (type check, tests, production build), the
 dev runner's test, and the browser suite, which starts the real backend and
 the web dev server and walks every acceptance criterion in the PRD. Stop
