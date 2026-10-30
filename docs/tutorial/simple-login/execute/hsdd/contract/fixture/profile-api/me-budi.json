@@ -1,0 +1,20 @@
+{
+  "name": "me-budi",
+  "description": "Budi's token returns Budi's profile, not anyone else's.",
+  "request": {
+    "method": "GET",
+    "path": "/api/me",
+    "headers": { "authorization": "Bearer {{token:budi}}" }
+  },
+  "response": {
+    "status": 200,
+    "body": {
+      "id": "u_002",
+      "username": "budi",
+      "displayName": "Budi Santoso",
+      "email": "budi@example.com",
+      "memberSince": "2025-01-09"
+    }
+  },
+  "replay": "exact"
+}

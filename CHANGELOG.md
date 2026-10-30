@@ -9,6 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `docs/tutorial/simple-login/`: a complete, recorded HSDD run on a small
+  product (a two-endpoint login backend and a two-screen web app). The
+  `template/` inputs (a PRD and an RFC), the `execute/` repository the run
+  produced (tree, contracts, phase contexts, superpowers plans,
+  verification docs, and the tested code), and an interactive
+  `walkthrough/` with a presenter mode and a do-it-yourself mode, backed by
+  a full process log.
+
 - `docs/guide/`: an interactive, offline HTML guide for newcomers. A start
   page and nine short chapters, from the problem HSDD solves to running a
   project, using the user's guide's examples, with brownfield adoption and

@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="claude:viewport-fit-sides" content="cover">
+  <meta name="description" content="An interactive walkthrough of one complete HSDD run: a one-page PRD for a login backend and a two-screen web app, taken through decomposition, contracts, phase plans, reconcile and six superpowers phases to running, tested code.">
+  <title>simple-login walkthrough</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 28 28'%3E%3Cpath d='M14 7L7 14M14 7L21 14M7 14L7 21M21 14L21 21' fill='none' stroke='%23475569' stroke-width='1.6'/%3E%3Crect x='9' y='2' width='10' height='6' rx='1.5' fill='%23e0e7ff' stroke='%234f46e5'/%3E%3Crect x='2' y='11' width='10' height='6' rx='1.5' fill='%23dbeafe' stroke='%232563eb'/%3E%3Crect x='16' y='11' width='10' height='6' rx='1.5' fill='%23dbeafe' stroke='%232563eb'/%3E%3Crect x='3' y='20' width='8' height='6' rx='1.5' fill='%23d1fae5' stroke='%23047857'/%3E%3Crect x='17' y='20' width='8' height='6' rx='1.5' fill='%23d1fae5' stroke='%23047857'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="walkthrough.css">
+  <script src="data.js" defer></script>
+  <script src="lib.js" defer></script>
+  <script src="stages.js" defer></script>
+  <script src="run-data.js" defer></script>
+  <script src="stages-exec.js" defer></script>
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <a class="skip" href="#stage">Skip to the stage</a>
+  <header class="topbar">
+    <button class="tool stages-toggle" id="stages-toggle" aria-controls="stages">Stages</button>
+    <a class="brand" href="#start">
+      <svg class="brand-mark" viewBox="0 0 28 28" aria-hidden="true">
+        <path d="M14 7 L7 14 M14 7 L21 14 M7 14 L7 21 M21 14 L21 21" />
+        <rect x="9" y="2" width="10" height="6" rx="1.5" class="m-root" />
+        <rect x="2" y="11" width="10" height="6" rx="1.5" class="m-node" />
+        <rect x="16" y="11" width="10" height="6" rx="1.5" class="m-node" />
+        <rect x="3" y="20" width="8" height="6" rx="1.5" class="m-leaf" />
+        <rect x="17" y="20" width="8" height="6" rx="1.5" class="m-leaf" />
+      </svg>
+      <span class="brand-text"><strong>simple-login</strong><span>One HSDD run, from PRD to running code</span></span>
+    </a>
+    <div class="tools">
+      <div class="mode" id="mode" role="group" aria-label="Mode">
+        <button data-action="mode" data-value="present" aria-pressed="true" title="What happened, with talking points (M)">Walkthrough</button>
+        <button data-action="mode" data-value="self" aria-pressed="false" title="Prompts and checks to do it yourself (M)">Do it yourself</button>
+      </div>
+      <button class="tool tree-toggle" id="tree-toggle" aria-controls="repo"><span class="label-text">Files</span><span aria-hidden="true">▤</span></button>
+      <button class="tool icon" id="theme" aria-label="Theme: system">◐</button>
+    </div>
+  </header>
+  <div class="shell">
+    <nav class="stages" id="stages" aria-label="Stages"></nav>
+    <main id="stage" tabindex="-1"></main>
+    <aside class="repo" id="repo" aria-label="The repository after this stage">
+      <h2>execute/ after this stage</h2>
+      <div id="repo-tree"></div>
+    </aside>
+  </div>
+  <footer class="pager">
+    <div class="pager-inner">
+      <p class="where" id="where"></p>
+      <div class="nav">
+        <button class="btn" id="prev" title="Previous stage (Left arrow)">← Back</button>
+        <button class="btn primary" id="next" title="Next stage (Right arrow)">Next →</button>
+      </div>
+    </div>
+  </footer>
+  <dialog id="viewer" aria-labelledby="viewer-path">
+    <div class="sheet-head">
+      <p id="viewer-path"></p>
+      <div class="sheet-tools">
+        <button class="btn small" id="viewer-raw" data-action="raw" data-value="">Raw</button>
+        <button class="tool icon" id="viewer-close" aria-label="Close">×</button>
+      </div>
+    </div>
+    <div class="sheet-body" id="viewer-body"></div>
+  </dialog>
+  <noscript><p class="noscript">This walkthrough needs JavaScript. The same run is told in prose in <a href="process-log.md">process-log.md</a>.</p></noscript>
+</body>
+</html>

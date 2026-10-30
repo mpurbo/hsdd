@@ -1,0 +1,20 @@
+{
+  "name": "me-ayu",
+  "description": "Ayu's token returns Ayu's profile.",
+  "request": {
+    "method": "GET",
+    "path": "/api/me",
+    "headers": { "authorization": "Bearer {{token:ayu}}" }
+  },
+  "response": {
+    "status": 200,
+    "body": {
+      "id": "u_001",
+      "username": "ayu",
+      "displayName": "Ayu Lestari",
+      "email": "ayu@example.com",
+      "memberSince": "2024-03-14"
+    }
+  },
+  "replay": "exact"
+}
