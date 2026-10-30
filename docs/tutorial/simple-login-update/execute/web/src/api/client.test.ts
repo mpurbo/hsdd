@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { listFixtures, loadFixture, stubFetch, stubFetchHanging, stubFetchUnreachable } from '../test/fetchStub'
+import { listFixtures, loadFixture, stubFetch, stubFetchHanging, stubFetchUnreachable, type Fixture } from '../test/fetchStub'
 import { REQUEST_TIMEOUT_MS, fetchProfile, signIn } from './client'
 import type { Profile, ProfileFailure, Result, Session, SignInFailure } from './types'
 
@@ -16,22 +16,41 @@ const signInCases: Record<string, Result<Session, SignInFailure>> = {
 const profileCases: Record<string, Result<Profile, ProfileFailure>> = {
   'me-ayu': {
     ok: true,
-    value: { id: 'u_001', username: 'ayu', displayName: 'Ayu Lestari', email: 'ayu@example.com', memberSince: '2024-03-14' },
+    value: {
+      id: 'u_001',
+      username: 'ayu',
+      displayName: 'Ayu Lestari',
+      email: 'ayu@example.com',
+      phone: '+62 812 3456 7890',
+      memberSince: '2024-03-14',
+    },
   },
   'me-budi': {
     ok: true,
-    value: { id: 'u_002', username: 'budi', displayName: 'Budi Santoso', email: 'budi@example.com', memberSince: '2025-01-09' },
+    value: {
+      id: 'u_002',
+      username: 'budi',
+      displayName: 'Budi Santoso',
+      email: 'budi@example.com',
+      phone: '+62 813 9876 5432',
+      memberSince: '2025-01-09',
+    },
   },
   'me-expired-token': { ok: false, reason: 'unauthorized' },
   'me-no-token': { ok: false, reason: 'unauthorized' },
   'me-unknown-token': { ok: false, reason: 'unauthorized' },
 }
 
+const ayuBody = loadFixture('profile-api.v2', 'me-ayu').response.body as Record<string, unknown>
+const withoutPhone = Object.fromEntries(Object.entries(ayuBody).filter(([key]) => key !== 'phone'))
+/** me-ayu's 200 with `body` in place of the fixture's profile. */
+const answering = (body: unknown): Fixture => ({ ...loadFixture('profile-api.v2', 'me-ayu'), response: { status: 200, body } })
+
 describe('API client', () => {
   it('maps every fixture', () => {
     // A fixture added to the contract fails here until it is mapped below.
     expect(Object.keys(signInCases).sort()).toEqual(listFixtures('auth-api').map((f) => f.name))
-    expect(Object.keys(profileCases).sort()).toEqual(listFixtures('profile-api').map((f) => f.name))
+    expect(Object.keys(profileCases).sort()).toEqual(listFixtures('profile-api.v2').map((f) => f.name))
   })
 
   it.each(Object.entries(signInCases))('signIn: %s', async (name, expected) => {
@@ -42,8 +61,22 @@ describe('API client', () => {
   })
 
   it.each(Object.entries(profileCases))('fetchProfile: %s', async (name, expected) => {
-    stubFetch(loadFixture('profile-api', name))
+    stubFetch(loadFixture('profile-api.v2', name))
     expect(await fetchProfile(TOKEN)).toEqual(expected)
+  })
+
+  it.each<[string, unknown]>([
+    ['without a phone (a profile-api@v1 answer)', withoutPhone],
+    ['with a null phone', { ...ayuBody, phone: null }],
+    ['with a numeric phone', { ...ayuBody, phone: 6281234567890 }],
+  ])('fetchProfile: a 200 %s is unavailable', async (_name, body) => {
+    stubFetch(answering(body))
+    expect(await fetchProfile(TOKEN)).toEqual({ ok: false, reason: 'unavailable' })
+  })
+
+  it('fetchProfile ignores fields it does not know (profile-api@v2)', async () => {
+    stubFetch(answering({ ...ayuBody, nickname: 'Ayu' }))
+    expect(await fetchProfile(TOKEN)).toEqual(profileCases['me-ayu'])
   })
 
   it('signIn posts the username exactly as typed', async () => {
@@ -60,7 +93,7 @@ describe('API client', () => {
   })
 
   it('fetchProfile sends the token back verbatim', async () => {
-    const stub = stubFetch(loadFixture('profile-api', 'me-ayu'))
+    const stub = stubFetch(loadFixture('profile-api.v2', 'me-ayu'))
     await fetchProfile(TOKEN)
     expect(stub.calls).toEqual([
       { method: 'GET', path: '/api/me', headers: { authorization: `Bearer ${TOKEN}` }, body: undefined },

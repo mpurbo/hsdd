@@ -10,7 +10,7 @@ const store = (s = stored): void => sessionStorage.setItem('simple-login.session
 
 describe('App: the load check (AC-2.2, AC-2.3, D1)', () => {
   it('shows Login when nothing is stored, without a request', () => {
-    const stub = stubFetch(loadFixture('profile-api', 'me-ayu'))
+    const stub = stubFetch(loadFixture('profile-api.v2', 'me-ayu'))
     render(<App />)
     expect(screen.getByRole('heading', { name: 'Sign in' })).toBeInTheDocument()
     expect(stub.calls).toEqual([])
@@ -18,7 +18,7 @@ describe('App: the load check (AC-2.2, AC-2.3, D1)', () => {
 
   it('checks a stored session and shows Home (AC-2.2)', async () => {
     store()
-    const stub = stubFetch(loadFixture('profile-api', 'me-ayu'))
+    const stub = stubFetch(loadFixture('profile-api.v2', 'me-ayu'))
     render(<App />)
     expect(await screen.findByRole('heading', { name: 'Hello, Ayu Lestari' })).toBeInTheDocument()
     expect(stub.calls.map((c) => c.headers.authorization)).toEqual([`Bearer ${TOKEN}`])
@@ -26,7 +26,7 @@ describe('App: the load check (AC-2.2, AC-2.3, D1)', () => {
 
   it('sends an expired session to Login with the expiry message and clears it (AC-2.3, D1)', async () => {
     store()
-    stubFetch(loadFixture('profile-api', 'me-expired-token'))
+    stubFetch(loadFixture('profile-api.v2', 'me-expired-token'))
     render(<App />)
     expect(await screen.findByRole('status')).toHaveTextContent('Your session has expired. Please sign in again.')
     expect(screen.getByRole('heading', { name: 'Sign in' })).toBeInTheDocument()
@@ -39,6 +39,30 @@ describe('App: the load check (AC-2.2, AC-2.3, D1)', () => {
     render(<App />)
     expect(await screen.findByRole('status')).toHaveTextContent('Could not reach the server. Please try again.')
     expect(sessionStorage.getItem('simple-login.session')).toBe(JSON.stringify(stored))
+  })
+
+  it('keeps the session and shows the network message when GET /api/me answers 200 without a phone (D3, D5)', async () => {
+    store()
+    const ayu = loadFixture('profile-api.v2', 'me-ayu')
+    const body = Object.fromEntries(
+      Object.entries(ayu.response.body as Record<string, unknown>).filter(([key]) => key !== 'phone'),
+    )
+    stubFetch({ ...ayu, response: { status: 200, body } })
+    render(<App />)
+    expect(await screen.findByRole('status')).toHaveTextContent('Could not reach the server. Please try again.')
+    expect(screen.queryByRole('heading', { name: 'Hello, Ayu Lestari' })).toBeNull()
+    expect(sessionStorage.getItem('simple-login.session')).toBe(JSON.stringify(stored))
+  })
+
+  it.each([
+    ['me-ayu', 'Hello, Ayu Lestari', '+62 812 3456 7890'],
+    ['me-budi', 'Hello, Budi Santoso', '+62 813 9876 5432'],
+  ])('%s: Home shows the phone number from GET /api/me, character for character (AC-2.4)', async (name, heading, phone) => {
+    store()
+    stubFetch(loadFixture('profile-api.v2', name))
+    render(<App />)
+    expect(await screen.findByRole('heading', { name: heading })).toBeInTheDocument()
+    expect(screen.getByText('Phone').nextElementSibling?.textContent).toBe(phone)
   })
 
   it('shows a loading line, not Login, while the stored session is checked', () => {
@@ -58,7 +82,7 @@ describe('App: the walk (AC-1.1, AC-2.2, AC-3.1, D2)', () => {
       writes.push([key, value])
       realSetItem.call(this, key, value)
     })
-    const stub = stubFetch(loadFixture('auth-api', 'login-success'), loadFixture('profile-api', 'me-ayu'))
+    const stub = stubFetch(loadFixture('auth-api', 'login-success'), loadFixture('profile-api.v2', 'me-ayu'))
     const user = userEvent.setup()
 
     const first = render(<App />)
