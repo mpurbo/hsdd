@@ -1,5 +1,8 @@
 // US-2 and US-3: the profile, staying signed in, signing out.
-import { expect, signIn, signOut, test } from "./fixtures.ts";
+import { expect, profileFixture, signIn, signOut, test } from "./fixtures.ts";
+
+const AYU = profileFixture("me-ayu");
+const BUDI = profileFixture("me-budi");
 
 test("AC-2.1: Home shows the signed-in user's details", async ({ page }) => {
   await page.goto("/");
@@ -8,6 +11,16 @@ test("AC-2.1: Home shows the signed-in user's details", async ({ page }) => {
   await expect(page.getByText("ayu@example.com")).toBeVisible();
   await expect(page.getByText("14 March 2024")).toBeVisible();
   await expect(page.getByText("ayu", { exact: true })).toBeVisible();
+  await expect(page.getByText(AYU.phone!, { exact: true })).toBeVisible();
+});
+
+test("AC-2.4: Home shows each account's phone number exactly as stored", async ({ page }) => {
+  await page.goto("/");
+  await signIn(page, "ayu", "sunrise-42");
+  await expect(page.getByText(AYU.phone!, { exact: true })).toBeVisible();
+  await signOut(page);
+  await signIn(page, "budi", "harbor-17");
+  await expect(page.getByText(BUDI.phone!, { exact: true })).toBeVisible();
 });
 
 test("Budi sees Budi's profile, not Ayu's", async ({ page }) => {
@@ -15,7 +28,9 @@ test("Budi sees Budi's profile, not Ayu's", async ({ page }) => {
   await signIn(page, "budi", "harbor-17");
   await expect(page.getByRole("heading", { name: "Hello, Budi Santoso" })).toBeVisible();
   await expect(page.getByText("9 January 2025")).toBeVisible();
+  await expect(page.getByText(BUDI.phone!, { exact: true })).toBeVisible();
   await expect(page.getByText("ayu@example.com")).toHaveCount(0);
+  await expect(page.getByText(AYU.phone!)).toHaveCount(0);
 });
 
 test("AC-2.2: reloading keeps the user signed in", async ({ page }) => {
@@ -40,8 +55,8 @@ test("AC-2.3: a session the backend no longer knows returns to Login with the ex
   await page.goto("/");
   await signIn(page, "ayu", "sunrise-42");
   await expect(page.getByRole("heading", { name: "Hello, Ayu Lestari" })).toBeVisible();
-  // ADR-001: a restart signs everyone out. profile-api@v1: the now-unknown
-  // token answers exactly like an expired one.
+  // ADR-001: a restart signs everyone out. profile-api@v2: every rejection
+  // gives the same 401 body, so the now-unknown token answers like an expired one.
   await backend.restart();
   await page.reload();
   await expect(page.getByText("Your session has expired. Please sign in again.")).toBeVisible();

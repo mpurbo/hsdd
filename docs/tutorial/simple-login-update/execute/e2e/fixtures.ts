@@ -85,6 +85,12 @@ export type Fixture = {
   replay: "exact" | "schema";
 };
 
+/** A profile-api@v2 `200` fixture's body: the contract's own account data. */
+export function profileFixture(name: "me-ayu" | "me-budi"): Record<string, string> {
+  const file = join(ROOT, "hsdd", "contract", "fixture", "profile-api.v2", `${name}.json`);
+  return (JSON.parse(readFileSync(file, "utf8")) as Fixture).response.body as Record<string, string>;
+}
+
 /** Every `exact` fixture of the two contracts this node consumes. */
 export function loadExactFixtures(): Array<{ slug: string; fixture: Fixture }> {
   return ["auth-api", "profile-api"].flatMap((slug) => {
