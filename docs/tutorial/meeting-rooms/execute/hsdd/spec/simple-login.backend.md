@@ -5,7 +5,7 @@
 - **Owns:** the built-in accounts with their time zones, password verification, the session store, the pre-loaded rooms, the bookings, the PostgreSQL 17 database that keeps them, its Docker Compose service and that service's Compose file, `POST /api/login`, `GET /api/me`, `GET /api/rooms`, `GET /api/me/bookings`, `POST /api/bookings`, `DELETE /api/bookings/{id}`, the `backend/` directory
 - **Does not own:** screens, where the browser keeps the token, the dev proxy
 - **Consumes:** none
-- **Produces:** [auth-api@v1, profile-api@v1, profile-api@v2]
+- **Produces:** [auth-api@v1, profile-api@v1, profile-api@v2, booking-api@v1]
 - **Governed by:** [ADR-001, ADR-002]
 - **Sources:** hsdd/context/prd-simple-login.v2.md (US-1, US-2, Demo accounts, Scope, US-4, US-5, US-6, Rooms, Constraints, Left to engineering, Team and delivery, Success), hsdd/context/rfc-simple-login.md (§2 API, §3 Session model, §4 Passwords, §5 Backend stack, §7 Testing, §9 Security notes)
 - **Decomposes into:** phases (see hsdd-phase-plan)
@@ -318,16 +318,4 @@ flowchart TD
 
 > Reconciled 2026-10-30 by hsdd-reconcile. Drained entries are in git history.
 
-> Emitted by hsdd-phase-plan on 2026-10-31 (append: simple-login.backend.4
-> to simple-login.backend.7, per
-> hsdd/management/2026-10-31-intake-prd-simple-login-v2.md). Drained by
-> hsdd-reconcile; do not apply by hand.
-
-- confirm `profile-api@v2` produced_by: [simple-login.backend.3, simple-login.backend.4]
-  - simple-login.backend.4 adds `timeZone` to the account data; profile-api@v2's 2026-10-31 Versioning entry says the producer serves it from that phase, and until then its exact replay of `me-ayu` and `me-budi` fails. simple-login.backend.3 stays: it shipped v2's first shape.
-- confirm `booking-api@v1` produced_by: [simple-login.backend.7]
-  - Replaces the provisional guess `simple-login.backend.4` (DEC-053). Phase 7 serves the four endpoints and its gate replays the 35 fixtures; phase 4 builds the replay rig ahead of it and serves none of them. The consumers are confirmed by simple-login.web's and simple-login.integration's plans (H16, H18).
-- note: PostgreSQL 17 for this tree runs from `backend/compose.yaml` (service `postgres`, `127.0.0.1:55432`, user, password and database `meeting_rooms`, a named volume, a `pg_isready` healthcheck). `npm --prefix backend run db:up` starts it and returns once it is healthy, through `docker compose` or, where only that exists, `docker-compose`; `db:down` stops it and keeps the bookings. The service reads `DATABASE_URL`, default `postgres://meeting_rooms:meeting_rooms@127.0.0.1:55432/meeting_rooms`, and `npm --prefix backend start` needs the database up first. simple-login.integration's root scripts start the database through `db:up`, never through a Compose file of their own (D4). The backend's `gate` and `replay` scripts start it themselves, and its tests use databases of their own on that service, never `meeting_rooms` (D8).
-- amend `booking-api@v1`: a `POST /api/bookings` whose `title` holds U+0000 or an unpaired surrogate code point (U+D800 to U+DFFF not part of a pair) is refused with 400 `VALIDATION_FAILED`, at order 2 with the title's other rules (G8, POST order table). The schema's `Title` gains the same rule.
-  - Why: PostgreSQL `text` cannot store U+0000 (SQLSTATE `22021`) and UTF-8 cannot carry an unpaired surrogate (it comes back as U+FFFD), so neither title can be stored and returned exactly as sent, and the first would surface as a 5xx (D9; hsdd/auto/experiments/booking-store-postgres/).
-  - Breaking? It refuses a request the draft v1 accepts, which booking-api@v1's Versioning lists as breaking once the contract is in use. v1 is `draft` with `phase_ids: provisional`, and no consumer phase is planned or shipped against it (the web's and the integration node's plans come at H16 and H18), so nothing that exists breaks; neither title can be typed into a form field in the usual way.
+> Reconciled 2026-11-01 by hsdd-reconcile. Drained entries are in git history.

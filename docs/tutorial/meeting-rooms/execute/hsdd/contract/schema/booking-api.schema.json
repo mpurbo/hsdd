@@ -332,11 +332,16 @@
       "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
     },
     "Title": {
-      "description": "1 to 80 Unicode code points, at least one not whitespace.",
+      "description": "1 to 80 Unicode code points, at least one not whitespace, none of them U+0000 or an unpaired surrogate (U+D800 to U+DFFF not part of a pair).",
       "type": "string",
       "minLength": 1,
       "maxLength": 80,
-      "pattern": "\\S"
+      "pattern": "\\S",
+      "allOf": [
+        {
+          "pattern": "^(?:[^\\u0000\\uD800-\\uDFFF]|[\\uD800-\\uDBFF][\\uDC00-\\uDFFF])*$"
+        }
+      ]
     },
     "Booking": {
       "type": "object",

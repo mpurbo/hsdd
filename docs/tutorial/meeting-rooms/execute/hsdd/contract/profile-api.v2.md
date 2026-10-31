@@ -6,7 +6,7 @@ kind: api
 owner: simple-login.backend
 governed_by: [ADR-001, ADR-002]
 compatibility: additive-only
-produced_by: [simple-login.backend.3]
+produced_by: [simple-login.backend.3, simple-login.backend.4]
 consumers: [simple-login.web.4, simple-login.integration.2]
 phase_ids: final
 ---

@@ -6,7 +6,7 @@ kind: api
 owner: simple-login.backend
 governed_by: [ADR-001, ADR-002]
 compatibility: versioned
-produced_by: [simple-login.backend.4]
+produced_by: [simple-login.backend.7]
 consumers: [simple-login.web.5, simple-login.integration.3]
 phase_ids: provisional
 ---
@@ -127,7 +127,10 @@ Header `content-type: application/json`, body:
 - `roomId`: a room's `id`.
 - `start`, `end`: quarter-hour instants, `end` after `start`.
 - `title`: a string of 1 to 80 characters, at least one of them not
-  whitespace. It is stored and returned exactly as sent, never trimmed.
+  whitespace, and none of them U+0000 or an unpaired surrogate (a code
+  point from U+D800 to U+DFFF that is not half of a pair), since neither
+  could be stored and returned as sent. It is stored and returned exactly
+  as sent, never trimmed.
 - Other fields are ignored.
 
 The rules are checked in this order; the first that applies answers:
@@ -222,8 +225,10 @@ Development address: the same process as `auth-api@v1`,
   later; the moment of `start` counts as started. Booking a time that has
   started is refused with `BOOKING_STARTED` (AC-5.5). The browser's clock
   decides nothing (ADR-002).
-- G8: The title is 1 to 80 characters with at least one not whitespace,
-  and is returned exactly as sent (AC-5.6).
+- G8: The title is 1 to 80 characters with at least one not whitespace
+  and none U+0000 or an unpaired surrogate, and is returned exactly as
+  sent (AC-5.6). A title that breaks this rule is refused with
+  `VALIDATION_FAILED`.
 - G9: Longest booking: `end` at most 8 hours after `start`, counted as
   elapsed time between the instants (so on a clock-change day a wall-clock
   span across the change counts its real length); longer is refused with
@@ -274,6 +279,19 @@ Development address: the same process as `auth-api@v1`,
   to which booking `error.conflict` names, to the order of a list, or to a
   room's `id`. A breaking change requires v2 and a migration note here
   naming its mode.
+- 2026-11-01, for
+  `hsdd/management/2026-10-31-intake-prd-simple-login-v2.md`, from
+  simple-login.backend's plan (its D9), applied by hsdd-reconcile: a
+  `POST /api/bookings` whose `title` holds U+0000 or an unpaired surrogate
+  is refused with 400 `VALIDATION_FAILED`, at order 2 with the title's
+  other rules (G8), and the schema's `Title` states the same rule.
+  PostgreSQL `text` cannot store U+0000, and an unpaired surrogate cannot
+  travel as UTF-8 (it comes back as U+FFFD), so neither title could be
+  returned exactly as sent. Refusing a request the draft accepted is
+  breaking by the list above; v1 is `draft`, and no consumer phase is
+  planned or shipped against it, so the change is made in v1 in place
+  rather than as v2. The 35 fixtures are unchanged and validate against
+  the amended schema.
 
 ## Validation
 
@@ -286,9 +304,10 @@ Development address: the same process as `auth-api@v1`,
   `$defs.GetRoomsQuery` and `$defs.PostBookingRequest` describe valid
   requests. Every object is closed (`additionalProperties: false`), so a
   leaked field fails the producer's replay. The schema states the instant
-  forms, the ids' forms and the title's length; it cannot compare two
-  fields or read the clock (`end` after `start`, `from` before `to`, the
-  limits, started), which the fixtures pin.
+  forms, the ids' forms, the title's length and the characters a title may
+  not hold; it cannot compare two fields or read the clock (`end` after
+  `start`, `from` before `to`, the limits, started), which the fixtures
+  pin.
 - Each fixture is one JSON file: `{ "name", "description", "clock",
   "given", "request": { "method", "path", "headers", "body" }, "response":
   { "status", "body" }, "replay" }`. `request.body` is present only for

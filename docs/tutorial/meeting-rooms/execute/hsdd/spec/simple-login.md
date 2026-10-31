@@ -75,7 +75,7 @@ proves the real pieces work together.
 
 | Node | Kind | Purpose | Consumes | Produces |
 |------|------|---------|----------|----------|
-| simple-login.backend | leaf-parent | authenticate built-in users and serve the signed-in user's profile over HTTP | none | auth-api@v1, profile-api@v1, profile-api@v2 |
+| simple-login.backend | leaf-parent | authenticate built-in users and serve the signed-in user's profile over HTTP | none | auth-api@v1, profile-api@v1, profile-api@v2, booking-api@v1 |
 | simple-login.web | leaf-parent | the Login and Home screens in the browser | auth-api@v1, profile-api@v1, profile-api@v2 | none |
 | simple-login.integration | leaf-parent | prove the real service and the real web app work together, end to end | auth-api@v1, profile-api@v1, profile-api@v2 | none |
 
@@ -86,9 +86,9 @@ proves the real pieces work together.
 - **Owns:** the built-in accounts with their time zones, password verification, the session store, the pre-loaded rooms, the bookings, the PostgreSQL 17 database that keeps them, its Docker Compose service and that service's Compose file, `POST /api/login`, `GET /api/me`, `GET /api/rooms`, `GET /api/me/bookings`, `POST /api/bookings`, `DELETE /api/bookings/{id}`, the `backend/` directory
 - **Does not own:** screens, where the browser keeps the token, the dev proxy
 - **Consumes:** none
-- **Produces:** [auth-api@v1, profile-api@v1, profile-api@v2]
+- **Produces:** [auth-api@v1, profile-api@v1, profile-api@v2, booking-api@v1]
 - **Governed by:** [ADR-001, ADR-002]
-- **Sources:** hsdd/context/prd-simple-login.v2.md (US-1, US-2, Demo accounts, Scope), hsdd/context/rfc-simple-login.md (§2 API, §3 Session model, §4 Passwords, §5 Backend stack, §7 Testing, §9 Security notes)
+- **Sources:** hsdd/context/prd-simple-login.v2.md (US-1, US-2, Demo accounts, Scope, US-4, US-5, US-6, Rooms, Constraints, Left to engineering, Team and delivery, Success), hsdd/context/rfc-simple-login.md (§2 API, §3 Session model, §4 Passwords, §5 Backend stack, §7 Testing, §9 Security notes)
 - **Decomposes into:** phases (see hsdd-phase-plan)
 - **Isolation strategy:** Fastify `app.inject()` with an injected clock and random source; tests that read or write bookings run against a real PostgreSQL 17, never a mock or an in-memory stand-in (PRD v2 Constraints); the gate replays the auth-api, profile-api and booking-api fixtures against the real routes, the injected clock reading each booking-api fixture's `clock` and the database holding exactly its `given` bookings; no browser, and the service itself opens no port
 
@@ -130,6 +130,7 @@ flowchart LR
     be -- "auth-api@v1 (contract)" --> we
     be -- "profile-api@v1 (contract)" --> we
     be -- "profile-api@v2 (contract)" --> we
+    be -- "booking-api@v1 (contract)" --> we
     be -- "hard" --> it
     we -- "hard" --> it
 
@@ -143,6 +144,7 @@ flowchart LR
 | simple-login.backend | simple-login.web | contract | auth-api@v1 |
 | simple-login.backend | simple-login.web | contract | profile-api@v1 |
 | simple-login.backend | simple-login.web | contract | profile-api@v2 |
+| simple-login.backend | simple-login.web | contract | booking-api@v1 |
 | simple-login.backend | simple-login.integration | hard | the running service |
 | simple-login.web | simple-login.integration | hard | the running web app |
 
@@ -163,6 +165,7 @@ flowchart LR
 | auth-api@v1 | api | simple-login.backend | simple-login.web, simple-login.integration |
 | profile-api@v1 | api | simple-login.backend | simple-login.web, simple-login.integration |
 | profile-api@v2 | api | simple-login.backend | simple-login.web, simple-login.integration |
+| booking-api@v1 | api | simple-login.backend | simple-login.web, simple-login.integration |
 
 ## Decisions
 

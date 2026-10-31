@@ -128,6 +128,26 @@ spec; an integration node names exactly one owning team.
 Do not list contracts here; run `node hsdd/scripts/gen-registry.mjs` after any
 contract change.
 
+## Local database
+PostgreSQL 17 for this tree is simple-login.backend's (PRD v2 Team and
+delivery, Constraints) and runs from `backend/compose.yaml`: service
+`postgres`, published on `127.0.0.1:55432` only, user, password and
+database `meeting_rooms`, a named volume, a `pg_isready` healthcheck
+(simple-login.backend D4, D8; reconciled 2026-11-01).
+
+- `npm --prefix backend run db:up` starts it and returns once it is
+  healthy, through `docker compose` or, where only that exists,
+  `docker-compose`; `npm --prefix backend run db:down` stops it and keeps
+  the bookings.
+- The service reads `DATABASE_URL`, default
+  `postgres://meeting_rooms:meeting_rooms@127.0.0.1:55432/meeting_rooms`;
+  `npm --prefix backend start` needs the database up first.
+- Every other node starts the database through `db:up`, never through a
+  Compose file of its own; simple-login.integration's root scripts do so.
+- The backend's `gate` and `replay` scripts start the database themselves,
+  and its tests use databases of their own on that service, never
+  `meeting_rooms`.
+
 ## Parallel development protocol (planning and execution)
 - Governance files (`hsdd/contract/`, `hsdd/adr/`, this file, both `INDEX.md`)
   are read-only during phase planning, at the root and in every worktree.
