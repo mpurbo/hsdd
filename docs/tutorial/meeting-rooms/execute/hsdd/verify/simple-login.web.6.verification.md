@@ -214,12 +214,10 @@ review).
 - Escaped defects added later: none yet.
 
 ## Sign-off
-- Reviewer / date:
-- Review tier applied:
-- Disposition of each Outstanding item: verified | waived (reason) |
-  deferred to {phase-id}
-- Disposition of each Learning: spec-updated | contract-bumped (id@v) |
-  adr-proposed (ADR-nnn) | dropped (reason)
+- Reviewer / date: Claude for Purbo Mohamad (owner proxy, delegated by the owner before the run), 2026-11-01
+- Review tier applied: full-review: per-task reviews and a final whole-branch review by fresh reviewers read (final 0 Critical, 1 Important: parseInstant read a date-time without Z in the ambient zone, fixed in one wave and re-reviewed 8 of 8 addressed); the final reviewer's sweep of all 418 zones over 2026 to 2028 noted; the gate rerun green by the orchestrator (11 files, 262 tests). The gate log this doc cites under .superpowers/ is local and git-ignored; the rerun stands in for it
+- Disposition of each Outstanding item: O1 (en-GB output in Chromium) and O2 (the browser's ambient zone): deferred to simple-login.integration.4 and simple-login.integration.5, whose browser tests run the real output in Asia/Kolkata
+- Disposition of each Learning: L1 to L4 dropped: L1 and L2 are wording in a done phase's Scope and Verification line (the guard excludes tests; formatDate needs a zone for Intl); L3's asIsoDate and branded-type idea is web.8's to take or leave; L4 is the stale project template already recorded
 
 > The review gate is not passed while an Outstanding item or a Learning
 > lacks a disposition. Dispositions execute at the root through the owning
