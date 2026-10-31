@@ -4,7 +4,7 @@
 - **Purpose:** prove the real service and the real web app work together, end to end
 - **Owns:** the root `package.json` scripts, which run the real service with its PostgreSQL 17, started through simple-login.backend's Docker Compose service, beside the real web app; the end-to-end browser test; the scripted tests PRD v2 Success names (20 simultaneous attempts to book the same room for the same time, every acceptance criterion including on London's clock-change days, bookings surviving a restart of the service); the run instructions
 - **Does not own:** any code under `backend/` or `web/`
-- **Consumes:** [auth-api@v1, profile-api@v1, profile-api@v2]
+- **Consumes:** [auth-api@v1, profile-api@v1, profile-api@v2, booking-api@v1]
 - **Produces:** none
 - **Governed by:** [ADR-002]
 - **Sources:** hsdd/context/prd-simple-login.v2.md (Success, Team and delivery, Constraints, Demo accounts, AC-2.1, AC-2.4, US-1, AC-2.2, AC-2.3, AC-2.5, US-3, US-4, US-5, US-6, Rooms, Screens), hsdd/context/rfc-simple-login.md (§1 Summary, §7 Testing, §8 Repository layout)
@@ -215,17 +215,4 @@ flowchart TD
 
 > Reconciled 2026-10-30 by hsdd-reconcile. Drained entries are in git history.
 
-> Emitted by hsdd-phase-plan on 2026-11-01 for
-> `hsdd/management/2026-10-31-intake-prd-simple-login-v2.md`
-> (simple-login.integration.3 to simple-login.integration.5 appended).
-> Drained by hsdd-reconcile; do not apply by hand.
-
-- confirm `auth-api@v1` consumers: [simple-login.integration.3, simple-login.integration.4, simple-login.integration.5]
-- confirm `profile-api@v2` consumers: [simple-login.integration.3, simple-login.integration.4, simple-login.integration.5]
-- confirm `booking-api@v1` consumers: [simple-login.integration.3, simple-login.integration.4, simple-login.integration.5]
-  - The provisional consumer simple-login.integration.3 is now a phase; simple-login.integration.4 and simple-login.integration.5 join it. No appended phase consumes profile-api@v1.
-- note: simple-login.integration's browser suite runs the service on a database of its own, `meeting_rooms_e2e`, on simple-login.backend's Compose service, never on `meeting_rooms`: its Playwright global setup starts PostgreSQL with `npm --prefix backend run db:up`, then drops and re-creates that database through the `pg` package (a root devDependency) connected to the server's `postgres` database. `npm run dev` runs `db:up` before both servers (simple-login.integration.3).
-  - It belongs beside the backend's own test databases in the conventions' Local database section.
-- request `booking-api@v1`: when `npm --prefix backend start` runs with `DATABASE_URL` naming an empty database on simple-login.backend's Compose service, does the service create its tables and the four pre-loaded rooms there before it listens, as it must for `meeting_rooms` on a fresh clone? The contract's development address names `PORT`; the conventions' Local database section names `DATABASE_URL` and its default, and promises nothing for another database.
-  - assumption: yes. simple-login.integration.3 starts the service with `DATABASE_URL=postgres://meeting_rooms:meeting_rooms@127.0.0.1:55432/meeting_rooms_e2e` on a database its global setup has just created. If the answer is a separate command, that global setup runs it with the same `DATABASE_URL`; the phase set does not change.
-  - contingent phases: none
+> Reconciled 2026-11-01 by hsdd-reconcile. Drained entries are in git history.

@@ -1,14 +1,14 @@
 ---
 id: booking-api
 version: v1
-status: draft
+status: stable
 kind: api
 owner: simple-login.backend
 governed_by: [ADR-001, ADR-002]
 compatibility: versioned
 produced_by: [simple-login.backend.7]
-consumers: [simple-login.web.5, simple-login.web.7, simple-login.web.8, simple-login.web.9, simple-login.integration.3]
-phase_ids: provisional
+consumers: [simple-login.web.5, simple-login.web.7, simple-login.web.8, simple-login.web.9, simple-login.integration.3, simple-login.integration.4, simple-login.integration.5]
+phase_ids: final
 ---
 
 # Contract: booking-api
@@ -194,7 +194,17 @@ Each code has one status and one message, at every endpoint:
 | `BOOKING_NOT_YOURS` | 403 | `You can cancel only your own bookings.` |
 
 Development address: the same process as `auth-api@v1`,
-`http://127.0.0.1:3000`, with `PORT` overriding the port.
+`http://127.0.0.1:3000`, with `PORT` overriding the port. The process,
+started by `npm --prefix backend start`, keeps the bookings in the
+PostgreSQL database `DATABASE_URL` names, default
+`postgres://meeting_rooms:meeting_rooms@127.0.0.1:55432/meeting_rooms` on
+simple-login.backend's Compose service (`npm --prefix backend run db:up`).
+When that database exists but is empty, the service creates its tables in
+it before it listens; a database that already holds them keeps its
+bookings. The rooms are part of the service, not rows to load, so a new
+database lists all four with no bookings. The database itself must
+exist: `db:up` creates `meeting_rooms`, and a consumer that names another
+creates it first.
 
 ## Guarantees / invariants
 
@@ -292,6 +302,15 @@ Development address: the same process as `auth-api@v1`,
   planned or shipped against it, so the change is made in v1 in place
   rather than as v2. The 35 fixtures are unchanged and validate against
   the amended schema.
+- 2026-11-01, for
+  `hsdd/management/2026-10-31-intake-prd-simple-login-v2.md`, from
+  simple-login.integration's plan (its request), answered by
+  hsdd-reconcile: the development address names `DATABASE_URL` and states
+  that the service creates its tables before it listens in an empty
+  database `DATABASE_URL` names, and that the rooms need no loading, as
+  simple-login.backend's D6 and D3 already plan. No endpoint, shape,
+  status, code, schema or fixture changes and nothing v1 accepts is
+  refused: a compatible clarification, so the version stays v1.
 
 ## Validation
 

@@ -77,7 +77,7 @@ proves the real pieces work together.
 |------|------|---------|----------|----------|
 | simple-login.backend | leaf-parent | authenticate built-in users and serve the signed-in user's profile over HTTP | none | auth-api@v1, profile-api@v1, profile-api@v2, booking-api@v1 |
 | simple-login.web | leaf-parent | the Login and Home screens in the browser | auth-api@v1, profile-api@v1, profile-api@v2, booking-api@v1 | none |
-| simple-login.integration | leaf-parent | prove the real service and the real web app work together, end to end | auth-api@v1, profile-api@v1, profile-api@v2 | none |
+| simple-login.integration | leaf-parent | prove the real service and the real web app work together, end to end | auth-api@v1, profile-api@v1, profile-api@v2, booking-api@v1 | none |
 
 ### simple-login.backend: Backend service
 
@@ -111,10 +111,10 @@ proves the real pieces work together.
 - **Purpose:** prove the real service and the real web app work together, end to end
 - **Owns:** the root `package.json` scripts, which run the real service with its PostgreSQL 17, started through simple-login.backend's Docker Compose service, beside the real web app; the end-to-end browser test; the scripted tests PRD v2 Success names (20 simultaneous attempts to book the same room for the same time, every acceptance criterion including on London's clock-change days, bookings surviving a restart of the service); the run instructions
 - **Does not own:** any code under `backend/` or `web/`
-- **Consumes:** [auth-api@v1, profile-api@v1, profile-api@v2]
+- **Consumes:** [auth-api@v1, profile-api@v1, profile-api@v2, booking-api@v1]
 - **Produces:** none
 - **Governed by:** [ADR-002]
-- **Sources:** hsdd/context/prd-simple-login.v2.md (Success, Team and delivery, Constraints, Demo accounts, AC-2.1, AC-2.4), hsdd/context/rfc-simple-login.md (§1 Summary, §7 Testing, §8 Repository layout)
+- **Sources:** hsdd/context/prd-simple-login.v2.md (Success, Team and delivery, Constraints, Demo accounts, AC-2.1, AC-2.4, US-1, AC-2.2, AC-2.3, AC-2.5, US-3, US-4, US-5, US-6, Rooms, Screens), hsdd/context/rfc-simple-login.md (§1 Summary, §7 Testing, §8 Repository layout)
 - **Decomposes into:** phases (see hsdd-phase-plan)
 - **Isolation strategy:** none by design: its edges are `hard`, so it runs the real service on its real PostgreSQL 17, never a mock or an in-memory stand-in (PRD v2 Constraints), beside the real web app, and drives a real browser against them in a time zone that is neither account's nor UTC (ADR-002); the service runs on the real clock
 

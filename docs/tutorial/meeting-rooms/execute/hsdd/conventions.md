@@ -147,6 +147,13 @@ database `meeting_rooms`, a named volume, a `pg_isready` healthcheck
 - The backend's `gate` and `replay` scripts start the database themselves,
   and its tests use databases of their own on that service, never
   `meeting_rooms`.
+- simple-login.integration's browser suite runs the service on a database
+  of its own on that service, `meeting_rooms_e2e`, never on
+  `meeting_rooms`: its Playwright global setup starts PostgreSQL through
+  `db:up`, then drops and re-creates that database, so every run starts
+  with no bookings, and the service creates its tables there when it
+  starts (booking-api@v1 Development address). No other node's tests use
+  that name (simple-login.integration.3; reconciled 2026-11-01).
 
 ## Parallel development protocol (planning and execution)
 - Governance files (`hsdd/contract/`, `hsdd/adr/`, this file, both `INDEX.md`)
