@@ -336,6 +336,7 @@ const recordText = (ctx, next) => (ctx.segment.mode === "intake"
 // C.4. A value that does not apply is null, so a default invocation that needs it fails to render.
 export const instructionFills = (ctx, next, routed = routedItems(ctx, next)) => ({
   target: next.target,
+  target_id: versionName(next.target)?.id ?? next.target,
   target_file: targetFile(ctx, next.target),
   target_version: targetVersion(ctx, next.target),
   proposing_spec: proposingSpec(ctx, next),

@@ -2183,6 +2183,8 @@ and the new emission date line of the pending section names the rewrite."
 | An `amend` or a `request` answer that breaks a consumer of a `stable` contract under `compatibility: versioned` (`frozen` or `v0`: a run-stop candidate, §8.2) | return | `breaking-amend` |
 | The same for a `draft` contract | decide (the rule that it "goes to the human" gives way for drafts) | `judgement` |
 | The migration mode, `coexisting` or `lockstep`, of the next version a breaking `request` answer (step 5) or `amend` (step 6) writes | decide, `would_have_asked: true`, unless the bump's answer (predecided, the orchestrator's or the owner's) names the mode | `breaking-amend`; `judgement` for a `draft` contract |
+| Under `lockstep`, a consumer node of v{n} with no migration phase planned, after a bump this step wrote | route an `insert-step` of kind `phase-plan-append` on that node | none |
+| The ADR `affects` handoff of a bump this step wrote | route an `insert-step` of kind `adr-update` on each such ADR, and never edit the ADR yourself | none |
 | A `request` answer that breaks no consumer | decide (the rule "resolve `request` entries with the human" gives way) | `judgement` |
 | Step 5's cross-cutting answer for `hsdd-adr`; step 7's `hsdd-contract` step for a missing validation artifact | route an `insert-step` (`adr` or `adr-update`; `contract-touch`), and never write the ADR or the artifact yourself | none |
 
@@ -3702,7 +3704,7 @@ supersede, as the invocation says; never rewrite the decision's history. Done wh
 place and every `affects` target is consistent with it.
 
 **`contract`** (`hsdd-contract`). Default invocation: "Author
-`{target}@{target_version}`." What to do: write every front-matter field
+`{target_id}@{target_version}`." What to do: write every front-matter field
 (`status: draft`, `phase_ids: provisional`, `governed_by` naming the ADRs the
 facts list), the Interface, Guarantees with ids `G{n}`, `## Versioning` with
 its `Breaking:` line (§12.1), and `## Validation` with the schema and
@@ -3793,6 +3795,7 @@ block, and the two agree.
 | Slot | Filled from |
 |------|-------------|
 | `{target}` | The step's target (§6.5). |
+| `{target_id}` | For `{id}.v{n}`, the contract `id`; otherwise the target. |
 | `{target_file}` | The files the target resolves to, each in backticks, comma-separated: for a contract `id`, every version's file (`H/contract/{slug}.md`, then each later version's, v0.10.0 §3.1), for `{id}.v{n}` that version's file (`H/contract/{id}.v{n}.md` before it exists); the ADR's file; or `H/spec/{node}.md`. |
 | `{target_version}` | For `{id}.v{n}`, `v{n}`; for a contract `id`, the highest version the specs cite for it (`v1` when none). |
 | `{proposing_spec}` | The first spec file, in the root spec's order, that cites the ADR. |

@@ -91,7 +91,7 @@ intermediate internal node (a "feature") rather than forcing a fixed tier.
 
    - `docs/rfc-042-ingestion-api.md` — accepted RFC — ingestion API: batch
      endpoint, idempotency, pagination, error envelope, rate limits, retention
-   - `docs/prd-fieldlog.md` — PRD — product scope, teams, v1 features
+   - `docs/prd-fieldlog.md` — approved PRD — product scope, teams, v1 features
    ```
 
    Sources trickle down: when a node is split, each child's `Sources` field

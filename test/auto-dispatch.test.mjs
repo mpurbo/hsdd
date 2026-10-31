@@ -114,7 +114,7 @@ const dispatchKind = (kind) => {
 
 const C2_SLOTS = ["step", "kind", "skill", "report", "head", "handoff_suffix", "skill_mode", "target_line", "decide_command", "write_set_list",
   "experiments_dir", "invocation", "fact_lines", "routed_lines", "predecided_lines", "continuing_lines", "context_lines"];
-const C4_SLOTS = ["target", "target_file", "target_version", "proposing_spec", "reason", "record", "request", "authority"];
+const C4_SLOTS = ["target", "target_id", "target_file", "target_version", "proposing_spec", "reason", "record", "request", "authority"];
 const PREAMBLE_SLOTS = slotNames(readFileSync(join(TEMPLATES, "preamble.md"), "utf8"));
 
 const section = (text, heading) => text.split(`${heading}\n`)[1].split(/\n### |\n## /)[0];
@@ -819,6 +819,8 @@ test("the target line, the citation-touch invocation and the inputs name every v
   const line = stepFills(ctx, { kind: "citation-touch", skill: "hsdd-contract", target: "order-api", handoff: null, queue_item: null, write_set: [] }, { step: "S02", head: "abc1234" }).target_line;
   assert.ok(line.startsWith(`\`order-api\`, resolving to \`${V1}\``) && line.includes(`\`${V2}\``), line);
   assert.equal(instructionFills(ctx, { kind: "contract", target: "order-api.v3", handoff: null, queue_item: null }, []).target_version, "v3");
+  assert.equal(instructionFills(ctx, { kind: "contract", target: "order-api.v3", handoff: null, queue_item: null }, []).target_id, "order-api");
+  assert.equal(instructionFills(ctx, { kind: "contract", target: "order-api", handoff: null, queue_item: null }, []).target_id, "order-api");
 });
 
 test("shipped-phase facts name the conventions' Main line", () => {

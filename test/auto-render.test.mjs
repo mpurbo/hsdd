@@ -62,7 +62,7 @@ test("every step template carries the C.1 skeleton and its C.3 text", () => {
 
 const C2_SLOTS = ["step", "kind", "skill", "report", "head", "handoff_suffix", "skill_mode", "target_line", "decide_command", "write_set_list",
   "experiments_dir", "invocation", "fact_lines", "routed_lines", "predecided_lines", "continuing_lines", "context_lines"];
-const C4_SLOTS = ["target", "target_file", "target_version", "proposing_spec", "reason", "record", "request", "authority"];
+const C4_SLOTS = ["target", "target_id", "target_file", "target_version", "proposing_spec", "reason", "record", "request", "authority"];
 
 test("the slot set of every step template is the C.2 and C.4 slot set", () => {
   const allowed = new Set([...C2_SLOTS, ...C4_SLOTS]);

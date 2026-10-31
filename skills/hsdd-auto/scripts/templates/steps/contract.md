@@ -1,4 +1,4 @@
-<!-- default_invocation: Author `{target}@{target_version}`. -->
+<!-- default_invocation: Author `{target_id}@{target_version}`. -->
 ## Your step: {step} ({kind}{handoff_suffix})
 
 - **step_ref:** {step}

@@ -251,6 +251,8 @@ When your arguments contain `--unattended {step}`, you run as step
 | An `amend` or a `request` answer that breaks a consumer of a `stable` contract under `compatibility: versioned` (`frozen` or `v0`: a run-stop candidate, §8.2) | return | `breaking-amend` |
 | The same for a `draft` contract | decide (the rule that it "goes to the human" gives way for drafts) | `judgement` |
 | The migration mode, `coexisting` or `lockstep`, of the next version a breaking `request` answer (step 5) or `amend` (step 6) writes | decide, `would_have_asked: true`, unless the bump's answer (predecided, the orchestrator's or the owner's) names the mode | `breaking-amend`; `judgement` for a `draft` contract |
+| Under `lockstep`, a consumer node of v{n} with no migration phase planned, after a bump this step wrote | route an `insert-step` of kind `phase-plan-append` on that node | none |
+| The ADR `affects` handoff of a bump this step wrote | route an `insert-step` of kind `adr-update` on each such ADR, and never edit the ADR yourself | none |
 | A `request` answer that breaks no consumer | decide (the rule "resolve `request` entries with the human" gives way) | `judgement` |
 | Step 5's cross-cutting answer for `hsdd-adr`; step 7's `hsdd-contract` step for a missing validation artifact | route an `insert-step` (`adr` or `adr-update`; `contract-touch`), and never write the ADR or the artifact yourself | none |
 
