@@ -168,12 +168,10 @@ throughout; no run stopped or recreated it.
   doc.
 
 ## Sign-off
-- Reviewer / date:
-- Review tier applied:
-- Disposition of each Outstanding item: verified | waived (reason) |
-  deferred to {phase-id}
-- Disposition of each Learning: spec-updated | contract-bumped (id@v) |
-  adr-proposed (ADR-nnn) | dropped (reason)
+- Reviewer / date: Claude for Purbo Mohamad (owner proxy, delegated by the owner before the run), 2026-11-01
+- Review tier applied: spot-check: the diff read by file list (booking-rules.ts and its two test files, 522 lines, 72 percent tests), the gate rerun green by the orchestrator (16 files, 195 tests), the fresh reviewer's report read (0 Critical, 1 Important fixed with a failing reordered-check version shown)
+- Disposition of each Outstanding item: the content-type rule against sign-in and Fastify: deferred to simple-login.backend.7 (its route tests compare POST /api/bookings with POST /api/login)
+- Disposition of each Learning: first and third dropped, as recorded; the second dropped too rather than spec-updated (backend.5 is done, and backend.7's route tests settle the rule the Scope pointed at)
 
 > The review gate is not passed while an Outstanding item or a Learning
 > lacks a disposition. Dispositions execute at the root through the owning
