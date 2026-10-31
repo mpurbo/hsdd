@@ -298,6 +298,15 @@ describe('API client: booking-api@v1', () => {
     }
   })
 
+  it.each(
+    listFixtures('booking-api')
+      .filter((f) => isError(f.response.body))
+      .map((f) => f.name),
+  )('a refusal whose error.code the contract does not give it is unavailable: %s', async (name) => {
+    stubFetch(editBody(name, (body) => (body.error.code = 'NOT_A_CODE')))
+    expect(await callFor(bookingFixture(name))).toEqual({ ok: false, reason: 'unavailable' })
+  })
+
   it('cancelBooking keeps an id inside /api/bookings/', async () => {
     const stub = stubFetch(atPath(bookingFixture('cancel-unknown'), '/api/bookings/a%2Fb%3Fc'))
     expect(await cancelBooking(TOKEN, 'a/b?c')).toEqual({ ok: false, reason: 'not-found' })
@@ -385,6 +394,18 @@ describe('API client: booking-api@v1', () => {
     stubFetch(bookingFixture('rooms-on-a-date'))
     const result = await fetchRooms(TOKEN, '2026-11-05T00:00:00.000Z', '2026-11-06T00:00:00.000Z')
     expect(result.ok && result.value.map((room) => room.id)).toEqual(['merapi', 'bromo', 'thames', 'kew'])
+  })
+
+  it('fetchRooms keeps the order received, rooms and bookings, with no client sort (G13)', async () => {
+    const reversed = editBody('rooms-range-edges', (body) => {
+      body.rooms.reverse()
+      for (const room of body.rooms) room.bookings.reverse()
+    })
+    stubFetch(reversed)
+    expect(await fetchRooms(TOKEN, ...roomsQuery(reversed.request.path))).toEqual({
+      ok: true,
+      value: (reversed.response.body as Json).rooms,
+    })
   })
 
   it('fetchMyBookings keeps the order received, with no client sort (G14)', async () => {
