@@ -69,6 +69,11 @@ export function utcDay(daysAhead: number, now: number = Date.now()): number {
   return Math.floor(now / DAY) * DAY + daysAhead * DAY;
 }
 
+/** The epoch ms 24 hours after `day`; `day` is a UTC midnight, so this is the next UTC date's start. */
+export function nextDay(day: number): number {
+  return day + DAY;
+}
+
 /** `day` plus the given UTC time, as toISOString(); throws unless on a quarter hour. */
 export function instant(day: number, hours: number, minutes = 0): string {
   const at = day + (hours * 60 + minutes) * 60 * 1000;

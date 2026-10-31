@@ -3,7 +3,13 @@
 // Every test that books takes a UTC date of its own, counted in days after
 // today's UTC date (computed once per worker), and books only between 00:00
 // and 12:00 UTC so the booking sits on the same date in Jakarta, London and
-// UTC. No test here books Thames.
+// UTC. No test here books Thames and none asserts Thames's bookings:
+// simple-login.integration.5's clock-change spec runs first and books Thames
+// on London's clock-change days, which can be one of these dates. The rooms
+// views assert the room ids in order (booking-api@v1 G13: merapi, bromo,
+// thames, kew) and the bookings of the rooms the test owns. GET /api/me/bookings
+// is account-wide, so its lists are filtered to the test's own ids or date.
+// Every day is computed once per file, at module load, from one TODAY.
 //
 // | Test                                               | Days ahead | Rooms                 |
 // |----------------------------------------------------|-----------:|-----------------------|
@@ -14,14 +20,21 @@
 // | AC-6.3                                             |         47 | Kew                   |
 // | AC-5.5 (books nothing)                             |      today | Bromo                 |
 import { expect, test } from "./fixtures.ts";
-import { currentQuarterHour, deleteBooking, getMyBookings, getRooms, instant, postBooking, tokenFor, utcDay, type Booking, type BookingRequest, type Username } from "./api.ts";
+import { currentQuarterHour, deleteBooking, getMyBookings, getRooms, instant, nextDay, postBooking, tokenFor, utcDay, type Booking, type BookingRequest, type Username } from "./api.ts";
 
 const ROUNDS = [1, 2, 3, 4, 5] as const;
 const ATTEMPTS = 20;
-// Computed once per worker, at module load.
-const DAYS: Readonly<Record<number, number>> = Object.fromEntries(ROUNDS.map((round) => [round, utcDay(40 + round)]));
+const TODAY = utcDay(0);
+const DAYS: Readonly<Record<number, number>> = Object.fromEntries(ROUNDS.map((round) => [round, utcDay(40 + round, TODAY)]));
+const RESTART_DAY = utcDay(46, TODAY);
+const AC63_DAY = utcDay(47, TODAY);
 
 type RoomView = { id: string; bookings: Booking[] };
+const ROOM_IDS = ["merapi", "bromo", "thames", "kew"]; // booking-api@v1 G13
+
+/** The rooms this file may assert on, as [id, bookings]: every room but Thames. */
+const ownRooms = (views: RoomView[]): Array<[string, Booking[]]> =>
+  views.filter((r) => r.id !== "thames").map((r) => [r.id, r.bookings]);
 
 /** Round 1 to 4: twenty identical ranges. Round 5: starts 02:00 to 01:00 crossed with ends 02:15 to 03:00, each containing 02:00 to 02:15. */
 function ranges(round: number, day: number): Array<{ start: string; end: string }> {
@@ -57,10 +70,11 @@ for (const round of ROUNDS) {
     const winnerName = names[winnerIndex % 2];
     const otherName = names[(winnerIndex + 1) % 2];
 
-    const rooms = await getRooms(tokens.ayu, instant(day, 0), instant(utcDay(41 + round), 0));
+    const rooms = await getRooms(tokens.ayu, instant(day, 0), instant(nextDay(day), 0));
     expect(rooms.status).toBe(200);
-    expect((rooms.body as { rooms: RoomView[] }).rooms.map((r) => [r.id, r.bookings]))
-      .toEqual([["merapi", [winner]], ["bromo", []], ["thames", []], ["kew", []]]);
+    const views = (rooms.body as { rooms: RoomView[] }).rooms;
+    expect(views.map((r) => r.id)).toEqual(ROOM_IDS);
+    expect(ownRooms(views)).toEqual([["merapi", [winner]], ["bromo", []], ["kew", []]]);
 
     const mine = await getMyBookings(tokens[winnerName]);
     expect(mine.status).toBe(200);
@@ -82,25 +96,30 @@ async function bookingsOn(token: string, day: number): Promise<Booking[]> {
 }
 
 test("a restart keeps every booking with its id and ends every token", async ({ backend }) => {
-  const day = utcDay(46);
+  const day = RESTART_DAY;
   const old: Record<Username, string> = { ayu: await tokenFor("ayu"), budi: await tokenFor("budi") };
   const books: Array<[Username, string, number, number]> = [
     ["ayu", "merapi", 2, 3],
     ["ayu", "bromo", 4, 5],
     ["budi", "kew", 2, 3],
   ];
+  const ids: string[] = [];
   for (const [who, roomId, from, to] of books) {
     const reply = await postBooking(old[who], { roomId, start: instant(day, from), end: instant(day, to), title: `Restart ${roomId}` });
     expect(reply.status).toBe(201);
+    ids.push((reply.body as Booking).id);
   }
-  const rangeOf = (token: string) => getRooms(token, instant(day, 0), instant(utcDay(47), 0));
+  const rangeOf = (token: string) => getRooms(token, instant(day, 0), instant(nextDay(day), 0));
+  const ours = (list: Booking[]) => list.filter((b) => ids.includes(b.id));
   const before = {
-    ayu: await bookingsOn(old.ayu, day),
-    budi: await bookingsOn(old.budi, day),
+    ayu: ours(await bookingsOn(old.ayu, day)),
+    budi: ours(await bookingsOn(old.budi, day)),
     rooms: await rangeOf(old.ayu),
   };
   expect(before.ayu).toHaveLength(2);
   expect(before.budi).toHaveLength(1);
+  expect(ownRooms((before.rooms.body as { rooms: RoomView[] }).rooms).flatMap(([, bookings]) => bookings.map((b) => b.id)).sort())
+    .toEqual([...ids].sort());
 
   await backend.restart();
 
@@ -109,11 +128,14 @@ test("a restart keeps every booking with its id and ends every token", async ({ 
   expect(await getMyBookings(old.budi)).toEqual(unauthorized);
 
   const fresh: Record<Username, string> = { ayu: await tokenFor("ayu"), budi: await tokenFor("budi") };
-  expect(await bookingsOn(fresh.ayu, day)).toEqual(before.ayu);
-  expect(await bookingsOn(fresh.budi, day)).toEqual(before.budi);
+  expect(ours(await bookingsOn(fresh.ayu, day))).toEqual(before.ayu);
+  expect(ours(await bookingsOn(fresh.budi, day))).toEqual(before.budi);
   const after = await rangeOf(fresh.ayu);
-  expect(after).toEqual(before.rooms);
-  const held = (after.body as { rooms: RoomView[] }).rooms.flatMap((r) => r.bookings).map((b) => b.id).sort();
+  expect(after.status).toBe(200);
+  const afterViews = (after.body as { rooms: RoomView[] }).rooms;
+  expect(afterViews.map((r) => r.id)).toEqual(ROOM_IDS);
+  expect(ownRooms(afterViews)).toEqual(ownRooms((before.rooms.body as { rooms: RoomView[] }).rooms));
+  const held = ownRooms(afterViews).flatMap(([, bookings]) => bookings.map((b) => b.id)).sort();
   expect(held).toEqual([...before.ayu, ...before.budi].map((b) => b.id).sort());
   expect(held).toHaveLength(3);
 });
@@ -126,7 +148,7 @@ test("AC-5.5 at the service: the current quarter hour has started", async () => 
 });
 
 test("AC-6.3: budi cannot cancel ayu's booking", async () => {
-  const day = utcDay(47);
+  const day = AC63_DAY;
   const ayu = await tokenFor("ayu");
   const budi = await tokenFor("budi");
   const made = await postBooking(ayu, { roomId: "kew", start: instant(day, 5), end: instant(day, 6), title: "Ayu's Kew" });

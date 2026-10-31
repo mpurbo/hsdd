@@ -10,7 +10,7 @@ are under `hsdd/`.
 
 - Node.js 24.2 or later.
 - Docker with Compose (`docker compose` or the standalone `docker-compose`),
-  for PostgreSQL. On macOS, Colima: run `colima start` before `npm run dev`.
+  for PostgreSQL. On macOS, Colima: run `colima start` before `npm run dev` or `npm test`.
 - Google Chrome, for the browser tests only (`PW_CHANNEL=chromium` uses
   Playwright's own Chromium instead, after `npx playwright install chromium`).
 
@@ -56,16 +56,21 @@ In order:
 5. the dev runner's test;
 6. the browser suite (`npm run e2e`).
 
-The browser suite starts the real backend and the web dev server and walks
-every acceptance criterion in the PRD. Its proxy replay sends 24 exact
-fixtures through the web dev server to the real service: 4 of `auth-api@v1`,
-5 of `profile-api@v2` and 15 of `booking-api@v1`. Its Success tests run
-against the service: 20 simultaneous attempts to book one room, in five
-rounds; a restart keeps every booking and ends every token; booking the
-current quarter hour is refused (AC-5.5); budi cannot cancel ayu's booking
-(AC-6.3).
+The browser suite starts the real backend and the web dev server. It covers:
 
-The runner and the browser run in the Asia/Kolkata time zone, which is neither
+- in the browser, AC-1.1 to AC-1.3, AC-2.1 to AC-2.4 and AC-3.1 (the login and
+  home specs); it does not drive booking, Home's bookings or Rooms;
+- at the service, through `e2e/api.ts`, the PRD v2 Success tests (20
+  simultaneous attempts to book one room, in five rounds; a restart keeps
+  every booking and ends every token), AC-5.5 (booking the current quarter
+  hour is refused) and AC-6.3 (budi cannot cancel ayu's booking);
+- the proxy replay, which sends 24 exact fixtures through the web dev server
+  to the real service: 4 of `auth-api@v1`, 5 of `profile-api@v2` and 15 of
+  `booking-api@v1`;
+- the rig's own tests (`e2e/rig.spec.ts`).
+
+Playwright, its workers, the service they start and the browser run in the
+Asia/Kolkata time zone, which is neither
 account's nor UTC. Each browser run drops and re-creates the database
 `meeting_rooms_e2e` and runs the service on it, so every run starts with no
 bookings and `meeting_rooms`, the database `npm run dev` uses, keeps your
