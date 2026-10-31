@@ -785,3 +785,10 @@ test("the target line, the citation-touch invocation and the inputs name every v
   assert.ok(line.startsWith(`\`order-api\`, resolving to \`${V1}\``) && line.includes(`\`${V2}\``), line);
   assert.equal(instructionFills(ctx, { kind: "contract", target: "order-api.v3", handoff: null, queue_item: null }, []).target_version, "v3");
 });
+
+test("shipped-phase facts name the conventions' Main line", () => {
+  const conventions = readFileSync(join(HERE, "fixtures/auto/tree/01-root/hsdd/conventions.md"), "utf8");
+  const dir = planRepo("06-planned", { files: { "hsdd/conventions.md": `${conventions}\n## Main line\n**Main line:** develop\n` } });
+  const facts = factLines(dispatchContext(dir), { kind: "phase-plan-append", target: "shop.web.app", handoff: null, queue_item: null });
+  assert.ok(facts.includes("Of them, with a verification doc on develop: none (develop:hsdd/verify)"), facts.join("\n"));
+});

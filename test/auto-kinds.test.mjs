@@ -4,7 +4,7 @@ import { createHash } from "node:crypto";
 import { mkdtempSync, mkdirSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { P, stepPaths, reportPath, resolveLayout, parseLayout, globToRegExp, matchesAny, judgementSet, expandHome, ownerFileHash, ownerMatcher } from "../skills/hsdd-auto/scripts/lib/paths.mjs";
+import { P, stepPaths, reportPath, resolveLayout, parseLayout, parseMainLine, globToRegExp, matchesAny, judgementSet, expandHome, ownerFileHash, ownerMatcher } from "../skills/hsdd-auto/scripts/lib/paths.mjs";
 import {
   KINDS, ORCHESTRATOR_KINDS, SUBAGENT_KINDS, INSERTABLE_KINDS, STOP_CLASSES, STOPPABLE, RAISED_WHEN,
   targetType, skillFor, decisionTypeFor, writeSet, neverPatterns,
@@ -46,6 +46,14 @@ test("resolveLayout keeps a default for a missing bullet, and only spec relocate
   assert.equal(l.spec, "docs/arch");
   assert.equal(l.contract, "hsdd/contract");
   assert.equal(l.relocated, false);
+});
+test("parseMainLine: the conventions' **Main line:** branch, main when the line is absent or empty", () => {
+  assert.equal(parseMainLine(""), "main");
+  assert.equal(parseMainLine("## Main line\n**Main line:** main\n"), "main");
+  assert.equal(parseMainLine("## Main line\n**Main line:** `develop`\n\nThe spec repo's branch.\n"), "develop");
+  assert.equal(parseMainLine("- **Main line:** release/2026.\n"), "release/2026");
+  assert.equal(parseMainLine("**Main line:**\n"), "main");
+  assert.equal(parseMainLine("The **Main line:** is not a line of its own.\n"), "main");
 });
 test("fixed paths and step paths", () => {
   assert.equal(P.runYaml, "hsdd/auto/run.yaml");

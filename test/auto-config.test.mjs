@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { writeFileSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { loadConfig, withDefaults, currentSegment, ConfigError } from "../skills/hsdd-auto/scripts/lib/config.mjs";
-import { git, GitError, headSha, currentBranch, branchExists, changedPaths, indexEmpty, headSubject, commitStamp, showFile, revExists, defaultBranch, listTree, changedSince } from "../skills/hsdd-auto/scripts/lib/git.mjs";
+import { git, GitError, headSha, currentBranch, branchExists, changedPaths, indexEmpty, headSubject, commitStamp, showFile, revExists, listTree, changedSince } from "../skills/hsdd-auto/scripts/lib/git.mjs";
 import { STAMP_RE } from "../skills/hsdd-auto/scripts/lib/time.mjs";
 import { validate } from "../skills/hsdd-auto/scripts/lib/schema.mjs";
 import { baseConfig, makeRepo, gitIn, run, fakeStep, addSegment, installScripts, SCRIPTS } from "./helpers/auto-repo.mjs";
@@ -162,7 +162,6 @@ test("git wrapper", () => {
   assert.ok(!branchExists(dir, "nope"));
   assert.ok(revExists(dir, "HEAD"));
   assert.ok(!revExists(dir, "deadbeef"));
-  assert.equal(defaultBranch(dir), "main");
   assert.deepEqual(changedPaths(dir), []);
   assert.ok(indexEmpty(dir));
   assert.match(commitStamp(dir, "HEAD"), STAMP_RE);

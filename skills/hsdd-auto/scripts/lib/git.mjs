@@ -65,11 +65,6 @@ export const showFile = (repoRoot, rev, path) => {
 
 export const revExists = (repoRoot, rev) => raw(repoRoot, ["rev-parse", "--verify", "--quiet", `${rev}^{commit}`]).ok;
 
-export const defaultBranch = (repoRoot) => {
-  const ref = git(repoRoot, ["symbolic-ref", "--short", "-q", "refs/remotes/origin/HEAD"], { allowFail: true });
-  return ref ? ref.replace(/^origin\//, "") : "main";
-};
-
 // Repository-relative paths of the entries directly under dir at rev ([] when dir is missing).
 export const listTree = (repoRoot, rev, dir) => {
   const d = `${dir.replace(/\/+$/, "")}/`;

@@ -146,9 +146,9 @@ current versions`, change only citations and the sentences they sit in:
   Produces line, an unshipped phase's boundary or delivery line, a guarantee
   citation, a fixture header comment, any sentence that states what holds
   now.
-- A **shipped phase** (one whose verification doc is on the repository's
-  default branch, `origin/HEAD` when set and else `main`) is history in
-  full: nothing in it moves. While a shipped phase or an
+- A **shipped phase** (one whose verification doc is on the spec repo's
+  main line, the conventions' `**Main line:**`, `main` when absent) is
+  history in full: nothing in it moves. While a shipped phase or an
   `external_consumers` entry still names the old version, that version keeps
   its `stable` standing in the contract's `## Versioning` (the old version
   stays until all consumers migrate), and the touch reports each such

@@ -15,7 +15,7 @@ const cite = (text, path) => `${text} (${path})`;
 const plural = (n, one, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
 const fmt = (v) => (Array.isArray(v) ? `[${v.join(", ")}]` : String(v));
 const stripVersion = (ref) => ref.replace(/@v\d+$/, "");
-const verifyRef = (ctx) => `${ctx.defaultBranch}:${ctx.layout.verify}`;
+const verifyRef = (ctx) => `${ctx.mainLine}:${ctx.layout.verify}`;
 
 // ---------- shared lines ----------
 
@@ -60,11 +60,11 @@ const fieldLine = (node, name) => cite(`${code(node.id)} **${name}:** ${node.fie
 
 const sourceLine = (s) => cite(`Source ${code(s.path)}: ${s.role}, version ${s.version ?? "not given"}, authority ${s.authority ?? "absent"}`, P.runYaml);
 
-// Phase ids with a verification doc on the default branch, by node (12.4).
+// Phase ids with a verification doc on the main line (the conventions' **Main line:**), by node (12.4).
 const verifiedLines = (ctx) => {
   const byNode = [...ctx.verifiedPhases].sort().reduce((m, id) => m.set(phaseNodeOf(id), [...(m.get(phaseNodeOf(id)) ?? []), id]), new Map());
-  if (byNode.size === 0) return [cite(`No phase has a verification doc on ${ctx.defaultBranch}`, verifyRef(ctx))];
-  return [...byNode].map(([node, ids]) => cite(`Phases of ${code(node)} with a verification doc on ${ctx.defaultBranch}: ${ids.join(", ")}`, verifyRef(ctx)));
+  if (byNode.size === 0) return [cite(`No phase has a verification doc on ${ctx.mainLine}`, verifyRef(ctx))];
+  return [...byNode].map(([node, ids]) => cite(`Phases of ${code(node)} with a verification doc on ${ctx.mainLine}: ${ids.join(", ")}`, verifyRef(ctx)));
 };
 
 const noFileLine = (ctx, id) => cite(`${code(id)} has no spec file`, `${ctx.layout.spec}/${id}.md`);
@@ -260,7 +260,7 @@ const appendLines = (ctx, step, node) => {
   const record = ctx.segment?.mode === "intake" ? ctx.intake.record : null;
   return [
     cite(`${code(node.id)} has phases ${ids.length > 0 ? ids.join(", ") : "none"}`, node.file),
-    cite(`Of them, with a verification doc on ${ctx.defaultBranch}: ${verified.length > 0 ? verified.join(", ") : "none"}`, verifyRef(ctx)),
+    cite(`Of them, with a verification doc on ${ctx.mainLine}: ${verified.length > 0 ? verified.join(", ") : "none"}`, verifyRef(ctx)),
     record
       ? cite(`The segment's intake record is ${code(record.path)}`, record.path)
       : cite(`No intake record: this plan segment's step comes from ${step.queue_item ? `the insert-step item ${step.queue_item}` : "no insert-step item"}`, P.queue),
