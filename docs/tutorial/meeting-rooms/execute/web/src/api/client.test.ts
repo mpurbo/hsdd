@@ -1,10 +1,12 @@
 import { describe, expect, it, vi } from 'vitest'
 import { listFixtures, loadFixture, stubFetch, stubFetchHanging, stubFetchUnreachable, type Fixture } from '../test/fetchStub'
-import { REQUEST_TIMEOUT_MS, bookRoom, fetchMyBookings, fetchProfile, fetchRooms, signIn } from './client'
+import { atPath } from '../test/fetchStub'
+import { REQUEST_TIMEOUT_MS, bookRoom, cancelBooking, fetchMyBookings, fetchProfile, fetchRooms, signIn } from './client'
 import type {
   BookResult,
   Booking,
   BookingRequest,
+  CancelFailure,
   MyBookingsFailure,
   Profile,
   ProfileFailure,
@@ -158,6 +160,7 @@ describe('API client', () => {
 type Json = { [key: string]: any }
 const bookingFixture = (name: string): Fixture => loadFixture('booking-api', name)
 const bodyOf = (name: string): Json => bookingFixture(name).response.body as Json
+const isError = (body: unknown): boolean => typeof body === 'object' && body !== null && 'error' in body
 /** The fixture with its response body edited on a deep copy. */
 const editBody = (name: string, edit: (body: Json) => void): Fixture => {
   const fixture = bookingFixture(name)
@@ -223,7 +226,40 @@ const sprintPlanning: BookingRequest = {
   title: 'Sprint planning',
 }
 
+const cancelCases: Record<string, Result<null, CancelFailure>> = {
+  'cancel-malformed-id': { ok: false, reason: 'not-found' },
+  'cancel-my-booking': { ok: true, value: null },
+  'cancel-no-token': { ok: false, reason: 'unauthorized' },
+  'cancel-someone-elses': { ok: false, reason: 'not-yours' },
+  'cancel-started': { ok: false, reason: 'started' },
+  'cancel-unknown': { ok: false, reason: 'not-found' },
+}
+
+const allBookingCases: Record<string, unknown> = { ...roomsCases, ...myBookingsCases, ...bookCases, ...cancelCases }
+
+const idOf = (path: string): string => path.slice('/api/bookings/'.length)
+
+/** Calls the function the fixture's request names, as each table's test does. */
+const callFor = (fixture: Fixture): Promise<unknown> => {
+  const { method, path, body } = fixture.request
+  if (method === 'GET' && path.startsWith('/api/rooms?')) return fetchRooms(TOKEN, ...roomsQuery(path))
+  if (method === 'GET' && path === '/api/me/bookings') return fetchMyBookings(TOKEN)
+  if (method === 'POST' && path === '/api/bookings') return bookRoom(TOKEN, body as BookingRequest)
+  if (method === 'DELETE' && path.startsWith('/api/bookings/')) return cancelBooking(TOKEN, idOf(path))
+  throw new Error(`no call for ${method} ${path}`)
+}
+
 describe('API client: booking-api@v1', () => {
+  it('maps every booking-api fixture', () => {
+    // A fixture added to the contract fails here until it is mapped.
+    // Both sides sorted by name: listFixtures sorts file names, and '-' sorts before '.json'.
+    expect(Object.keys(allBookingCases).sort()).toEqual(
+      listFixtures('booking-api')
+        .map((f) => f.name)
+        .sort(),
+    )
+  })
+
   it.each(Object.entries(roomsCases))('fetchRooms: %s', async (name, expected) => {
     const fixture = bookingFixture(name)
     const stub = stubFetch(fixture)
@@ -237,6 +273,52 @@ describe('API client: booking-api@v1', () => {
     const stub = stubFetch(fixture)
     expect(await fetchMyBookings(TOKEN)).toEqual(expected)
     expect(stub.calls).toEqual(bearerGet('/api/me/bookings'))
+  })
+
+  it.each(Object.entries(cancelCases))('cancelBooking: %s', async (name, expected) => {
+    const fixture = bookingFixture(name)
+    const stub = stubFetch(fixture)
+    expect(await cancelBooking(TOKEN, idOf(fixture.request.path))).toEqual(expected)
+    expect(stub.calls).toEqual([
+      { method: 'DELETE', path: fixture.request.path, headers: { authorization: `Bearer ${TOKEN}` }, body: undefined },
+    ])
+  })
+
+  it.each(
+    listFixtures('booking-api')
+      .filter((f) => isError(f.response.body))
+      .map((f) => f.name),
+  )('reads only error.code, never error.message: %s', async (name) => {
+    for (const edit of [
+      (body: Json) => (body.error.message = 'changed'),
+      (body: Json) => delete body.error.message,
+    ]) {
+      stubFetch(editBody(name, edit))
+      expect(await callFor(bookingFixture(name))).toEqual(allBookingCases[name])
+    }
+  })
+
+  it('cancelBooking keeps an id inside /api/bookings/', async () => {
+    const stub = stubFetch(atPath(bookingFixture('cancel-unknown'), '/api/bookings/a%2Fb%3Fc'))
+    expect(await cancelBooking(TOKEN, 'a/b?c')).toEqual({ ok: false, reason: 'not-found' })
+    expect(stub.calls.map((call) => call.path)).toEqual(['/api/bookings/a%2Fb%3Fc'])
+  })
+
+  it('the booking calls are unavailable when the server is unreachable or never answers', async () => {
+    const unavailable = { ok: false, reason: 'unavailable' }
+    const calls = (): Promise<unknown>[] => [
+      fetchRooms(TOKEN, '2026-11-05T00:00:00.000Z', '2026-11-06T00:00:00.000Z'),
+      fetchMyBookings(TOKEN),
+      bookRoom(TOKEN, sprintPlanning),
+      cancelBooking(TOKEN, '00000000-0000-4000-8000-000000000031'),
+    ]
+    stubFetchUnreachable()
+    expect(await Promise.all(calls())).toEqual([unavailable, unavailable, unavailable, unavailable])
+    vi.useFakeTimers()
+    stubFetchHanging()
+    const pending = Promise.all(calls())
+    await vi.advanceTimersByTimeAsync(REQUEST_TIMEOUT_MS)
+    expect(await pending).toEqual([unavailable, unavailable, unavailable, unavailable])
   })
 
   it.each(Object.entries(bookCases))('bookRoom: %s', async (name, expected) => {

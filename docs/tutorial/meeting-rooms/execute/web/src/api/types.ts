@@ -61,6 +61,8 @@ export interface BookingRequest {
 
 export type BookFailure = 'unauthorized' | 'invalid' | 'too-long' | 'started' | 'too-far-ahead' | 'conflict' | 'unavailable'
 
+export type CancelFailure = 'unauthorized' | 'not-found' | 'not-yours' | 'started' | 'unavailable'
+
 /** A `conflict` carries the booking the request overlaps (`error.conflict`, G6). */
 export type BookResult =
   | { readonly ok: true; readonly value: Booking }

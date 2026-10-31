@@ -7,6 +7,7 @@ import type {
   BookResult,
   Booking,
   BookingRequest,
+  CancelFailure,
   MyBookingsFailure,
   Profile,
   ProfileFailure,
@@ -108,13 +109,16 @@ function decodeRoom(v: unknown): Room | undefined {
 
 const bearer = (token: string): Record<string, string> => ({ Authorization: `Bearer ${token}` })
 
-/** One HTTP exchange; `null` when the request fails, times out, or the body is not JSON. */
+/**
+ * One HTTP exchange; `null` when the request fails, times out, or the body is
+ * not JSON. A 204 has no body to read, so its body is `null`.
+ */
 async function send(path: string, init: RequestInit): Promise<Answer | null> {
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS)
   try {
     const res = await fetch(path, { ...init, signal: controller.signal })
-    return { status: res.status, body: (await res.json()) as unknown }
+    return { status: res.status, body: res.status === 204 ? null : ((await res.json()) as unknown) }
   } catch {
     return null
   } finally {
@@ -201,6 +205,20 @@ function decideBook(answer: Answer | null): BookResult {
   return BOOK_REFUSALS[`${status} ${code}`] ?? fail('unavailable')
 }
 
+const CANCEL_REFUSALS: Readonly<Record<string, CancelFailure>> = {
+  '401 UNAUTHORIZED': 'unauthorized',
+  '404 BOOKING_NOT_FOUND': 'not-found',
+  '403 BOOKING_NOT_YOURS': 'not-yours',
+  '422 BOOKING_STARTED': 'started',
+}
+
+function decideCancel(answer: Answer | null): Result<null, CancelFailure> {
+  if (answer === null) return fail('unavailable')
+  const { status, body } = answer
+  if (status === 204) return ok(null)
+  return fail(CANCEL_REFUSALS[`${status} ${errorCode(body)}`] ?? 'unavailable')
+}
+
 /** POST /api/login. The username is sent exactly as typed (auth-api@v1 matches it exactly). */
 export async function signIn(username: string, password: string): Promise<Result<Session, SignInFailure>> {
   return decideSignIn(
@@ -241,4 +259,9 @@ export async function bookRoom(token: string, request: BookingRequest): Promise<
       body: JSON.stringify({ roomId, start, end, title }),
     }),
   )
+}
+
+/** DELETE /api/bookings/{id}; a 204 means the booking is cancelled. The id is path-encoded, a no-op for a UUID. */
+export async function cancelBooking(token: string, id: string): Promise<Result<null, CancelFailure>> {
+  return decideCancel(await send(`/api/bookings/${encodeURIComponent(id)}`, { method: 'DELETE', headers: bearer(token) }))
 }
