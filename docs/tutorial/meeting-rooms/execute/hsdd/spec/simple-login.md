@@ -75,8 +75,8 @@ proves the real pieces work together.
 
 | Node | Kind | Purpose | Consumes | Produces |
 |------|------|---------|----------|----------|
-| simple-login.backend | leaf-parent | authenticate built-in users and serve the signed-in user's profile over HTTP | none | auth-api@v1, profile-api@v1, profile-api@v2, booking-api@v1 |
-| simple-login.web | leaf-parent | the Login and Home screens in the browser | auth-api@v1, profile-api@v1, profile-api@v2, booking-api@v1 | none |
+| simple-login.backend | leaf-parent | authenticate built-in users and serve over HTTP the signed-in user's profile with their time zone and the bookings of the pre-loaded meeting rooms (each room's bookings in a time range, booking a room, the user's own bookings, cancelling one), keeping the bookings in PostgreSQL 17 | none | auth-api@v1, profile-api@v1, profile-api@v2, booking-api@v1 |
+| simple-login.web | leaf-parent | let a user sign in, see their profile and time zone, find a free meeting room on a date and book it, see and cancel their own bookings, and sign out in the browser, showing every time in the user's own time zone | auth-api@v1, profile-api@v1, profile-api@v2, booking-api@v1 | none |
 | simple-login.integration | leaf-parent | prove the real service and the real web app work together, end to end | auth-api@v1, profile-api@v1, profile-api@v2, booking-api@v1 | none |
 
 ### simple-login.backend: Backend service
