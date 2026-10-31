@@ -58,3 +58,29 @@ write after the fact.
   Merge commit f8f9171.
 - A fresh agent compares hsdd-auto with v0.10.1 and v0.10.2's rules
   before the run starts, so the run uses consistent skills.
+
+### 19:55 · hsdd-auto against v0.10.2: fifteen gaps, fixed before the run
+
+The check found nine defects and six drifts. The 775 tests passed because
+the end-to-end test still bumped a contract inside its one file, the model
+v0.10.2 replaced. Four defects would have broken this run:
+
+- The scripts index contracts by file name, so `profile-api.v2.md` reads as
+  a second contract. The gate's C4 refuses the file, C5 refuses every
+  citation of `profile-api@v2` (the four node specs, `auth-api.md` and
+  ADR-001 of this very tree), and a step planning a v2 consumer is told v2
+  is v1 and given v1's fixtures.
+- `approved PRD`, the authority v0.10.2 added and this request carries,
+  cannot be given to `/hsdd-auto intake`.
+- Citation touch and align treat every lower contract version as stale and
+  edit node headers, which v0.10.2's `coexisting` migration forbids.
+- A bump's migration mode (`coexisting` or `lockstep`) has no unattended
+  disposition, so a step would pick it silently.
+
+Two choices taken for the owner, to ratify **[owner proxy]**: a lower
+version is superseded only when `deprecated` or `retired`, and citation
+touch never edits node headers or ADR `affects` (option 1 of 2; option 2
+kept "newest is current" with a recorded decision per moved consumer); the
+migration mode folds into the existing `breaking-amend` stop class (one
+stop and one predecided answer per bump) rather than a class of its own.
+Two agents fix the gaps in parallel worktrees.
