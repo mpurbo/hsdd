@@ -13,7 +13,7 @@ import ajvFormats from "ajv-formats";
 const Ajv2020 = ajv2020.default;
 const addFormats = ajvFormats.default;
 
-export type ContractSlug = "auth-api" | "profile-api" | "profile-api.v2";
+export type ContractSlug = "auth-api" | "profile-api" | "profile-api.v2" | "booking-api";
 
 /** A booking-api@v1 fixture's `given` booking; `account` is a built-in username. */
 export type GivenBooking = { id: string; account: string; roomId: string; title: string; start: string; end: string };
@@ -21,7 +21,11 @@ export type GivenBooking = { id: string; account: string; roomId: string; title:
 export type Fixture = {
   name: string;
   description: string;
-  request: { method: "GET" | "POST"; path: string; headers: Record<string, string>; body?: unknown };
+  /** booking-api@v1: the instant the injected clock reads for the whole fixture, tokens included. */
+  clock?: string;
+  /** booking-api@v1: the bookings that exist before the request. */
+  given?: GivenBooking[];
+  request: { method: "GET" | "POST" | "DELETE"; path: string; headers: Record<string, string>; body?: unknown };
   response: { status: number; body: unknown };
   replay: "exact" | "schema";
 };
@@ -35,45 +39,135 @@ export function loadFixtures(slug: ContractSlug, dir = join(CONTRACT_DIR, "fixtu
     .map((file) => JSON.parse(readFileSync(join(dir, file), "utf8")) as Fixture);
 }
 
-/** Returns the schema violations of one response; an empty array means valid. */
-export function responseValidator(slug: ContractSlug): (response: { status: number; body: unknown }) => string[] {
-  const ajv = new Ajv2020({ strict: true, allErrors: true });
-  addFormats(ajv);
-  const schema = JSON.parse(readFileSync(join(CONTRACT_DIR, "schema", `${slug}.schema.json`), "utf8"));
-  const validate = ajv.compile(schema);
-  return (response) =>
-    validate(response) ? [] : (validate.errors ?? []).map((e) => `${e.instancePath || "/"} ${e.message ?? "invalid"}`);
+/** One Ajv per contract, holding its schema under the schema's $id. */
+const schemas = new Map<ContractSlug, { ajv: InstanceType<typeof Ajv2020>; id: string }>();
+const schemaOf = (slug: ContractSlug) => {
+  if (!schemas.has(slug)) {
+    const ajv = new Ajv2020({ strict: true, allErrors: true });
+    addFormats(ajv);
+    const schema = JSON.parse(readFileSync(join(CONTRACT_DIR, "schema", `${slug}.schema.json`), "utf8"));
+    ajv.addSchema(schema);
+    schemas.set(slug, { ajv, id: schema.$id });
+  }
+  return schemas.get(slug)!;
+};
+
+/** Validates against the whole schema, or against one of its `$defs`; returns the violations. */
+const validator = (slug: ContractSlug, def?: string): ((data: unknown) => string[]) => {
+  const { ajv, id } = schemaOf(slug);
+  const validate = ajv.getSchema(def === undefined ? id : `${id}#/$defs/${def}`);
+  if (validate === undefined) throw new Error(`${slug} has no $defs/${def}`);
+  return (data) =>
+    validate(data) ? [] : (validate.errors ?? []).map((e) => `${e.instancePath || "/"} ${e.message ?? "invalid"}`);
+};
+
+/** Returns the schema violations of one response; an empty array means valid. With `def`, checks that `$defs` entry. */
+export function responseValidator(
+  slug: ContractSlug,
+  def?: string,
+): (response: { status: number; body: unknown }) => string[] {
+  return validator(slug, def);
 }
 
-/** Fills the {{token:…}} and {{expired-token:…}} placeholders a fixture request may carry. */
+/** booking-api@v1's per-endpoint response `$defs`, chosen by method and path (the query string aside). */
+export type BookingEndpointDef = "GetRoomsResponse" | "GetMyBookingsResponse" | "PostBookingResponse" | "DeleteBookingResponse";
+
+const ENDPOINTS: ReadonlyArray<readonly [string, RegExp, BookingEndpointDef]> = [
+  ["GET", /^\/api\/rooms$/, "GetRoomsResponse"],
+  ["GET", /^\/api\/me\/bookings$/, "GetMyBookingsResponse"],
+  ["POST", /^\/api\/bookings$/, "PostBookingResponse"],
+  ["DELETE", /^\/api\/bookings\/[^/]+$/, "DeleteBookingResponse"],
+];
+
+export function endpointDef(method: string, path: string): BookingEndpointDef | undefined {
+  const route = path.split("?")[0]!;
+  return ENDPOINTS.find(([m, pattern]) => m === method && pattern.test(route))?.[2];
+}
+
+/**
+ * Fills the {{token:…}} and {{expired-token:…}} placeholders a fixture request may carry.
+ * For a fixture with a `clock`, the rig names the instant each token is issued at, and calls
+ * `prepare` after the tokens, so the clock reads the fixture's `clock` when the request is sent.
+ */
 export type PlaceholderHooks = {
-  token(username: string): Promise<string>;
+  /** A token for the account; with `issuedAt`, issued while the caller's clock reads it. */
+  token(username: string, issuedAt?: Date): Promise<string>;
+  /** A token whose `expiresAt` has passed, for fixtures without a `clock`. */
   expiredToken(username: string): Promise<string>;
+  /** booking-api@v1: sets the injected clock to `clock` and leaves the database holding exactly `given`. */
+  prepare?(fixture: Fixture): Promise<void>;
 };
+
+/** An expired token is issued 30 minutes (auth-api@v1 G1) and 1 second before the fixture's clock. */
+export const EXPIRED_TOKEN_AGE_MS = 30 * 60 * 1000 + 1000;
 
 const PLACEHOLDER = /\{\{(token|expired-token):([^}]+)\}\}/g;
 
 export async function fillHeaders(
   headers: Record<string, string>,
   hooks: PlaceholderHooks,
+  clock?: Date,
 ): Promise<Record<string, string>> {
+  const issue = (kind: string, username: string): Promise<string> => {
+    if (clock === undefined) return kind === "token" ? hooks.token(username) : hooks.expiredToken(username);
+    return hooks.token(username, kind === "token" ? clock : new Date(clock.getTime() - EXPIRED_TOKEN_AGE_MS));
+  };
   const filled: Record<string, string> = {};
   for (const [name, value] of Object.entries(headers)) {
     let out = value;
     for (const [match, kind, username] of value.matchAll(PLACEHOLDER)) {
-      const token = kind === "token" ? await hooks.token(username!) : await hooks.expiredToken(username!);
-      out = out.replace(match, token);
+      out = out.replace(match, await issue(kind!, username!));
     }
     filled[name] = out;
   }
   return filled;
 }
 
-const validators = new Map<ContractSlug, ReturnType<typeof responseValidator>>();
-const validatorFor = (slug: ContractSlug) => {
-  if (!validators.has(slug)) validators.set(slug, responseValidator(slug));
-  return validators.get(slug)!;
+/** booking-api@v1: a 201 equals the fixture except `id`, which is a BookingId no `given` booking holds. */
+const judgeCreated = (fixture: Fixture, body: unknown): string[] => {
+  const { id, ...rest } = body as Record<string, unknown>;
+  const { id: _placeholder, ...expected } = fixture.response.body as Record<string, unknown>;
+  const problems = validator("booking-api", "BookingId")(id).map((p) => `id ${JSON.stringify(id)}: ${p}`);
+  if ((fixture.given ?? []).some((given) => given.id === id)) problems.push(`id ${JSON.stringify(id)} is a given booking's`);
+  if (!isDeepStrictEqual(rest, expected)) problems.push(`body ${JSON.stringify(body)} differs from the fixture`);
+  return problems;
 };
+
+/** booking-api@v1: the top-level schema and the endpoint's $defs, then the exact body. */
+const judgeBooking = (fixture: Fixture, response: { status: number; body: unknown }): string[] => {
+  const { method, path } = fixture.request;
+  const def = endpointDef(method, path);
+  if (def === undefined) return [`no booking-api@v1 endpoint answers ${method} ${path}`];
+  const schemaProblems = [
+    ...validator("booking-api")(response).map((p) => `schema: ${p}`),
+    ...validator("booking-api", def)(response).map((p) => `schema $defs/${def}: ${p}`),
+  ];
+  if (schemaProblems.length > 0) return schemaProblems;
+  if (response.status === 201) return judgeCreated(fixture, response.body);
+  return isDeepStrictEqual(response.body, fixture.response.body)
+    ? []
+    : [`body ${JSON.stringify(response.body)} differs from the fixture`];
+};
+
+/** Judges one real response against a fixture; returns the problems, empty when the fixture reproduced. */
+export function judgeResponse(slug: ContractSlug, fixture: Fixture, actual: { status: number; body: string }): string[] {
+  const problem = (text: string) => `${slug}/${fixture.name}: ${text}`;
+  let body: unknown;
+  try {
+    // An empty body (a 204's) is null, as its fixture writes it; it is never parsed.
+    body = actual.body === "" ? null : JSON.parse(actual.body);
+  } catch {
+    return [problem(`body is not JSON: ${actual.body.slice(0, 80)}`)];
+  }
+  if (actual.status !== fixture.response.status) {
+    return [problem(`status ${actual.status}, expected ${fixture.response.status}`)];
+  }
+  if (slug === "booking-api") return judgeBooking(fixture, { status: actual.status, body }).map(problem);
+  if (fixture.replay === "exact") {
+    return isDeepStrictEqual(body, fixture.response.body) ? [] : [problem(`body ${JSON.stringify(body)} differs from the fixture`)];
+  }
+  return validator(slug)({ status: actual.status, body }).map((p) => problem(`schema: ${p}`));
+}
 
 /** Sends one fixture's request to the app; returns the problems, empty when the fixture reproduced. */
 export async function replayFixture(
@@ -83,11 +177,23 @@ export async function replayFixture(
   hooks: PlaceholderHooks,
 ): Promise<string[]> {
   const problem = (text: string) => [`${slug}/${fixture.name}: ${text}`];
+  const clock = fixture.clock === undefined ? undefined : new Date(fixture.clock);
+  const prepare = hooks.prepare;
+  if (clock !== undefined && prepare === undefined) {
+    return problem("the fixture has a clock and the caller supplied no prepare hook");
+  }
   let headers: Record<string, string>;
   try {
-    headers = await fillHeaders(fixture.request.headers, hooks);
+    headers = await fillHeaders(fixture.request.headers, hooks, clock);
   } catch (error) {
     return problem(`placeholder could not be filled: ${(error as Error).message}`);
+  }
+  if (clock !== undefined) {
+    try {
+      await prepare!(fixture);
+    } catch (error) {
+      return problem(`prepare failed: ${(error as Error).message}`);
+    }
   }
   const res = await app.inject({
     method: fixture.request.method,
@@ -95,19 +201,5 @@ export async function replayFixture(
     headers,
     ...(fixture.request.body === undefined ? {} : { payload: JSON.stringify(fixture.request.body) }),
   });
-  let body: unknown;
-  try {
-    body = res.json();
-  } catch {
-    return problem(`body is not JSON: ${res.body.slice(0, 80)}`);
-  }
-  if (res.statusCode !== fixture.response.status) {
-    return problem(`status ${res.statusCode}, expected ${fixture.response.status}`);
-  }
-  if (fixture.replay === "exact") {
-    return isDeepStrictEqual(body, fixture.response.body)
-      ? []
-      : problem(`body ${JSON.stringify(body)} differs from the fixture`);
-  }
-  return validatorFor(slug)({ status: res.statusCode, body }).flatMap((p) => problem(`schema: ${p}`));
+  return judgeResponse(slug, fixture, { status: res.statusCode, body: res.body });
 }
