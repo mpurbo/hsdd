@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { checkRoomsQuery, isInstant, isQuarterHourInstant } from "../src/booking-rules.ts";
+import { checkNewBooking, checkRoomsQuery, isInstant, isQuarterHourInstant } from "../src/booking-rules.ts";
 
 const refused = { ok: false, error: { code: "VALIDATION_FAILED" } };
 
@@ -69,5 +69,82 @@ describe("GET /api/rooms query (G1)", () => {
 
   it("no cap on the range, and other parameters are ignored", () => {
     expect(checkRoomsQuery({ from: "0000-01-01T00:00:00.000Z", to: "9999-12-31T23:59:59.999Z", page: "2" }).ok).toBe(true);
+  });
+});
+
+const NOW = new Date("2026-11-04T12:00:00.000Z");
+const valid = { roomId: "merapi", start: "2026-11-05T02:00:00.000Z", end: "2026-11-05T03:00:00.000Z", title: "Sprint planning" };
+const book = (body: unknown, contentType: string | undefined = "application/json", now = NOW) =>
+  checkNewBooking({ contentType, body, accountId: "u_001", now });
+
+describe("POST /api/bookings request (G2, G8)", () => {
+  it("a valid body gives the new booking, owned by the caller", () => {
+    expect(book(valid)).toStrictEqual({
+      ok: true,
+      value: { roomId: "merapi", accountId: "u_001", title: "Sprint planning", start: new Date(valid.start), end: new Date(valid.end) },
+    });
+  });
+
+  it("other fields are ignored", () => {
+    expect(book({ ...valid, id: "x", accountId: "u_002", roomName: "Kew" })).toStrictEqual(book(valid));
+  });
+
+  it("the content-type is application/json, as for sign-in", () => {
+    expect(book(valid, "application/json; charset=utf-8").ok).toBe(true);
+    expect(book(valid, "Application/JSON").ok).toBe(true);
+    // A missing header goes straight to the rule: `book`'s default would fill an explicit undefined.
+    expect(checkNewBooking({ contentType: undefined, body: valid, accountId: "u_001", now: NOW })).toStrictEqual(refused);
+    for (const ct of ["", "text/plain", "application/jsonx", "application/x-www-form-urlencoded"]) {
+      expect(book(valid, ct), ct).toStrictEqual(refused);
+    }
+  });
+
+  it("the body is a JSON object", () => {
+    for (const b of [null, undefined, JSON.stringify(valid), 42, true, [valid]]) expect(book(b)).toStrictEqual(refused);
+  });
+
+  it("a missing or mistyped field is refused", () => {
+    for (const key of ["roomId", "start", "end", "title"] as const) {
+      const { [key]: _dropped, ...rest } = valid;
+      expect(book(rest), `no ${key}`).toStrictEqual(refused);
+      expect(book({ ...valid, [key]: 42 }), `numeric ${key}`).toStrictEqual(refused);
+    }
+    expect(book({ ...valid, start: Date.parse(valid.start) })).toStrictEqual(refused);
+  });
+
+  it("D3: roomId names one of the four rooms", () => {
+    for (const roomId of ["merapi", "bromo", "thames", "kew"]) expect(book({ ...valid, roomId }).ok).toBe(true);
+    for (const roomId of ["everest", "Merapi", " merapi", ""]) expect(book({ ...valid, roomId })).toStrictEqual(refused);
+  });
+
+  it("G2: start and end are quarter-hour instants, end after start", () => {
+    expect(book({ ...valid, start: "2026-11-05T02:10:00.000Z" })).toStrictEqual(refused);
+    expect(book({ ...valid, end: "2026-11-05T03:00:00Z" })).toStrictEqual(refused);
+    expect(book({ ...valid, start: "2026-11-05T09:00:00.000+07:00", end: "2026-11-05T10:00:00.000+07:00" })).toStrictEqual(refused);
+    expect(book({ ...valid, end: valid.start })).toStrictEqual(refused);
+    expect(book({ ...valid, start: valid.end, end: valid.start })).toStrictEqual(refused);
+  });
+
+  it("G8: 80 emoji are accepted and 81 refused: characters are code points", () => {
+    expect(book({ ...valid, title: "📅".repeat(80) }).ok).toBe(true);
+    expect(book({ ...valid, title: "📅".repeat(81) })).toStrictEqual(refused);
+    expect(book({ ...valid, title: "a".repeat(80) }).ok).toBe(true);
+    expect(book({ ...valid, title: "a".repeat(81) })).toStrictEqual(refused);
+  });
+
+  it("G8: an empty title, or one of whitespace only, is refused", () => {
+    for (const title of ["", "   ", "\t\n", "\u00a0\u3000"]) expect(book({ ...valid, title }), JSON.stringify(title)).toStrictEqual(refused);
+  });
+
+  it("G8, D9: a title holding U+0000 or an unpaired surrogate is refused", () => {
+    for (const title of ["Retro\u0000", "\u0000", "Retro \uD800", "\uD800", "\uDC00 Retro", "\uDE00\uD83D"]) {
+      expect(book({ ...valid, title }), JSON.stringify(title)).toStrictEqual(refused);
+    }
+    expect(book({ ...valid, title: "Retro \uD83D\uDCC5" }).ok).toBe(true);
+  });
+
+  it("G8: the title is kept exactly as sent, never trimmed", () => {
+    const result = book({ ...valid, title: "  Retro  " });
+    expect(result.ok && result.value.title).toBe("  Retro  ");
   });
 });
