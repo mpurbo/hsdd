@@ -96,6 +96,15 @@ export function todayIn(now: Instant, zone: ZoneName): IsoDate {
 const QUARTER_MS = 15 * 60_000
 const HOUR_MS = 60 * 60_000
 const MAX_BOOKING_MS = 8 * HOUR_MS
+// Scan window around a date's UTC midnight: zone offsets run from -12:00 to +14:00, so 15 hours
+// either side always holds the zone's start of that date.
+const SCAN_WINDOW_MS = 15 * HOUR_MS
+
+// Quarter-hour instants (ms) from fromMs up to toMs, toMs itself only when inclusive.
+function quarterSteps(fromMs: number, toMs: number, inclusive: boolean): readonly number[] {
+  const last = inclusive ? toMs : toMs - 1
+  return Array.from({ length: Math.max(0, Math.floor((last - fromMs) / QUARTER_MS) + 1) }, (_, i) => fromMs + i * QUARTER_MS)
+}
 
 // Design note 5: one validator for every function that takes an IsoDate.
 // Returns the date's UTC midnight in ms; throws RangeError unless it is a real YYYY-MM-DD.
@@ -120,12 +129,11 @@ function nextDate(date: IsoDate): IsoDate {
 // First quarter-hour instant whose wall date is >= date (design note 2), as ms.
 function startOf(date: IsoDate, zone: ZoneName): number {
   const midnight = dateToUtcMs(date)
-  const from = midnight - 15 * HOUR_MS
-  const to = midnight + 15 * HOUR_MS
-  for (let ms = from; ms <= to; ms += QUARTER_MS) {
-    if (wallClock(ms, zone).date >= date) return ms
-  }
-  throw new RangeError(`No start found for ${date}`)
+  const found = quarterSteps(midnight - SCAN_WINDOW_MS, midnight + SCAN_WINDOW_MS, true).find(
+    (ms) => wallClock(ms, zone).date >= date,
+  )
+  if (found === undefined) throw new RangeError(`No start found for ${date}`)
+  return found
 }
 
 export function dayRange(date: IsoDate, zone: ZoneName): DayRange {
@@ -139,21 +147,15 @@ export function startOptions(date: IsoDate, zone: ZoneName, now: Instant): reado
   const start = startOf(date, zone)
   const end = startOf(nextDate(date), zone)
   const nowMs = parseInstant(now)
-  const out: Instant[] = []
-  for (let ms = start; ms < end; ms += QUARTER_MS) {
-    if (ms > nowMs) out.push(new Date(ms).toISOString())
-  }
-  return out
+  return quarterSteps(start, end, false)
+    .filter((ms) => ms > nowMs)
+    .map((ms) => new Date(ms).toISOString())
 }
 
 export function endOptions(start: Instant, date: IsoDate, zone: ZoneName): readonly Instant[] {
   const startMs = parseInstant(start)
   const limit = Math.min(startMs + MAX_BOOKING_MS, startOf(nextDate(date), zone))
-  const out: Instant[] = []
-  for (let ms = startMs + QUARTER_MS; ms <= limit; ms += QUARTER_MS) {
-    out.push(new Date(ms).toISOString())
-  }
-  return out
+  return quarterSteps(startMs + QUARTER_MS, limit, true).map((ms) => new Date(ms).toISOString())
 }
 
 // Design note 4: a calendar date has no zone, and UTC midnight formatted in UTC is the identity mapping.
@@ -165,7 +167,7 @@ export function formatDate(date: IsoDate): string {
     month: 'short',
   })
     .format(new Date(dateToUtcMs(date)))
-    .replace(',', '')
+    .replace(',', '') // Node 24's ICU writes no comma; the replace keeps other ICU builds to 'Thu 5 Nov'
 }
 
 function shortZoneName(ms: number, zone: ZoneName): string {
