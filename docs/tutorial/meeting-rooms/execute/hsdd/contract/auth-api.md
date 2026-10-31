@@ -7,7 +7,7 @@ owner: simple-login.backend
 governed_by: [ADR-001]
 compatibility: versioned
 produced_by: [simple-login.backend.2]
-consumers: [simple-login.web.1, simple-login.web.2, simple-login.integration.1, simple-login.integration.2]
+consumers: [simple-login.web.1, simple-login.web.2, simple-login.web.3, simple-login.web.4, simple-login.integration.1, simple-login.integration.2]
 phase_ids: final
 ---
 
@@ -48,17 +48,26 @@ targets this address, not `localhost`.
 
 ## Guarantees / invariants
 
-- `expiresAt` is exactly 30 minutes after the moment the token was issued
-  (ADR-001).
-- A token from a 200 response is accepted by `profile-api@v1` and
-  `profile-api@v2` until `expiresAt`, and rejected after it.
-- An unknown username and a wrong password give the same status, the same
-  body, byte for byte.
-- Usernames match exactly: case-sensitive, with no trimming. `Ayu` and
+- G1: `expiresAt` is exactly 30 minutes after the moment the token was
+  issued (ADR-001).
+- G2: A token from a 200 response is accepted by `profile-api@v1`,
+  `profile-api@v2` and `booking-api@v1` until `expiresAt`, and rejected
+  after it. A restart can end it sooner (G3).
+- G3: A restart of the service ends every token issued before it, ahead of
+  its `expiresAt`: after the restart each is rejected exactly as an expired
+  token is (ADR-001).
+- G4: Sign-out is client-side: there is no logout endpoint, and a client
+  signs out by discarding its token (ADR-001). Signing out ends nothing on
+  the service, so a token kept or copied before it stays accepted until it
+  expires (G2) or the service restarts (G3).
+- G5: An unknown username and a wrong password give the same status, the
+  same body, byte for byte.
+- G6: Usernames match exactly: case-sensitive, with no trimming. `Ayu` and
   `ayu ` are unknown usernames. Clients send what the user typed.
-- The token is opaque: consumers store it and send it back, never parse it.
-- No response contains the password or a password hash.
-- Consumers branch on `error.code`, never on `error.message`.
+- G7: The token is opaque: consumers store it and send it back, never parse
+  it.
+- G8: No response contains the password or a password hash.
+- G9: Consumers branch on `error.code`, never on `error.message`.
 
 ## Versioning
 
@@ -71,6 +80,18 @@ targets this address, not `localhost`.
 - 2026-10-30: the token guarantee also names `profile-api@v2`, drafted for
   `hsdd/management/2026-10-30-intake-add-phone.md`. The same tokens work at
   the same endpoint; a compatible clarification, so the version stays v1.
+- 2026-10-31, for
+  `hsdd/management/2026-10-31-intake-prd-simple-login-v2.md`: the
+  guarantees take ids G1 to G9, in their order; G2 also names
+  `booking-api@v1`, which takes the same tokens from the same service.
+  G3 (a restart ends every token) and G4 (sign-out is client-side, with no
+  logout endpoint) state what ADR-001 has decided since v1 and the service
+  has always done; ADR-001's 2026-10-31 amendments keep both. `consumers`
+  gains `simple-login.web.3` and `simple-login.web.4`, whose App tests read
+  the `login-success` fixture
+  (`hsdd/management/2026-10-30-execution-plan.md` C-3, finding F-4). No
+  endpoint, shape, status, schema or fixture changes: compatible
+  clarifications and metadata, so the version stays v1.
 - Breaking changes require v2 and a migration note here; v1
   stays until every consumer migrates.
 
