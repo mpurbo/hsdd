@@ -13,8 +13,9 @@ methods and reading aids. Their content is in this document. Chapter 15
 states, rule by rule, which of it the skills implement in v0.10.0 and which
 is specified without a skill. v0.10.1 corrects two phase-context rules in
 place (§9.7). v0.10.2 corrects the change flow in place (§3.1, §3.5, §7.6,
-§8, §9.7, §10.2, §11, §12.7, §14.2); §15.1 states each correction's effect
-on the release before it. Every earlier
+§8, §9.7, §10.2, §11, §12.7, §14.2) and has the superpowers derivative name
+the skills it relies on (§9.8); §15.1 states each correction's effect on
+the release before it. Every earlier
 version remains in `spec/` as history. Nothing here requires reading them.
 
 ---
@@ -1448,8 +1449,9 @@ Five rules govern it:
    writes no sentence of its own into the file.
 2. **Self-contained.** Every contract, ADR and open-question id the file
    names, and every node decision (`D{n}`) the phase's own fields cite, has
-   its text inline, except other phases' ids, which appear only in the
-   phase's Dependencies and Collides with lines. A cited node decision is
+   its text inline, except other phases' ids, which are never inlined and
+   appear only where the phase's own fields name them (its Dependencies and
+   Collides with lines, or its Scope). A cited node decision is
    copied from the node spec's Decisions section into `## Decisions`, after
    the ADRs; a range `D{n} to D{m}` cites each id in it. An external contract
    with no file gets a one-line entry saying so. A contract the file names
@@ -1472,26 +1474,32 @@ Five rules govern it:
 
 `hsdd-context/superpowers/{phase-id}.md`: a header telling the session to
 start at `superpowers:writing-plans` (never at brainstorming, because the
-phase was designed and reviewed in HSDD), then **Global Constraints**, then
-a **Plan check**, then the generic body verbatim between the same markers
-`config.yaml` uses. `writing-plans` copies the spec's Global Constraints into
-the plan header, and `subagent-driven-development` hands them to every
-implementer and task reviewer, so they are where HSDD's rules travel:
-test-first in every task's own text, at most as many tasks as the phase's
-size estimate, the gate before the last task, the verification doc as the
-last task at the tier's depth, the governance freeze, contracts consumed by
-Interface and Guarantees only and tested against their fixtures, a
-referenced contract used only as the phase's Scope says, the tier's
-artifact profile, and the
-project's tech skills. Test-first holds when a dependency phase has already
-merged and delivered the behavior a test covers: the failing run is against
-the commit before that phase, or against a named mutant, and the
+phase was designed and reviewed in HSDD) and naming the execution skill,
+then **Global Constraints**, then a **Plan check**, then the generic body
+verbatim between the same markers `config.yaml` uses. `writing-plans`
+copies the spec's Global Constraints into the plan header, and
+`subagent-driven-development` hands them to every implementer and task
+reviewer, so they are where HSDD's rules travel: test-first in every task's
+own text under `test-driven-development`, at most as many tasks as the
+phase's size estimate, the gate before the last task, the verification doc
+as the last task at the tier's depth, the governance freeze, contracts
+consumed by Interface and Guarantees only and tested against their
+fixtures, a referenced contract used only as the phase's Scope says, the
+tier's artifact profile, evidence for every claim of done under
+`verification-before-completion`, root-cause debugging under
+`systematic-debugging`, and the project's tech skills. The constraints name
+the skills, not only the behavior: a skill's rules load only when something
+names it, and `subagent-driven-development` has an implementer follow TDD
+only when its task says to. Test-first holds when a dependency phase has
+already merged and delivered the behavior a test covers: the failing run is
+against the commit before that phase, or against a named mutant, and the
 verification doc's Observed says which (the generic context's Discipline
 line says the same for either method). The run is `writing-plans`, the
-plan check, then `subagent-driven-development` (or `executing-plans`), then
-the verification
-doc. The definition of done does not change: a verification doc merged to
-spec-repo main.
+plan check, then the execution skill the review tier selects, then the
+verification doc: `executing-plans` at gate-only and spot-check (one
+context, one final review), `subagent-driven-development` at full-review (a
+fresh implementer and task reviewer per task). The definition of done does
+not change (§12.3).
 
 ### 9.9 Choosing the coding method
 
@@ -2534,9 +2542,10 @@ progress report already has its grandfathered-contracts row.
 | `referenced` subsections for a contract the context names that the phase neither consumes nor produces (§9.7) | Forward-only, as above. A superpowers phase already in progress keeps the context it started with: re-running its switch rewrites constraint 7, which its plan copied verbatim from the old derivative. | `hsdd-config`; `hsdd-phase-plan` (a Scope names such a contract by `{contract-id}@{version}`) |
 
 **v0.10.2** corrects the change flow, from twelve findings of the second
-tutorial run, and adds one optional contract key, `former_consumers`, and
-one optional conventions line, `**Main line:**`. No artifact under `hsdd/`
-is rewritten and nothing triggers an adoption run.
+tutorial run, has the superpowers derivative name the skills it relies on,
+and adds one optional contract key, `former_consumers`, and one optional
+conventions line, `**Main line:**`. No artifact under `hsdd/` is rewritten
+and nothing triggers an adoption run.
 
 | Change | Effect on a 0.10.1 project | Implemented in v0.10.2 by |
 |--------|----------------------------|---------------------------|
@@ -2548,8 +2557,10 @@ is rewritten and nothing triggers an adoption run.
 | The change request's own path in Sources; the sizing floor over appended phases only (§11.3) | From the next append forward. | `hsdd-phase-plan`; `hsdd-intake` |
 | A pointer is not content; node decisions in the phase context (§7.6, §9.7) | Forward-only: plans written after the upgrade are checked, and phases switched after it get the node decisions they cite. A context already written is a record. | `hsdd-phase-plan`; `hsdd-config` |
 | Test-first after a merged dependency (§9.8) | Forward-only, as in v0.10.1: a superpowers plan in progress copied constraint 1's old text, and re-running its switch rewrites the derivative. | `hsdd-config` |
+| The superpowers derivative names its skills: the execution skill by review tier, `test-driven-development` in constraint 1, `verification-before-completion` and `systematic-debugging` as constraints 9 and 10, tech skills from 11 (§9.8) | Forward-only, as above: a plan in progress keeps the constraints it copied; the next plan copies the new ones. | `hsdd-config` |
+| A Scope may name another phase (§9.7) | None: the switch already copied the Scope verbatim; the rule now says so. | `hsdd-config` |
 | Delegated sign-offs; a Reviewer who names no person; intake closure and sealing on done (§10.2, §11.5, §12.3, §12.5, §12.7) | From the next checkpoint. A phase an earlier progress report counted done is never downgraded: a sign-off naming no person becomes a finding asking for one. A record closed or a document sealed earlier stays so. The switch keeps a project's existing template copy and reports the difference. | `hsdd-checkpoint`; `hsdd-config` template |
-| `**Main line:**` (§14.2) | Optional: absent means `main`, the 0.10.1 reading. | conventions template; read by `hsdd-phase-plan`, `hsdd-intake`, `hsdd-checkpoint` |
+| `**Main line:**` (§14.2) | Optional: absent means `main`, the 0.10.1 reading. | conventions template; read by `hsdd-phase-plan`, `hsdd-intake`, `hsdd-checkpoint`, `hsdd-config`, `hsdd-contract` |
 | The conventions template names `/hsdd-config` for the switch (§9.9) | Text only; an existing conventions file is not rewritten. | conventions template |
 
 **The one case worth calling out:** a fully-governed ≥0.6.1 project usually
@@ -2817,6 +2828,7 @@ add is `reasoned-only`, and the table says so instead of letting it borrow.
 | Who writes a bump into the node specs | `hsdd-reconcile`, from the `confirm` entries; append mode never edits the node header (§8.4, §11.3). | reasoned-only |
 | A pointer in a phase line | Not content: the line carries the binding detail, and the node decisions a phase cites are injected (§7.6, §9.7). | reasoned-only |
 | Test-first after a merged dependency | Fail against the commit before that phase, or a named mutant, and record which (§9.8). | reasoned-only |
+| How the superpowers derivative carries discipline | By naming the skills, not only the behavior: the execution skill by review tier (`executing-plans` at gate-only and spot-check, `subagent-driven-development` at full-review), `test-driven-development`, `verification-before-completion` and `systematic-debugging` (§9.8). | reasoned-only |
 | Delegated sign-off | Admissible when it names the person it answers to; counted done and listed in one checkpoint finding for that person to ratify; a sign-off naming no person is a claim, without downgrading earlier done (§10.2). | reasoned-only |
 | What "main" means | The conventions' `**Main line:**`, `main` when absent (§14.2). | reasoned-only |
 

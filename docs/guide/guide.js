@@ -612,7 +612,7 @@ function cycleView(s) {
   return `<div class="bar"><span class="label">Coding method</span>${seg("method", s.method, [["openspec", "OpenSpec"], ["superpowers", "superpowers"]], "Coding method")}</div>
     ${op
       ? flow([["k-impl", "new", "a change for this phase", "1"], ["k-impl", "proposal · design · tasks", "design.md scaled by tier", "2"], ["k-impl", "apply", "test-first, task by task", "3"], ["k-gate", "gate", "gate command + contract replay", "4"], ["k-done", "verification doc", "then archive", "5"]])
-      : flow([["k-impl", "writing-plans", "plans from the phase spec", "1"], ["k-impl", "subagent-driven-development", "one subagent per task, test-first", "2"], ["k-gate", "gate", "gate command + contract replay", "3"], ["k-done", "verification doc", "written from the template", "4"]])}
+      : flow([["k-impl", "writing-plans", "plans from the phase spec", "1"], ["k-impl", "the tier's execution skill", "test-driven-development on every task", "2"], ["k-gate", "gate", "gate command + contract replay", "3"], ["k-done", "verification doc", "written from the template", "4"]])}
     <div class="tbl-wrap"><table class="tbl"><thead><tr><th>Tier</th><th>proposal</th><th>design.md</th><th>tasks + spec deltas</th><th>verification doc</th></tr></thead><tbody>
       <tr><td>${chip("gate-only", "gate-only")}</td><td>brief</td><td>skipped</td><td>full</td><td>slim</td></tr>
       <tr><td>${chip("spot-check", "spot-check")}</td><td>brief</td><td>only for a real decision</td><td>full</td><td>short</td></tr>

@@ -10,7 +10,7 @@ record names.
 `docs/superpowers/plans/2026-10-10-v0_10-release.md` (this release's plan).
 Criteria A1 to A4 and B1 to C3 are carried from the v0.9 record unchanged;
 A5, D1 to D7 and E1 to E5 cover what v0.10.0 adds; A6 and A7 cover what
-v0.10.1 corrects; F1 to F6 cover what v0.10.2 corrects. Every `Result:` is
+v0.10.1 corrects; F1 to F7 cover what v0.10.2 corrects. Every `Result:` is
 filled by the owner's run, never by the implementer.
 
 ## A. Phase context and coding methods
@@ -431,4 +431,25 @@ skills; they follow the tutorial's prompts in order.
 - **Expected:** backend.3 is reported as a claim, the Reviewer naming no
   person is a finding, and the intake record stays open.
 - **Fails if:** backend.3 counts as done, or the record closes.
+- **Result:**
+
+### F7. The superpowers derivative names its skills
+
+- **Run:** on a scratch copy of `docs/tutorial/simple-login/execute/`
+  without its `hsdd-context/`,
+  `/hsdd-config simple-login.backend.1 --method superpowers` (gate-only)
+  and `/hsdd-config simple-login.integration.1 --method superpowers`
+  (full-review); then, in a fresh session,
+  `Use superpowers:writing-plans to plan hsdd-context/superpowers/simple-login.backend.1.md`.
+- **Expected:** backend.1's header names `superpowers:executing-plans` and
+  integration.1's names `superpowers:subagent-driven-development`. In both,
+  constraint 1 starts "Every plan task except the last follows
+  superpowers:test-driven-development", constraints 9 and 10 name
+  `verification-before-completion` and `systematic-debugging`, the Plan
+  check has the execution-skill box, and the equality check prints nothing.
+  The plan copies constraints 1 to 10 verbatim, and its header names
+  `executing-plans` alone.
+- **Fails if:** a header names the other execution skill or both, a
+  constraint names no skill, or the plan offers a choice of execution
+  method.
 - **Result:**

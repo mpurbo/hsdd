@@ -530,8 +530,12 @@ You: "/hsdd-phase acme.backend.auth.2 --method superpowers"
 
 and starts the phase's session with
 `Use superpowers:writing-plans to plan hsdd-context/superpowers/acme.backend.auth.2.md`.
-The file's Global Constraints carry test-first, the task cap, the gate and
-the verification doc into every task `subagent-driven-development` runs.
+The file's header names the execution skill by review tier:
+`subagent-driven-development` here, a full-review phase, and
+`executing-plans` at gate-only and spot-check. Its Global Constraints carry
+`test-driven-development`, the task cap, the gate, the verification doc,
+`verification-before-completion` and `systematic-debugging` into every task
+the plan runs.
 Set `**Coding method:** superpowers` in `hsdd/conventions.md` to make it the
 default.
 
@@ -1166,8 +1170,11 @@ writes a new version into the node headers and the root spec. A phase line
 carries the detail it relies on, not a pointer to a source, and the phase
 context now carries the node decisions (`D1`) a phase cites. A sign-off an
 agent takes for you names you, counts as done, and comes back to you at
-the next checkpoint to ratify. Absent fields keep the 0.10.1 behavior; the
-spec's §15.1 has the table.
+the next checkpoint to ratify. The superpowers derivative names the skills
+it relies on: `test-driven-development` on every task,
+`verification-before-completion`, `systematic-debugging`, and the execution
+skill by review tier. Absent fields keep the 0.10.1 behavior; the spec's
+§15.1 has the table.
 
 Upgrading an existing (≥0.6.1) project to v0.10.0 rides the same
 behaviors: the first checkpoint after upgrading (its newest progress report

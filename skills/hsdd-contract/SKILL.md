@@ -226,11 +226,12 @@ through `hsdd-reconcile`, as for any other contract.
   `external_consumers` lists consumers outside the tree, by name.
 - **Live and former consumers.** `consumers` lists the phases that consume
   this version now. A consumer phase has **migrated** when the newest
-  shipped phase (its verification doc on main) of its node that names this
-  contract in Consumes names a later version and not this one. The
+  shipped phase (its verification doc on the spec repo's main line, the
+  conventions' `**Main line:**`, `main` when absent) of its node that names
+  this contract in Consumes names a later version and not this one. The
   checkpoint reports that node's shipped phase ids still in this version's
-  `consumers`, and
-  `hsdd-reconcile` moves them to `former_consumers`, never deleting one.
+  `consumers`, and `hsdd-reconcile` moves them to `former_consumers`, never
+  deleting one.
   `former_consumers` is history: no rule reads it as live. A version's
   **live consumers** are its `consumers` and its `external_consumers`; an
   external entry leaves by hand, when that consumer says it has moved.

@@ -9,10 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.10.2] - 2026-10-31
 
-The change flow's missing rules, found by the second tutorial run, and the
-phase-switch prompts in both tutorials. Specification:
-`spec/hsdd-spec-v0_10.md`, now at 0.10.2; its §15.1 states the upgrade.
-Acceptance: `review/hsdd-v0_10-acceptance.md`, F1 to F6.
+The change flow's missing rules, found by the second tutorial run; the
+superpowers derivative names the skills it relies on; the phase-switch
+prompts in both tutorials. Specification: `spec/hsdd-spec-v0_10.md`, now at
+0.10.2; its §15.1 states the upgrade. Acceptance:
+`review/hsdd-v0_10-acceptance.md`, F1 to F7.
 
 ### Upgrading from 0.10.1
 
@@ -27,7 +28,8 @@ Acceptance: `review/hsdd-v0_10-acceptance.md`, F1 to F6.
 - Forward-only: contract versions drafted, plans written and phases
   switched after the upgrade follow the new rules. A phase context already
   written is a record. A superpowers plan in progress copied the old
-  constraint 1; re-running its switch rewrites the derivative.
+  constraints; re-running its switch rewrites the derivative, and the next
+  plan copies the new ones.
 - The next checkpoint applies the new audits to the whole tree: a `stable`
   version that nothing serves, migrated consumers still in `consumers`,
   and delegated sign-offs each become findings with plan steps. A phase an
@@ -47,6 +49,19 @@ Acceptance: `review/hsdd-v0_10-acceptance.md`, F1 to F6.
   the `execute/` repository after the change, and an interactive
   `walkthrough/` with a diff against the template and a full process log,
   including twelve findings about the change flow.
+
+### Changed
+
+- `hsdd-config`: the superpowers derivative names the skills its rules
+  rely on, not only the behavior, because a skill's rules load only when
+  something names it and `subagent-driven-development` has an implementer
+  follow TDD only "if task says to". Constraint 1 names
+  `test-driven-development`; new constraints 9 and 10 name
+  `verification-before-completion` and `systematic-debugging`, so tech
+  skills now start at 11. The header and a Plan check box name the
+  execution skill by review tier: `executing-plans` at gate-only and
+  spot-check, `subagent-driven-development` at full-review. The switch
+  warns for a named skill that is not installed.
 
 ### Fixed
 
@@ -88,7 +103,8 @@ migration phase's context) stays as it is.
   line and superpowers constraint 1 say what a test fails against when a
   dependency phase has already merged: the commit before that phase, or a
   named mutant (finding 11). Contracts are found by frontmatter `id` and
-  `version`.
+  `version`. Rule 2 no longer contradicts rule 1 when a Scope names
+  another phase: the Scope is copied verbatim, ids and all.
 - `hsdd-checkpoint`: a sign-off delegated to an agent names the person it
   answers to, counts as done, and goes into one finding for that person to
   ratify; a Reviewer who names no person leaves the phase a claim (finding
@@ -96,7 +112,8 @@ migration phase's context) stays as it is.
   Migration health: migrated consumers, `deprecated` versions past
   their sunset, and `stable` versions nothing serves are findings with plan
   steps (findings 4 and 5). "Main" is the conventions' `**Main line:**`
-  (finding 9).
+  (finding 9), as it is in `hsdd-config`'s pointer and next-runnable checks
+  and in `hsdd-contract`'s shipped phase.
 - Verification template: the Reviewer line and the footer name delegated
   sign-offs (finding 12).
 - Conventions template: the `**Main line:**` line (finding 9); the layout
@@ -110,7 +127,7 @@ migration phase's context) stays as it is.
 - `spec/hsdd-spec-v0_10.md` states the same in place (§2.6, §3.1, §3.4,
   §3.5, §3.6, §7.6, §8.2, §8.4, §9.2, §9.7, §9.8, §9.9, §10.2, §10.3,
   §11.2, §11.3, §12.7, §14.1, §14.2, glossary), with the upgrade in §15.1
-  and eight rows in §18.1. The users-guide and the HTML guide agree.
+  and nine rows in §18.1. The users-guide and the HTML guide agree.
 
 ## [0.10.1] - 2026-10-30
 
