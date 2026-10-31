@@ -1,8 +1,11 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import {
+  checkCancel,
   checkNewBooking,
   checkRoomsQuery,
+  errorResponse,
+  isBookingId,
   isInstant,
   isQuarterHourInstant,
   myBookingsView,
@@ -233,5 +236,61 @@ describe("views (G13, G14)", () => {
     const input = [kew, merapi, thames, bromo];
     expect(myBookingsView(input).bookings.map((b) => b.id)).toStrictEqual(["t", "m", "b", "k"]);
     expect(input).toStrictEqual([kew, merapi, thames, bromo]);
+  });
+});
+
+describe("DELETE /api/bookings/{id} (G11, G12)", () => {
+  const mine = stored("00000000-0000-4000-8000-000000000031", "merapi", "2026-11-05T02:00:00.000Z", "2026-11-05T03:00:00.000Z");
+  const cancel = (id: string, booking: StoredBooking | undefined, now = NOW, accountId = "u_001") => {
+    const result = checkCancel({ id, accountId, now, booking });
+    return result.ok ? result.value : result.error.code;
+  };
+
+  it("my booking, before its start, may be cancelled", () => {
+    expect(cancel(mine.id, mine)).toBe(mine);
+  });
+
+  it("an id that is not a lower-case UUID is BOOKING_NOT_FOUND, before anything else", () => {
+    expect(isBookingId(mine.id)).toBe(true);
+    for (const id of ["not-a-booking", "", "00000000-0000-4000-8000-0000000000FF", "00000000-0000-4000-8000-00000000003", `${mine.id} `]) {
+      expect(isBookingId(id), id).toBe(false);
+      expect(cancel(id, mine), id).toBe("BOOKING_NOT_FOUND");
+    }
+  });
+
+  it("an id that names no booking is BOOKING_NOT_FOUND", () => {
+    expect(cancel("00000000-0000-4000-8000-0000000000ff", undefined)).toBe("BOOKING_NOT_FOUND");
+  });
+
+  it("G12: another account's booking is BOOKING_NOT_YOURS, whatever its timing", () => {
+    for (const now of [NOW, mine.start, new Date("2026-11-06T00:00:00.000Z")]) expect(cancel(mine.id, mine, now, "u_002")).toBe("BOOKING_NOT_YOURS");
+  });
+
+  it("G11: a booking whose start the clock has reached is BOOKING_STARTED", () => {
+    expect(cancel(mine.id, mine, mine.start)).toBe("BOOKING_STARTED");
+    expect(cancel(mine.id, mine, new Date("2026-11-05T02:30:00.000Z"))).toBe("BOOKING_STARTED");
+    expect(cancel(mine.id, mine, new Date("2026-11-05T01:59:59.999Z"))).toBe(mine);
+  });
+});
+
+describe("error responses (booking-api@v1 Errors)", () => {
+  it.each([
+    ["UNAUTHORIZED", 401, "Sign in to continue."],
+    ["VALIDATION_FAILED", 400, "The request is not valid."],
+    ["BOOKING_TOO_LONG", 422, "A booking can last at most 8 hours."],
+    ["BOOKING_STARTED", 422, "That time has already started."],
+    ["BOOKING_TOO_FAR_AHEAD", 422, "A booking can start at most 365 days ahead."],
+    ["BOOKING_NOT_FOUND", 404, "There is no such booking."],
+    ["BOOKING_NOT_YOURS", 403, "You can cancel only your own bookings."],
+  ] as const)("%s is %i with its one message and no conflict", (code, status, message) => {
+    expect(errorResponse({ code })).toStrictEqual({ status, body: { error: { code, message } } });
+  });
+
+  it("G6: BOOKING_CONFLICT is 409 and carries error.conflict as a wire Booking", () => {
+    const other = stored("00000000-0000-4000-8000-000000000023", "merapi", "2026-11-05T02:00:00.000Z", "2026-11-05T03:00:00.000Z", "u_002");
+    expect(errorResponse({ code: "BOOKING_CONFLICT", conflict: other })).toStrictEqual({
+      status: 409,
+      body: { error: { code: "BOOKING_CONFLICT", message: "The room is already booked for part of that time.", conflict: toWireBooking(other) } },
+    });
   });
 });

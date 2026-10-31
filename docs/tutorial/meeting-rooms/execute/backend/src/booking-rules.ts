@@ -1,7 +1,8 @@
 // booking-api@v1's rules as pure functions: no I/O, no framework, no clock read
 // (the time arrives as an argument) and no time zone, because the backend
 // works in instants only (ADR-002 Decision 4).
-import type { Booking, NewBooking, Result, Room, StoredBooking } from "./domain.ts";
+import { BOOKING_ERRORS } from "./domain.ts";
+import type { Booking, BookingErrorCode, NewBooking, Result, Room, StoredBooking } from "./domain.ts";
 import { ROOMS } from "./rooms.ts";
 
 /** G1: a string in exactly the form toISOString() writes, with a four-digit year. */
@@ -107,4 +108,38 @@ export function roomsView(bookings: readonly StoredBooking[]): { rooms: RoomWith
 export function myBookingsView(bookings: readonly StoredBooking[]): { bookings: Booking[] } {
   const ordered = bookings.toSorted((a, b) => byStart(a, b) || roomIndex(a.roomId) - roomIndex(b.roomId));
   return { bookings: ordered.map(toWireBooking) };
+}
+
+/** The schema's BookingId: a lower-case UUID. */
+export function isBookingId(id: string): boolean {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(id);
+}
+
+export type CancelRequest = { id: string; accountId: string; now: Date; booking: StoredBooking | undefined };
+export type CancelFailure = { code: "BOOKING_NOT_FOUND" | "BOOKING_NOT_YOURS" | "BOOKING_STARTED" };
+
+/** DELETE /api/bookings/{id}, in booking-api@v1's order (G11, G12, G15). */
+export function checkCancel(request: CancelRequest): Result<StoredBooking, CancelFailure> {
+  const { id, accountId, now, booking } = request;
+  if (!isBookingId(id) || booking === undefined) return fail("BOOKING_NOT_FOUND");
+  if (booking.accountId !== accountId) return fail("BOOKING_NOT_YOURS");
+  if (now.getTime() >= booking.start.getTime()) return fail("BOOKING_STARTED");
+  return { ok: true, value: booking };
+}
+
+/** Every way a booking request can fail; a conflict alone names the other booking (G6). */
+export type BookingFailure =
+  | { code: Exclude<BookingErrorCode, "BOOKING_CONFLICT"> }
+  | { code: "BOOKING_CONFLICT"; conflict: StoredBooking };
+
+export type BookingErrorBody = { error: { code: BookingErrorCode; message: string; conflict?: Booking } };
+
+/** booking-api@v1's Errors: one status and one message per code; error.conflict for BOOKING_CONFLICT only. */
+export function errorResponse(failure: BookingFailure): { status: number; body: BookingErrorBody } {
+  const { status, message } = BOOKING_ERRORS[failure.code];
+  const error = { code: failure.code, message };
+  return {
+    status,
+    body: { error: failure.code === "BOOKING_CONFLICT" ? { ...error, conflict: toWireBooking(failure.conflict) } : error },
+  };
 }
