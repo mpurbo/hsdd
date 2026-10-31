@@ -18,9 +18,13 @@ function fail(type: string): never {
 }
 
 // Design note 5: the one place an Instant is parsed; NaN never travels on.
+// Only the toISOString form is accepted (ADR-002 Decision 1): anything else, such as a
+// date-time without Z, would be read in the ambient zone.
 function parseInstant(instant: Instant): number {
-  const ms = Date.parse(instant)
-  if (Number.isNaN(ms)) throw new RangeError(`Not an instant: ${JSON.stringify(instant)}`)
+  const ms = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/.test(instant) ? Date.parse(instant) : Number.NaN
+  if (Number.isNaN(ms) || new Date(ms).toISOString() !== instant) {
+    throw new RangeError(`Not an instant: ${JSON.stringify(instant)}`)
+  }
   return ms
 }
 

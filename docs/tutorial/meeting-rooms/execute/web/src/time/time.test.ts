@@ -138,6 +138,17 @@ describe('an unparsable instant', () => {
   })
 })
 
+describe('an instant not in toISOString form', () => {
+  it.each(['2026-11-04T20:00', '2026-11-04', '2026-11-04T20:00:00Z', '2026', '2026-11-04T20:00:00.000+07:00'])(
+    'makes todayIn, formatTime and formatRange throw RangeError for %j',
+    (bad) => {
+      expect(() => todayIn(bad, JAKARTA)).toThrow(RangeError)
+      expect(() => formatTime(bad, JAKARTA, '2026-11-04')).toThrow(RangeError)
+      expect(() => formatRange(bad, '2026-11-05T02:00:00.000Z', JAKARTA, '2026-11-04')).toThrow(RangeError)
+    },
+  )
+})
+
 const label = (zone: string, date: string) => (i: string) => formatTime(i, zone, date)
 
 describe('formatDate', () => {
