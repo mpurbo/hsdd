@@ -2,13 +2,13 @@ import type { FastifyInstance } from "fastify";
 import { checkCancel, checkNewBooking, checkRoomsQuery, errorResponse, myBookingsView, roomsView, toWireBooking } from "./booking-rules.ts";
 import type { Account, BookingStore, Clock } from "./domain.ts";
 
-/** The route patterns of booking-api@v1, as Fastify names them. */
-export const BOOKING_ROUTES: ReadonlySet<string> = new Set([
-  "/api/rooms",
-  "/api/me/bookings",
-  "/api/bookings",
-  "/api/bookings/:id",
-]);
+const ROOMS = "/api/rooms";
+const MY_BOOKINGS = "/api/me/bookings";
+const BOOKINGS = "/api/bookings";
+const BOOKING = "/api/bookings/:id";
+
+/** The route patterns of booking-api@v1, as Fastify names them; the handlers below register from the same constants. */
+export const BOOKING_ROUTES: ReadonlySet<string> = new Set([ROOMS, MY_BOOKINGS, BOOKINGS, BOOKING]);
 
 export type BookingRouteDeps = {
   clock: Clock;
@@ -30,7 +30,7 @@ const unauthorized = errorResponse({ code: "UNAUTHORIZED" });
 
 /** Each handler: token, then the rules' check, then the store, then the rules' view or error. */
 export function registerBookingRoutes(app: FastifyInstance, { clock, store, signedIn }: BookingRouteDeps): void {
-  app.get("/api/rooms", async (request, reply) => {
+  app.get(ROOMS, async (request, reply) => {
     if (signedIn(request.headers.authorization) === undefined) {
       return reply.code(unauthorized.status).send(unauthorized.body);
     }
@@ -43,7 +43,7 @@ export function registerBookingRoutes(app: FastifyInstance, { clock, store, sign
     return reply.code(200).send(roomsView(bookings));
   });
 
-  app.get("/api/me/bookings", async (request, reply) => {
+  app.get(MY_BOOKINGS, async (request, reply) => {
     const account = signedIn(request.headers.authorization);
     if (account === undefined) {
       return reply.code(unauthorized.status).send(unauthorized.body);
@@ -52,7 +52,7 @@ export function registerBookingRoutes(app: FastifyInstance, { clock, store, sign
     return reply.code(200).send(myBookingsView(bookings));
   });
 
-  app.post("/api/bookings", async (request, reply) => {
+  app.post(BOOKINGS, async (request, reply) => {
     const account = signedIn(request.headers.authorization);
     if (account === undefined) {
       return reply.code(unauthorized.status).send(unauthorized.body);
@@ -75,7 +75,7 @@ export function registerBookingRoutes(app: FastifyInstance, { clock, store, sign
     return reply.code(201).send(toWireBooking(stored.value));
   });
 
-  app.delete<{ Params: { id: string } }>("/api/bookings/:id", async (request, reply) => {
+  app.delete<{ Params: { id: string } }>(BOOKING, async (request, reply) => {
     const account = signedIn(request.headers.authorization);
     if (account === undefined) {
       return reply.code(unauthorized.status).send(unauthorized.body);

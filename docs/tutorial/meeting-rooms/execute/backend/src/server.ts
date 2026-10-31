@@ -24,7 +24,7 @@ const codeOf = (error: unknown): string =>
 /** Never carries the error's message: a malformed URL's TypeError holds the input, which may hold a password. */
 const unreachable = (error: unknown): Error =>
   new Error(
-    `The database cannot be reached (${codeOf(error)}). Start it with npm --prefix backend run db:up, or set DATABASE_URL to a database that exists.`,
+    `The database cannot be reached or refused the connection (${codeOf(error)}). Start it with npm --prefix backend run db:up, and check that DATABASE_URL names a database that exists.`,
   );
 
 /**
@@ -32,13 +32,12 @@ const unreachable = (error: unknown): Error =>
  * schema, then listen on 127.0.0.1. Closing the app ends the pool.
  */
 export async function start(port: number, databaseUrl: string): Promise<FastifyInstance> {
-  let pool: Pool;
-  try {
-    pool = createPool(databaseUrl);
-  } catch (error) {
-    throw unreachable(error);
-  }
+  // pg-pool parses the URL on the first connect, so a malformed URL surfaces through applySchema below.
+  const pool: Pool = createPool(databaseUrl);
   const app = buildApp({ clock: () => new Date(), randomBytes, accounts: ACCOUNTS, store: createBookingStore(pool), logger: true });
+  // pg-pool drops its own listener while a client is checked out; without this one, a connection lost mid-request ends the process.
+  // Silent on purpose: the in-flight query's rejection is already logged as the request's 5xx.
+  pool.on("connect", (client) => client.on("error", () => {}));
   pool.on("error", (error) => app.log.warn({ code: codeOf(error), message: error.message }, "idle database connection lost"));
   app.addHook("onClose", async () => void (await pool.end()));
   try {

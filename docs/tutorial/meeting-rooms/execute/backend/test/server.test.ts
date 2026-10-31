@@ -45,6 +45,15 @@ const begin = async (): Promise<FastifyInstance> => {
 const baseOf = (app: FastifyInstance): string => `http://127.0.0.1:${(app.server.address() as AddressInfo).port}`;
 const JSON_HEADERS = { "content-type": "application/json" };
 
+/** Polls until the condition holds; fails after the timeout so a stuck database cannot hang the suite. */
+const until = async (condition: () => Promise<boolean>, timeoutMs = 5000): Promise<void> => {
+  const deadline = Date.now() + timeoutMs;
+  while (!(await condition())) {
+    if (Date.now() > deadline) throw new Error("condition not reached before the timeout");
+    await new Promise((resolve) => setTimeout(resolve, 20));
+  }
+};
+
 describe("configFromEnv", () => {
   it("defaults to port 3000 and the Compose database", () => {
     expect(configFromEnv({})).toEqual({ port: 3000, databaseUrl: DEFAULT_DATABASE_URL });
@@ -105,8 +114,18 @@ describe("start", () => {
 describe("start when the database fails", () => {
   it("rejects naming npm --prefix backend run db:up when the database cannot be reached, and never the URL", async () => {
     const error = await start(0, UNREACHABLE).then(() => undefined, (e: Error) => e);
+    expect(error?.message).toContain("cannot be reached or refused the connection");
     expect(error?.message).toContain("npm --prefix backend run db:up");
     expect(error?.message).not.toContain("not-the-password");
+  });
+
+  it("names the refusal's code and the DATABASE_URL check when the database does not exist (3D000)", async () => {
+    const missing = new URL(DEFAULT_DATABASE_URL);
+    missing.pathname = "/test_does_not_exist";
+    const error = await start(0, missing.toString()).then(() => undefined, (e: Error) => e);
+    expect(error?.message).toContain("(3D000)");
+    expect(error?.message).toContain("check that DATABASE_URL names a database that exists");
+    expect(error?.message).toContain("npm --prefix backend run db:up");
   });
 
   it("npm start's entry exits non-zero with that message when the database cannot be reached", () => {
@@ -117,6 +136,7 @@ describe("start when the database fails", () => {
       timeout: 15_000,
     });
     expect(run.status).toBe(1);
+    expect(run.stderr).toContain("cannot be reached or refused the connection");
     expect(run.stderr).toContain("npm --prefix backend run db:up");
     expect(run.stdout + run.stderr).not.toContain("not-the-password");
   });
@@ -130,10 +150,52 @@ describe("start when the database fails", () => {
       const token = ((await (await fetch(`${base}/api/login`, { method: "POST", headers: JSON_HEADERS, body: AYU })).json()) as { token: string }).token;
       const rooms = () => fetch(`${base}/api/rooms?from=2026-11-05T00%3A00%3A00.000Z&to=2026-11-06T00%3A00%3A00.000Z`, { headers: { authorization: `Bearer ${token}` } });
       expect((await rooms()).status).toBe(200);
-      await own.pool.query("SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE application_name = 'b7_lost_connection'");
-      await new Promise((resolve) => setTimeout(resolve, 500));
+      const ended = await own.pool.query("SELECT pg_terminate_backend(pid) AS ended FROM pg_stat_activity WHERE application_name = 'b7_lost_connection'");
+      expect(ended.rows.some((row) => row.ended === true)).toBe(true);
+      await until(async () => (await own.pool.query("SELECT 1 FROM pg_stat_activity WHERE application_name = 'b7_lost_connection'")).rowCount === 0);
       expect((await rooms()).status).toBe(200);
     } finally {
+      await app?.close();
+      await own.drop();
+    }
+  });
+
+  it("answers 500 for the request whose connection is lost while it waits on the room lock, and keeps serving", async () => {
+    const own = await createTestDatabase();
+    const tag = "b7_in_flight";
+    let app: FastifyInstance | undefined;
+    const holder = await own.pool.connect();
+    let held = false;
+    try {
+      app = await start(0, `${own.url}?application_name=${tag}`);
+      const base = baseOf(app);
+      const token = ((await (await fetch(`${base}/api/login`, { method: "POST", headers: JSON_HEADERS, body: AYU })).json()) as { token: string }).token;
+      const quarter = 15 * 60 * 1000;
+      const startMs = Math.ceil((Date.now() + 24 * 60 * 60 * 1000) / quarter) * quarter;
+      const post = (offsetHours: number) =>
+        fetch(`${base}/api/bookings`, {
+          method: "POST",
+          headers: { ...JSON_HEADERS, authorization: `Bearer ${token}` },
+          body: JSON.stringify({
+            roomId: "merapi",
+            title: "In flight",
+            start: new Date(startMs + offsetHours * 3_600_000).toISOString(),
+            end: new Date(startMs + (offsetHours + 1) * 3_600_000).toISOString(),
+          }),
+        });
+      await holder.query("SELECT pg_advisory_lock(hashtext('merapi'))");
+      held = true;
+      const inFlight = post(0);
+      await until(async () => (await own.pool.query("SELECT 1 FROM pg_stat_activity WHERE application_name = $1 AND wait_event_type = 'Lock'", [tag])).rowCount! > 0);
+      const ended = await own.pool.query("SELECT pg_terminate_backend(pid) AS ended FROM pg_stat_activity WHERE application_name = $1 AND wait_event_type = 'Lock'", [tag]);
+      expect(ended.rows.some((row) => row.ended === true)).toBe(true);
+      expect((await inFlight).status).toBe(500);
+      await holder.query("SELECT pg_advisory_unlock(hashtext('merapi'))");
+      held = false;
+      expect((await post(2)).status).toBe(201);
+    } finally {
+      if (held) await holder.query("SELECT pg_advisory_unlock(hashtext('merapi'))");
+      holder.release();
       await app?.close();
       await own.drop();
     }

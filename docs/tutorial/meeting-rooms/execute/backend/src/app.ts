@@ -25,6 +25,7 @@ export function buildApp({ clock, randomBytes, accounts, store, logger = false }
     // Raised before any route is matched (bad URL encoding, over-long param): the only
     // such request booking-api@v1 defines is DELETE /api/bookings/{id}, whose id is then no booking.
     frameworkErrors: (error, request, genericReply) => {
+      // Fastify passes a real Reply from onBadUrl and onMaxParamLength; the option types it generically.
       const reply = genericReply as FastifyReply;
       if (request.method === "DELETE" && request.url.startsWith("/api/bookings/")) {
         const { status, body } = errorResponse({ code: signedIn(request.headers.authorization) ? "BOOKING_NOT_FOUND" : "UNAUTHORIZED" });
