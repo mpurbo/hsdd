@@ -1,6 +1,7 @@
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
-import { loadFixture, stubFetch, stubFetchHanging, stubFetchUnreachable } from '../test/fetchStub'
+import userEvent from '@testing-library/user-event'
+import { atPath, loadFixture, stubFetch, stubFetchHanging, stubFetchUnreachable } from '../test/fetchStub'
 import { RoomsScreen } from './RoomsScreen'
 
 const TOKEN = 'q8Vn3xR2bT0kLw7YcZ1pHs5mJd9fAe4uGi6oNr2vXyQ'
@@ -221,5 +222,120 @@ describe('RoomsScreen (AC-4.1 to AC-4.4, D1, D3, D8)', () => {
     unmount()
     await stub.answer(0, 401, bodyOf('rooms-no-token'))
     expect(onSessionExpired).not.toHaveBeenCalled()
+  })
+
+  it('renders the form below the list once the rooms have loaded', async () => {
+    clockAt(LONDON_NOW)
+    stubFetch(fixture('rooms-on-a-date'))
+    renderRooms('Europe/London')
+    await waitFor(() => expect(shown()).toEqual(ON_A_DATE))
+    const book = screen.getByRole('button', { name: 'Book' })
+    expect(list()?.compareDocumentPosition(book)).toBe(Node.DOCUMENT_POSITION_FOLLOWING)
+  })
+
+  it('has no form while loading or after the D3 message', async () => {
+    clockAt(LONDON_NOW)
+    stubFetchHanging()
+    const first = renderRooms()
+    expect(screen.getByText('Loading…')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Book' })).toBeNull()
+    first.unmount()
+    stubFetchUnreachable()
+    renderRooms()
+    await screen.findByRole('status')
+    expect(screen.queryByRole('button', { name: 'Book' })).toBeNull()
+  })
+
+  it("the form's starts come from the clock read when the rooms arrived", async () => {
+    clockAt('2026-11-04T18:00:00.000Z')
+    stubFetch(fixture('rooms-range-edges'))
+    renderRooms('Asia/Jakarta')
+    await waitFor(() => expect(shown()).toEqual(RANGE_EDGES))
+    expect(screen.getByLabelText<HTMLSelectElement>('start').options[0]?.text).toBe('01:15')
+  })
+
+  describe('after a booking', () => {
+    const RANGE_EDGES_PATH = '/api/rooms?from=2026-11-04T17:00:00.000Z&to=2026-11-05T17:00:00.000Z'
+    const edges = fixture('rooms-range-edges')
+    const booked = bodyOf('book-a-room')
+    const edgesBody = edges.response.body as { rooms: { id: string; bookings: unknown[] }[] }
+    const withBooking = {
+      ...edges,
+      response: {
+        ...edges.response,
+        body: {
+          rooms: edgesBody.rooms.map((room) =>
+            room.id === 'merapi' ? { ...room, bookings: [...room.bookings, booked] } : room,
+          ),
+        },
+      },
+    }
+    const GET_EDGES = `GET ${RANGE_EDGES_PATH}`
+
+    const chooseAndBook = async (user: ReturnType<typeof userEvent.setup>) => {
+      await user.selectOptions(screen.getByLabelText('room'), 'Merapi')
+      await user.selectOptions(screen.getByLabelText('start'), '09:00')
+      await user.selectOptions(screen.getByLabelText('end'), '10:00')
+      await user.click(screen.getByLabelText('title'))
+      await user.paste('Sprint planning')
+      await user.click(screen.getByRole('button', { name: 'Book' }))
+    }
+
+    it('a 201 fetches the date again, the booking shows under Merapi, Booked. stays (Scope)', async () => {
+      clockAt('2026-11-04T18:00:00.000Z')
+      const stub = stubFetch(edges, withBooking, atPath(fixture('book-a-room'), '/api/bookings'))
+      renderRooms('Asia/Jakarta')
+      await waitFor(() => expect(shown()).toEqual(RANGE_EDGES))
+      await chooseAndBook(userEvent.setup())
+      await waitFor(() => expect(shown()).toContain('09:00 to 10:00  Sprint planning'))
+      const lines = shown()
+      const at = lines.indexOf('08:00 to 08:30  Standup')
+      expect(lines[at + 1]).toBe('09:00 to 10:00  Sprint planning')
+      expect(screen.getByRole('alert').textContent).toBe('Booked.')
+      expect(stub.calls.map((call) => `${call.method} ${call.path}`)).toEqual([
+        GET_EDGES,
+        'POST /api/bookings',
+        GET_EDGES,
+      ])
+    })
+
+    it('keeps the list and Booked. on screen while the date is fetched again', async () => {
+      clockAt('2026-11-04T18:00:00.000Z')
+      const stub = stubFetchDeferred()
+      renderRooms('Asia/Jakarta')
+      await stub.answer(0, 200, edges.response.body)
+      await chooseAndBook(userEvent.setup())
+      await stub.answer(1, 201, booked)
+      expect(stub.routes()).toEqual([GET_EDGES, 'POST /api/bookings', GET_EDGES])
+      expect(list()).not.toBeNull()
+      expect(screen.queryByText('Loading…')).toBeNull()
+      expect(screen.getByRole('alert').textContent).toBe('Booked.')
+      await stub.answer(2, 200, withBooking.response.body)
+      expect(shown()).toContain('09:00 to 10:00  Sprint planning')
+      expect(screen.getByRole('alert').textContent).toBe('Booked.')
+    })
+
+    it('a refetch that answers 401 calls onSessionExpired', async () => {
+      clockAt('2026-11-04T18:00:00.000Z')
+      const noToken = atPath(fixture('rooms-no-token'), RANGE_EDGES_PATH)
+      stubFetch(edges, noToken, atPath(fixture('book-a-room'), '/api/bookings'))
+      const { onSessionExpired } = renderRooms('Asia/Jakarta')
+      await waitFor(() => expect(shown()).toEqual(RANGE_EDGES))
+      await chooseAndBook(userEvent.setup())
+      await vi.waitFor(() => expect(onSessionExpired).toHaveBeenCalledTimes(1))
+    })
+
+    it('a refetch that fails shows the D3 message in place of the list and the form', async () => {
+      clockAt('2026-11-04T18:00:00.000Z')
+      const stub = stubFetchDeferred()
+      renderRooms('Asia/Jakarta')
+      await stub.answer(0, 200, edges.response.body)
+      await chooseAndBook(userEvent.setup())
+      await stub.answer(1, 201, booked)
+      await stub.answer(2, 500, {})
+      expect(screen.getByRole('status').textContent).toBe('Could not reach the server. Please try again.')
+      expect(list()).toBeNull()
+      expect(screen.queryByRole('button', { name: 'Book' })).toBeNull()
+    })
   })
 })

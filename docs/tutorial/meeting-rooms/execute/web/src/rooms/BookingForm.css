@@ -42,6 +42,12 @@
   color: #64748b;
 }
 
+/* The answer to Book takes its own line under the controls, in the card's text colour. */
+.booking-form p[role='alert'] {
+  flex-basis: 100%;
+  color: #1e293b;
+}
+
 .booking-form button {
   font: inherit;
   font-weight: 600;
