@@ -203,6 +203,26 @@ describe("judging a booking-api response", () => {
     reported(judge201({ ...created, id: randomUUID(), title: "Something else" }), "book-touching");
   });
 
+  it("names an upper-case 201 id as the cause in a few lines", () => {
+    const problems = judge201({ ...created, id: "10000000-0000-4000-8000-00000000000A" });
+    expect(problems.length).toBeLessThanOrEqual(4);
+    expect(problems.some((p) => p.includes("/body/id"))).toBe(true);
+  });
+
+  it("names a schema failure by its cause in a few lines, beside the body difference", () => {
+    const wrong = { error: { code: "UNAUTHORIZED", message: "Please sign in." } };
+    const problems = judgeResponse("booking-api", bookingFixture("rooms-no-token"), {
+      status: 401,
+      body: JSON.stringify(wrong),
+    });
+    reported(problems, "rooms-no-token");
+    expect(problems.length).toBeLessThanOrEqual(4);
+    expect(problems.some((p) => p.includes("/body/error/message"))).toBe(true);
+    expect(problems.some((p) => p.includes("differs from the fixture"))).toBe(true);
+    // The code is right; only the branch for another status would say otherwise.
+    expect(problems.some((p) => p.includes("/body/error/code"))).toBe(false);
+  });
+
   it("reports a 204 that carries a body, and passes one that carries none", () => {
     const cancel = bookingFixture("cancel-my-booking");
     reported(judgeResponse("booking-api", cancel, { status: 204, body: "{}" }), "cancel-my-booking");

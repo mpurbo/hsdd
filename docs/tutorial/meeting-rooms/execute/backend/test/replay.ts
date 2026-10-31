@@ -40,25 +40,54 @@ export function loadFixtures(slug: ContractSlug, dir = join(CONTRACT_DIR, "fixtu
 }
 
 /** One Ajv per contract, holding its schema under the schema's $id. */
-const schemas = new Map<ContractSlug, { ajv: InstanceType<typeof Ajv2020>; id: string }>();
+type Schema = { $id: string; $defs?: Record<string, { oneOf?: Array<{ properties?: { status?: { const?: number } } }> }> };
+const schemas = new Map<ContractSlug, { ajv: InstanceType<typeof Ajv2020>; id: string; json: Schema }>();
 const schemaOf = (slug: ContractSlug) => {
   if (!schemas.has(slug)) {
     const ajv = new Ajv2020({ strict: true, allErrors: true });
     addFormats(ajv);
-    const schema = JSON.parse(readFileSync(join(CONTRACT_DIR, "schema", `${slug}.schema.json`), "utf8"));
+    const schema = JSON.parse(readFileSync(join(CONTRACT_DIR, "schema", `${slug}.schema.json`), "utf8")) as Schema;
     ajv.addSchema(schema);
-    schemas.set(slug, { ajv, id: schema.$id });
+    schemas.set(slug, { ajv, id: schema.$id, json: schema });
   }
   return schemas.get(slug)!;
 };
 
+type Violation = { path: string; message: string };
+const format = ({ path, message }: Violation) => `${path || "/"} ${message}`;
+
 /** Validates against the whole schema, or against one of its `$defs`; returns the violations. */
-const validator = (slug: ContractSlug, def?: string): ((data: unknown) => string[]) => {
+const violations = (slug: ContractSlug, def?: string): ((data: unknown) => Violation[]) => {
   const { ajv, id } = schemaOf(slug);
   const validate = ajv.getSchema(def === undefined ? id : `${id}#/$defs/${def}`);
   if (validate === undefined) throw new Error(`${slug} has no $defs/${def}`);
   return (data) =>
-    validate(data) ? [] : (validate.errors ?? []).map((e) => `${e.instancePath || "/"} ${e.message ?? "invalid"}`);
+    validate(data)
+      ? []
+      : (validate.errors ?? []).map((e) => ({ path: e.instancePath, message: e.message ?? "invalid" }));
+};
+
+const validator = (slug: ContractSlug, def?: string): ((data: unknown) => string[]) => {
+  const check = violations(slug, def);
+  return (data) => check(data).map(format);
+};
+
+/** The violations at the deepest data path, once each: the furthest Ajv got names the cause. */
+const deepest = (found: Violation[]): string[] => {
+  const depth = (v: Violation) => v.path.split("/").length;
+  const max = Math.max(...found.map(depth));
+  return [...new Set(found.filter((v) => depth(v) === max).map(format))];
+};
+
+/**
+ * The endpoint's `oneOf` branch for one status, as a `$defs` pointer. Ajv reports every branch of a
+ * `oneOf`, and errors inside a `$ref` do not say which branch they came from, so the branch is chosen
+ * by status before validating.
+ */
+const branchFor = (def: string, status: number): string => {
+  const branches = schemaOf("booking-api").json.$defs?.[def]?.oneOf ?? [];
+  const index = branches.findIndex((branch) => branch.properties?.status?.const === status);
+  return index < 0 ? def : `${def}/oneOf/${index}`;
 };
 
 /** Returns the schema violations of one response; an empty array means valid. With `def`, checks that `$defs` entry. */
@@ -133,20 +162,25 @@ const judgeCreated = (fixture: Fixture, body: unknown): string[] => {
   return problems;
 };
 
-/** booking-api@v1: the top-level schema and the endpoint's $defs, then the exact body. */
+/**
+ * booking-api@v1: the top-level schema (one line when it refuses), the endpoint's $defs
+ * (its deepest causes), and the exact body, which is compared whatever the schemas said.
+ */
 const judgeBooking = (fixture: Fixture, response: { status: number; body: unknown }): string[] => {
   const { method, path } = fixture.request;
   const def = endpointDef(method, path);
   if (def === undefined) return [`no booking-api@v1 endpoint answers ${method} ${path}`];
-  const schemaProblems = [
-    ...validator("booking-api")(response).map((p) => `schema: ${p}`),
-    ...validator("booking-api", def)(response).map((p) => `schema $defs/${def}: ${p}`),
+  const endpoint = violations("booking-api", def)(response);
+  const problems = [
+    ...(violations("booking-api")(response).length > 0 ? ["schema: the top-level schema refuses the response"] : []),
+    ...(endpoint.length > 0
+      ? deepest(violations("booking-api", branchFor(def, response.status))(response)).map((p) => `schema $defs/${def}: ${p}`)
+      : []),
   ];
-  if (schemaProblems.length > 0) return schemaProblems;
-  if (response.status === 201) return judgeCreated(fixture, response.body);
+  if (response.status === 201) return [...problems, ...judgeCreated(fixture, response.body)];
   return isDeepStrictEqual(response.body, fixture.response.body)
-    ? []
-    : [`body ${JSON.stringify(response.body)} differs from the fixture`];
+    ? problems
+    : [...problems, `body ${JSON.stringify(response.body)} differs from the fixture`];
 };
 
 /** Judges one real response against a fixture; returns the problems, empty when the fixture reproduced. */
