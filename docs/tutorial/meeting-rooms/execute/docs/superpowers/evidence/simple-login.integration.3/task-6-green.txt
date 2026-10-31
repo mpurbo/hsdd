@@ -1,0 +1,30 @@
+
+> @simple-login/backend@1.0.0 db:up
+> node scripts/db-up.mjs up
+
+ Container meeting-rooms-postgres-1 Running 
+ Container meeting-rooms-postgres-1 Waiting 
+ Container meeting-rooms-postgres-1 Healthy 
+
+Running 8 tests using 1 worker
+
+round 1: budi won, booking e2bdda66-7ff6-43a7-bcf7-48dd04a4ae4e
+  ✓  1 e2e/success.spec.ts:36:3 › 20 simultaneous attempts, round 1 of 5: one 201, nineteen 409 (98ms)
+round 2: budi won, booking 9a078fd4-1227-4b23-ad1e-76d29b4cf0e2
+  ✓  2 e2e/success.spec.ts:36:3 › 20 simultaneous attempts, round 2 of 5: one 201, nineteen 409 (69ms)
+round 3: budi won, booking fd8cbdd0-4bc2-451f-9d96-cc942cc3adb4
+  ✓  3 e2e/success.spec.ts:36:3 › 20 simultaneous attempts, round 3 of 5: one 201, nineteen 409 (67ms)
+round 4: budi won, booking c1b3de19-d11f-480c-be60-4ef0d0db940b
+  ✓  4 e2e/success.spec.ts:36:3 › 20 simultaneous attempts, round 4 of 5: one 201, nineteen 409 (69ms)
+round 5: ayu won, booking b38a3a94-e559-41f8-96d9-f71d92aca7f7
+  ✓  5 e2e/success.spec.ts:36:3 › 20 simultaneous attempts, round 5 of 5: one 201, nineteen 409, twenty ranges sharing one quarter hour (66ms)
+  ✓  6 e2e/success.spec.ts:84:1 › a restart keeps every booking with its id and ends every token (731ms)
+  ✓  7 e2e/success.spec.ts:121:1 › AC-5.5 at the service: the current quarter hour has started (23ms)
+  ✓  8 e2e/success.spec.ts:128:1 › AC-6.3: budi cannot cancel ayu's booking (49ms)
+
+  8 passed (3.8s)
+
+# ---- Cleanup checks after the whole browser suite (empty output under each command) ----
+$ lsof -nP -iTCP:3000 -sTCP:LISTEN
+$ lsof -nP -iTCP:5173 -sTCP:LISTEN
+$ pgrep -fl "backend/src/server.ts"

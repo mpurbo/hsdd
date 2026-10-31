@@ -14,7 +14,7 @@
 // | AC-6.3                                             |         47 | Kew                   |
 // | AC-5.5 (books nothing)                             |      today | Bromo                 |
 import { expect, test } from "./fixtures.ts";
-import { getMyBookings, getRooms, instant, postBooking, tokenFor, utcDay, type Booking, type BookingRequest, type Username } from "./api.ts";
+import { currentQuarterHour, deleteBooking, getMyBookings, getRooms, instant, postBooking, tokenFor, utcDay, type Booking, type BookingRequest, type Username } from "./api.ts";
 
 const ROUNDS = [1, 2, 3, 4, 5] as const;
 const ATTEMPTS = 20;
@@ -72,3 +72,69 @@ for (const round of ROUNDS) {
     console.log(`round ${round}: ${winnerName} won, booking ${winner.id}`);
   });
 }
+
+/** The account's bookings that start on the UTC date of `day`. */
+async function bookingsOn(token: string, day: number): Promise<Booking[]> {
+  const reply = await getMyBookings(token);
+  expect(reply.status).toBe(200);
+  const date = new Date(day).toISOString().slice(0, 10);
+  return (reply.body as { bookings: Booking[] }).bookings.filter((b) => b.start.startsWith(date));
+}
+
+test("a restart keeps every booking with its id and ends every token", async ({ backend }) => {
+  const day = utcDay(46);
+  const old: Record<Username, string> = { ayu: await tokenFor("ayu"), budi: await tokenFor("budi") };
+  const books: Array<[Username, string, number, number]> = [
+    ["ayu", "merapi", 2, 3],
+    ["ayu", "bromo", 4, 5],
+    ["budi", "kew", 2, 3],
+  ];
+  for (const [who, roomId, from, to] of books) {
+    const reply = await postBooking(old[who], { roomId, start: instant(day, from), end: instant(day, to), title: `Restart ${roomId}` });
+    expect(reply.status).toBe(201);
+  }
+  const rangeOf = (token: string) => getRooms(token, instant(day, 0), instant(utcDay(47), 0));
+  const before = {
+    ayu: await bookingsOn(old.ayu, day),
+    budi: await bookingsOn(old.budi, day),
+    rooms: await rangeOf(old.ayu),
+  };
+  expect(before.ayu).toHaveLength(2);
+  expect(before.budi).toHaveLength(1);
+
+  await backend.restart();
+
+  const unauthorized = { status: 401, body: { error: { code: "UNAUTHORIZED", message: "Sign in to continue." } } };
+  expect(await getMyBookings(old.ayu)).toEqual(unauthorized);
+  expect(await getMyBookings(old.budi)).toEqual(unauthorized);
+
+  const fresh: Record<Username, string> = { ayu: await tokenFor("ayu"), budi: await tokenFor("budi") };
+  expect(await bookingsOn(fresh.ayu, day)).toEqual(before.ayu);
+  expect(await bookingsOn(fresh.budi, day)).toEqual(before.budi);
+  const after = await rangeOf(fresh.ayu);
+  expect(after).toEqual(before.rooms);
+  const held = (after.body as { rooms: RoomView[] }).rooms.flatMap((r) => r.bookings).map((b) => b.id).sort();
+  expect(held).toEqual([...before.ayu, ...before.budi].map((b) => b.id).sort());
+  expect(held).toHaveLength(3);
+});
+
+test("AC-5.5 at the service: the current quarter hour has started", async () => {
+  const start = currentQuarterHour();
+  const end = new Date(Date.parse(start) + 15 * 60 * 1000).toISOString();
+  const reply = await postBooking(await tokenFor("ayu"), { roomId: "bromo", start, end, title: "Already started" });
+  expect(reply).toEqual({ status: 422, body: { error: { code: "BOOKING_STARTED", message: "That time has already started." } } });
+});
+
+test("AC-6.3: budi cannot cancel ayu's booking", async () => {
+  const day = utcDay(47);
+  const ayu = await tokenFor("ayu");
+  const budi = await tokenFor("budi");
+  const made = await postBooking(ayu, { roomId: "kew", start: instant(day, 5), end: instant(day, 6), title: "Ayu's Kew" });
+  expect(made.status).toBe(201);
+  const booking = made.body as Booking;
+  expect(await deleteBooking(budi, booking.id)).toEqual({
+    status: 403,
+    body: { error: { code: "BOOKING_NOT_YOURS", message: "You can cancel only your own bookings." } },
+  });
+  expect(await bookingsOn(ayu, day)).toContainEqual(booking);
+});
