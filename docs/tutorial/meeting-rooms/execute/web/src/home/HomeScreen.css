@@ -62,6 +62,12 @@
   outline-offset: 1px;
 }
 
+.home-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
 .home-bookings {
   display: grid;
   gap: 8px;

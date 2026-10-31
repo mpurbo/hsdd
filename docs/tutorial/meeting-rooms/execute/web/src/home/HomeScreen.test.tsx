@@ -9,13 +9,14 @@ import { HomeScreen } from './HomeScreen'
 const profileOf = (name: string): Profile => loadFixture('profile-api.v2', name).response.body as Profile
 const TOKEN = 'q8Vn3xR2bT0kLw7YcZ1pHs5mJd9fAe4uGi6oNr2vXyQ'
 const zoneOf = (profile: Profile) => (profile.timeZone === undefined ? undefined : asTimeZone(profile.timeZone))
-const renderHome = (profile: Profile, over: { onSignOut?: () => void; zone?: ReturnType<typeof zoneOf> } = {}) =>
+const renderHome = (profile: Profile, over: { onSignOut?: () => void; onBookRoom?: () => void; zone?: ReturnType<typeof zoneOf> } = {}) =>
   render(
     <HomeScreen
       profile={profile}
       token={TOKEN}
       zone={'zone' in over ? over.zone : zoneOf(profile)}
       onSignOut={over.onSignOut ?? vi.fn()}
+      onBookRoom={over.onBookRoom ?? vi.fn()}
       onSessionExpired={vi.fn()}
     />,
   )
@@ -65,6 +66,15 @@ describe('HomeScreen (AC-2.1 amended, AC-2.4)', () => {
     expect(onSignOut).toHaveBeenCalledTimes(1)
   })
 
+  it('Book a room sits beside Sign out and calls its parent (D4)', async () => {
+    const onBookRoom = vi.fn()
+    renderHome(profileOf('me-budi'), { onBookRoom })
+    const names = screen.getAllByRole('button').map((b) => b.textContent)
+    expect(names.slice(-2)).toEqual(['Book a room', 'Sign out'])
+    await userEvent.setup().click(screen.getByRole('button', { name: 'Book a room' }))
+    expect(onBookRoom).toHaveBeenCalledTimes(1)
+  })
+
   it('without a zone (D7): the row reads Not available, the page says why, and nothing is requested', () => {
     const stub = stubFetch(loadFixture('booking-api', 'my-bookings-none'))
     const { timeZone: _omitted, ...withoutZone } = profileOf('me-ayu')
@@ -72,6 +82,7 @@ describe('HomeScreen (AC-2.1 amended, AC-2.4)', () => {
     expect(rows()).toContainEqual(['Time zone', 'Not available'])
     expect(screen.getByText('Bookings need your time zone, which is not available.')).toBeInTheDocument()
     expect(screen.queryByRole('heading', { name: 'My bookings' })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Book a room' })).toBeNull()
     expect(stub.calls).toEqual([])
   })
 })
