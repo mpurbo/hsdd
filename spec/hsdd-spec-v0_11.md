@@ -1876,7 +1876,10 @@ and kept across re-runs. Both modes have, in order:
 
 For an intake segment the `report` step also appends to the intake record's
 `## Produced` the contracts bumped (`id@v`), the ADRs amended and the nodes
-grafted, and one change-log line. This is the hand append `hsdd-intake`'s
+grafted, and one change-log line. A contract `id` counts as bumped when its
+current version is above the highest version any of its files held at the
+setup commit: a later version in a file of its own (v0.10.0 §3.1), or a bump
+in place; an `id` with no file then is new, not bumped. This is the hand append `hsdd-intake`'s
 template allows for grafts and bumps; §15.3 adds the report step to the
 conventions template's writers of `hsdd/management/`. Phases are not
 appended: `hsdd-checkpoint` appends them from their Scope citations (v0.10.0

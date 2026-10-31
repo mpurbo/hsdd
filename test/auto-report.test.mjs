@@ -12,6 +12,7 @@ import { P, reportPath, stepPaths } from "../skills/hsdd-auto/scripts/lib/paths.
 import { appendJsonl, readDispatch, writeDispatch } from "../skills/hsdd-auto/scripts/lib/records.mjs";
 import { nowStamp } from "../skills/hsdd-auto/scripts/lib/time.mjs";
 import { addSegment, fakeStep, gitIn, makeRepo, openStep, run } from "./helpers/auto-repo.mjs";
+import { V2, v2Files } from "./helpers/auto-contract-v2.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ORDER = readFileSync(join(HERE, "fixtures", "auto", "intake", "2026-10-22-intake-order-v2.md"), "utf8");
@@ -46,8 +47,8 @@ const begun = () => {
 };
 
 // A planned tree with an intake segment, setup, plan and the intake step (S02) committed with its record.
-const intakeBegun = () => {
-  const dir = makeRepo({ stage: "06-planned", files: { [REQUEST]: "# Spec v2\n" } });
+const intakeBegun = ({ files = {} } = {}) => {
+  const dir = makeRepo({ stage: "06-planned", files: { [REQUEST]: "# Spec v2\n", ...files } });
   addSegment(dir, intakeSegment());
   step(dir, 0, "setup", ISEG, {}, ISEG);
   step(dir, 1, "plan", ISEG, {}, ISEG);
@@ -391,6 +392,21 @@ test("intake append to ## Produced is idempotent and lists no phases", () => {
   assert.equal(appendProduced(ctxOf(dir), ISEG), false);
   assert.equal(read(dir, RECORD), once);
   assert.ok(!once.includes("\u2014"));
+});
+
+test("## Produced lists a version drafted in its own file as the id's bump; a new contract is not a bump", () => {
+  const dir = intakeBegun();
+  for (const [rel, text] of Object.entries(v2Files())) put(dir, rel, text);
+  put(dir, "hsdd/contract/pay-api.md", "---\nid: pay-api\nversion: v1\nstatus: draft\n---\n\n# Contract: pay-api\n");
+  step(dir, 3, "contract-touch", "order-api", { handoff: "H1" }, ISEG);
+  assert.deepEqual(producedAdditions(ctxOf(dir), ISEG).contracts, ["order-api@v2"]);
+});
+
+test("## Produced: a version file that was there at the setup is no bump of this segment", () => {
+  const dir = intakeBegun({ files: v2Files() });
+  put(dir, V2, read(dir, V2).replace("status: draft", "status: stable"));
+  step(dir, 3, "contract-touch", "order-api", { handoff: "H1" }, ISEG);
+  assert.deepEqual(producedAdditions(ctxOf(dir), ISEG).contracts, []);
 });
 
 test("the CLI writes the report and the append, and a second run changes nothing", () => {
