@@ -99,7 +99,10 @@ use a short form (`api.2`).
 | on failure | `superpowers:systematic-debugging` | root-cause, not patch |
 
 With the superpowers method the skills are the method itself, and the
-derivative's Global Constraints carry the discipline instead of this table.
+derivative names them instead of this table: its header names the
+execution skill, and constraints 1, 9 and 10 name
+`test-driven-development`, `verification-before-completion` and
+`systematic-debugging`.
 
 ## The Generic Phase Context
 
@@ -138,13 +141,17 @@ replaced by the plan's default gate command in backticks}
 {the ADR's Decision section body, verbatim}
 **Consequences**
 {the ADR's Consequences section body, verbatim}
+### {node-id} {D-id} · node decision
+{the decision's entry in the node spec's Decisions section, verbatim}
 
 ## Open questions
 - {OQ-id} · {status} · {the Question cell, verbatim}
 
 ## Discipline
 - Test-first: write each behavior's failing test, and see it fail, before
-  the code that makes it pass.
+  the code that makes it pass. A test of behavior that a merged dependency
+  phase already delivered fails first against the tree before that phase,
+  or against a named mutant; the verification doc's Observed says which.
 - Governance freeze: change nothing under hsdd/ except this phase's
   verification doc; contracts, ADRs, specs and conventions change only
   through hsdd-contract, hsdd-adr and hsdd-reconcile.
@@ -186,7 +193,9 @@ replaced by the plan's default gate command in backticks}
   has no field block, use the `### {node-id}: …` block embedded in the parent's
   spec.
 - **Contracts:** every contract the phase's Consumes or Produces names, in that
-  order, one subsection each. Then every other contract the file names as
+  order, one subsection each. Find each by its frontmatter `id` and
+  `version`, never by its filename: a later version lives in
+  `{slug}.v{n}.md`. Then every other contract the file names as
   `{contract-id}@{version}`, in the Phase block or inside a contract
   subsection, gets a `referenced` subsection, in the order the file first
   names it. A referenced subsection can name another contract: repeat until
@@ -202,8 +211,11 @@ replaced by the plan's default gate command in backticks}
   contract in the Contracts section names in its own Governed by, and every
   ADR whose `affects` frontmatter names such a contract; each once, in ADR
   number order. A `proposed` ADR keeps its subsection and gains the line
-  `Not binding until accepted.` under its heading. When there are none, omit
-  the section.
+  `Not binding until accepted.` under its heading. Then every node decision
+  the Phase block cites by id (`D{n}`; a range `D{n} to D{m}` cites each id
+  in it), from the node spec's Decisions section, verbatim, in number
+  order. When there are no ADRs and no cited node decisions, omit the
+  section.
 - **Open questions:** only the ids the phase or its contracts cite, with the
   status and question from the owning spec's table. Omit the section when there
   are none.
@@ -228,10 +240,12 @@ replaced by the plan's default gate command in backticks}
    governance file, a fixed text from the template above, or a link. Write no
    sentence of your own into the file. Do not summarize a contract, reorder its
    guarantees, or drop a line you judge unimportant.
-2. **Self-contained.** Every contract, ADR and OQ id the file names has its
-   text inline in its section; a contract the phase neither consumes nor
-   produces is inlined as `referenced`. Other phases' ids appear only in the
-   Phase block's Dependencies and Collides with lines.
+2. **Self-contained.** Every contract, ADR and OQ id the file names, and
+   every node decision (`D{n}`) the Phase block cites, has its text inline
+   in its section; a contract the phase neither consumes nor
+   produces is inlined as `referenced`. Other phases' ids are never
+   inlined, and appear only where the phase's own fields name them: its
+   Dependencies and Collides with lines, or its Scope, copied verbatim.
 3. **Push, not pull.** The links are for provenance and escalation. They never
    replace an inline excerpt.
 4. **No truncation.** A context too large to read signals a phase that touches
@@ -306,11 +320,16 @@ other id makes OpenSpec reject the config. Quote any rule containing `: `.
 > Start with superpowers:writing-plans, given this file's path. Do not start
 > at brainstorming: this phase was designed and reviewed in HSDD. Save the
 > plan under docs/superpowers/plans/ in this repository, never under hsdd/.
+> The execution method is superpowers:{execution skill}: the plan header
+> names it, and the plan is executed with it.
 
 ## Global Constraints
 
-1. Every plan task except the last starts with a step that writes a failing
-   test and records its failing output. Implementation follows.
+1. Every plan task except the last follows superpowers:test-driven-development:
+   it starts with a step that writes a failing test and records its failing
+   output. Implementation follows. When a merged dependency phase already
+   delivers the behavior a test covers, the step runs the test against the
+   commit before that phase, or against a named mutant, and records which.
 2. The last task writes the verification doc, and it is the only task without
    a failing-test step.
 3. The plan has at most {N} tasks: the phase is sized to one review sitting.
@@ -328,13 +347,21 @@ other id makes OpenSpec reject the config. Quote any rule containing `: `.
    fixtures their Validation names, and never build against another node's
    internals. Use a `referenced` contract only as the phase's Scope says.
 8. Review tier {review tier}: {tier line}.
-{9. When writing {language}, use {skill}. One numbered line per installed tech skill.}
+9. Every claim that a task is done, a test passes or a defect is fixed
+   follows superpowers:verification-before-completion: it cites the command
+   that was run and the output it printed, never an inference from the diff.
+10. A test that fails when it should pass, or behavior the plan did not
+    expect, goes through superpowers:systematic-debugging: find the root
+    cause before any fix.
+{11. When writing {language}, use {skill}. One numbered line per installed tech skill.}
 
 ## Plan check
 
-Run this after writing-plans' self-review, before choosing an execution method.
+Run this after writing-plans' self-review, before execution starts.
 
 - [ ] The plan's Global Constraints contain constraints 1 to {last} above, verbatim.
+- [ ] The plan header names superpowers:{execution skill} as its execution
+      sub-skill, and no other.
 - [ ] Every `### Task N:` except the last starts with a failing-test step.
 - [ ] The last task writes the verification doc named in constraint 5.
 - [ ] The plan has at most {N} tasks.
@@ -355,9 +382,15 @@ Run this after writing-plans' self-review, before choosing an execution method.
   - gate-only: `no design discussion in the plan; slim verification doc.`
   - spot-check: `design notes only for a decision this phase actually settles; short verification doc.`
   - full-review: `design rationale for every non-obvious choice; full verification doc.`
-- **Constraint 9** is one line per installed tech skill that `conventions.md`
-  or `CLAUDE.md` names (`When writing Rust, use fp-rust.`), numbered 9, 10, …
-  With none, there is no constraint 9 and `{last}` is 8.
+- **{execution skill}** follows the phase's Review tier: `executing-plans`
+  at gate-only and spot-check, `subagent-driven-development` at
+  full-review. The tier already says how much independent review a phase
+  earns: `executing-plans` runs one context and one final review;
+  `subagent-driven-development` adds a fresh implementer and a fresh task
+  reviewer for every task.
+- **Constraint 11** is one line per installed tech skill that `conventions.md`
+  or `CLAUDE.md` names (`When writing Rust, use fp-rust.`), numbered 11, 12,
+  … With none, there is no constraint 11 and `{last}` is 10.
 
 ### Running a phase with superpowers
 
@@ -365,10 +398,11 @@ Run this after writing-plans' self-review, before choosing an execution method.
    `superpowers:writing-plans` and the derivative's path. Do not start at
    brainstorming, and do not say only "implement this phase": the session
    bootstrap sends a bare build request to brainstorming.
-2. Run the derivative's Plan check before choosing an execution method, and fix
-   every unticked item in the plan.
-3. Execute with `superpowers:subagent-driven-development` (or
-   `superpowers:executing-plans`, which loads `test-driven-development`).
+2. Run the derivative's Plan check before execution starts, and fix every
+   unticked item in the plan.
+3. Execute with the skill the derivative's header names, by review tier:
+   `superpowers:executing-plans` at gate-only and spot-check,
+   `superpowers:subagent-driven-development` at full-review.
 4. The last task writes the verification doc. Superpowers keeps test evidence
    only in its implementers' reports, in a workspace it deletes after the final
    review; the verification doc is where the evidence lasts.
@@ -376,10 +410,12 @@ Run this after writing-plans' self-review, before choosing an execution method.
 ## Phase Context Switch (before `opsx:new` or `writing-plans`)
 
 1. **Profile check first (standalone-spec-repo only).** Before reading anything
-   through `hsdd/`, verify the submodule pointer references a spec-repo main
-   commit. A pointer off main is stale or forked truth, and every line below
-   would be read from it: stop and re-point the submodule to main, or get
-   explicit human confirmation. Same reason `hsdd-checkpoint` pins baselines
+   through `hsdd/` except the conventions' `**Main line:**` (the spec repo's
+   branch that "main" means, `main` when absent), verify the submodule
+   pointer references a commit on that main line. A pointer off it is stale
+   or forked truth, and every line below would be read from it: stop and
+   re-point the submodule to the main line, or get explicit human
+   confirmation. Same reason `hsdd-checkpoint` pins baselines
    before reviewing content.
 2. **Find the phase.** Open the leaf-parent node spec and its `## Phase Plan`.
    Match the requested phase by its full id or by the short form the headings
@@ -395,7 +431,8 @@ Run this after writing-plans' self-review, before choosing an execution method.
    explicit TODO, and it enters the context as not binding. Do not silently
    drop the reference.
 5. **Next-runnable check.** Warn if the phase already has
-   `hsdd/verify/{phase-id}.verification.md` on spec-repo main (it is done), or,
+   `hsdd/verify/{phase-id}.verification.md` on the spec repo's main line
+   (the conventions' `**Main line:**`, `main` when absent; it shipped), or,
    for OpenSpec, if its change is already under `openspec/changes/archive/`.
    Warn if a dependency phase has neither a verification doc nor a merged
    branch: its contracts and decisions may not be what this phase expects.
@@ -416,15 +453,21 @@ Run this after writing-plans' self-review, before choosing an execution method.
    leaves it missing or stale hands the coding session a dangling obligation.
 8. **Write the generic phase context** from the template above.
 9. **Self-contained gate.** Check rule 2 against the file you wrote: list every
-   `@v`, `ADR-` and `OQ` id in it and confirm each has its subsection or line.
+   `@v`, `ADR-` and `OQ` id in it, and every `D{n}` in the Phase block, and
+   confirm each has its subsection or line.
    A contract id with none gets a `referenced` subsection, which can name
    further ids: list again until none is missing. Fix the file, never the
    rule.
 10. **Write the derivative** for the method: replace the content between the
    markers in `openspec/config.yaml`, or write
    `hsdd-context/superpowers/{phase-id}.md`. Do not touch the project-wide
-   context or the rules. When `openspec/config.yaml` has no markers (a config
-   written before v0.9.0), replace its earlier phase blocks (`## Current Phase`,
+   context or the rules. For superpowers, check that every skill the
+   derivative names is installed (`writing-plans`, the execution skill,
+   `test-driven-development`, `verification-before-completion`,
+   `systematic-debugging`), as Setup's step 3 discovers skills, and warn
+   for each one that is not; the derivative keeps its text either way.
+   When `openspec/config.yaml` has no markers (a config written before
+   v0.9.0), replace its earlier phase blocks (`## Current Phase`,
    `## Contracts from Prior Phases / Nodes`, `## Governing Decisions`, from
    the first of them through the end of the last) with the marked block, keep
    everything else, and say so once in the run report.
@@ -471,8 +514,9 @@ review gate is not passed while an Outstanding item lacks a disposition**
       full phase id, with a stamp naming the spec SHA (and `-dirty` when it
       applies).
 - [ ] Every line in it is a verbatim excerpt, template text, or a link.
-- [ ] The self-contained gate passed: every contract, ADR and OQ id named has
-      its text inline, or its external one-liner.
+- [ ] The self-contained gate passed: every contract, ADR and OQ id named,
+      and every node decision the Phase block cites, has its text inline, or
+      its external one-liner.
 - [ ] Every contract subsection is headed `consumes` or `produces` exactly as
       the Phase block's Consumes and Produces say, or `referenced` for any
       other contract the file names, and carries the contract's Validation
@@ -481,7 +525,8 @@ review gate is not passed while an Outstanding item lacks a disposition**
       printed nothing.
 - [ ] For OpenSpec, the project-wide context and `rules:` are unchanged.
 - [ ] For superpowers, the Global Constraints and Plan check are filled, with
-      no braces left.
+      no braces left; the header names the execution skill the phase's
+      review tier selects, and constraints 1, 9 and 10 name their skills.
 - [ ] Every stop (missing ADR, missing default gate, contingent phase) was
       honored; every warning is in the report.
 - [ ] `hsdd/templates/verification.md` exists after the switch and has
@@ -498,6 +543,7 @@ review gate is not passed while an Outstanding item lacks a disposition**
 | "I'll update the context after creating the change" | Too late: the session already started from stale context. Switch BEFORE `opsx:new` or `writing-plans`. |
 | "CLAUDE.md already has my conventions" | CLAUDE.md is not injected into OpenSpec instructions, and a superpowers implementer sees only its task and the Global Constraints. The derivative is what carries them. |
 | "I'll remember to invoke TDD manually" | Sessions do not share memory. The derivative does. |
+| "Every task already starts with a failing test; naming the TDD skill adds nothing" | A skill's rules load only when something names it, and `subagent-driven-development` has an implementer follow TDD only "if task says to". Constraint 1 names the skill, so every implementer and task reviewer sees it. |
 | "Inject the whole node spec to be safe" | That defeats context isolation. The phase, its contracts and its decisions; links for the rest. |
 | "This contract section is long, I'll summarize it" | Rule 1. A summary is your sentence, and the session will treat it as the contract. Copy it, or fix the phase plan if it is too much. |
 | "The links are enough; the agent can open the contract" | Push, not pull. A link is for provenance; the text the phase depends on is inline. |

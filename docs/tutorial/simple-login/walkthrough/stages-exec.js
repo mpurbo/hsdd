@@ -79,8 +79,8 @@ const EXEC = [
     present: () => `
       ${list([
         `Start at ${c("superpowers:writing-plans")} with the derivative's path, never at brainstorming: the design was already reviewed in HSDD.`,
-        "The plan copies the eight Global Constraints verbatim, then the derivative's five-box Plan check runs.",
-        `${c("superpowers:executing-plans")} runs each task test-first: the failing test is seen to fail before any code.`,
+        "The plan copies the eight Global Constraints verbatim, then the derivative's five-box Plan check runs. Since v0.10.2 there are ten constraints, plus one per tech skill, and six boxes.",
+        `${c("superpowers:executing-plans")} runs each task test-first: the failing test is seen to fail before any code. Since v0.10.2 the derivative picks the execution skill by review tier, so backend.2, web.3 and integration.1 would run under ${c("superpowers:subagent-driven-development")}.`,
         "The web lane was a separate agent in its own git worktree. Its whole specification was three context files; the backend did not exist yet.",
         "Click a phase on the timeline for its numbers.",
       ])}
@@ -89,7 +89,7 @@ const EXEC = [
         "Look at the merge: the two lanes touched disjoint files, so it was clean by construction.",
       ])}`,
     self: () => `
-      ${prompt("/hsdd-phase simple-login.backend.1")}
+      ${prompt("/hsdd-config simple-login.backend.1")}
       ${prompt("Use superpowers:writing-plans to plan hsdd-context/superpowers/simple-login.backend.1.md")}
       ${checks("lanes", [
         "The plan is under docs/superpowers/plans/, has at most the task cap, and its Global Constraints match the derivative's.",
@@ -97,6 +97,7 @@ const EXEC = [
         "The gate passes; the last task wrote hsdd/verify/{phase}.verification.md with Sign-off blank.",
         "Repeat per phase. Try running the web lane in a second session or worktree at the same time.",
       ])}
+      <p class="hint">With HSDD v0.10.2 or later, the derivative's constraints name ${c("superpowers:test-driven-development")}, ${c("superpowers:verification-before-completion")} and ${c("superpowers:systematic-debugging")}, and its header names the execution skill by review tier: ${c("superpowers:executing-plans")} for backend.1, web.1 and web.2, ${c("superpowers:subagent-driven-development")} for backend.2, web.3 and integration.1. The recorded plans come from v0.10.0 and ran every phase with executing-plans.</p>
       <p class="files-line">Compare: ${fileBtn("docs/superpowers/plans/2026-10-29-simple-login.backend.1.md")}</p>`,
     visual: (s) => `<h3>Two lanes, six phases</h3>${laneView(s)}`,
   },
@@ -131,7 +132,7 @@ const EXEC = [
       ${RUN.integration.wrong.length ? wrong(RUN.integration.wrong) : ""}
       ${say(["This is the first moment the two halves meet. Everything before it was built against fixtures.", RUN.integration.say])}`,
     self: () => `
-      ${prompt("/hsdd-phase simple-login.integration.1")}
+      ${prompt("/hsdd-config simple-login.integration.1")}
       ${prompt("Use superpowers:writing-plans to plan hsdd-context/superpowers/simple-login.integration.1.md")}
       ${checks("integrate", [
         "npm run install:all && npm run dev starts both; http://localhost:5173 signs you in as ayu.",

@@ -393,48 +393,70 @@ finished tree. None blocked the run; each needed a judgment the skills do
 not make.
 
 1. **Authority.** hsdd-intake's authority values have none for an approved
-   PRD amendment, the most ordinary change.
+   PRD amendment, the most ordinary change. Fixed in v0.10.2: `approved
+   PRD` is an authority value.
 2. **Two live versions.** hsdd-contract keeps v{n} `stable` beside v{n+1}
-   but names one file per slug. Where the second version's contract,
-   schema and fixtures live is left to the run.
-3. **The ripple has no owner.** A bump leaves the node specs' `Produces` and
-   `Consumes`, the root's copies, its contract matrix and its DAG naming the
-   old version. Append mode may edit only `Sources`, no reconcile step names
-   the edit, and no pending-entry type carries it: three planners each
-   bent a `note` or a `confirm` sub-bullet to say so.
+   but names one file per slug. Where the second version's contract, schema
+   and fixtures live is left to the run. Fixed in v0.10.2: a later version
+   is a new file beside the first, `{slug}.v{n}.md`, with its schema and
+   fixtures named the same way; nothing is renamed.
+3. **The ripple has no owner.** A bump leaves the node specs' `Produces`
+   and `Consumes`, the root's copies, its contract matrix and its DAG
+   naming the old version. Append mode may edit only `Sources`, no
+   reconcile step names the edit, and no pending-entry type carries it:
+   three planners each bent a `note` or a `confirm` sub-bullet to say so.
+   Fixed in v0.10.2: append mode leaves the node header alone, and
+   reconcile writes a confirmed version into the header and every copy
+   above it.
 4. **One endpoint, two versions.** "The old version remains `stable` until
    every consumer migrates" assumes versions can coexist. At one endpoint
    they cannot: the deprecation window collapses to the intake, and v1 is
    `stable` with no producer until someone deprecates it (the checkpoint's
-   F-1).
+   F-1). Fixed in v0.10.2: the migration note names its mode; under
+   `lockstep` the old version is deprecated at the bump, with its sunset
+   when the new version's producer ships, and the checkpoint flags a
+   `stable` version nothing serves.
 5. **A migrated version never loses its consumers.** v1's `consumers` will
    name web.1, web.3 and integration.1 forever; nothing removes a phase
    that migrated, so "no live consumer" cannot be read from frontmatter
-   when retirement comes.
+   when retirement comes. Fixed in v0.10.2: the checkpoint reports migrated
+   phases and reconcile moves them from `consumers` to `former_consumers`,
+   so `consumers` means live.
 6. **"The request's path".** Append mode adds it to `Sources`; all three
    planners had to decide whether that meant the intake record or the
-   change request (all chose the request).
+   change request (all chose the request). Fixed in v0.10.2: the change
+   request's own path joins Sources; the intake record goes in the Scope.
 7. **A pointer is not content.** web.4's Scope said "per the request's
    Screen"; the context carried neither the Screen nor a link to it.
    hsdd-phase-plan already says binding details from a source belong in the
    Scope; nothing checks it. The first run's D{n} finding is the same
-   family.
+   family. Fixed in v0.10.2: hsdd-phase-plan states that the context
+   carries no source text and checks that no line leans on a pointer, and
+   hsdd-config now injects the node decisions a phase cites.
 8. **The sizing floor in append mode** fires on every small appended phase
    and has no partner to merge with, because the neighbour shipped; append
-   mode could say what to record.
+   mode could say what to record. Fixed in v0.10.2: in append mode the
+   floor runs over the appended phases only.
 9. **"On spec-repo main"** decides shipped-ness and closure; on a project
    whose main line is a branch, the planners, the closure rule and the
-   checkpoint each needed it ruled.
+   checkpoint each needed it ruled. Fixed in v0.10.2: conventions name the
+   main line (`**Main line:**`, `main` when absent).
 10. **`referenced` costs lines.** v0.10.1's full-text rule put the old
     version into every migration phase's context (about 250 lines each,
-    against 65 to 190 in the first run). Useful here; worth watching.
+    against 65 to 190 in the first run). Useful here; worth watching. No
+    change in v0.10.2: kept, and watched.
 11. **Red after a hard edge.** An integration phase starts after its
     dependencies merged, so superpowers' "see it fail" needs an older tree
-    to fail against.
+    to fail against. Fixed in v0.10.2: the context's test-first rule says
+    to fail against the tree before the merged dependency, or against a
+    named mutant.
 12. **Who signs.** The verification template says dispositions are made "by
-    the human running the gate", but the checkpoint's audit checks only that
-    the fields are filled; it counted proxy sign-offs as done and raised
-    F-2 instead.
+    the human running the gate", but the checkpoint's audit checks only
+    that the fields are filled; it counted proxy sign-offs as done and
+    raised F-2 instead. Fixed in v0.10.2: a delegated sign-off names the
+    person it answers to, counts as done, and goes to that person in one
+    checkpoint finding to ratify; a sign-off that names no person leaves
+    the phase a claim.
 
 ### The numbers
 

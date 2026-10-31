@@ -14,8 +14,8 @@ and per-phase contexts stay in each implementation repo (`hsdd-context/`).
 - `hsdd/conventions.md`                       this file
 - `hsdd/spec/{node-id}.md`                    node specs and leaf-parent phase plans
 - `hsdd/verify/{phase-id}.verification.md`    per-phase verification docs
-- `hsdd/contract/{slug}.md` + `hsdd/contract/INDEX.md`  first-class contracts (registry generated)
-- `hsdd/contract/schema/{slug}.schema.json`, `hsdd/contract/fixture/{slug}/`  executable validation for `stable` contracts
+- `hsdd/contract/{slug}.md` + `hsdd/contract/INDEX.md`  first-class contracts (registry generated); a later version is `{slug}.v{n}.md` beside the first
+- `hsdd/contract/schema/{slug}.schema.json`, `hsdd/contract/fixture/{slug}/`  executable validation for `stable` contracts (`{slug}.v{n}` for a later version)
 - `hsdd/adr/{nnn}-{title}.md` + `hsdd/adr/INDEX.md`     cross-cutting decisions (authored by hsdd-adr, registry generated)
 - `hsdd/scripts/gen-registry.mjs`             registry generator (copied verbatim from hsdd-contract)
 - `hsdd/scripts/seams/`                       seam extractor (copied verbatim from hsdd-adopt; present only in adopted trees)
@@ -53,7 +53,14 @@ the profile moves no paths.
 
 `openspec` (default) or `superpowers`. Before every phase, hsdd-config writes
 the generic phase context, then the derivative for this method;
-`/hsdd-phase {phase-id} --method {method}` overrides it for one phase.
+`/hsdd-config {phase-id} --method {method}` overrides it for one phase.
+
+## Main line
+**Main line:** main
+
+The spec repo's branch that "on main" means in every skill: a phase is
+shipped, and an intake record can close, once its verification doc is on
+this branch. Absent means `main`.
 
 ## OpenSpec init
 Run `openspec init` once, at the repo root (the directory holding `hsdd/`,
@@ -143,7 +150,7 @@ contract change.
   block (and its companion contract/ADR blocks) is per-session working state,
   rewritten by every phase context switch. A merge conflict on it carries no
   information: resolve by taking either side, then re-run the phase context
-  switch (`/hsdd-phase {next-phase}`) before the next OpenSpec cycle.
+  switch (`/hsdd-config {next-phase}`) before the next OpenSpec cycle.
   Optionally set `openspec/config.yaml merge=ours` in `.gitattributes` on
   integration branches.
 - **Branch discipline.** One integration branch per node; phase branches merge

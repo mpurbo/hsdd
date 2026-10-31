@@ -54,6 +54,7 @@ compatibility: versioned   # additive-only | versioned | frozen; declared per ve
 produced_by: [acme.backend.auth.2]
 consumers: [acme.backend.billing.2, acme.mobile.session.1]
 external_consumers: []  # consumers outside the tree; omit when empty
+former_consumers: []    # phases that migrated to a later version; moved by hsdd-reconcile; omit when empty
 phase_ids: provisional  # provisional | final; flipped only by hsdd-reconcile
 ---
 
@@ -77,6 +78,15 @@ phase_ids: provisional  # provisional | final; flipped only by hsdd-reconcile
 
 Keep the frontmatter complete and accurate: it is the source of truth for the
 registry and for the context `hsdd-config` injects into each phase.
+
+**One file per version.** A contract's first version is
+`hsdd/contract/{slug}.md`, with `schema/{slug}.schema.json` and
+`fixture/{slug}/`. Each later version is a new file beside it,
+`{slug}.v{n}.md`, with `schema/{slug}.v{n}.schema.json` and
+`fixture/{slug}.v{n}/`, and its `## Validation` names those paths. Nothing
+is renamed, so every citation of an earlier version's paths keeps
+resolving. Skills find a version by its frontmatter `id` and `version`,
+never by its filename.
 
 ## Provisional Phase Ids and the Writer Rule
 
@@ -111,7 +121,8 @@ Classify how consumers couple to this contract so `hsdd-spec` can sequence work:
 A contract may not be `stable` unless it carries at least one executable
 validation artifact, a schema or a fixtures directory, at the canonical
 paths its `## Validation` section names. Default locations are
-`hsdd/contract/schema/{slug}.schema.json` and `hsdd/contract/fixture/{slug}/`;
+`hsdd/contract/schema/{slug}.schema.json` and `hsdd/contract/fixture/{slug}/`,
+with `{slug}.v{n}` in place of `{slug}` for a later version (above);
 the frontmatter and the Validation section are authoritative if a project
 overrides them. `hsdd-reconcile` asserts the artifact exists at the
 `draft → stable` flip. Per kind:
@@ -133,9 +144,10 @@ fixtures and consumer tests fail loudly instead of drifting.
 **Authoring writes the artifact.** When this skill creates a contract or a
 new version, it also writes `hsdd/contract/schema/{slug}.schema.json` from
 the Interface and the kind's fixtures under `hsdd/contract/fixture/{slug}/`
-(the table above): example payloads for `api` and `event`, edge cases for
-`schema` and `shared-model`, a sample tree for `file`, recorded invocations
-for `cli`. A phase never writes them; the producing phase's gate replays
+(for a later version, its own paths, per One file per version), as the
+table above lists them: example payloads for `api` and `event`, edge cases
+for `schema` and `shared-model`, a sample tree for `file`, recorded
+invocations for `cli`. A phase never writes them; the producing phase's gate replays
 them.
 
 **Grandfathered contracts.** A contract that was already `stable` without
@@ -187,19 +199,46 @@ through `hsdd-reconcile`, as for any other contract.
 
   | value | meaning | consequence |
   |-------|---------|-------------|
-  | `additive-only` | optional additions only; never remove, retype, or repurpose a field; consumers ignore unknowns | compatible changes keep the version; claimable only if the existing fixtures still pass against the new schema |
+  | `additive-only` | optional additions only; never remove, retype, or repurpose a field; consumers ignore unknowns | compatible changes keep the version; claimable for a change within the version only if that version's existing fixtures still pass against the changed schema |
   | `versioned` (default) | breaking changes bump | next version, a migration note in `## Versioning`, a deprecation window |
   | `frozen` | not under our control, or adopted pending investigation | a change is a new contract, not a new version |
 
 - A backward-compatible addition stays the same version. A breaking change
-  creates `v{n+1}` and a migration note in `## Versioning`. The old version
-  remains `stable` until every consumer migrates, then `deprecated` with a
-  sunset date, then `retired`.
+  creates `v{n+1}`, and its `## Versioning` carries a migration note that
+  names the **migration mode**:
+
+  | mode | when | the old version |
+  |------|------|-----------------|
+  | `coexisting` | the producer serves both versions through a window (two paths, or negotiation) | stays `stable` until it has no live consumer, then `deprecated` with a sunset date, then `retired` |
+  | `lockstep` | one surface, one shape: the phase that ships v{n+1} stops serving v{n} | goes `deprecated` in the run that drafts v{n+1}, its `## Versioning` naming the sunset: when the first phase in v{n+1}'s `produced_by` ships. There is no window, so every consumer node needs a migration phase that lands with that phase |
+
+  A migration note that names no mode reads as `coexisting`, the rule
+  before v0.10.2.
+- **The rest of the ripple.** The run that drafts v{n+1} also finds every
+  other text that names v{n}. Another contract whose body names v{n} in a
+  statement that holds for v{n+1} too gets a compatible amendment here,
+  naming both. An ADR whose `affects` names v{n} gains v{n+1} through
+  `hsdd-adr`: this run's report names that handoff, to run before the
+  phase plans. Node specs are not edited here: the planners' `confirm`
+  entries carry the new version, and `hsdd-reconcile` writes it into
+  them.
 - Consumers always reference a specific version: `auth-token@v1`.
   `external_consumers` lists consumers outside the tree, by name.
+- **Live and former consumers.** `consumers` lists the phases that consume
+  this version now. A consumer phase has **migrated** when the newest
+  shipped phase (its verification doc on the spec repo's main line, the
+  conventions' `**Main line:**`, `main` when absent) of its node that names
+  this contract in Consumes names a later version and not this one. The
+  checkpoint reports that node's shipped phase ids still in this version's
+  `consumers`, and `hsdd-reconcile` moves them to `former_consumers`, never
+  deleting one.
+  `former_consumers` is history: no rule reads it as live. A version's
+  **live consumers** are its `consumers` and its `external_consumers`; an
+  external entry leaves by hand, when that consumer says it has moved.
 - `status` lifecycle: `draft → stable → deprecated → retired`. New contracts
-  start `draft`. `hsdd-reconcile` flips `draft` to `stable` at the end of a
-  reconcile pass, once both sides have confirmed their phase ids
+  and new versions start `draft`. `hsdd-reconcile` flips `draft` to
+  `stable` at the end of a reconcile pass, once both sides have confirmed
+  their phase ids
   (`phase_ids: final`), no `request` naming the contract remains
   unresolved, and the executable validation artifact exists. `stable` means
   the interface is frozen and safe to build against, not that the producer
@@ -207,7 +246,9 @@ through `hsdd-reconcile`, as for any other contract.
   tiers certify.
 - **Retiring a version that still has a live consumer, an
   `external_consumers` entry included, is a checkpoint finding**, not a
-  contract edit. When a node is retired (`- **Status:** retired` in its
+  contract edit. A `deprecated` version past its sunset with no live
+  consumer goes to `retired` through `hsdd-reconcile`, on the checkpoint's
+  plan step. When a node is retired (`- **Status:** retired` in its
   spec), the contracts it solely produced go to `retired` the same way,
   through `hsdd-reconcile`, and the live-consumer rule applies to each.
 
@@ -235,11 +276,14 @@ are authored by `hsdd-adr`, not here; this skill owns `hsdd/contract/` only.
 
 ## Quality Gates
 
-- [ ] Frontmatter has id, version, status, kind, owner, compatibility, produced_by, consumers; external_consumers when any exist.
-- [ ] `consumers` lists phase ids that actually consume this contract.
+- [ ] Frontmatter has id, version, status, kind, owner, compatibility, produced_by, consumers; external_consumers and former_consumers when any exist.
+- [ ] `consumers` lists phase ids that consume this version now; migrated ones are under `former_consumers`, never deleted.
 - [ ] The Interface section is concrete enough to mock against.
 - [ ] At least one guarantee/invariant is stated.
-- [ ] A breaking change bumped the version and added a migration note.
+- [ ] A breaking change bumped the version in a new file beside the old one
+      (`{slug}.v{n}.md`, its schema and fixtures likewise), and its migration
+      note names the mode; under `lockstep` the old version is `deprecated`
+      in the same run, with its sunset named.
 - [ ] The registry was regenerated.
 - [ ] `phase_ids` is present (`provisional` until `hsdd-reconcile` finalizes it).
 - [ ] Every code-level artifact both sides consume (types file, fixtures, shared package) names its canonical path and its owner in the Interface or Validation section: the owning phase for code, `hsdd-contract` for validation artifacts.
@@ -265,6 +309,9 @@ are authored by `hsdd-adr`, not here; this skill owns `hsdd/contract/` only.
 | "I'll write the generator from this description" | The bundled `scripts/gen-registry.mjs` is the source of truth. Copy it verbatim; never retype or reimplement it. A rewritten copy drifts and mis-projects the registry (a naive freshness check will not catch it). |
 | "I'll just edit INDEX.md by hand" | The registry is derived. Hand edits drift from the contracts. Run the generator. |
 | "Small change, no version bump" | If a consumer's code could break, it is a new version. Bump and note the migration. |
+| "v1 stays stable until consumers migrate; nothing to do to it at the bump" | Only when the producer can serve both. At one endpoint with one shape the bump is `lockstep`: deprecate v{n} now and name its sunset, or v{n} stays `stable` with nothing serving it. |
+| "Rename v1's file to `{slug}.v1.md` so the versions match" | Every phase context, verification doc and spec line that cites v1's paths would break. A later version takes the suffix; the first keeps its paths. |
+| "That phase consumed v1 once, so it stays in `consumers`" | `consumers` is who consumes the version now. A migrated phase moves to `former_consumers`, through `hsdd-reconcile`, so "no live consumer" can be read when the version retires. |
 | "Put the schema in the node spec" | Then consumers must read the producer's spec. Contracts exist so they do not. |
 | "The producing phase will write the schema from the real code" | A phase never writes under `hsdd/contract/`. Write it here from the Interface; a schema that turns out wrong is caught by the producer's replay and renegotiated mid-phase. |
 | "Both sides can regenerate the shared types; they'll match" | Two generations from the same prose diverge. Name one canonical artifact path and one owning phase in the contract. |

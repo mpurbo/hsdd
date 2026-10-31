@@ -7,6 +7,10 @@ number on the Home screen, and the change goes through HSDD's change flow:
 intake, a contract version bump, appended phases, reconcile, three
 superpowers phases, and the checkpoint that closes the intake record.
 
+Recorded with the HSDD v0.10.1 skills. A run with a later release differs
+where the walkthrough's hints say so; [`CHANGELOG.md`](../../../CHANGELOG.md)
+lists each change.
+
 ## The three folders
 
 | Folder | What it is | Use it to |

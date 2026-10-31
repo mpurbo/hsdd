@@ -49,7 +49,13 @@ ordering policy (below).
    where execution will see it: in a phase's Scope or Verification line, or
    in a contract `request`/`amend` entry so the contract body carries it.
    Phases do not carry a Sources field; the phase plan is written by
-   someone who read the sources.
+   someone who read the sources. The phase context carries the phase's own
+   lines, its contracts, ADRs and open questions, and the node decisions
+   (`D{n}`) its lines cite, and nothing else from the tree or the sources:
+   a line that says only "per the request's Screen" or "per the PRD
+   wireframe" reaches the session as those words. Write the binding detail
+   itself (the rows, the copy, the values) into the line; a pointer may
+   follow it as provenance.
 3. **Define phases** using the template below, applying the project's
    ordering policy (Phase Ordering, below) and the sizing rule. Reference
    contracts by id (`hsdd-contract` owns the bodies).
@@ -233,7 +239,8 @@ the summary table — ``**Default gate:** `<command>` `` — and a phase's
 is not `none`, the `Gate` line includes the contract replay: the command
 that validates the phase's real output against
 `hsdd/contract/schema/{slug}.schema.json` and reproduces
-`hsdd/contract/fixture/{slug}/` for each produced contract. When the
+`hsdd/contract/fixture/{slug}/` for each produced contract (`{slug}.v{n}`
+for a later version, as its Validation section names). When the
 project has no such command yet, the phase's Scope includes creating it and
 the Gate names it. A `Gate` of `node default` on a producing phase reads
 `node default plus contract replay for {slug}`. Consuming phases test
@@ -298,8 +305,10 @@ When the invoking prompt names an intake record, every phase planned for
 that request, in a new plan or an appended one, names the record in its
 Scope (`per hsdd/management/2026-10-10-intake-payout-scheduling.md`), so
 the checkpoint can append it to the record's `## Produced` and close the
-record when the phase ships, and the request's path joins the node's
-`- **Sources:**` field (appended, never replacing an entry).
+record when the phase ships. The change request's own path (the record's
+`**Request:**` line, not the record) joins the node's `- **Sources:**`
+field with the sections that govern this node (appended, never replacing
+an entry).
 
 ## Append Mode (a plan that already has phases)
 
@@ -308,7 +317,8 @@ appends phases to an existing plan. Rules:
 
 - Continue numbering from the highest existing phase id. **Never renumber.
   Never rewrite a shipped phase.** A shipped phase is one whose verification
-  doc is on the spec repo's main branch; shipped-ness is read from
+  doc is on the spec repo's main line (the branch the conventions'
+  `**Main line:**` names, `main` when absent); shipped-ness is read from
   `hsdd/verify/`, never authored here.
 - The summary table is a permanent ledger: shipped phases keep their rows;
   new rows are appended.
@@ -316,6 +326,14 @@ appends phases to an existing plan. Rules:
   marked `(retro)` in its name, cites the finding id in its Scope, and its
   verification doc is written after the fact and marked retroactive.
 - A phase appended for a change request follows Change Requests above.
+- Append mode appends summary-table rows, phase sections, graph nodes, a
+  pending-governance block and `- **Sources:**` entries. It does not edit
+  the node header's `Produces` and `Consumes`: the `confirm` entry for a
+  new version carries it, and `hsdd-reconcile` writes the header and the
+  specs above it.
+- The sizing floor runs over the appended phases only. A shipped phase is
+  never a merge partner, so a lone appended phase records nothing about the
+  floor.
 - The dependency graph gains the new nodes; existing edges are not redrawn.
 - The pending-governance section is appended to, with a new emission date
   line, and drained by `hsdd-reconcile` as usual.
@@ -370,7 +388,11 @@ flowchart TD
 - [ ] Every producing phase's Gate includes the contract replay for each
       contract it produces.
 - [ ] In append mode: no existing id changed, no shipped phase edited,
-      numbering continued from the highest existing id.
+      numbering continued from the highest existing id, the node header
+      untouched, the floor run over the appended phases only.
+- [ ] No Scope or Verification line leans on a pointer to text the phase
+      context does not carry (a source's section, another phase's text);
+      the binding detail is in the line itself.
 
 ## Anti-Rationalization
 
@@ -386,5 +408,7 @@ flowchart TD
 | "The contract gap is obvious, I'll just fix the contract file" | Governance files are frozen during planning. Emit a `request`; `hsdd-reconcile` applies the answer at the root. |
 | "I'll create the shared artifact locally; the merge will be trivial" | Two agents generating from the same prose are never byte-identical. Record a `request`; the contract must name one canonical owner. |
 | "I'll peek at the sibling worktree's plan to coordinate" | Contracts are the only inter-node knowledge. Peeking couples plans invisibly and races the sibling's edits. |
+| "'Per the request's Screen' is enough; the request is in Sources" | The context carries the Scope, never the source. A pointer arrives as its own words. Write the rows, the copy and the values into the line. |
+| "The new version belongs in the node header; I'll add it while I'm here" | Append mode edits the plan, not the header. The `confirm` entry carries the version, and reconcile writes the header and every copy above it, once. |
 | "I'll write the verification doc now while the phase is fresh" | Planning cannot know the implementation. The doc is written at apply by an OpenSpec task; the plan carries only the one-line intent. |
 | "The dependency is obvious, no need for an OQ id" | An unnamed contingency can't be tracked, tailed, or resolved. Name the OQ or stop and have the owning spec mint it. |

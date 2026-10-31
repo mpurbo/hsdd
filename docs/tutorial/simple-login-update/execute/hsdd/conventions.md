@@ -54,7 +54,7 @@ the profile moves no paths.
 
 `openspec` (default) or `superpowers`. Before every phase, hsdd-config writes
 the generic phase context, then the derivative for this method;
-`/hsdd-phase {phase-id} --method {method}` overrides it for one phase.
+`/hsdd-config {phase-id} --method {method}` overrides it for one phase.
 
 ## OpenSpec init
 Run `openspec init` once, at the repo root (the directory holding `hsdd/`,
@@ -146,7 +146,7 @@ contract change.
   block (and its companion contract/ADR blocks) is per-session working state,
   rewritten by every phase context switch. A merge conflict on it carries no
   information: resolve by taking either side, then re-run the phase context
-  switch (`/hsdd-phase {next-phase}`) before the next OpenSpec cycle.
+  switch (`/hsdd-config {next-phase}`) before the next OpenSpec cycle.
   Optionally set `openspec/config.yaml merge=ours` in `.gitattributes` on
   integration branches.
 - **Branch discipline.** One integration branch per node; phase branches merge

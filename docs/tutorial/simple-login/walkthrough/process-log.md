@@ -285,7 +285,7 @@ Commit `995f28a`.
 
 ## Step 7: Switch the phase context (hsdd-config, the switch)
 
-**Prompt:** "/hsdd-phase simple-login.backend.1" (and so on per phase).
+**Prompt:** "/hsdd-config simple-login.backend.1" (and so on per phase).
 
 Each switch writes two files outside `hsdd/`:
 
@@ -364,6 +364,12 @@ prescribes:
 4. The gate, then the verification doc from `hsdd/templates/verification.md`
    with Sign-off left blank.
 5. The HSDD review gate at the phase's tier, then Sign-off.
+
+Since v0.10.2 the derivative names the execution skill by review tier, so
+a re-run would execute backend.2, web.3 and integration.1 (full-review)
+with `superpowers:subagent-driven-development` and the rest with
+`executing-plans`. Its constraints also name `test-driven-development`,
+`verification-before-completion` and `systematic-debugging`.
 
 ### simple-login.backend.1 (gate-only), 23:54 to 23:59 WIB
 
@@ -639,7 +645,9 @@ each needed a judgment the skills do not make.
    direction `referenced`, the word this run chose.
 3. **Node-local decisions are not injected.** A phase Scope that says "per
    D1" points at text the context does not carry. Here the content survived
-   only because reconcile had copied it into a contract.
+   only because reconcile had copied it into a contract. Fixed in v0.10.2:
+   the switch injects every node decision the Phase block cites, under
+   Decisions.
 4. **No disposition for a compatible contract clarification.** The
    Learning vocabulary has `contract-bumped`, not "amended, same version".
 5. **superpowers' final review vs the HSDD tier.** executing-plans requires

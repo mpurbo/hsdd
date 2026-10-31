@@ -1,8 +1,8 @@
 # HSDD: Hierarchical Spec-Driven Development
 
-**Version:** 0.10.1
+**Version:** 0.10.2
 **Status:** Current specification
-**Date:** 2026-10-30
+**Date:** 2026-10-31
 **Owner:** Purbo Mohamad
 
 This is the complete specification. It supersedes v0.7.1, the last released
@@ -12,7 +12,10 @@ adoption and change intake, and v0.9.0, which added phase contexts, coding
 methods and reading aids. Their content is in this document. Chapter 15
 states, rule by rule, which of it the skills implement in v0.10.0 and which
 is specified without a skill. v0.10.1 corrects two phase-context rules in
-place (§9.7); §15.1 states its effect on a 0.10.0 project. Every earlier
+place (§9.7). v0.10.2 corrects the change flow in place (§3.1, §3.5, §7.6,
+§8, §9.7, §10.2, §11, §12.7, §14.2) and has the superpowers derivative name
+the skills it relies on (§9.8); §15.1 states each correction's effect on
+the release before it. Every earlier
 version remains in `spec/` as history. Nothing here requires reading them.
 
 ---
@@ -359,7 +362,8 @@ tree; the pointer is the only carrier that scales. Hence:
 
 - The **root spec carries a `## Sources` section** listing each input document
   (PRD, RFC, design doc, ticket): path or URL, its authority (accepted RFC |
-  draft | braindump | ticket), and one line on what it governs.
+  approved PRD | draft | braindump | ticket), and one line on what it
+  governs.
 - The node header's `- **Sources:**` field lists only the sources — or named
   sections of them — that govern that node, or `"none"`.
 - **Sources trickle down at decomposition time, at every level:** when a node
@@ -420,6 +424,7 @@ compatibility: versioned   # additive-only | versioned | frozen; per version (§
 produced_by: [acme.backend.auth.2]
 consumers: [acme.backend.billing.2, acme.mobile.session.1]
 external_consumers: []  # consumers outside the tree; omit when empty
+former_consumers: []    # phases that migrated to a later version (§3.5); omit when empty
 phase_ids: provisional  # provisional | final; flipped only by hsdd-reconcile
 ---
 
@@ -457,6 +462,18 @@ invitation for two writers to edit the same prose. The registry generator's
 parser reads all frontmatter keys but projects only the known columns, so a
 new key passes through without effect.
 
+**One file per version.** A contract's first version is
+`hsdd/contract/{slug}.md`, with `schema/{slug}.schema.json` and
+`fixture/{slug}/`. Each later version is a new file beside it,
+`{slug}.v{n}.md`, with `schema/{slug}.v{n}.schema.json` and
+`fixture/{slug}.v{n}/`, and its `## Validation` names those paths. Nothing
+is renamed, so every citation of an earlier version's paths keeps
+resolving, and skills find a version by its frontmatter `id` and
+`version`, never by its filename. Rejected: suffixing every version from
+the first (it renames every existing contract and breaks its citations),
+one directory per contract (a layout change for every tree), and both
+versions in one file (one frontmatter cannot describe two versions).
+
 ### 3.2 Dependency types
 
 Every edge in the dependency DAG is typed, and the type states whether a
@@ -489,9 +506,10 @@ A contract may not be `stable` unless it carries at least one executable
 validation artifact — a schema or a fixtures directory — at the canonical
 paths its frontmatter names. `hsdd-reconcile` asserts this at the
 `draft → stable` flip. Default locations are `hsdd/contract/schema/` and
-`hsdd/contract/fixture/`, overridable — the frontmatter is authoritative
-either way. Per kind: `api` and `event` want schema plus example payloads;
-`schema` and `shared-model` want the schema plus edge-case fixtures; `file`
+`hsdd/contract/fixture/`, a later version's files carrying `.v{n}` (§3.1),
+overridable — the frontmatter is authoritative either way. Per kind: `api`
+and `event` want schema plus example payloads; `schema` and
+`shared-model` want the schema plus edge-case fixtures; `file`
 wants a sample tree; `cli` wants recorded invocations. `hsdd-contract`
 writes these artifacts when it authors a contract or a new version; a phase
 never writes them, and both gates replay them.
@@ -532,29 +550,53 @@ the interface is genuinely redesigned.
 | `versioned` (default) | breaking changes bump | next version, a migration note, and a deprecation window |
 | `frozen` | not under our control, or adopted pending investigation | a change means a new contract, not a new version |
 
-`additive-only` is claimable only if the contract's existing fixtures still
-pass against the new schema — both gates already replay them. It constrains
+`additive-only` is claimable for a change within a version only if that
+version's existing fixtures still pass against the changed schema — both
+gates already replay them. It constrains
 what may happen *without* a bump; it never forbids one. Extension under
 `additive-only` never exits `v0`; only a redesign does, and a redesigned
 version re-declares its policy.
 
-Status lifecycle: `draft → stable → deprecated → retired`, with a sunset date
-and migration note on the deprecating version. Under `versioned`, the current
-version is named, a breaking change requires the next version plus a
-migration note, and the old version stays until all consumers migrate.
-`external_consumers` covers consumers outside the tree. **Retiring a version
-that still has a live consumer — including an `external_consumers` entry — is
-a checkpoint finding.**
+Status lifecycle: `draft → stable → deprecated → retired`, with a sunset
+and migration note on the deprecating version. Under `versioned`, the
+current version is named, and a breaking change requires the next version
+plus a migration note that names the **migration mode**:
+
+| mode | when | the old version |
+|------|------|-----------------|
+| `coexisting` | the producer serves both versions through a window (two paths, or negotiation) | stays `stable` until it has no live consumer, then `deprecated` with a sunset date, then `retired` |
+| `lockstep` | one surface, one shape: the phase that ships the new version stops serving the old one | goes `deprecated` in the run that drafts the new version, its sunset being when the first phase in the new version's `produced_by` ships; every consumer node needs a migration phase that lands with that phase, because there is no window |
+
+A note that names no mode reads as `coexisting`, the rule before v0.10.2.
+A new version starts `draft`. The run that drafts it also amends any other
+contract whose body names the old version in a statement that holds for
+the new one too, naming both, and hands off to `hsdd-adr`, before the
+phase plans, to add the new version to every ADR `affects` that names the
+old one; the node specs follow at reconcile (§8.4).
+
+`consumers` lists the phases that consume a version now. A consumer phase
+has **migrated** when the newest shipped phase of its node that names the
+contract consumes a later version and not this one; the checkpoint reports
+it, and `hsdd-reconcile` moves it to `former_consumers`, which is history
+and never read as live. `external_consumers` covers consumers outside the
+tree and leaves by hand. A version's **live consumers** are its
+`consumers` and its `external_consumers`. **Retiring a version that still
+has a live consumer is a checkpoint finding**; a `deprecated` version past
+its sunset with none is retired through `hsdd-reconcile` on the
+checkpoint's plan step, and a `stable` version that nothing serves any
+more is a finding routed to `hsdd-contract` to deprecate it. Rejected:
+computing liveness from the phase records wherever it is needed, which
+leaves `consumers` listing phases no reader can trust.
 
 ### 3.6 Context isolation: the payoff
 
 The coding session for a phase receives its own phase section, the
 **Interface**, **Guarantees** and **Validation** of the contracts it
-consumes and produces, and the Decision and Consequences of its governing
-ADRs. A contract that this text names and the phase neither consumes nor
-produces comes too, marked `referenced` (§9.7). It never sees the
-producing node's implementation, sibling phases, or the full subsystem
-spec.
+consumes and produces, the Decision and Consequences of its governing
+ADRs, and the node decisions its phase section cites. A contract that this
+text names and the phase neither consumes nor produces comes too, marked
+`referenced` (§9.7). It never sees the producing node's implementation,
+sibling phases, or the full subsystem spec.
 
 ```mermaid
 %%{init:{'theme':'base','themeVariables':{'primaryTextColor':'#1e293b','lineColor':'#475569','edgeLabelBackground':'#ffffff','tertiaryTextColor':'#1e293b'}}}%%
@@ -1147,6 +1189,14 @@ only in a source must land where execution will see it: in a phase's Scope or
 Verification line, or in a contract `request`/`amend` entry (chapter 8) so
 the contract body carries it.
 
+**A pointer is not content.** The phase context carries the phase's own
+lines, its contracts, ADRs and open questions, and the node decisions
+(`D{n}`) its lines cite (§9.7), and nothing else from the tree or the
+sources. A line that says only "per the request's Screen" or "per the PRD
+wireframe" reaches the session as those words. The line carries the
+binding detail itself (the rows, the copy, the values), and a pointer may
+follow it as provenance; the Phase Design Checklist checks it.
+
 ---
 
 ## 8. Governance: Freeze and Reconcile
@@ -1194,7 +1244,9 @@ writes only its own node's plan file.
 Four entry kinds, any of which may carry short rationale sub-bullets:
 
 - **`confirm`** — finalize provisional `produced_by` / `consumers` phase ids
-  for a contract this node produces or consumes.
+  for a contract this node produces or consumes. A confirm that names a
+  version the node's header does not list also carries that version into
+  the header and the specs above it (§8.4); append mode never edits them.
 - **`note`** — a conventions-worthy fact. Notes that duplicate derived data
   are dropped at reconcile time; the registry already projects contract
   facts.
@@ -1233,8 +1285,14 @@ its worktree are not.
 `hsdd-contract` itself is a **root-only writer**. Reconcile's job: drain the
 pending sections at the root after phase-plan branches merge — apply
 `confirm`s, resolve `request`s with the human, apply `amend`s, finalize
-`phase_ids`, regenerate the registries. It runs once, at the root lineage,
-never per worktree, and before any phase context is built. It also asserts
+`phase_ids`, write the version ripple (a newly confirmed version into the
+node's header `Produces`/`Consumes`; the parent's child table, embedded
+summary, including the `Sources` append mode extended, and DAG; the root's
+contract matrix; a new change request into the root's `## Sources`),
+regenerate the registries. On a checkpoint's plan step it also moves
+migrated consumers to `former_consumers` and retires `deprecated` versions
+past their sunset (§3.5). It runs once, at the root lineage, never per
+worktree, and before any phase context is built. It also asserts
 executable validation at every `draft → stable` flip (§3.4) and carries the
 OQ citation sweep: when a pass lands a resolution, it sweeps for citations
 still treating the question as open.
@@ -1275,8 +1333,8 @@ missing, and replaces a pre-v0.10 copy that has no `## Learnings`, whatever
 the method, so the current template exists before the first coding session. It
 is the operational form of context isolation: the phase's own section plus the
 Interface, Guarantees and Validation of the contracts it consumes, produces
-and references, and the Decision and Consequences of its governing ADRs.
-Never producer internals,
+and references, the Decision and Consequences of its governing ADRs, and
+the node decisions its phase section cites. Never producer internals,
 never another phase's section, never the full node spec. Phases carry no
 Sources field and no source document is injected, because the planner is the
 one who read the sources (§7.6). The phase block is typically 80 to 150 lines,
@@ -1390,8 +1448,12 @@ Five rules govern it:
    governance file, a fixed text `hsdd-config` defines, or a link. The agent
    writes no sentence of its own into the file.
 2. **Self-contained.** Every contract, ADR and open-question id the file
-   names has its text inline, except other phases' ids, which appear only in
-   the phase's Dependencies and Collides with lines. An external contract
+   names, and every node decision (`D{n}`) the phase's own fields cite, has
+   its text inline, except other phases' ids, which are never inlined and
+   appear only where the phase's own fields name them (its Dependencies and
+   Collides with lines, or its Scope). A cited node decision is
+   copied from the node spec's Decisions section into `## Decisions`, after
+   the ADRs; a range `D{n} to D{m}` cites each id in it. An external contract
    with no file gets a one-line entry saying so. A contract the file names
    that the phase neither consumes nor produces, in the phase's own fields
    or inside another contract's text, is inlined under the direction
@@ -1412,29 +1474,41 @@ Five rules govern it:
 
 `hsdd-context/superpowers/{phase-id}.md`: a header telling the session to
 start at `superpowers:writing-plans` (never at brainstorming, because the
-phase was designed and reviewed in HSDD), then **Global Constraints**, then
-a **Plan check**, then the generic body verbatim between the same markers
-`config.yaml` uses. `writing-plans` copies the spec's Global Constraints into
-the plan header, and `subagent-driven-development` hands them to every
-implementer and task reviewer, so they are where HSDD's rules travel:
-test-first in every task's own text, at most as many tasks as the phase's
-size estimate, the gate before the last task, the verification doc as the
-last task at the tier's depth, the governance freeze, contracts consumed by
-Interface and Guarantees only and tested against their fixtures, a
-referenced contract used only as the phase's Scope says, the tier's
-artifact profile, and the
-project's tech skills. The run is `writing-plans`, the plan check, then
-`subagent-driven-development` (or `executing-plans`), then the verification
-doc. The definition of done does not change: a verification doc merged to
-spec-repo main.
+phase was designed and reviewed in HSDD) and naming the execution skill,
+then **Global Constraints**, then a **Plan check**, then the generic body
+verbatim between the same markers `config.yaml` uses. `writing-plans`
+copies the spec's Global Constraints into the plan header, and
+`subagent-driven-development` hands them to every implementer and task
+reviewer, so they are where HSDD's rules travel: test-first in every task's
+own text under `test-driven-development`, at most as many tasks as the
+phase's size estimate, the gate before the last task, the verification doc
+as the last task at the tier's depth, the governance freeze, contracts
+consumed by Interface and Guarantees only and tested against their
+fixtures, a referenced contract used only as the phase's Scope says, the
+tier's artifact profile, evidence for every claim of done under
+`verification-before-completion`, root-cause debugging under
+`systematic-debugging`, and the project's tech skills. The constraints name
+the skills, not only the behavior: a skill's rules load only when something
+names it, and `subagent-driven-development` has an implementer follow TDD
+only when its task says to. Test-first holds when a dependency phase has
+already merged and delivered the behavior a test covers: the failing run is
+against the commit before that phase, or against a named mutant, and the
+verification doc's Observed says which (the generic context's Discipline
+line says the same for either method). The run is `writing-plans`, the
+plan check, then the execution skill the review tier selects, then the
+verification doc: `executing-plans` at gate-only and spot-check (one
+context, one final review), `subagent-driven-development` at full-review (a
+fresh implementer and task reviewer per task). The definition of done does
+not change (§12.3).
 
 ### 9.9 Choosing the coding method
 
 `hsdd/conventions.md` declares the project's default in a
 `**Coding method:**` line, `openspec` or `superpowers`; a project that
-declares nothing is `openspec`. `/hsdd-phase {phase-id} --method {method}`
-overrides it for one phase. The generic file is written whatever the
-method: it is the audit record and the in-progress signal (§12.6). A new
+declares nothing is `openspec`. `/hsdd-config {phase-id} --method {method}`
+(or the optional `/hsdd-phase` command, §14.3) overrides it for one phase.
+The generic file is written whatever the method: it is the audit record
+and the in-progress signal (§12.6). A new
 method later is a new derivative, never a change to the generic context.
 
 ---
@@ -1486,7 +1560,7 @@ template at the depth the tier requires:
 ## Learnings           (gate-time findings about the tree, not this phase)
 ## Metrics             (optional; filled at the gate while numbers are fresh)
 ## Sign-off
-- Reviewer / date:
+- Reviewer / date: {person} | {agent} for {person} (delegated)
 - Review tier applied:
 - Disposition of each Outstanding item: verified | waived (reason) | deferred to {phase-id}
 ```
@@ -1496,6 +1570,17 @@ against the schema and reproduces the fixtures; consuming phases test against
 those same fixtures (§3.4). **The review gate is not passed while an
 Outstanding item lacks a disposition** — and, below, while a Learning lacks
 one.
+
+**Who signs.** The Reviewer is the person the gate answers to. A person may
+delegate a gate to an agent; the sign-off then names both, `{agent} for
+{person}`, the person by name or by a role only they hold (the owner). A
+delegated sign-off counts as done, and the next checkpoint lists every one
+in a single finding for that person to ratify or re-run (§12.7). A
+Reviewer who names no person leaves the phase a claim; a phase an earlier
+progress report already counted done keeps that status, and the finding
+asks for the person's sign-off. Rejected: refusing every delegated
+sign-off (no agent-run phase could ever ship) and counting any filled field
+(the audit then checks nothing a human answers for).
 
 ### 10.3 Learnings: the feedback loop at the gate
 
@@ -1512,9 +1597,9 @@ entry may be left open:
 **Outstanding is about this phase's claims** (what could not be verified
 here); **Learnings is about the tree** (what flows upward). Dispositions
 execute at the root, through the owning skill — `hsdd-contract` for bumps,
-`hsdd-adr` for proposals, a node-spec edit for spec updates — by the human
-running the gate, so the phase-session prohibition on governance writes is
-untouched.
+`hsdd-adr` for proposals, a node-spec edit for spec updates — by the person
+running the gate, or the agent they delegated it to, so the phase-session
+prohibition on governance writes is untouched.
 
 ### 10.4 Mid-phase renegotiation and boundary corrections
 
@@ -1583,7 +1668,8 @@ intake record at `hsdd/management/YYYY-MM-DD-intake-{slug}.md`, then a
 handoff. **The routing decision is written before the handoff**, so the
 choice is auditable rather than implicit in whatever the next skill did.
 The intake record's header carries, as bullet lines, `**Date:**`,
-`**Request:**` (path or URL, and authority), `**Class:**`, `**Lands on:**`
+`**Request:**` (path or URL, and authority: accepted RFC, approved PRD,
+draft, ticket, incident or braindump), `**Class:**`, `**Lands on:**`
 with `**Contracts:**`, `**Promotes:**`, `**Collisions:**` and `**Status:**`
 (`open`, or `closed (date)`); its body carries `## Request`, `## Routing`
 (the decision and the exact handoff, written first), `## Produced` (a
@@ -1610,10 +1696,18 @@ then reclassify.**
 - The phase summary table becomes a permanent ledger; shipped phases stay in
   it.
 - Shipped-ness is *not authored*: it derives from the verification doc on the
-  spec repo's main branch — the only admissible "done" (chapter 12).
+  spec repo's main line (§14.2) — the only admissible "done" (chapter 12).
 - A phase planned for a change request, in a new plan or an appended one,
-  names the intake record in its Scope, and the request's path joins the
-  node's `Sources` field (appended, never replacing an entry).
+  names the intake record in its Scope, and the change request's own path
+  (the record's `**Request:**` line, not the record) joins the node's
+  `Sources` field with the sections that govern the node (appended, never
+  replacing an entry).
+- The node header's `Produces` and `Consumes` are not edited: a `confirm`
+  entry carries a new version, and reconcile writes the header and the
+  specs above it (§8.4).
+- The sizing floor (§7.2) runs over the appended phases only. A shipped
+  phase is never a merge partner, so a lone appended phase records nothing
+  about the floor.
 
 ### 11.4 `hsdd-spec` graft mode
 
@@ -1630,9 +1724,9 @@ execution plans, which supersede by design. After five change requests,
 `hsdd/spec/` holds more nodes and longer phase ledgers; `hsdd/management/`
 holds five intake records. **This is the rule that replaces "wipe `hsdd/` and
 rebuild."** An intake record closes when its `## Produced` names at least
-one phase and every listed phase has a verification doc on main, the same
-admissibility rule as everywhere else; `hsdd-checkpoint` appends the phases
-and ticks it closed (§12.7).
+one phase and every listed phase is done (§12.3), the same admissibility
+rule as everywhere else, so a claim keeps the record open;
+`hsdd-checkpoint` appends the phases and ticks it closed (§12.7).
 
 ### 11.6 Node retirement
 
@@ -1764,8 +1858,9 @@ from independent counting. Required sections:
   current milestone document, the section stays, with one line saying so.
 - **What is done** — per node, **with evidence.** The only admissible
   "done": *the phase's verification document is merged to the spec repo's
-  main branch.* Claims without a verification doc are reported as claims,
-  not as done.
+  main branch, its Reviewer naming a person (§10.2).* Claims without a
+  verification doc, or with a Reviewer who names no person, are reported
+  as claims, not as done.
 - **Velocity** — the observed rate per lane in PE per manday, then the
   *calibrated* rate with its caveats stated (early phases are light; review,
   not generation, is the bottleneck; no scaling assumptions beyond current
@@ -1878,8 +1973,8 @@ to `hsdd/management/archive/`, and later checkpoints stop ticking it; the next
 campaign opens a new one through `hsdd-milestone`. The header names its
 campaign on an optional `**Campaign:**` line, which `hsdd-milestone` always
 writes; a document without one stays conformant. Admissibility for sealing
-is the rule that already exists, namely that every phase in scope has a verification doc
-merged to spec-repo main. The seal is evidence-backed, never declared.
+is the rule that already exists, namely that every phase in scope is done
+(§12.3). The seal is evidence-backed, never declared.
 
 ### 12.6 The atlas
 
@@ -1923,7 +2018,9 @@ One run of `hsdd-checkpoint`:
      statuses coherent, no stale pending-prose on resolved questions),
      undrained pending-reconcile sections, verification-doc audit (every
      claimed-done phase has its doc on main, sign-offs filled, no template
-     residue), management chain integrity, grandfather audit (membership
+     residue, a Reviewer who names a person, and the delegated sign-offs
+     since the last checkpoint in one finding for the person they name,
+     §10.2), management chain integrity, grandfather audit (membership
      against the upgrade run's marking step: a marked contract the step does
      not name is a High finding; members still waiting for the step carry
      it forward; a grandfathered contract whose artifact now exists is a
@@ -1931,7 +2028,10 @@ One run of `hsdd-checkpoint`:
      `draft` contract with `phase_ids: final`, no open `request` and an
      artifact is a finding routed to `hsdd-reconcile` to finalize it), and
      retired contract versions that still have a live consumer,
-     `external_consumers` included (§3.5).
+     `external_consumers` included, and migration health (§3.5): migrated
+     consumers still in `consumers`, `deprecated` versions past their
+     sunset, and `stable` versions nothing serves any more, each a finding
+     with its plan step.
    - *Code vs plan* (each implementation repo): what phases the code
      actually completes versus what the plans and prior report claim;
      contract-surface drift in both directions; scope creep — code with no
@@ -1950,10 +2050,10 @@ One run of `hsdd-checkpoint`:
      stood still is a finding too.
    - *Intake records:* every record at `**Status:** open` is read; the
      phases whose Scope cites the record are appended to its `## Produced`;
-     a record whose list names at least one phase, all with verification
-     docs on spec-repo main, is ticked `closed (date)` with a change-log
-     line; an open record whose `## Produced` is still empty two
-     checkpoints after its date is a finding.
+     a record whose list names at least one phase, all done (§12.3), is
+     ticked `closed (date)` with a change-log line; an open record whose
+     `## Produced` is still empty two checkpoints after its date is a
+     finding.
 3. **Emits the progress report** (§12.3), findings register included.
 4. **Revises the execution plan** (§12.4): a new dated file superseding the
    previous one, findings compiled into steps per §12.8, guardrail
@@ -2220,10 +2320,13 @@ hsdd/
   contract/
     INDEX.md                    # generated registry
     auth-token.md               # one file per contract, named for the slug
+    auth-token.v2.md            # a later version, beside the first (§3.1)
     schema/
       auth-token.schema.json    # executable validation (§3.4)
+      auth-token.v2.schema.json
     fixture/
       auth-token/               # executable validation (§3.4)
+      auth-token.v2/
   adr/
     001-auth-provider.md
     INDEX.md                    # generated, same mechanism
@@ -2297,7 +2400,10 @@ new cross-skill references. Its body carries:
   describes (§7.4);
 - the `**Teams:**` line, `single-team` (default) or `multi-team` (§14.5);
 - the `**Coding method:**` line, `openspec` (default) or `superpowers`
-  (§9.9).
+  (§9.9);
+- the `**Main line:**` line, the spec repo's branch that "main" means in
+  every rule (a phase is shipped, and an intake record can close, once its
+  verification doc is there), `main` when absent.
 
 ### 14.3 Packaging: skills and slash commands
 
@@ -2434,6 +2540,28 @@ progress report already has its grandfathered-contracts row.
 |--------|----------------------------|---------------------------|
 | Every contract subsection carries the contract's Validation section (§9.7) | Forward-only: phases switched after the upgrade get it; a phase context already written is a record and is not rewritten. | `hsdd-config` |
 | `referenced` subsections for a contract the context names that the phase neither consumes nor produces (§9.7) | Forward-only, as above. A superpowers phase already in progress keeps the context it started with: re-running its switch rewrites constraint 7, which its plan copied verbatim from the old derivative. | `hsdd-config`; `hsdd-phase-plan` (a Scope names such a contract by `{contract-id}@{version}`) |
+
+**v0.10.2** corrects the change flow, from twelve findings of the second
+tutorial run, has the superpowers derivative name the skills it relies on,
+and adds one optional contract key, `former_consumers`, and one optional
+conventions line, `**Main line:**`. No artifact under `hsdd/` is rewritten
+and nothing triggers an adoption run.
+
+| Change | Effect on a 0.10.1 project | Implemented in v0.10.2 by |
+|--------|----------------------------|---------------------------|
+| `approved PRD` authority (§2.6, §11.2) | Additive. | `hsdd-intake` |
+| A later contract version in its own file, `{slug}.v{n}.md` (§3.1) | Forward-only: versions drafted after the upgrade. A second version already written under another name stands; skills find versions by frontmatter. | `hsdd-contract`; `hsdd-config` finds contracts by `id` and `version`; conventions template |
+| Migration mode, and `lockstep` deprecating the old version at the bump (§3.5) | A note without a mode reads as `coexisting`, the 0.10.1 rule. A version bumped before the upgrade that nothing serves surfaces at the next checkpoint as a finding routed to `hsdd-contract`. | `hsdd-contract`; `hsdd-checkpoint` |
+| `former_consumers`; migrated consumers; retiring a version past its sunset (§3.5) | Optional key: absent means none migrated. The next checkpoint reports migrated phases still in `consumers`, and its plan step has `hsdd-reconcile` move them; the upgrade itself moves nothing. The registry generator passes the key through, so a project's copy needs no change. | `hsdd-contract`; `hsdd-checkpoint` finds; `hsdd-reconcile` moves and retires |
+| The version ripple, Sources copies and the root's `## Sources` included; append mode leaves the node header; a bump amends other contracts and ADR `affects` that name the old version (§3.5, §8.4, §11.3) | From the next bump and reconcile forward; lines already edited by hand stand. | `hsdd-reconcile`; `hsdd-phase-plan`; `hsdd-contract` |
+| The change request's own path in Sources; the sizing floor over appended phases only (§11.3) | From the next append forward. | `hsdd-phase-plan`; `hsdd-intake` |
+| A pointer is not content; node decisions in the phase context (§7.6, §9.7) | Forward-only: plans written after the upgrade are checked, and phases switched after it get the node decisions they cite. A context already written is a record. | `hsdd-phase-plan`; `hsdd-config` |
+| Test-first after a merged dependency (§9.8) | Forward-only, as in v0.10.1: a superpowers plan in progress copied constraint 1's old text, and re-running its switch rewrites the derivative. | `hsdd-config` |
+| The superpowers derivative names its skills: the execution skill by review tier, `test-driven-development` in constraint 1, `verification-before-completion` and `systematic-debugging` as constraints 9 and 10, tech skills from 11 (§9.8) | Forward-only, as above: a plan in progress keeps the constraints it copied; the next plan copies the new ones. | `hsdd-config` |
+| A Scope may name another phase (§9.7) | None: the switch already copied the Scope verbatim; the rule now says so. | `hsdd-config` |
+| Delegated sign-offs; a Reviewer who names no person; intake closure and sealing on done (§10.2, §11.5, §12.3, §12.5, §12.7) | From the next checkpoint. A phase an earlier progress report counted done is never downgraded: a sign-off naming no person becomes a finding asking for one. A record closed or a document sealed earlier stays so. The switch keeps a project's existing template copy and reports the difference. | `hsdd-checkpoint`; `hsdd-config` template |
+| `**Main line:**` (§14.2) | Optional: absent means `main`, the 0.10.1 reading. | conventions template; read by `hsdd-phase-plan`, `hsdd-intake`, `hsdd-checkpoint`, `hsdd-config`, `hsdd-contract` |
+| The conventions template names `/hsdd-config` for the switch (§9.9) | Text only; an existing conventions file is not rewritten. | conventions template |
 
 **The one case worth calling out:** a fully-governed ≥0.6.1 project usually
 still has system surface that was never in the tree, namely the code the
@@ -2601,7 +2729,7 @@ natural seed; it lacks only the baseline and the write-up.
 
 ## 18. Settled Decisions
 
-The merged decision record of every release through v0.10.1, current answers
+The merged decision record of every release through v0.10.2, current answers
 only. **Provenance is a required column** — `field-tested` (validated on a
 real project), `pressure-tested` (held under the adversarial 0.6.0
 campaign), or `reasoned-only` — because new material must not inherit
@@ -2694,6 +2822,15 @@ add is `reasoned-only`, and the table says so instead of letting it borrow.
 | Artifact stability | Formats frozen for the 1.0 line; additive optional fields only (§15.3). | reasoned-only |
 | Verification template copy | By the switch when missing, and in place of a pre-v0.10 copy without `## Learnings`, for either method (§9.2). | reasoned-only |
 | v0.8.0 and v0.9.0 | Never released; v0.10.0 follows v0.7.1 and states per rule what the skills implement (chapter 15). | reasoned-only |
+| Where a later contract version lives | Its own file beside the first, `{slug}.v{n}.md`, schema and fixtures likewise; nothing renamed; found by frontmatter (§3.1). | reasoned-only |
+| The old version when one surface cannot serve both | The migration note names its mode; `lockstep` deprecates the old version at the bump, its sunset when the new version's first producer ships (§3.5). | reasoned-only |
+| How liveness is read | From frontmatter: migrated phases move from `consumers` to `former_consumers`, found by the checkpoint, moved by reconcile, never deleted (§3.5). | reasoned-only |
+| Who writes a bump into the node specs | `hsdd-reconcile`, from the `confirm` entries; append mode never edits the node header (§8.4, §11.3). | reasoned-only |
+| A pointer in a phase line | Not content: the line carries the binding detail, and the node decisions a phase cites are injected (§7.6, §9.7). | reasoned-only |
+| Test-first after a merged dependency | Fail against the commit before that phase, or a named mutant, and record which (§9.8). | reasoned-only |
+| How the superpowers derivative carries discipline | By naming the skills, not only the behavior: the execution skill by review tier (`executing-plans` at gate-only and spot-check, `subagent-driven-development` at full-review), `test-driven-development`, `verification-before-completion` and `systematic-debugging` (§9.8). | reasoned-only |
+| Delegated sign-off | Admissible when it names the person it answers to; counted done and listed in one checkpoint finding for that person to ratify; a sign-off naming no person is a claim, without downgrading earlier done (§10.2). | reasoned-only |
+| What "main" means | The conventions' `**Main line:**`, `main` when absent (§14.2). | reasoned-only |
 
 ### 18.2 Deliberately dropped
 
@@ -2759,6 +2896,16 @@ the completion of acceptance criterion 1's traceability contract:
   designed; `v0 → v1` is the adoption exit (§3.5).
 - **`external_consumers`:** contract frontmatter naming consumers outside
   the tree (§3.5).
+- **Live consumer:** a phase in a version's `consumers`, or an
+  `external_consumers` entry (§3.5).
+- **Former consumer:** a phase that migrated to a later version, moved by
+  `hsdd-reconcile` from `consumers` to `former_consumers`; history, never
+  live (§3.5).
+- **Migration mode:** `coexisting` or `lockstep`, named by a breaking
+  version's migration note; it decides when the old version is deprecated
+  (§3.5).
+- **Version ripple:** a newly confirmed version written into its node's
+  header and the specs above it, by `hsdd-reconcile` (§8.4).
 - **Intake record:** the dated, never-superseded management document that
   makes one change request visible as one unit of work (§11.2).
 - **Campaign:** the scope of one milestone document — the adoption
@@ -2780,6 +2927,13 @@ the completion of acceptance criterion 1's traceability contract:
   on; it gets an Entry / Agenda / Exit / Unblocks section (§12.4).
 - **Generic phase context:** the self-contained, method-neutral file
   `hsdd-config` writes for a phase before its coding session (§9.7).
+- **Node decision:** a `D{n}` entry in a node spec's Decisions section,
+  copied into a phase context when the phase's fields cite it (§9.7).
+- **Delegated sign-off:** a verification-doc sign-off an agent takes for a
+  named person, `{agent} for {person}`; counted done and listed for that
+  person to ratify (§10.2).
+- **Main line:** the spec repo branch that "main" means, named by the
+  conventions' `**Main line:**`, `main` when absent (§14.2).
 - **Referenced contract:** a contract a phase context names, in the phase's
   own fields or inside another contract's text, that the phase neither
   consumes nor produces; inlined so the context stays self-contained (§9.7).

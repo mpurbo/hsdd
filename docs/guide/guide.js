@@ -431,7 +431,7 @@ A signed JWT with the claims { sub, exp, iat, scopes }.
 const PARTS = {
   meta: ["Frontmatter: metadata for the registry", "A script projects every contract's frontmatter into hsdd/contract/INDEX.md. Nobody maintains the index by hand, so it cannot drift. phase_ids starts provisional and only hsdd-reconcile flips it to final."],
   interface: ["Interface and Guarantees: what consumers receive", "This half, with the Validation section, is what a consuming phase's context gets, by id. A consumer never sees the producing node's code or spec, only the contract."],
-  versioning: ["Versioning: v1, v2, no semver", "Compatibility is declared per version: additive-only, versioned, or frozen. A breaking change mints the next version with a migration note, and the old version stays until consumers move."],
+  versioning: ["Versioning: v1, v2, no semver", "Compatibility is declared per version: additive-only, versioned, or frozen. A breaking change mints the next version in its own file beside the old one, with a migration note. The old version stays until its consumers move, or, when one endpoint cannot serve both, is deprecated at once and goes when the new version ships."],
   validation: ["Validation: stable means machine-checkable", "A contract cannot be stable without a schema or fixtures. The producing phase's gate replays them against real output; consuming phases test against the same fixtures. The mocks are the fixtures, so a contract change breaks consumer tests loudly instead of drifting silently. Every phase context carries this section, so the session knows where the fixtures are and what they look like."],
 };
 
@@ -612,7 +612,7 @@ function cycleView(s) {
   return `<div class="bar"><span class="label">Coding method</span>${seg("method", s.method, [["openspec", "OpenSpec"], ["superpowers", "superpowers"]], "Coding method")}</div>
     ${op
       ? flow([["k-impl", "new", "a change for this phase", "1"], ["k-impl", "proposal · design · tasks", "design.md scaled by tier", "2"], ["k-impl", "apply", "test-first, task by task", "3"], ["k-gate", "gate", "gate command + contract replay", "4"], ["k-done", "verification doc", "then archive", "5"]])
-      : flow([["k-impl", "writing-plans", "plans from the phase spec", "1"], ["k-impl", "subagent-driven-development", "one subagent per task, test-first", "2"], ["k-gate", "gate", "gate command + contract replay", "3"], ["k-done", "verification doc", "written from the template", "4"]])}
+      : flow([["k-impl", "writing-plans", "plans from the phase spec", "1"], ["k-impl", "the tier's execution skill", "test-driven-development on every task", "2"], ["k-gate", "gate", "gate command + contract replay", "3"], ["k-done", "verification doc", "written from the template", "4"]])}
     <div class="tbl-wrap"><table class="tbl"><thead><tr><th>Tier</th><th>proposal</th><th>design.md</th><th>tasks + spec deltas</th><th>verification doc</th></tr></thead><tbody>
       <tr><td>${chip("gate-only", "gate-only")}</td><td>brief</td><td>skipped</td><td>full</td><td>slim</td></tr>
       <tr><td>${chip("spot-check", "spot-check")}</td><td>brief</td><td>only for a real decision</td><td>full</td><td>short</td></tr>
