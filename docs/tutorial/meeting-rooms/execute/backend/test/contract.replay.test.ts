@@ -1,19 +1,24 @@
-// The phase gate's contract replay: every fixture of auth-api@v1 and
-// profile-api@v2, sent to the real routes, must reproduce.
+// The phase gate's contract replay: every fixture of auth-api@v1,
+// profile-api@v2 and the served booking-api@v1 endpoints, sent to the real routes, must reproduce.
 import { randomBytes } from "node:crypto";
 import { describe, expect, it } from "vitest";
 import { ACCOUNTS } from "../src/accounts.ts";
 import { buildApp } from "../src/app.ts";
+import { createBookingStore } from "../src/booking-store.ts";
 import { SESSION_TTL_MS } from "../src/sessions.ts";
-import { type ContractSlug, type PlaceholderHooks, loadFixtures, replayFixture } from "./replay.ts";
+import { testDatabase } from "./db.ts";
+import { type ContractSlug, type PlaceholderHooks, endpointDef, loadFixtures, replayFixture } from "./replay.ts";
+
+const db = testDatabase();
 
 /** The PRD's demo accounts; test-only, the service stores only scrypt keys. */
 const DEMO_PASSWORDS: Record<string, string> = { ayu: "sunrise-42", budi: "harbor-17" };
 
 function realService() {
   let now = Date.parse("2026-10-29T10:00:00.000Z");
-  const app = buildApp({ clock: () => new Date(now), randomBytes, accounts: ACCOUNTS });
-  const signIn = async (username: string): Promise<string> => {
+  const app = buildApp({ clock: () => new Date(now), randomBytes, accounts: ACCOUNTS, store: createBookingStore(db.pool) });
+  const signIn = async (username: string, issuedAt?: Date): Promise<string> => {
+    if (issuedAt) now = issuedAt.getTime();
     const res = await app.inject({
       method: "POST",
       url: "/api/login",
@@ -25,6 +30,11 @@ function realService() {
   };
   const hooks: PlaceholderHooks = {
     token: signIn,
+    prepare: async (fixture) => {
+      now = Date.parse(fixture.clock!);
+      await db.resetBookings();
+      await db.seedBookings(fixture.given ?? []);
+    },
     expiredToken: async (username) => {
       const token = await signIn(username);
       now += SESSION_TTL_MS + 1000;
@@ -34,11 +44,15 @@ function realService() {
   return { app, hooks };
 }
 
-const SLUGS: ContractSlug[] = ["auth-api", "profile-api.v2"];
+const SLUGS: ContractSlug[] = ["auth-api", "profile-api.v2", "booking-api"];
+
+/** The booking-api endpoints served so far; each route task adds its own. */
+const SERVED = new Set(["GetRoomsResponse", "GetMyBookingsResponse"]);
 
 describe("contract replay against the real routes", () => {
   for (const slug of SLUGS) {
     for (const fixture of loadFixtures(slug)) {
+      if (slug === "booking-api" && !SERVED.has(endpointDef(fixture.request.method, fixture.request.path)!)) continue;
       it(`${slug}/${fixture.name} (${fixture.replay})`, async () => {
         const { app, hooks } = realService();
         expect(await replayFixture(app, slug, fixture, hooks)).toEqual([]);

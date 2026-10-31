@@ -1,6 +1,7 @@
 import Fastify, { type FastifyInstance, type FastifyServerOptions } from "fastify";
-import type { Account, Clock, RandomBytes } from "./domain.ts";
-import { VALIDATION_FAILED, registerRoutes } from "./routes.ts";
+import { registerBookingRoutes } from "./booking-routes.ts";
+import type { Account, BookingStore, Clock, RandomBytes } from "./domain.ts";
+import { VALIDATION_FAILED, registerRoutes, signedInAccount } from "./routes.ts";
 import { createSessionStore } from "./sessions.ts";
 
 /** Every effect the app uses is passed in, so tests control time and randomness. */
@@ -8,11 +9,12 @@ export type AppDeps = {
   clock: Clock;
   randomBytes: RandomBytes;
   accounts: readonly Account[];
+  store: BookingStore;
   /** Off unless given. Fastify's default serializers log method, URL and address, never headers or bodies. */
   logger?: FastifyServerOptions["logger"];
 };
 
-export function buildApp({ clock, randomBytes, accounts, logger = false }: AppDeps): FastifyInstance {
+export function buildApp({ clock, randomBytes, accounts, store, logger = false }: AppDeps): FastifyInstance {
   const app = Fastify({ logger });
 
   // Bodies arrive as raw strings and are parsed by the routes' pure parsers,
@@ -30,6 +32,9 @@ export function buildApp({ clock, randomBytes, accounts, logger = false }: AppDe
     throw error;
   });
 
-  registerRoutes(app, { accounts, sessions: createSessionStore(clock, randomBytes) });
+  const sessions = createSessionStore(clock, randomBytes);
+  const signedIn = signedInAccount(accounts, sessions);
+  registerRoutes(app, { accounts, sessions, signedIn });
+  registerBookingRoutes(app, { clock, store, signedIn });
   return app;
 }

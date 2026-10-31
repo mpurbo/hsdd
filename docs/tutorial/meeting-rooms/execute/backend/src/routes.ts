@@ -12,9 +12,22 @@ export const VALIDATION_FAILED = apiError("VALIDATION_FAILED", "Username and pas
 export const INVALID_CREDENTIALS = apiError("INVALID_CREDENTIALS", "Incorrect username or password.");
 export const UNAUTHORIZED = apiError("UNAUTHORIZED", "Sign in to continue.");
 
-export type RouteDeps = { accounts: readonly Account[]; sessions: SessionStore };
+/** The one token check: the account a bearer token signs in, or undefined. */
+export const signedInAccount =
+  (accounts: readonly Account[], sessions: SessionStore) =>
+  (authorization: string | undefined): Account | undefined => {
+    const token = parseBearer(authorization);
+    const session = token === undefined ? undefined : sessions.resolve(token);
+    return session && accounts.find((a) => a.id === session.accountId);
+  };
 
-export function registerRoutes(app: FastifyInstance, { accounts, sessions }: RouteDeps): void {
+export type RouteDeps = {
+  accounts: readonly Account[];
+  sessions: SessionStore;
+  signedIn: (authorization: string | undefined) => Account | undefined;
+};
+
+export function registerRoutes(app: FastifyInstance, { accounts, sessions, signedIn }: RouteDeps): void {
   app.post("/api/login", async (request, reply) => {
     const raw = typeof request.body === "string" ? request.body : "";
     const parsed = parseLoginRequest(request.headers["content-type"], raw);
@@ -28,9 +41,7 @@ export function registerRoutes(app: FastifyInstance, { accounts, sessions }: Rou
   });
 
   app.get("/api/me", async (request, reply) => {
-    const token = parseBearer(request.headers.authorization);
-    const session = token === undefined ? undefined : sessions.resolve(token);
-    const account = session && accounts.find((a) => a.id === session.accountId);
+    const account = signedIn(request.headers.authorization);
     if (account === undefined) return reply.code(401).send(UNAUTHORIZED);
     return reply.code(200).send(toProfile(account));
   });

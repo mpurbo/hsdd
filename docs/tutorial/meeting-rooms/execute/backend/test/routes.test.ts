@@ -3,12 +3,13 @@ import { afterEach, describe, expect, it } from "vitest";
 import type { FastifyInstance } from "fastify";
 import { ACCOUNTS } from "../src/accounts.ts";
 import { buildApp } from "../src/app.ts";
+import { NO_STORE } from "./no-store.ts";
 
 const NOW = "2026-10-29T10:00:00.000Z";
 let app: FastifyInstance;
 afterEach(() => app?.close());
 
-const service = () => (app = buildApp({ clock: () => new Date(NOW), randomBytes, accounts: ACCOUNTS }));
+const service = () => (app = buildApp({ clock: () => new Date(NOW), randomBytes, accounts: ACCOUNTS, store: NO_STORE }));
 const login = (body: string, contentType = "application/json") =>
   app.inject({ method: "POST", url: "/api/login", headers: { "content-type": contentType }, payload: body });
 const me = (authorization: string) => app.inject({ method: "GET", url: "/api/me", headers: { authorization } });
@@ -67,7 +68,7 @@ describe("GET /api/me", () => {
 
   it("returns the stored phone byte for byte", async () => {
     const odd = { ...ACCOUNTS[0]!, phone: "+1 555 0100" };
-    app = buildApp({ clock: () => new Date(NOW), randomBytes, accounts: [odd] });
+    app = buildApp({ clock: () => new Date(NOW), randomBytes, accounts: [odd], store: NO_STORE });
     const token = await tokenFor("ayu", "sunrise-42");
     expect((await me(`Bearer ${token}`)).json().phone).toBe("+1 555 0100");
   });

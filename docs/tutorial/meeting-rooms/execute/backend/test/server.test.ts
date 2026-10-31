@@ -6,6 +6,7 @@ import { describe, expect, it } from "vitest";
 import { ACCOUNTS } from "../src/accounts.ts";
 import { buildApp } from "../src/app.ts";
 import { start } from "../src/server.ts";
+import { NO_STORE } from "./no-store.ts";
 
 const AYU = JSON.stringify({ username: "ayu", password: "sunrise-42" });
 
@@ -13,7 +14,7 @@ describe("log hygiene (RFC §9)", () => {
   it("never writes the password or the token to a log line", async () => {
     const lines: string[] = [];
     const stream = new Writable({ write: (chunk, _enc, done) => (lines.push(String(chunk)), done()) });
-    const app = buildApp({ clock: () => new Date(), randomBytes, accounts: ACCOUNTS, logger: { level: "info", stream } });
+    const app = buildApp({ clock: () => new Date(), randomBytes, accounts: ACCOUNTS, store: NO_STORE, logger: { level: "info", stream } });
     const login = await app.inject({ method: "POST", url: "/api/login", headers: { "content-type": "application/json" }, payload: AYU });
     const token = login.json().token as string;
     await app.inject({ method: "GET", url: "/api/me", headers: { authorization: `Bearer ${token}` } });

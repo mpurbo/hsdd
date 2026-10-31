@@ -4,10 +4,16 @@ import { randomBytes } from "node:crypto";
 import type { FastifyInstance } from "fastify";
 import { ACCOUNTS } from "./accounts.ts";
 import { buildApp } from "./app.ts";
+import { createBookingStore } from "./booking-store.ts";
+import { DEFAULT_DATABASE_URL, createPool } from "./db.ts";
 
 /** Development address per auth-api@v1: http://127.0.0.1:3000, PORT overrides the port. */
 export async function start(port: number): Promise<FastifyInstance> {
-  const app = buildApp({ clock: () => new Date(), randomBytes, accounts: ACCOUNTS, logger: true });
+  // Interim wiring until the server's own phase task: the default database, schema not applied here.
+  const pool = createPool(DEFAULT_DATABASE_URL);
+  const store = createBookingStore(pool);
+  const app = buildApp({ clock: () => new Date(), randomBytes, accounts: ACCOUNTS, store, logger: true });
+  app.addHook("onClose", async () => void (await pool.end()));
   await app.listen({ host: "127.0.0.1", port });
   return app;
 }
