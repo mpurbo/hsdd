@@ -17,6 +17,7 @@ Decisions expected: the request's class and landing (the tree's backend, web and
 | S01 | 2026-10-31-intake-prd-simple-login-v2 | plan | none | 2026-10-31-intake-prd-simple-login-v2 | completed | 2c42daf |
 | S02 | 2026-10-31-intake-prd-simple-login-v2 | intake | hsdd-intake | hsdd/context/prd-simple-login.v2.md | completed | b14b69d |
 | S03 | 2026-10-31-intake-prd-simple-login-v2 | adr-update | hsdd-adr | ADR-001 | completed | b304ae8 |
+| S04 | 2026-10-31-intake-prd-simple-login-v2 | adr | hsdd-adr | ADR-002 | completed | 4f17c69 |
 
 ## Change log
 
