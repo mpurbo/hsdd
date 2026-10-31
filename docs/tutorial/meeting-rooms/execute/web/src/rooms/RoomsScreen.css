@@ -1,0 +1,116 @@
+/* Centred across, top-aligned down: the card's height changes with the list
+   (Loading…, D3's message, a day's rooms), and a vertically centred card would
+   move the date input on every date change. */
+.rooms {
+  min-height: 100vh;
+  display: grid;
+  align-items: start;
+  justify-items: center;
+  padding: 16px;
+  box-sizing: border-box;
+}
+
+/* Home's card, wider: a booking line and its local line are longer than Home's rows. */
+.rooms-card {
+  width: 100%;
+  max-width: 28rem;
+  box-sizing: border-box;
+  padding: 24px;
+  display: grid;
+  gap: 18px;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgb(15 23 42 / 8%);
+}
+
+/* Heading, date and Home share one row while they fit and wrap at narrow widths. */
+.rooms-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+}
+
+.rooms-header h1 {
+  margin: 0;
+  font-size: 1.375rem;
+}
+
+.rooms-header input {
+  font: inherit;
+  font-size: 1rem;
+  max-width: 100%;
+  box-sizing: border-box;
+  padding: 8px 10px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+}
+
+.rooms-header button {
+  margin-left: auto;
+  font: inherit;
+  font-weight: 600;
+  padding: 10px 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: #fff;
+  color: #1e293b;
+  cursor: pointer;
+}
+
+.rooms-header button:hover {
+  background: #f1f5f9;
+}
+
+.rooms-header input:focus-visible,
+.rooms-header button:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 1px;
+}
+
+.rooms-card p {
+  margin: 0;
+}
+
+/* Loading… and D3's message, in place of the list. */
+.rooms-message {
+  font-size: 0.9375rem;
+  color: #64748b;
+}
+
+.rooms-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 12px;
+  font-size: 0.9375rem;
+}
+
+.rooms-list li {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+/* Each line is its own block and wraps inside the card, so nothing scrolls sideways at 360 px. */
+.rooms-list p {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.rooms-room {
+  font-weight: 600;
+}
+
+/* The two spaces before the title, and the title itself, as received. */
+.rooms-booking,
+.rooms-local {
+  white-space: pre-wrap;
+}
+
+.rooms-local,
+.rooms-none {
+  color: #64748b;
+}

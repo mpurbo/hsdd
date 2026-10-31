@@ -1,12 +1,20 @@
 // The imperative shell around the session flow (session/flow.ts): it holds
 // the state, runs GET /api/me while checking, and writes or clears storage in
-// its handlers. The screen is a function of the state (D4: no router).
+// its handlers. The screen is a function of the state (D4: no router). Home
+// or Rooms lives in that state, in memory only (D4); storage holds only the
+// session (D2). The flow lands on Home after a sign-in or the load check, so a
+// reload shows Home. An expiry is bound to the token of the session it
+// renders for (D1). App removes the stored session only while storage holds
+// that token, which keeps a newer sign-in's stored session; the reducer ignores
+// an expiry for any other token, which keeps the newer session on screen. A
+// late 401 from an earlier session needs both to leave a newer one intact.
 import { useCallback, useEffect, useReducer } from 'react'
 import { fetchProfile } from './api/client'
 import type { Session } from './api/types'
 import { HomeScreen } from './home/HomeScreen'
 import { LoginScreen } from './login/LoginScreen'
 import { MESSAGES } from './messages'
+import { RoomsScreen } from './rooms/RoomsScreen'
 import { asTimeZone } from './time/time'
 import { initialState, next, type Notice } from './session/flow'
 import { clearSession, loadSession, saveSession } from './session/store'
@@ -49,11 +57,18 @@ export default function App() {
   }
 
   // D1: a 401 from any booking-api@v1 call ends the session as GET /api/me's does.
-  // Stable, so Home never sees a new callback identity.
+  // Bound to the token of the session it renders for, so a screen left over
+  // from an earlier session can report only that earlier token. The
+  // compare-and-clear here keeps the stored session of a newer sign-in; the
+  // reducer's token check keeps that session on screen. Both are needed when a
+  // leftover screen's answer gets through; the screens also drop answers after
+  // unmount. It changes identity only when that token does.
+  const signedInToken = state.kind === 'signed-in' ? state.session.token : null
   const onSessionExpired = useCallback((): void => {
-    clearSession()
-    dispatch({ type: 'session-expired' })
-  }, [])
+    if (signedInToken === null) return
+    if (loadSession()?.token === signedInToken) clearSession()
+    dispatch({ type: 'session-expired', token: signedInToken })
+  }, [signedInToken])
 
   // ADR-001: sign-out is client-side; there is no logout endpoint.
   const onSignOut = (): void => {
@@ -68,16 +83,28 @@ export default function App() {
           <p>Loading…</p>
         </main>
       )
-    case 'signed-in':
-      return (
+    case 'signed-in': {
+      // Validated once per render (D7). Rooms needs a usable zone, so a `rooms`
+      // screen without one renders Home, which then offers no Book a room.
+      const zone = state.profile.timeZone === undefined ? undefined : asTimeZone(state.profile.timeZone)
+      return state.screen === 'rooms' && zone !== undefined ? (
+        <RoomsScreen
+          token={state.session.token}
+          zone={zone}
+          onHome={() => dispatch({ type: 'show-home' })}
+          onSessionExpired={onSessionExpired}
+        />
+      ) : (
         <HomeScreen
           profile={state.profile}
           token={state.session.token}
-          zone={state.profile.timeZone === undefined ? undefined : asTimeZone(state.profile.timeZone)}
+          zone={zone}
+          onBookRoom={() => dispatch({ type: 'show-rooms' })}
           onSignOut={onSignOut}
           onSessionExpired={onSessionExpired}
         />
       )
+    }
     case 'signed-out':
       return (
         <LoginScreen

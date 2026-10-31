@@ -2,14 +2,20 @@
 // the app state). App is the shell: it runs the effects and dispatches
 // these events. An event that does not apply to the current state returns
 // the state unchanged, so a stale response can never show someone's Home.
+// The screen (Home or Rooms) lives here, in memory only (D4); a reload, a
+// sign-in and the load check all land on Home. An expiry names the token whose
+// request answered 401 and applies only to that session (D1).
 import type { Profile, Session } from '../api/types'
+
+/** The signed-in screens (D4). */
+export type Screen = 'home' | 'rooms'
 
 /** Why Login is shown, when it is not a plain signed-out start. */
 export type Notice = 'session-expired' | 'unavailable'
 
 export type AppState =
   | { readonly kind: 'checking'; readonly session: Session }
-  | { readonly kind: 'signed-in'; readonly session: Session; readonly profile: Profile }
+  | { readonly kind: 'signed-in'; readonly session: Session; readonly profile: Profile; readonly screen: Screen }
   | { readonly kind: 'signed-out'; readonly notice?: Notice }
 
 export type AppEvent =
@@ -18,7 +24,9 @@ export type AppEvent =
   | { readonly type: 'profile-rejected' }
   | { readonly type: 'profile-unavailable' }
   | { readonly type: 'signed-out' }
-  | { readonly type: 'session-expired' }
+  | { readonly type: 'show-rooms' }
+  | { readonly type: 'show-home' }
+  | { readonly type: 'session-expired'; readonly token: string }
 
 /** A stored session is checked with GET /api/me before Home shows (AC-2.2, D1). */
 export function initialState(stored: Session | null): AppState {
@@ -30,7 +38,7 @@ export function next(state: AppState, event: AppEvent): AppState {
     case 'checking':
       switch (event.type) {
         case 'profile-loaded':
-          return { kind: 'signed-in', session: state.session, profile: event.profile }
+          return { kind: 'signed-in', session: state.session, profile: event.profile, screen: 'home' }
         case 'profile-rejected':
           return { kind: 'signed-out', notice: 'session-expired' }
         case 'profile-unavailable':
@@ -44,8 +52,14 @@ export function next(state: AppState, event: AppEvent): AppState {
       switch (event.type) {
         case 'signed-out':
           return { kind: 'signed-out' }
+        case 'show-rooms':
+          return { ...state, screen: 'rooms' }
+        case 'show-home':
+          return { ...state, screen: 'home' }
         case 'session-expired':
-          return { kind: 'signed-out', notice: 'session-expired' }
+          return event.token === state.session.token
+            ? { kind: 'signed-out', notice: 'session-expired' }
+            : state
         default:
           return state
       }
