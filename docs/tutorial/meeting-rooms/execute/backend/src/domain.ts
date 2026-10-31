@@ -15,6 +15,8 @@ export type Account = {
   phone: string;
   /** A calendar date, YYYY-MM-DD. */
   memberSince: string;
+  /** IANA name, held as data and returned exactly as stored; the service applies no zone (ADR-002). */
+  timeZone: string;
   password: PasswordHash;
 };
 
