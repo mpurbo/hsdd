@@ -28,6 +28,7 @@ Decisions expected: the request's class and landing (the tree's backend, web and
 | S12 | 2026-10-31-intake-prd-simple-login-v2 | citation-touch | hsdd-spec | simple-login | completed | 332f8c5 |
 | S13 | 2026-10-31-intake-prd-simple-login-v2 | citation-touch | hsdd-spec | simple-login.backend | completed | dc11756 |
 | S14 | 2026-10-31-intake-prd-simple-login-v2 | citation-touch | hsdd-spec | simple-login.web | completed | de872ce |
+| S15 | 2026-10-31-intake-prd-simple-login-v2 | citation-touch | hsdd-spec | simple-login.integration | completed | da3d52f |
 
 ## Change log
 
