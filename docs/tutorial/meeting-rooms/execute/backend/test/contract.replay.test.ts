@@ -47,7 +47,7 @@ function realService() {
 const SLUGS: ContractSlug[] = ["auth-api", "profile-api.v2", "booking-api"];
 
 /** The booking-api endpoints served so far; each route task adds its own. */
-const SERVED = new Set(["GetRoomsResponse", "GetMyBookingsResponse"]);
+const SERVED = new Set(["GetRoomsResponse", "GetMyBookingsResponse", "PostBookingResponse"]);
 
 describe("contract replay against the real routes", () => {
   for (const slug of SLUGS) {

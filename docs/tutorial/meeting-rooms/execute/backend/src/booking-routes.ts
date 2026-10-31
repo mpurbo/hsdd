@@ -1,5 +1,5 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
-import { checkRoomsQuery, errorResponse, myBookingsView, roomsView } from "./booking-rules.ts";
+import { checkNewBooking, checkRoomsQuery, errorResponse, myBookingsView, roomsView, toWireBooking } from "./booking-rules.ts";
 import type { Account, BookingStore, Clock } from "./domain.ts";
 
 /** The route patterns of booking-api@v1, as Fastify names them. */
@@ -14,6 +14,16 @@ export type BookingRouteDeps = {
   clock: Clock;
   store: BookingStore;
   signedIn: (authorization: string | undefined) => Account | undefined;
+};
+
+/** The raw body as JSON; anything that is not a string, or does not parse, is undefined (the rules refuse it). */
+const parseJson = (raw: unknown): unknown => {
+  if (typeof raw !== "string") return undefined;
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return undefined;
+  }
 };
 
 const unauthorized = errorResponse({ code: "UNAUTHORIZED" });
@@ -42,12 +52,34 @@ export function registerBookingRoutes(app: FastifyInstance, { clock, store, sign
     return reply.code(200).send(myBookingsView(bookings));
   });
 
-  // Interim: Tasks 2 and 3 replace these with the real handlers. Until then the
-  // token check alone is served, which is what app.test.ts pins for these routes.
+  app.post("/api/bookings", async (request, reply) => {
+    const account = signedIn(request.headers.authorization);
+    if (account === undefined) {
+      return reply.code(unauthorized.status).send(unauthorized.body);
+    }
+    const checked = checkNewBooking({
+      contentType: request.headers["content-type"],
+      body: parseJson(request.body),
+      accountId: account.id,
+      now: clock(),
+    });
+    if (!checked.ok) {
+      const { status, body } = errorResponse(checked.error);
+      return reply.code(status).send(body);
+    }
+    const stored = await store.insert(checked.value);
+    if (!stored.ok) {
+      const { status, body } = errorResponse({ code: "BOOKING_CONFLICT", conflict: stored.error });
+      return reply.code(status).send(body);
+    }
+    return reply.code(201).send(toWireBooking(stored.value));
+  });
+
+  // Interim: Task 3 replaces this with the real handler. Until then the
+  // token check alone is served, which is what app.test.ts pins for this route.
   const tokenOnly = async (request: FastifyRequest, reply: FastifyReply) =>
     signedIn(request.headers.authorization) === undefined
       ? reply.code(unauthorized.status).send(unauthorized.body)
       : reply.code(501).send();
-  app.post("/api/bookings", tokenOnly);
   app.delete("/api/bookings/:id", tokenOnly);
 }
