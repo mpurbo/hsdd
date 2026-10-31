@@ -283,4 +283,23 @@ describe('MyBookings: Cancel (AC-6.2, D9, D10)', () => {
     expect(screen.getByRole('region', { name: 'My bookings' })).toHaveTextContent('(no bookings)')
     expect(screen.queryAllByRole('listitem')).toHaveLength(0)
   })
+
+  it('keeps both Cancels busy until the newest list request answers, the stale one answering first (design note 2)', async () => {
+    const stub = stubFetchDeferred()
+    const { user } = renderList()
+    await stub.answer(0, 200, bodyOf('my-bookings-budi'))
+    await user.click(cancelOf('Design review'))
+    await user.click(cancelOf('Quick check'))
+    await stub.answer(2, 204)
+    await stub.answer(1, 204)
+    // Call 3 is Quick check's refetch and call 4 Design review's: call 4 is the newest list request.
+    expect(stub.routes()).toEqual([LIST, `DELETE ${DESIGN}`, `DELETE ${QUICK}`, LIST, LIST])
+    await stub.answer(3, 200, bodyOf('my-bookings-budi'))
+    // The stale answer is dropped; the backend has cancelled Quick check, so it must not offer Cancel again.
+    expect(within(itemOf('Quick check')).getByRole('button', { name: 'Cancelling…' })).toBeDisabled()
+    expect(within(itemOf('Design review')).getByRole('button', { name: 'Cancelling…' })).toBeDisabled()
+    await stub.answer(4, 200, bodyOf('my-bookings-none'))
+    expect(screen.getByRole('region', { name: 'My bookings' })).toHaveTextContent('(no bookings)')
+    expect(screen.queryAllByRole('listitem')).toHaveLength(0)
+  })
 })

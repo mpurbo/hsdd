@@ -57,14 +57,27 @@ export function MyBookings({ token, zone, onSessionExpired }: MyBookingsProps) {
     onSessionExpiredRef.current = onSessionExpired
   })
 
-  // Settles after its answer has been applied, or dropped as stale or after unmount.
-  const load = useCallback(async (): Promise<void> => {
+  // The promise of the newest `load()` call.
+  const latestLoad = useRef<Promise<void>>(Promise.resolve())
+
+  // Settles once the list on screen comes from a request made no earlier than
+  // this one, or at once after unmount. A stale answer is dropped and the call
+  // settles with the newest call's promise, read from `latestLoad` when the
+  // answer arrives, so a chain of supersessions resolves through the ref. A
+  // Cancel awaiting it therefore stays busy until the list it shows postdates
+  // the DELETE (design note 2).
+  const load = useCallback((): Promise<void> => {
     const mine = ++newest.current
-    const result = await fetchMyBookings(token)
-    if (!alive.current || mine !== newest.current) return
-    if (result.ok) setList({ kind: 'loaded', bookings: result.value })
-    else if (result.reason === 'unauthorized') onSessionExpiredRef.current()
-    else setList({ kind: 'unavailable' })
+    const settled = (async (): Promise<void> => {
+      const result = await fetchMyBookings(token)
+      if (!alive.current) return
+      if (mine !== newest.current) return latestLoad.current
+      if (result.ok) setList({ kind: 'loaded', bookings: result.value })
+      else if (result.reason === 'unauthorized') onSessionExpiredRef.current()
+      else setList({ kind: 'unavailable' })
+    })()
+    latestLoad.current = settled
+    return settled
   }, [token])
 
   useEffect(() => {
