@@ -374,9 +374,11 @@ skills; they follow the tutorial's prompts in order.
   `schema/profile-api.v2.schema.json` and `fixture/profile-api.v2/` exist;
   v1's three paths still exist, and only v1's frontmatter `status` and its
   `## Versioning` changed; v2's migration note names `lockstep`; v1 is
-  `status: deprecated`, its sunset the first phase in v2's `produced_by`.
-- **Fails if:** a v1 file was renamed or moved, the note names no mode, or
-  v1 is still `stable`.
+  `status: deprecated`, its sunset the first phase in v2's `produced_by`;
+  v2 is `draft`; auth-api@v1's guarantee that names profile-api@v1 names
+  v2 as well, and ADR-001's `affects` lists profile-api@v2.
+- **Fails if:** a v1 file was renamed or moved, the note names no mode, v1
+  is still `stable`, or a node spec was edited in this run.
 - **Result:**
 
 ### F3. Append mode leaves the header; reconcile writes the ripple
@@ -388,7 +390,9 @@ skills; they follow the tutorial's prompts in order.
   never the intake record; no lone appended phase carries a sizing-floor
   line; no appended Scope rests on "per the request's Screen" without the
   row it means. After reconcile, every node header, the root's child
-  table, embedded summaries, DAG and contract matrix name profile-api@v2.
+  table, embedded summaries, DAG and contract matrix name profile-api@v2,
+  each embedded summary's Sources matches its node's, and the root's
+  `## Sources` lists the change request with its authority.
 - **Fails if:** a planner edited a header, a Sources entry names the
   record, or a copy above a node still lacks v2 after reconcile.
 - **Result:**

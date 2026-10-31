@@ -239,7 +239,8 @@ the summary table — ``**Default gate:** `<command>` `` — and a phase's
 is not `none`, the `Gate` line includes the contract replay: the command
 that validates the phase's real output against
 `hsdd/contract/schema/{slug}.schema.json` and reproduces
-`hsdd/contract/fixture/{slug}/` for each produced contract. When the
+`hsdd/contract/fixture/{slug}/` for each produced contract (`{slug}.v{n}`
+for a later version, as its Validation section names). When the
 project has no such command yet, the phase's Scope includes creating it and
 the Gate names it. A `Gate` of `node default` on a producing phase reads
 `node default plus contract replay for {slug}`. Consuming phases test
@@ -325,11 +326,11 @@ appends phases to an existing plan. Rules:
   marked `(retro)` in its name, cites the finding id in its Scope, and its
   verification doc is written after the fact and marked retroactive.
 - A phase appended for a change request follows Change Requests above.
-- The node file changes in four places only: summary-table rows, phase
-  sections and graph nodes, all appended, and `- **Sources:**`. The node
-  header's `Produces` and `Consumes` are not edited here: the `confirm`
-  entry for a new version carries it, and `hsdd-reconcile` writes the
-  header and the specs above it.
+- Append mode appends summary-table rows, phase sections, graph nodes, a
+  pending-governance block and `- **Sources:**` entries. It does not edit
+  the node header's `Produces` and `Consumes`: the `confirm` entry for a
+  new version carries it, and `hsdd-reconcile` writes the header and the
+  specs above it.
 - The sizing floor runs over the appended phases only. A shipped phase is
   never a merge partner, so a lone appended phase records nothing about the
   floor.

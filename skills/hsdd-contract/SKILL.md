@@ -144,9 +144,10 @@ fixtures and consumer tests fail loudly instead of drifting.
 **Authoring writes the artifact.** When this skill creates a contract or a
 new version, it also writes `hsdd/contract/schema/{slug}.schema.json` from
 the Interface and the kind's fixtures under `hsdd/contract/fixture/{slug}/`
-(a later version's own paths, per One file per version; the table above): example payloads for `api` and `event`, edge cases for
-`schema` and `shared-model`, a sample tree for `file`, recorded invocations
-for `cli`. A phase never writes them; the producing phase's gate replays
+(for a later version, its own paths, per One file per version), as the
+table above lists them: example payloads for `api` and `event`, edge cases
+for `schema` and `shared-model`, a sample tree for `file`, recorded
+invocations for `cli`. A phase never writes them; the producing phase's gate replays
 them.
 
 **Grandfathered contracts.** A contract that was already `stable` without
@@ -198,7 +199,7 @@ through `hsdd-reconcile`, as for any other contract.
 
   | value | meaning | consequence |
   |-------|---------|-------------|
-  | `additive-only` | optional additions only; never remove, retype, or repurpose a field; consumers ignore unknowns | compatible changes keep the version; claimable only if the existing fixtures still pass against the new schema |
+  | `additive-only` | optional additions only; never remove, retype, or repurpose a field; consumers ignore unknowns | compatible changes keep the version; claimable for a change within the version only if that version's existing fixtures still pass against the changed schema |
   | `versioned` (default) | breaking changes bump | next version, a migration note in `## Versioning`, a deprecation window |
   | `frozen` | not under our control, or adopted pending investigation | a change is a new contract, not a new version |
 
@@ -213,20 +214,30 @@ through `hsdd-reconcile`, as for any other contract.
 
   A migration note that names no mode reads as `coexisting`, the rule
   before v0.10.2.
+- **The rest of the ripple.** The run that drafts v{n+1} also finds every
+  other text that names v{n}. Another contract whose body names v{n} in a
+  statement that holds for v{n+1} too gets a compatible amendment here,
+  naming both. An ADR whose `affects` names v{n} gains v{n+1} through
+  `hsdd-adr`: this run's report names that handoff, to run before the
+  phase plans. Node specs are not edited here: the planners' `confirm`
+  entries carry the new version, and `hsdd-reconcile` writes it into
+  them.
 - Consumers always reference a specific version: `auth-token@v1`.
   `external_consumers` lists consumers outside the tree, by name.
 - **Live and former consumers.** `consumers` lists the phases that consume
   this version now. A consumer phase has **migrated** when the newest
-  shipped phase of its node that names this contract in Consumes names a
-  later version and not this one. The checkpoint reports that node's
-  shipped phase ids still in this version's `consumers`, and
+  shipped phase (its verification doc on main) of its node that names this
+  contract in Consumes names a later version and not this one. The
+  checkpoint reports that node's shipped phase ids still in this version's
+  `consumers`, and
   `hsdd-reconcile` moves them to `former_consumers`, never deleting one.
   `former_consumers` is history: no rule reads it as live. A version's
   **live consumers** are its `consumers` and its `external_consumers`; an
   external entry leaves by hand, when that consumer says it has moved.
 - `status` lifecycle: `draft → stable → deprecated → retired`. New contracts
-  start `draft`. `hsdd-reconcile` flips `draft` to `stable` at the end of a
-  reconcile pass, once both sides have confirmed their phase ids
+  and new versions start `draft`. `hsdd-reconcile` flips `draft` to
+  `stable` at the end of a reconcile pass, once both sides have confirmed
+  their phase ids
   (`phase_ids: final`), no `request` naming the contract remains
   unresolved, and the executable validation artifact exists. `stable` means
   the interface is frozen and safe to build against, not that the producer

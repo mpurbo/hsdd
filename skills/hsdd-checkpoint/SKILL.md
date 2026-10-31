@@ -94,10 +94,10 @@ be standing in produces a progress report that undercounts the project.
 1. **Pin the baselines.** Record the spec repo SHA and every implementation
    repo SHA. **Main**, here and in every rule below, is the spec repo's
    main line: the branch the conventions' `**Main line:**` names, `main`
-   when the line is absent. Under the standalone-spec-repo profile, record each repo's
-   submodule pointer; a pointer that is not a spec-repo main commit is a
-   finding *now*, before any content review — every conclusion drawn through
-   a forked submodule is suspect.
+   when the line is absent. Under the standalone-spec-repo profile, record
+   each repo's submodule pointer; a pointer that is not a spec-repo main
+   commit is a finding *now*, before any content review — every conclusion
+   drawn through a forked submodule is suspect.
 2. **Run the evidence pass.**
    - *Governance integrity (spec repo):* registry consistency (INDEX files
      match artifact files); dangling references (files, anchors, IDs);
@@ -207,7 +207,8 @@ be standing in produces a progress report that undercounts the project.
      open record, find the phase sections whose Scope cites the record's
      path, append any missing phase ids to its `## Produced`, and tick it
      `closed (date)` when the list names at least one phase and every listed
-     phase has its verification doc on spec-repo main: set
+     phase is done (step 3's admissible done, so a claim keeps the record
+     open): set
      `**Status:** closed (YYYY-MM-DD)` and append to the record's change log
      (management-document edits, within this skill's write scope). Report
      the counts of open and closed intakes; an open intake whose
@@ -215,8 +216,10 @@ be standing in produces a progress report that undercounts the project.
      finding (the handoff never landed).
 3. **Emit the progress report** (shape below). The only admissible "done"
    is: implemented, gate command green, verification doc merged to the spec
-   repo's main branch. Claims without a verification doc are reported as
-   claims.
+   repo's main branch, its Reviewer naming a person or an agent signing for
+   one, or the phase already counted done by an earlier progress report
+   (the audit above). Claims without a verification doc, or with a Reviewer
+   who names no person, are reported as claims.
 
    If `hsdd/summary/` exists, run `node hsdd/scripts/summary/summary.mjs
    check` and list the plan page, if it is stale, and the plan page's stale
@@ -249,9 +252,8 @@ be standing in produces a progress report that undercounts the project.
    change-log line, move the file to `hsdd/management/archive/` with `git
    mv`, and state in the progress report that the campaign closed and that
    the next campaign opens a new document through `hsdd-milestone`.
-   Admissibility is the existing rule: every phase in scope has a
-   verification doc on spec-repo main; a seal is evidence-backed, never
-   declared.
+   Admissibility is the existing rule: every phase in scope is done (step
+   3); a seal is evidence-backed, never declared.
 7. **Render the checkpoint page (only when `hsdd/summary/` exists).** Invoke
    `hsdd-summary` and follow its Process (checkpoint page) over the documents
    this run just wrote. If the page reports a Plan integrity finding (a

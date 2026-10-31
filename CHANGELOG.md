@@ -58,7 +58,8 @@ migration phase's context) stays as it is.
 
 - `hsdd-intake`: `approved PRD` is an authority value (finding 1). The
   change request's own path, not the intake record's, joins each node's
-  Sources (finding 6).
+  Sources (finding 6). A record closes when its phases are done, so a
+  claim keeps it open (finding 12).
 - `hsdd-contract`: a later version is a new file beside the first,
   `{slug}.v{n}.md`, with its schema and fixtures, and nothing is renamed
   (finding 2). A breaking change's migration note names its mode:
@@ -66,10 +67,15 @@ migration phase's context) stays as it is.
   shape, deprecates the old version in the same run, its sunset when the
   new version's first producer ships (finding 4). `consumers` means live: a
   phase whose node's newest shipped phase consumes a later version has
-  migrated and moves to the new `former_consumers` key (finding 5).
+  migrated and moves to the new `former_consumers` key (finding 5). The
+  bump also amends other contracts that name the old version and adds the
+  new one to ADR `affects` (finding 3). A new version starts `draft`, and
+  the `additive-only` fixture test applies to changes within a version.
 - `hsdd-reconcile`: writes the version ripple, a newly confirmed version
   into the node header's `Produces`/`Consumes`, the parent's child table,
-  summary and DAG, and the root's contract matrix (finding 3). On a
+  summary (with the `Sources` append mode extended) and DAG, the root's
+  contract matrix, and a new change request into the root's `## Sources`
+  (finding 3). On a
   checkpoint's plan step it moves migrated consumers and retires a
   `deprecated` version past its sunset.
 - `hsdd-phase-plan`: append mode leaves the node header to reconcile
@@ -86,7 +92,8 @@ migration phase's context) stays as it is.
 - `hsdd-checkpoint`: a sign-off delegated to an agent names the person it
   answers to, counts as done, and goes into one finding for that person to
   ratify; a Reviewer who names no person leaves the phase a claim (finding
-  12). Migration health: migrated consumers, `deprecated` versions past
+  12); intake closure and milestone sealing count only done phases.
+  Migration health: migrated consumers, `deprecated` versions past
   their sunset, and `stable` versions nothing serves are findings with plan
   steps (findings 4 and 5). "Main" is the conventions' `**Main line:**`
   (finding 9).

@@ -78,13 +78,18 @@ edits governance files); this skill performs the semantic merge.
    `phase_ids: provisional` to `phase_ids: final`. A side with no planned
    phase consumers (external or human consumers only) counts as confirmed.
    **The version ripple:** when a confirmed version is one the node's
-   header `Produces` or `Consumes` does not list, add it there, and make
-   every spec above the node that copies those lists say the same: the
-   parent's child-node table and its embedded summary of the node, the
-   parent's DAG (edge labels and edge table), and the root's contract
-   matrix. The header lists every version the node's phases name, so an
-   earlier version stays. Append-mode planning never edits these lines;
-   this step is where a bump reaches them.
+   header `Produces` or `Consumes` does not list, add it there. Then, for
+   every node whose pending section this run drains, whether or not a
+   version was added, make every spec above it that copies its header
+   match it: the parent's child-node table and its embedded summary of the
+   node (`Produces`, `Consumes`, and `Sources`, which append mode extends),
+   the parent's DAG (edge labels and edge table), and the root's contract
+   matrix. A change request that a node's `Sources` gained joins the root's
+   `## Sources` in that section's own entry form: its path, the authority
+   its intake record gives, and one line on what it governs. The header
+   lists every version the node's phases name, so an earlier version stays.
+   Append-mode planning never edits these lines; this step is where a
+   change reaches them.
 5. **Resolve `request` entries with the human.** Apply contract-shaped answers
    to the contract file under hsdd-contract rules (a breaking change writes
    the next version in a new file beside the old one, with a migration note
@@ -176,7 +181,7 @@ edits governance files); this skill performs the semantic merge.
 - [ ] No contract with both sides fully planned remains `phase_ids: provisional`; none with `phase_ids: final`, no open request and an existing validation artifact remains `status: draft`; none was flipped without its artifact.
 - [ ] Grandfather marks were added only to pre-existing fixtureless `stable` contracts named by the plan step (the upgrade step or one carrying it forward), none re-marked after a discharge, and removed wherever the artifact now exists.
 - [ ] No contract was retired while a consumer or external consumer still names it.
-- [ ] Every version a drained `confirm` names is in its node's header and in every copy above it.
+- [ ] Every version a drained `confirm` names is in its node's header, every copy above a drained node matches its header (`Produces`, `Consumes`, `Sources`), and every change request a node's `Sources` gained is in the root's `## Sources`.
 - [ ] Migrated consumers named by the plan step are under `former_consumers`; none was deleted.
 - [ ] Every collision was decided by the human, and the losing plan was updated to match.
 - [ ] Contract edits follow hsdd-contract versioning (breaking change = a new version file beside the old one + a migration note naming its mode).

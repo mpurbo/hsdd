@@ -549,8 +549,9 @@ the interface is genuinely redesigned.
 | `versioned` (default) | breaking changes bump | next version, a migration note, and a deprecation window |
 | `frozen` | not under our control, or adopted pending investigation | a change means a new contract, not a new version |
 
-`additive-only` is claimable only if the contract's existing fixtures still
-pass against the new schema — both gates already replay them. It constrains
+`additive-only` is claimable for a change within a version only if that
+version's existing fixtures still pass against the changed schema — both
+gates already replay them. It constrains
 what may happen *without* a bump; it never forbids one. Extension under
 `additive-only` never exits `v0`; only a redesign does, and a redesigned
 version re-declares its policy.
@@ -566,6 +567,11 @@ plus a migration note that names the **migration mode**:
 | `lockstep` | one surface, one shape: the phase that ships the new version stops serving the old one | goes `deprecated` in the run that drafts the new version, its sunset being when the first phase in the new version's `produced_by` ships; every consumer node needs a migration phase that lands with that phase, because there is no window |
 
 A note that names no mode reads as `coexisting`, the rule before v0.10.2.
+A new version starts `draft`. The run that drafts it also amends any other
+contract whose body names the old version in a statement that holds for
+the new one too, naming both, and hands off to `hsdd-adr`, before the
+phase plans, to add the new version to every ADR `affects` that names the
+old one; the node specs follow at reconcile (§8.4).
 
 `consumers` lists the phases that consume a version now. A consumer phase
 has **migrated** when the newest shipped phase of its node that names the
@@ -577,9 +583,9 @@ tree and leaves by hand. A version's **live consumers** are its
 has a live consumer is a checkpoint finding**; a `deprecated` version past
 its sunset with none is retired through `hsdd-reconcile` on the
 checkpoint's plan step, and a `stable` version that nothing serves any
-more is a finding routed to `hsdd-contract` to deprecate it. Rejected for
-liveness: computing it at every reader from the phase records, which
-leaves `consumers` saying something no reader may take at its word.
+more is a finding routed to `hsdd-contract` to deprecate it. Rejected:
+computing liveness from the phase records wherever it is needed, which
+leaves `consumers` listing phases no reader can trust.
 
 ### 3.6 Context isolation: the payoff
 
@@ -1279,12 +1285,13 @@ its worktree are not.
 pending sections at the root after phase-plan branches merge — apply
 `confirm`s, resolve `request`s with the human, apply `amend`s, finalize
 `phase_ids`, write the version ripple (a newly confirmed version into the
-node's header `Produces`/`Consumes`, the parent's child table, embedded
-summary and DAG, and the root's contract matrix), regenerate the
-registries. On a checkpoint's plan step it also moves migrated consumers to
-`former_consumers` and retires `deprecated` versions past their sunset
-(§3.5). It runs once, at the root lineage,
-never per worktree, and before any phase context is built. It also asserts
+node's header `Produces`/`Consumes`; the parent's child table, embedded
+summary, including the `Sources` append mode extended, and DAG; the root's
+contract matrix; a new change request into the root's `## Sources`),
+regenerate the registries. On a checkpoint's plan step it also moves
+migrated consumers to `former_consumers` and retires `deprecated` versions
+past their sunset (§3.5). It runs once, at the root lineage, never per
+worktree, and before any phase context is built. It also asserts
 executable validation at every `draft → stable` flip (§3.4) and carries the
 OQ citation sweep: when a pass lands a resolution, it sweeps for citations
 still treating the question as open.
@@ -1563,9 +1570,9 @@ delegated sign-off counts as done, and the next checkpoint lists every one
 in a single finding for that person to ratify or re-run (§12.7). A
 Reviewer who names no person leaves the phase a claim; a phase an earlier
 progress report already counted done keeps that status, and the finding
-asks for the person's sign-off. Rejected: refusing
-every delegated sign-off (no agent-run phase could ever ship) and counting
-any filled field (the audit then checks nothing a human answers for).
+asks for the person's sign-off. Rejected: refusing every delegated
+sign-off (no agent-run phase could ever ship) and counting any filled field
+(the audit then checks nothing a human answers for).
 
 ### 10.3 Learnings: the feedback loop at the gate
 
@@ -1709,9 +1716,9 @@ execution plans, which supersede by design. After five change requests,
 `hsdd/spec/` holds more nodes and longer phase ledgers; `hsdd/management/`
 holds five intake records. **This is the rule that replaces "wipe `hsdd/` and
 rebuild."** An intake record closes when its `## Produced` names at least
-one phase and every listed phase has a verification doc on main, the same
-admissibility rule as everywhere else; `hsdd-checkpoint` appends the phases
-and ticks it closed (§12.7).
+one phase and every listed phase is done (§12.3), the same admissibility
+rule as everywhere else, so a claim keeps the record open;
+`hsdd-checkpoint` appends the phases and ticks it closed (§12.7).
 
 ### 11.6 Node retirement
 
@@ -1843,8 +1850,9 @@ from independent counting. Required sections:
   current milestone document, the section stays, with one line saying so.
 - **What is done** — per node, **with evidence.** The only admissible
   "done": *the phase's verification document is merged to the spec repo's
-  main branch.* Claims without a verification doc are reported as claims,
-  not as done.
+  main branch, its Reviewer naming a person (§10.2).* Claims without a
+  verification doc, or with a Reviewer who names no person, are reported
+  as claims, not as done.
 - **Velocity** — the observed rate per lane in PE per manday, then the
   *calibrated* rate with its caveats stated (early phases are light; review,
   not generation, is the bottleneck; no scaling assumptions beyond current
@@ -1957,8 +1965,8 @@ to `hsdd/management/archive/`, and later checkpoints stop ticking it; the next
 campaign opens a new one through `hsdd-milestone`. The header names its
 campaign on an optional `**Campaign:**` line, which `hsdd-milestone` always
 writes; a document without one stays conformant. Admissibility for sealing
-is the rule that already exists, namely that every phase in scope has a verification doc
-merged to spec-repo main. The seal is evidence-backed, never declared.
+is the rule that already exists, namely that every phase in scope is done
+(§12.3). The seal is evidence-backed, never declared.
 
 ### 12.6 The atlas
 
@@ -2034,10 +2042,10 @@ One run of `hsdd-checkpoint`:
      stood still is a finding too.
    - *Intake records:* every record at `**Status:** open` is read; the
      phases whose Scope cites the record are appended to its `## Produced`;
-     a record whose list names at least one phase, all with verification
-     docs on spec-repo main, is ticked `closed (date)` with a change-log
-     line; an open record whose `## Produced` is still empty two
-     checkpoints after its date is a finding.
+     a record whose list names at least one phase, all done (§12.3), is
+     ticked `closed (date)` with a change-log line; an open record whose
+     `## Produced` is still empty two checkpoints after its date is a
+     finding.
 3. **Emits the progress report** (§12.3), findings register included.
 4. **Revises the execution plan** (§12.4): a new dated file superseding the
    previous one, findings compiled into steps per §12.8, guardrail
@@ -2536,11 +2544,11 @@ is rewritten and nothing triggers an adoption run.
 | A later contract version in its own file, `{slug}.v{n}.md` (§3.1) | Forward-only: versions drafted after the upgrade. A second version already written under another name stands; skills find versions by frontmatter. | `hsdd-contract`; `hsdd-config` finds contracts by `id` and `version`; conventions template |
 | Migration mode, and `lockstep` deprecating the old version at the bump (§3.5) | A note without a mode reads as `coexisting`, the 0.10.1 rule. A version bumped before the upgrade that nothing serves surfaces at the next checkpoint as a finding routed to `hsdd-contract`. | `hsdd-contract`; `hsdd-checkpoint` |
 | `former_consumers`; migrated consumers; retiring a version past its sunset (§3.5) | Optional key: absent means none migrated. The next checkpoint reports migrated phases still in `consumers`, and its plan step has `hsdd-reconcile` move them; the upgrade itself moves nothing. The registry generator passes the key through, so a project's copy needs no change. | `hsdd-contract`; `hsdd-checkpoint` finds; `hsdd-reconcile` moves and retires |
-| The version ripple; append mode leaves the node header (§8.4, §11.3) | From the next reconcile forward; header lines already edited by hand stand. | `hsdd-reconcile`; `hsdd-phase-plan` |
+| The version ripple, Sources copies and the root's `## Sources` included; append mode leaves the node header; a bump amends other contracts and ADR `affects` that name the old version (§3.5, §8.4, §11.3) | From the next bump and reconcile forward; lines already edited by hand stand. | `hsdd-reconcile`; `hsdd-phase-plan`; `hsdd-contract` |
 | The change request's own path in Sources; the sizing floor over appended phases only (§11.3) | From the next append forward. | `hsdd-phase-plan`; `hsdd-intake` |
 | A pointer is not content; node decisions in the phase context (§7.6, §9.7) | Forward-only: plans written after the upgrade are checked, and phases switched after it get the node decisions they cite. A context already written is a record. | `hsdd-phase-plan`; `hsdd-config` |
 | Test-first after a merged dependency (§9.8) | Forward-only, as in v0.10.1: a superpowers plan in progress copied constraint 1's old text, and re-running its switch rewrites the derivative. | `hsdd-config` |
-| Delegated sign-offs; a Reviewer who names no person (§10.2, §12.7) | From the next checkpoint. A phase an earlier progress report counted done is never downgraded: a sign-off naming no person becomes a finding asking for one. The switch keeps a project's existing template copy and reports the difference. | `hsdd-checkpoint`; `hsdd-config` template |
+| Delegated sign-offs; a Reviewer who names no person; intake closure and sealing on done (§10.2, §11.5, §12.3, §12.5, §12.7) | From the next checkpoint. A phase an earlier progress report counted done is never downgraded: a sign-off naming no person becomes a finding asking for one. A record closed or a document sealed earlier stays so. The switch keeps a project's existing template copy and reports the difference. | `hsdd-checkpoint`; `hsdd-config` template |
 | `**Main line:**` (§14.2) | Optional: absent means `main`, the 0.10.1 reading. | conventions template; read by `hsdd-phase-plan`, `hsdd-intake`, `hsdd-checkpoint` |
 | The conventions template names `/hsdd-config` for the switch (§9.9) | Text only; an existing conventions file is not rewritten. | conventions template |
 
