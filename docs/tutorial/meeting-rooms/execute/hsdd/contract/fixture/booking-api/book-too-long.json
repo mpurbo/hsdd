@@ -1,0 +1,30 @@
+{
+  "name": "book-too-long",
+  "description": "8 hours 15 minutes is longer than the limit.",
+  "clock": "2026-11-04T12:00:00.000Z",
+  "given": [],
+  "request": {
+    "method": "POST",
+    "path": "/api/bookings",
+    "headers": {
+      "authorization": "Bearer {{token:ayu}}",
+      "content-type": "application/json"
+    },
+    "body": {
+      "roomId": "merapi",
+      "start": "2026-11-05T01:00:00.000Z",
+      "end": "2026-11-05T09:15:00.000Z",
+      "title": "Workshop"
+    }
+  },
+  "response": {
+    "status": 422,
+    "body": {
+      "error": {
+        "code": "BOOKING_TOO_LONG",
+        "message": "A booking can last at most 8 hours."
+      }
+    }
+  },
+  "replay": "exact"
+}

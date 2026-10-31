@@ -1,0 +1,32 @@
+{
+  "name": "book-a-room",
+  "description": "Ayu books Merapi for 09:00 to 10:00 Jakarta time on 5 November.",
+  "clock": "2026-11-04T12:00:00.000Z",
+  "given": [],
+  "request": {
+    "method": "POST",
+    "path": "/api/bookings",
+    "headers": {
+      "authorization": "Bearer {{token:ayu}}",
+      "content-type": "application/json"
+    },
+    "body": {
+      "roomId": "merapi",
+      "start": "2026-11-05T02:00:00.000Z",
+      "end": "2026-11-05T03:00:00.000Z",
+      "title": "Sprint planning"
+    }
+  },
+  "response": {
+    "status": 201,
+    "body": {
+      "id": "10000000-0000-4000-8000-000000000001",
+      "roomId": "merapi",
+      "roomName": "Merapi",
+      "title": "Sprint planning",
+      "start": "2026-11-05T02:00:00.000Z",
+      "end": "2026-11-05T03:00:00.000Z"
+    }
+  },
+  "replay": "exact"
+}

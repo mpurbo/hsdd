@@ -1,0 +1,30 @@
+{
+  "name": "book-too-far-ahead",
+  "description": "A start 15 minutes past the 365-day horizon.",
+  "clock": "2026-11-04T00:00:00.000Z",
+  "given": [],
+  "request": {
+    "method": "POST",
+    "path": "/api/bookings",
+    "headers": {
+      "authorization": "Bearer {{token:budi}}",
+      "content-type": "application/json"
+    },
+    "body": {
+      "roomId": "thames",
+      "start": "2027-11-04T00:15:00.000Z",
+      "end": "2027-11-04T01:15:00.000Z",
+      "title": "Annual planning"
+    }
+  },
+  "response": {
+    "status": 422,
+    "body": {
+      "error": {
+        "code": "BOOKING_TOO_FAR_AHEAD",
+        "message": "A booking can start at most 365 days ahead."
+      }
+    }
+  },
+  "replay": "exact"
+}

@@ -1,0 +1,30 @@
+{
+  "name": "book-title-blank",
+  "description": "A title of spaces only is not a title (AC-5.6).",
+  "clock": "2026-11-04T12:00:00.000Z",
+  "given": [],
+  "request": {
+    "method": "POST",
+    "path": "/api/bookings",
+    "headers": {
+      "authorization": "Bearer {{token:ayu}}",
+      "content-type": "application/json"
+    },
+    "body": {
+      "roomId": "merapi",
+      "start": "2026-11-05T02:00:00.000Z",
+      "end": "2026-11-05T03:00:00.000Z",
+      "title": "   "
+    }
+  },
+  "response": {
+    "status": 400,
+    "body": {
+      "error": {
+        "code": "VALIDATION_FAILED",
+        "message": "The request is not valid."
+      }
+    }
+  },
+  "replay": "exact"
+}

@@ -1,0 +1,30 @@
+{
+  "name": "cancel-no-token",
+  "description": "No Authorization header.",
+  "clock": "2026-11-04T12:00:00.000Z",
+  "given": [
+    {
+      "id": "00000000-0000-4000-8000-000000000034",
+      "account": "ayu",
+      "roomId": "merapi",
+      "title": "Sprint planning",
+      "start": "2026-11-05T02:00:00.000Z",
+      "end": "2026-11-05T03:00:00.000Z"
+    }
+  ],
+  "request": {
+    "method": "DELETE",
+    "path": "/api/bookings/00000000-0000-4000-8000-000000000034",
+    "headers": {}
+  },
+  "response": {
+    "status": 401,
+    "body": {
+      "error": {
+        "code": "UNAUTHORIZED",
+        "message": "Sign in to continue."
+      }
+    }
+  },
+  "replay": "exact"
+}

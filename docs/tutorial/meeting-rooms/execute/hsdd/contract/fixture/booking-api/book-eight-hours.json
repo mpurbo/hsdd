@@ -1,0 +1,32 @@
+{
+  "name": "book-eight-hours",
+  "description": "Exactly 8 hours is the longest booking allowed.",
+  "clock": "2026-11-04T12:00:00.000Z",
+  "given": [],
+  "request": {
+    "method": "POST",
+    "path": "/api/bookings",
+    "headers": {
+      "authorization": "Bearer {{token:ayu}}",
+      "content-type": "application/json"
+    },
+    "body": {
+      "roomId": "merapi",
+      "start": "2026-11-05T01:00:00.000Z",
+      "end": "2026-11-05T09:00:00.000Z",
+      "title": "Workshop"
+    }
+  },
+  "response": {
+    "status": 201,
+    "body": {
+      "id": "10000000-0000-4000-8000-000000000005",
+      "roomId": "merapi",
+      "roomName": "Merapi",
+      "title": "Workshop",
+      "start": "2026-11-05T01:00:00.000Z",
+      "end": "2026-11-05T09:00:00.000Z"
+    }
+  },
+  "replay": "exact"
+}

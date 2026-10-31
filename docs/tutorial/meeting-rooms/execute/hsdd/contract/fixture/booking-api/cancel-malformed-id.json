@@ -1,0 +1,23 @@
+{
+  "name": "cancel-malformed-id",
+  "description": "An id that is not a UUID names no booking.",
+  "clock": "2026-11-04T12:00:00.000Z",
+  "given": [],
+  "request": {
+    "method": "DELETE",
+    "path": "/api/bookings/not-a-booking",
+    "headers": {
+      "authorization": "Bearer {{token:ayu}}"
+    }
+  },
+  "response": {
+    "status": 404,
+    "body": {
+      "error": {
+        "code": "BOOKING_NOT_FOUND",
+        "message": "There is no such booking."
+      }
+    }
+  },
+  "replay": "exact"
+}

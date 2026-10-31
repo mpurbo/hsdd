@@ -1,0 +1,32 @@
+{
+  "name": "book-in-the-repeated-hour",
+  "description": "On London's 31 October 2027 Budi books 01:30 BST to 01:30 GMT, an hour of real time across the repeated hour (AC-4.4).",
+  "clock": "2027-10-01T09:00:00.000Z",
+  "given": [],
+  "request": {
+    "method": "POST",
+    "path": "/api/bookings",
+    "headers": {
+      "authorization": "Bearer {{token:budi}}",
+      "content-type": "application/json"
+    },
+    "body": {
+      "roomId": "thames",
+      "start": "2027-10-31T00:30:00.000Z",
+      "end": "2027-10-31T01:30:00.000Z",
+      "title": "Clock change drill"
+    }
+  },
+  "response": {
+    "status": 201,
+    "body": {
+      "id": "10000000-0000-4000-8000-000000000007",
+      "roomId": "thames",
+      "roomName": "Thames",
+      "title": "Clock change drill",
+      "start": "2027-10-31T00:30:00.000Z",
+      "end": "2027-10-31T01:30:00.000Z"
+    }
+  },
+  "replay": "exact"
+}

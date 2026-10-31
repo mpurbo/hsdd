@@ -1,0 +1,64 @@
+$ node --version
+v24.18.0
+$ node hsdd/auto/experiments/booking-api-fixtures/check.mjs
+ok   book-365-days-ahead (POST 201)
+ok   book-a-room (POST 201)
+ok   book-eight-hours (POST 201)
+ok   book-end-not-after-start (POST 400 VALIDATION_FAILED)
+ok   book-in-the-repeated-hour (POST 201)
+ok   book-instant-with-offset (POST 400 VALIDATION_FAILED)
+ok   book-not-on-a-quarter-hour (POST 400 VALIDATION_FAILED)
+ok   book-overlap-several (POST 409 BOOKING_CONFLICT)
+ok   book-overlap (POST 409 BOOKING_CONFLICT)
+ok   book-same-time-other-room (POST 201)
+ok   book-started-and-overlapping (POST 422 BOOKING_STARTED)
+ok   book-started (POST 422 BOOKING_STARTED)
+ok   book-title-80-characters (POST 201)
+ok   book-title-blank (POST 400 VALIDATION_FAILED)
+ok   book-title-too-long (POST 400 VALIDATION_FAILED)
+ok   book-too-far-ahead (POST 422 BOOKING_TOO_FAR_AHEAD)
+ok   book-too-long (POST 422 BOOKING_TOO_LONG)
+ok   book-touching (POST 201)
+ok   book-unknown-room (POST 400 VALIDATION_FAILED)
+ok   book-unknown-token (POST 401 UNAUTHORIZED)
+ok   cancel-malformed-id (DELETE 404 BOOKING_NOT_FOUND)
+ok   cancel-my-booking (DELETE 204)
+ok   cancel-no-token (DELETE 401 UNAUTHORIZED)
+ok   cancel-someone-elses (DELETE 403 BOOKING_NOT_YOURS)
+ok   cancel-started (DELETE 422 BOOKING_STARTED)
+ok   cancel-unknown (DELETE 404 BOOKING_NOT_FOUND)
+ok   my-bookings-budi (GET 200)
+ok   my-bookings-expired-token (GET 401 UNAUTHORIZED)
+ok   my-bookings-none (GET 200)
+ok   rooms-from-not-before-to (GET 400 VALIDATION_FAILED)
+ok   rooms-instant-without-milliseconds (GET 400 VALIDATION_FAILED)
+ok   rooms-no-token (GET 401 UNAUTHORIZED)
+ok   rooms-on-a-clock-change-day (GET 200)
+ok   rooms-on-a-date (GET 200)
+ok   rooms-range-edges (GET 200)
+
+35 fixtures, 0 failing; by status {"200":5,"201":7,"204":1,"400":8,"401":4,"403":1,"404":2,"409":2,"422":5}
+error codes exercised: BOOKING_CONFLICT, BOOKING_NOT_FOUND, BOOKING_NOT_YOURS, BOOKING_STARTED, BOOKING_TOO_FAR_AHEAD, BOOKING_TOO_LONG, UNAUTHORIZED, VALIDATION_FAILED (8 of 8)
+
+rooms fixtures with a 200, their range as a local day:
+  rooms-on-a-clock-change-day: 2027-10-31 in Europe/London = [2027-10-30T23:00:00.000Z, 2027-11-01T00:00:00.000Z), 25 hours, one whole local day: true
+  rooms-on-a-date: 2026-11-05 in Europe/London = [2026-11-05T00:00:00.000Z, 2026-11-06T00:00:00.000Z), 24 hours, one whole local day: true
+  rooms-range-edges: 2026-11-05 in Asia/Jakarta = [2026-11-04T17:00:00.000Z, 2026-11-05T17:00:00.000Z), 24 hours, one whole local day: true
+
+negative controls (each must be caught):
+  caught: conflict names the later booking (body {"error":{"code":"BOOKING_CONFLICT","message":"The room is already booked for part of that time.","conflict":{"id":"00000000-0000-4000-8000-000000000025","roomId":"merapi","roomName":"Merapi","title":"Sprint planning","start":"2026-11-05T02:00:00.000Z","end":"2026-11-05T03:00:00.000Z"}}} differs)
+  caught: given state with an overlap (given 00000000-0000-4000-8000-000000000021 and 00000000-0000-4000-8000-0000000000aa overlap (G4))
+  caught: a leaked field in a booking (GetRoomsResponse: /body/rooms/0/bookings/0 must NOT have additional properties)
+  caught: clock a quarter hour before the start (status 201, fixture 422)
+  caught: my bookings in the wrong order (body {"bookings":[{"id":"00000000-0000-4000-8000-000000000013","roomId":"merapi","roomName":"Merapi","title":"Ongoing sync","start":"2026-11-05T09:00:00.000Z","end":"2026-11-05T10:00:00.000Z"},{"id":"00000000-0000-4000-8000-000000000011","roomId":"thames","roomName":"Thames","title":"Design review","start":"2026-11-05T10:00:00.000Z","end":"2026-11-05T11:00:00.000Z"},{"id":"00000000-0000-4000-8000-000000000016","roomId":"kew","roomName":"Kew","title":"Quick check","start":"2026-11-05T10:00:00.000Z","end":"2026-11-05T10:30:00.000Z"},{"id":"00000000-0000-4000-8000-000000000015","roomId":"merapi","roomName":"Merapi","title":"Next week","start":"2026-11-12T10:00:00.000Z","end":"2026-11-12T11:00:00.000Z"}]} differs)
+  caught: an instant without milliseconds in a response (PostBookingResponse: /body/start must match pattern "^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])T([01][0-9]|2[0-3]):(00|15|30|45):00\.000Z$")
+  caught: a 422 with a message the contract does not fix (PostBookingResponse: /status must be equal to constant)
+
+RESULT: every fixture validates and reproduces; every control was caught
+
+$ node hsdd/auto/experiments/booking-api-fixtures/horizon.mjs
+change instants: 2026-03-29T01:00:00.000Z, 2026-10-25T01:00:00.000Z, 2027-03-28T01:00:00.000Z, 2027-10-31T01:00:00.000Z, 2028-03-26T01:00:00.000Z, 2028-10-29T01:00:00.000Z, 2029-03-25T01:00:00.000Z, 2029-10-28T01:00:00.000Z, 2030-03-31T01:00:00.000Z, 2030-10-27T01:00:00.000Z, 2031-03-30T01:00:00.000Z, 2031-10-26T01:00:00.000Z, 2032-03-28T01:00:00.000Z, 2032-10-31T01:00:00.000Z
+worst clock 2027-03-28T01:00:00.000Z: next change 2027-10-31T01:00:00.000Z is 217.00 days ahead
+within 365 days: true
+within 180 days: false; within 90 days: false
+from 2026-10-31T15:00:00.000Z the next change is 2027-03-28T01:00:00.000Z, 147.42 days ahead

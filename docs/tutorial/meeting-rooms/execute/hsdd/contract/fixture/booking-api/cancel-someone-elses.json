@@ -1,0 +1,32 @@
+{
+  "name": "cancel-someone-elses",
+  "description": "Ayu tries to cancel Budi's booking (AC-6.3).",
+  "clock": "2026-11-04T12:00:00.000Z",
+  "given": [
+    {
+      "id": "00000000-0000-4000-8000-000000000032",
+      "account": "budi",
+      "roomId": "thames",
+      "title": "Design review",
+      "start": "2026-11-05T10:00:00.000Z",
+      "end": "2026-11-05T11:00:00.000Z"
+    }
+  ],
+  "request": {
+    "method": "DELETE",
+    "path": "/api/bookings/00000000-0000-4000-8000-000000000032",
+    "headers": {
+      "authorization": "Bearer {{token:ayu}}"
+    }
+  },
+  "response": {
+    "status": 403,
+    "body": {
+      "error": {
+        "code": "BOOKING_NOT_YOURS",
+        "message": "You can cancel only your own bookings."
+      }
+    }
+  },
+  "replay": "exact"
+}

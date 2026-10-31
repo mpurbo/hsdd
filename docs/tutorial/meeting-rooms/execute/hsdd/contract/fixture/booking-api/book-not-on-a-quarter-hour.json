@@ -1,0 +1,30 @@
+{
+  "name": "book-not-on-a-quarter-hour",
+  "description": "The start is at :10 (AC-5.2).",
+  "clock": "2026-11-04T12:00:00.000Z",
+  "given": [],
+  "request": {
+    "method": "POST",
+    "path": "/api/bookings",
+    "headers": {
+      "authorization": "Bearer {{token:ayu}}",
+      "content-type": "application/json"
+    },
+    "body": {
+      "roomId": "merapi",
+      "start": "2026-11-05T02:10:00.000Z",
+      "end": "2026-11-05T03:00:00.000Z",
+      "title": "Retro"
+    }
+  },
+  "response": {
+    "status": 400,
+    "body": {
+      "error": {
+        "code": "VALIDATION_FAILED",
+        "message": "The request is not valid."
+      }
+    }
+  },
+  "replay": "exact"
+}
