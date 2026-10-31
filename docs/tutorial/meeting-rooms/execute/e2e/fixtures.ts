@@ -123,6 +123,10 @@ export type Fixture = {
   request: { method: string; path: string; headers: Record<string, string>; body?: unknown };
   response: { status: number; body: unknown };
   replay: "exact" | "schema";
+  /** booking-api@v1: the service's clock for the producer's replay; never sent. */
+  clock?: string;
+  /** booking-api@v1: stored bookings for the producer's replay; never sent. */
+  given?: unknown[];
 };
 
 /** A profile-api@v2 `200` fixture's body: the contract's own account data. */
@@ -131,14 +135,40 @@ export function profileFixture(name: "me-ayu" | "me-budi"): Record<string, strin
   return (JSON.parse(readFileSync(file, "utf8")) as Fixture).response.body as Record<string, string>;
 }
 
-/** Every `exact` fixture of the two contracts this node consumes. */
+/**
+ * The 15 booking-api@v1 fixtures the running service answers as written: each
+ * is decided by a rule checked before any rule that reads the clock or the
+ * stored bookings. The other 20 need a set clock or seeded bookings, which
+ * only the producer's replay has. An explicit list, so a new fixture in the
+ * contract is a deliberate addition; the count test guards it.
+ */
+const BOOKING_REPLAYS: ReadonlySet<string> = new Set([
+  "book-end-not-after-start",
+  "book-instant-with-offset",
+  "book-not-on-a-quarter-hour",
+  "book-title-blank",
+  "book-title-too-long",
+  "book-unknown-room",
+  "rooms-from-not-before-to",
+  "rooms-instant-without-milliseconds",
+  "book-unknown-token",
+  "cancel-no-token",
+  "rooms-no-token",
+  "my-bookings-expired-token",
+  "cancel-unknown",
+  "cancel-malformed-id",
+  "book-too-long",
+]);
+
+/** Every `exact` fixture of the three contracts this node consumes, booking-api@v1 limited to BOOKING_REPLAYS. */
 export function loadExactFixtures(): Array<{ slug: string; fixture: Fixture }> {
-  return ["auth-api", "profile-api.v2"].flatMap((slug) => {
+  return ["auth-api", "profile-api.v2", "booking-api"].flatMap((slug) => {
     const dir = join(ROOT, "hsdd", "contract", "fixture", slug);
     return readdirSync(dir)
       .filter((file) => file.endsWith(".json"))
       .sort()
       .map((file) => ({ slug, fixture: JSON.parse(readFileSync(join(dir, file), "utf8")) as Fixture }))
-      .filter(({ fixture }) => fixture.replay === "exact");
+      .filter(({ fixture }) => fixture.replay === "exact")
+      .filter(({ slug, fixture }) => slug !== "booking-api" || BOOKING_REPLAYS.has(fixture.name));
   });
 }

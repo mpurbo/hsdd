@@ -1,0 +1,34 @@
+
+> @simple-login/backend@1.0.0 db:up
+> node scripts/db-up.mjs up
+
+ Container meeting-rooms-postgres-1 Running 
+ Container meeting-rooms-postgres-1 Waiting 
+ Container meeting-rooms-postgres-1 Healthy 
+
+Running 1 test using 1 worker
+
+  ✘  1 e2e/proxy-replay.spec.ts:11:1 › replays 24 exact fixtures: 4 of auth-api@v1, 5 of profile-api@v2, 15 of booking-api@v1, none of profile-api@v1 (8ms)
+
+
+  1) e2e/proxy-replay.spec.ts:11:1 › replays 24 exact fixtures: 4 of auth-api@v1, 5 of profile-api@v2, 15 of booking-api@v1, none of profile-api@v1 
+
+    Error: expect(received).toHaveLength(expected)
+
+    Expected length: 24
+    Received length: 9
+    Received array:  ["auth-api", "auth-api", "auth-api", "auth-api", "profile-api.v2", "profile-api.v2", "profile-api.v2", "profile-api.v2", "profile-api.v2"]
+
+      11 | test("replays 24 exact fixtures: 4 of auth-api@v1, 5 of profile-api@v2, 15 of booking-api@v1, none of profile-api@v1", () => {
+      12 |   const slugs = loadExactFixtures().map(({ slug }) => slug);
+    > 13 |   expect(slugs).toHaveLength(24);
+         |                 ^
+      14 |   expect(slugs.filter((s) => s === "auth-api")).toHaveLength(4);
+      15 |   expect(slugs.filter((s) => s === "profile-api.v2")).toHaveLength(5);
+      16 |   expect(slugs.filter((s) => s === "booking-api")).toHaveLength(15);
+        at <repo>/e2e/proxy-replay.spec.ts:13:17
+
+    Error Context: test-results/proxy-replay-replays-24-ex-4218f-i-v1-none-of-profile-api-v1/error-context.md
+
+  1 failed
+    e2e/proxy-replay.spec.ts:11:1 › replays 24 exact fixtures: 4 of auth-api@v1, 5 of profile-api@v2, 15 of booking-api@v1, none of profile-api@v1 
