@@ -281,12 +281,10 @@ the page after a Cancel moves to the My bookings heading.
 - Escaped defects: none known yet.
 
 ## Sign-off
-- Reviewer / date:
-- Review tier applied:
-- Disposition of each Outstanding item: verified | waived (reason) |
-  deferred to {phase-id}
-- Disposition of each Learning: spec-updated | contract-bumped (id@v) |
-  adr-proposed (ADR-nnn) | dropped (reason)
+- Reviewer / date: Claude for Purbo Mohamad (owner proxy, delegated by the owner before the run), 2026-11-01
+- Review tier applied: full-review: per-task reviewers and a final whole-branch reviewer read (Task 4: 1 Important, overlapping Cancels re-enabled a cancelled booking's button, fixed and re-reviewed clean; final: 1 Important, no announcement and lost focus after a Cancel, fixed with role=alert and focus to the heading, all 7 re-reviewed addressed); the gate rerun green by the orchestrator (13 files, 296 tests)
+- Disposition of each Outstanding item: browser checks (360 px, Cancel width, screen-reader announcement, focus after a refusal) and running against the real backend: deferred to simple-login.integration.4 (Home browser tests); the wireframe's indented second line: waived (cosmetic)
+- Disposition of each Learning: all five dropped; on D10, no success message for a cancel: PRD v2 AC-6.2 says the booking leaves my list, and that is the confirmation
 
 > The review gate is not passed while an Outstanding item or a Learning
 > lacks a disposition. Dispositions execute at the root through the owning
