@@ -1,5 +1,6 @@
 // The test database helper (D8): one database per test file, never meeting_rooms.
 import { readFileSync } from "node:fs";
+import type { Pool } from "pg";
 import { beforeEach, describe, expect, it } from "vitest";
 import { DEFAULT_DATABASE_URL, createPool } from "../src/db.ts";
 import { createTestDatabase, testDatabase } from "./db.ts";
@@ -80,6 +81,23 @@ describe("createTestDatabase", () => {
       }
     } finally {
       await Promise.all(both.map((db) => db.drop()));
+    }
+  });
+
+  it("drops the database it created when the schema cannot be applied", async () => {
+    let name = "";
+    const broken = async (pool: Pool) => {
+      name = (await pool.query("SELECT current_database() AS name")).rows[0].name;
+      throw new Error("schema.sql is broken");
+    };
+    await expect(createTestDatabase(broken)).rejects.toThrow("schema.sql is broken");
+    expect(name).toMatch(/^test_[0-9a-f]{32}$/);
+    const admin = createPool(maintenanceUrl());
+    try {
+      const { rows } = await admin.query("SELECT 1 FROM pg_database WHERE datname = $1", [name]);
+      expect(rows).toEqual([]);
+    } finally {
+      await admin.end();
     }
   });
 

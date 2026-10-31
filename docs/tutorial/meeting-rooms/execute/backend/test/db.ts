@@ -39,11 +39,22 @@ const accountIdOf = (username: string): string => {
   return account.id;
 };
 
-export async function createTestDatabase(): Promise<TestDatabase> {
+/** A fresh database with the schema; when the schema cannot be applied, the database is dropped again. */
+export async function createTestDatabase(apply: (pool: Pool) => Promise<void> = applySchema): Promise<TestDatabase> {
   const name = `test_${randomBytes(16).toString("hex")}`;
   await onMaintenance((admin) => admin.query(`CREATE DATABASE ${name}`));
   const pool = createPool(urlFor(name));
-  await applySchema(pool);
+  const drop = async () => {
+    await pool.end();
+    // No FORCE: a connection a test left open fails the drop loudly (55006).
+    await onMaintenance((admin) => admin.query(`DROP DATABASE IF EXISTS ${name}`));
+  };
+  try {
+    await apply(pool);
+  } catch (error) {
+    await drop();
+    throw error;
+  }
   return {
     name,
     pool,
@@ -61,11 +72,7 @@ export async function createTestDatabase(): Promise<TestDatabase> {
         );
       }
     },
-    async drop() {
-      await pool.end();
-      // No FORCE: a connection a test left open fails the drop loudly (55006).
-      await onMaintenance((admin) => admin.query(`DROP DATABASE IF EXISTS ${name}`));
-    },
+    drop,
   };
 }
 
