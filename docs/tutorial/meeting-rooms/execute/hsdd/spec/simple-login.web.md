@@ -1,26 +1,47 @@
 # simple-login.web: Web app
 
 - **Kind:** leaf-parent
-- **Purpose:** let a user sign in, see their profile and sign out in the browser
-- **Owns:** the Login screen, the Home screen, the API client, token storage in the browser, the Vite dev proxy, the `web/` directory
+- **Purpose:** let a user sign in, see their profile and time zone, find a free meeting room on a date and book it, see and cancel their own bookings, and sign out in the browser, showing every time in the user's own time zone
+- **Owns:** the Login screen, the Home screen with the user's time zone and their bookings with Cancel, the Rooms screen with its date and its booking form, the API client, token storage in the browser, turning instants into dates and times in the user's time zone and back, and their display format (ADR-002), the Vite dev proxy, the `web/` directory
 - **Does not own:** accounts, password checks, sessions on the server
 - **Consumes:** [auth-api@v1, profile-api@v1, profile-api@v2]
 - **Produces:** none
 - **Governed by:** [ADR-001, ADR-002]
 - **Sources:** hsdd/context/prd-simple-login.md (US-1, US-2, US-3, Screens), hsdd/context/rfc-simple-login.md (§1 Summary, §2 API, §6 Frontend stack, §7 Testing), hsdd/context/update-1-add-phone.md (AC-2.1 amended, AC-2.4, Screen, Scope)
 - **Decomposes into:** phases (see hsdd-phase-plan)
-- **Isolation strategy:** `fetch` is stubbed with the auth-api and profile-api fixtures; the backend never needs to run
+- **Isolation strategy:** `fetch` is stubbed with the auth-api, profile-api and booking-api fixtures; the backend never needs to run; the time functions are tested on their own on London's clock-change days, and every test runs with `TZ` set to a zone that is neither account's nor UTC (ADR-002)
 
 ## Overview
 
-A React 19 single-page app in TypeScript, built with Vite. Two screens and
-no router: the app is a function of the session value (no token shows
-Login, a token shows Home, except while the backend cannot be reached:
-see D5). The token lives in `sessionStorage`. In
-development the Vite server proxies `/api` to the backend on port 3000, so
-the browser sees one origin. The node knows the backend only through
-auth-api@v1 and profile-api@v1, which simple-login.web.4 replaces with
-profile-api@v2.
+A React 19 single-page app in TypeScript, built with Vite, with three
+screens (PRD v2 Screens). Login signs a user in (PRD v2 US-1). Home shows
+the signed-in user's display name, username, email, phone number, time zone
+and join date, lists their bookings that have not ended, soonest first,
+lets them cancel one that has not started, and offers Book a room, which
+opens Rooms, and Sign out (PRD v2 US-2, US-3, US-6). Rooms lists every room
+with its office and seats and, for a date the user picks, each room's
+bookings on that date; its form books a room for a start, an end and a
+title (PRD v2 US-4, US-5). How the app moves between its screens is its
+phase plan's D4, with D5 for a stored session the backend cannot check. The
+token lives in `sessionStorage`. In development the Vite server proxies
+`/api` to the backend on port 3000, so the browser sees one origin.
+
+Every time the app shows is in the user's own time zone, which it takes
+from the profile's `timeZone` only, never from the browser; for a profile
+without one it shows no time (PRD v2 AC-2.5, profile-api@v2 G5). The app
+does every conversion between an instant and a date or time, in pure
+functions that take the zone as an argument (ADR-002): a picked date
+becomes the instants from its start up to the start of the next date, never
+taken as 24 hours, so London's 23-hour and 25-hour clock-change days come
+out right (PRD v2 AC-4.2, AC-4.4); the form offers that date's quarter-hour
+instants (PRD v2 AC-5.2); on Rooms, a booking of a room in another zone
+also shows the room's local times (PRD v2 AC-4.3). The backend's clock and
+answer decide whether a booking is made or cancelled; the browser's clock
+only picks the date Rooms opens on (ADR-002). The app writes PRD v2
+AC-5.3's overlap message from the refusal's room name and instants, never
+from `error.message` (booking-api@v1 G18). The node knows the backend only
+through auth-api@v1 and profile-api@v1, which simple-login.web.4 replaces
+with profile-api@v2, and booking-api@v1.
 
 ## Phase Plan
 

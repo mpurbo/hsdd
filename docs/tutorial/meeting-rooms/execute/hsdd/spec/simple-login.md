@@ -93,15 +93,15 @@ proves the real pieces work together.
 ### simple-login.web: Web app
 
 - **Kind:** leaf-parent
-- **Purpose:** let a user sign in, see their profile and sign out in the browser
-- **Owns:** the Login screen, the Home screen, the API client, token storage in the browser, the Vite dev proxy, the `web/` directory
+- **Purpose:** let a user sign in, see their profile and time zone, find a free meeting room on a date and book it, see and cancel their own bookings, and sign out in the browser, showing every time in the user's own time zone
+- **Owns:** the Login screen, the Home screen with the user's time zone and their bookings with Cancel, the Rooms screen with its date and its booking form, the API client, token storage in the browser, turning instants into dates and times in the user's time zone and back, and their display format (ADR-002), the Vite dev proxy, the `web/` directory
 - **Does not own:** accounts, password checks, sessions on the server
 - **Consumes:** [auth-api@v1, profile-api@v1, profile-api@v2]
 - **Produces:** none
 - **Governed by:** [ADR-001, ADR-002]
 - **Sources:** hsdd/context/prd-simple-login.md (US-1, US-2, US-3, Screens), hsdd/context/rfc-simple-login.md (§1 Summary, §2 API, §6 Frontend stack, §7 Testing), hsdd/context/update-1-add-phone.md (AC-2.1 amended, AC-2.4, Screen, Scope)
 - **Decomposes into:** phases (see hsdd-phase-plan)
-- **Isolation strategy:** `fetch` is stubbed with the auth-api and profile-api fixtures; the backend never needs to run
+- **Isolation strategy:** `fetch` is stubbed with the auth-api, profile-api and booking-api fixtures; the backend never needs to run; the time functions are tested on their own on London's clock-change days, and every test runs with `TZ` set to a zone that is neither account's nor UTC (ADR-002)
 
 ### simple-login.integration: End-to-end integration
 
