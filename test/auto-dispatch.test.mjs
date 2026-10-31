@@ -792,3 +792,10 @@ test("shipped-phase facts name the conventions' Main line", () => {
   const facts = factLines(dispatchContext(dir), { kind: "phase-plan-append", target: "shop.web.app", handoff: null, queue_item: null });
   assert.ok(facts.includes("Of them, with a verification doc on develop: none (develop:hsdd/verify)"), facts.join("\n"));
 });
+
+// v0.10.0 §11.3 as of 0.10.2: the change request's own path joins the node's Sources, never the record's.
+test("phase-plan-append facts in an intake segment name the change request beside the record", () => {
+  const facts = factLines(dispatchContext(intakeRepo({ record: ORDER })), { kind: "phase-plan-append", target: "shop.web.app", handoff: null, queue_item: null });
+  assert.ok(facts.includes(`The segment's intake record is \`${RECORD}\` (${RECORD})`), facts.join("\n"));
+  assert.ok(facts.includes(`The change request is \`${REQUEST}\`; its own path, never the record's, joins the node's Sources (hsdd/auto/run.yaml)`), facts.join("\n"));
+});

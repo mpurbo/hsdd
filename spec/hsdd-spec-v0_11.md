@@ -3615,7 +3615,7 @@ Each line names its file; check it there before relying on it.
 | `adr`, `adr-update` | The spec lines that propose or cite the ADR; its current front matter (update); the specs and contracts it `affects`. |
 | `contract`, `contract-touch` | The producing node's `Produces` line and each consuming node's `Consumes` line; each ADR whose `affects` names this contract; the contracts it builds on, with versions and statuses; for an `id` with more than one version file, or a `{id}.v{n}` target, each version's `version`, `status` and `phase_ids`; the front matter and `## Versioning` of each file the target resolves to (touch); their validation paths and whether they exist. |
 | `citation-touch` | Every contract's current `version`, and each lower version that stays live (a file of its own, neither `deprecated` nor `retired`); every source's citation name and version, with the baseline sources marked; the superseded strings of §12.2; every phase id with a verification doc on the main line (the conventions' `**Main line:**`, `main` when absent), by node (§12.4). |
-| `phase-plan`, `phase-plan-append` | The node's `Purpose`, `Owns`, `Produces` and `Consumes`; each consumed and produced contract version with `version`, `status`, `phase_ids` and validation paths, read from the file that holds that version; the governing ADRs; `conventions.md`'s ordering policy, coding method and teams lines; for append, the existing phase ids, which of them have a verification doc on the main line, and the intake record's path. |
+| `phase-plan`, `phase-plan-append` | The node's `Purpose`, `Owns`, `Produces` and `Consumes`; each consumed and produced contract version with `version`, `status`, `phase_ids` and validation paths, read from the file that holds that version; the governing ADRs; `conventions.md`'s ordering policy, coding method and teams lines; for append, the existing phase ids, which of them have a verification doc on the main line, the intake record's path, and the change request's own path, which joins the node's Sources. |
 | `reconcile`, `align` | Every pending section in the tree with its entry counts, the named nodes first; every contract version those entries name with `version`, `status`, `phase_ids`, from the file that holds it; for align, every phase id with a verification doc on the main line, by node (§12.4). |
 | `intake` | The request's path and authority; every open intake record's path and landings; the atlas's path, or the tree's node list; for a new source version, the old and new paths and versions; the number of earlier `would_upstream` decisions, and `node hsdd/scripts/auto/state.mjs upstream`, which lists them. |
 
@@ -3724,8 +3724,9 @@ never rewrite a shipped phase (one with a verification doc on the
 conventions' `**Main line:**`, `main` when absent, v0.10.0 §14.2); rewrite an unshipped phase in place only when the invocation says
 so (§12.1); every phase rewritten or appended cites in its Scope the intake
 record, or in a plan segment the `insert-step` item's id; when there is a
-record, the request joins the node's Sources; the pending section gets a new
-emission date line. Done when: as `phase-plan`, and every phase the
+record, the change request's own path (the facts name it, never the
+record's) joins the node's Sources with the sections that govern it; the
+pending section gets a new emission date line. Done when: as `phase-plan`, and every phase the
 invocation names is rewritten or explained.
 
 **`reconcile`** (`hsdd-reconcile`). Default invocation: "Reconcile

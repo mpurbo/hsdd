@@ -261,9 +261,13 @@ const appendLines = (ctx, step, node) => {
   return [
     cite(`${code(node.id)} has phases ${ids.length > 0 ? ids.join(", ") : "none"}`, node.file),
     cite(`Of them, with a verification doc on ${ctx.mainLine}: ${verified.length > 0 ? verified.join(", ") : "none"}`, verifyRef(ctx)),
-    record
-      ? cite(`The segment's intake record is ${code(record.path)}`, record.path)
-      : cite(`No intake record: this plan segment's step comes from ${step.queue_item ? `the insert-step item ${step.queue_item}` : "no insert-step item"}`, P.queue),
+    ...(record
+      ? [
+        cite(`The segment's intake record is ${code(record.path)}`, record.path),
+        // v0.10.0 §11.3 as of 0.10.2: the request's own path joins Sources, never the record's.
+        cite(`The change request is ${code(ctx.segment.request)}; its own path, never the record's, joins the node's Sources`, P.runYaml),
+      ]
+      : [cite(`No intake record: this plan segment's step comes from ${step.queue_item ? `the insert-step item ${step.queue_item}` : "no insert-step item"}`, P.queue)]),
   ];
 };
 
