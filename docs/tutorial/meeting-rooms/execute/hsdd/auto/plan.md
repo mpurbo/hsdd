@@ -14,6 +14,7 @@ Decisions expected: the request's class and landing (the tree's backend, web and
 | Step | Segment | Kind | Skill | Target | Status | Artifact commit |
 |------|---------|------|-------|--------|--------|-----------------|
 | S00 | 2026-10-31-intake-prd-simple-login-v2 | setup | none | 2026-10-31-intake-prd-simple-login-v2 | completed | 91fda2b |
+| S01 | 2026-10-31-intake-prd-simple-login-v2 | plan | none | 2026-10-31-intake-prd-simple-login-v2 | completed | 2c42daf |
 
 ## Change log
 
