@@ -140,3 +140,48 @@ export function endOptions(start: Instant, date: IsoDate, zone: ZoneName): reado
   }
   return out
 }
+
+// Design note 4: a calendar date has no zone, and UTC midnight formatted in UTC is the identity mapping.
+export function formatDate(date: IsoDate): string {
+  return new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'UTC',
+    weekday: 'short',
+    day: 'numeric',
+    month: 'short',
+  })
+    .format(new Date(dateToUtcMs(date)))
+    .replace(',', '')
+}
+
+function shortZoneName(ms: number, zone: ZoneName): string {
+  const parts = new Intl.DateTimeFormat('en-GB', { timeZone: zone, timeZoneName: 'short' }).formatToParts(
+    new Date(ms),
+  )
+  return parts.find((p) => p.type === 'timeZoneName')?.value ?? fail('timeZoneName')
+}
+
+// Design note 3: repeated when another instant shows the same wall date and time. The only
+// candidates are the shifts between this instant's offset and the zone's offsets a day either side.
+function isRepeated(ms: number, zone: ZoneName): boolean {
+  const here = wallClock(ms, zone)
+  const dayMs = 24 * HOUR_MS
+  const others = [ms - dayMs, ms + dayMs]
+    .map((t) => wallClock(t, zone).offsetMs)
+    .filter((o) => o !== here.offsetMs)
+  return others.some((o) => {
+    const there = wallClock(ms + here.offsetMs - o, zone)
+    return there.date === here.date && there.time === here.time
+  })
+}
+
+export function formatTime(instant: Instant, zone: ZoneName, lineDate: IsoDate): string {
+  const ms = parseInstant(instant)
+  const wall = wallClock(ms, zone)
+  const prefix = wall.date === lineDate ? '' : `${formatDate(wall.date)} `
+  const suffix = isRepeated(ms, zone) ? ` ${shortZoneName(ms, zone)}` : ''
+  return `${prefix}${wall.time}${suffix}`
+}
+
+export function formatRange(start: Instant, end: Instant, zone: ZoneName, lineDate: IsoDate): string {
+  return `${formatTime(start, zone, lineDate)} to ${formatTime(end, zone, lineDate)}`
+}

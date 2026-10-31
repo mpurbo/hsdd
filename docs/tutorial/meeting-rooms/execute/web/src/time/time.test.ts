@@ -1,5 +1,15 @@
 import { describe, expect, it } from 'vitest'
-import { asTimeZone, dayRange, endOptions, sameZone, startOptions, todayIn } from './time'
+import {
+  asTimeZone,
+  dayRange,
+  endOptions,
+  formatDate,
+  formatRange,
+  formatTime,
+  sameZone,
+  startOptions,
+  todayIn,
+} from './time'
 
 const LONDON = 'Europe/London'
 const JAKARTA = 'Asia/Jakarta'
@@ -122,5 +132,78 @@ describe('an unparsable instant', () => {
   })
   it('makes todayIn throw RangeError for the instant "not an instant"', () => {
     expect(() => todayIn('not an instant', JAKARTA)).toThrow(RangeError)
+  })
+})
+
+const label = (zone: string, date: string) => (i: string) => formatTime(i, zone, date)
+
+describe('formatDate', () => {
+  it('writes 2026-11-05 as Thu 5 Nov', () => {
+    expect(formatDate('2026-11-05')).toBe('Thu 5 Nov')
+  })
+  it('throws RangeError for a malformed date', () => {
+    expect(() => formatDate('2026-02-30')).toThrow(RangeError)
+  })
+})
+
+describe('formatTime', () => {
+  it('writes HH:mm on a 24-hour clock', () => {
+    expect(formatTime('2026-11-05T02:00:00.000Z', JAKARTA, '2026-11-05')).toBe('09:00')
+  })
+  it('2027-03-28 in Europe/London: 92 labels, none from 01:00 to 01:45', () => {
+    const labels = startOptions('2027-03-28', LONDON, EARLY).map(label(LONDON, '2027-03-28'))
+    expect(labels).toHaveLength(92)
+    expect(labels.filter((l) => l.startsWith('01:'))).toEqual([])
+  })
+  it('2027-10-31 in Europe/London: 100 labels, the repeated hour marked BST then GMT', () => {
+    const labels = startOptions('2027-10-31', LONDON, EARLY).map(label(LONDON, '2027-10-31'))
+    expect(labels).toHaveLength(100)
+    const at = labels.indexOf('00:45')
+    expect(labels.slice(at, at + 10)).toEqual([
+      '00:45', '01:00 BST', '01:15 BST', '01:30 BST', '01:45 BST',
+      '01:00 GMT', '01:15 GMT', '01:30 GMT', '01:45 GMT', '02:00',
+    ])
+  })
+  it('2026-11-05 in Asia/Jakarta: 96 labels, no short name', () => {
+    const labels = startOptions('2026-11-05', JAKARTA, EARLY).map(label(JAKARTA, '2026-11-05'))
+    expect(labels).toHaveLength(96)
+    expect(labels.every((l) => /^\d\d:\d\d$/.test(l))).toBe(true)
+  })
+  it('puts the date first when the instant falls before the line date (Review Focus 2)', () => {
+    expect(formatTime('2026-11-04T16:00:00.000Z', JAKARTA, '2026-11-05')).toBe('Wed 4 Nov 23:00')
+  })
+  it('puts the date first and the short name last for a repeated hour on another line date (Review Focus 3)', () => {
+    expect(formatTime('2027-10-31T00:30:00.000Z', LONDON, '2027-10-30')).toBe('Sun 31 Oct 01:30 BST')
+  })
+  it('2028-04-02 in Australia/Lord_Howe: the half hour the clocks repeat gets short names (Review Focus 5)', () => {
+    expect(formatTime('2028-04-01T14:30:00.000Z', 'Australia/Lord_Howe', '2028-04-02')).toBe('01:30 GMT+11')
+    expect(formatTime('2028-04-01T15:00:00.000Z', 'Australia/Lord_Howe', '2028-04-02')).toBe('01:30 GMT+10:30')
+    expect(formatTime('2028-04-01T15:30:00.000Z', 'Australia/Lord_Howe', '2028-04-02')).toBe('02:00')
+  })
+  it('labels the ends from 09:00 and from 22:00 on 2026-11-05 in Jakarta', () => {
+    const from9 = endOptions('2026-11-05T02:00:00.000Z', '2026-11-05', JAKARTA).map(label(JAKARTA, '2026-11-05'))
+    expect([from9[0], from9.at(-1)]).toEqual(['09:15', '17:00'])
+    const from22 = endOptions('2026-11-05T15:00:00.000Z', '2026-11-05', JAKARTA).map(label(JAKARTA, '2026-11-05'))
+    expect([from22[0], from22.at(-1)]).toEqual(['22:15', 'Fri 6 Nov 00:00'])
+  })
+  it('labels the ends from 01:30 BST on 2027-10-31 in London: 01:45 BST, 01:00 GMT and on to 08:30', () => {
+    const ends = endOptions('2027-10-31T00:30:00.000Z', '2027-10-31', LONDON).map(label(LONDON, '2027-10-31'))
+    expect(ends.slice(0, 2)).toEqual(['01:45 BST', '01:00 GMT'])
+    expect(ends.at(-1)).toBe('08:30')
+  })
+})
+
+describe('formatRange', () => {
+  it('reads a London booking from 16:00 to 19:00 on 5 November as 23:00 to Fri 6 Nov 02:00 for Jakarta', () => {
+    expect(formatRange('2026-11-05T16:00:00.000Z', '2026-11-05T19:00:00.000Z', JAKARTA, '2026-11-05')).toBe('23:00 to Fri 6 Nov 02:00')
+  })
+  it('reads 2027-10-31 in London: 00:00 to 01:30 BST', () => {
+    expect(formatRange('2027-10-30T23:00:00.000Z', '2027-10-31T00:30:00.000Z', LONDON, '2027-10-31')).toBe('00:00 to 01:30 BST')
+  })
+  it('reads 2027-10-31 in London: 01:00 GMT to 01:30 GMT', () => {
+    expect(formatRange('2027-10-31T01:00:00.000Z', '2027-10-31T01:30:00.000Z', LONDON, '2027-10-31')).toBe('01:00 GMT to 01:30 GMT')
+  })
+  it('reads 2027-10-31 in London: 23:30 to Mon 1 Nov 00:00', () => {
+    expect(formatRange('2027-10-31T23:30:00.000Z', '2027-11-01T00:00:00.000Z', LONDON, '2027-10-31')).toBe('23:30 to Mon 1 Nov 00:00')
   })
 })
