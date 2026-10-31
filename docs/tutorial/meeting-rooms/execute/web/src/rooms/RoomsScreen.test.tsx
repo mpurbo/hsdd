@@ -143,6 +143,23 @@ describe('RoomsScreen (AC-4.1 to AC-4.4, D1, D3, D8)', () => {
     expect(list()).toBeNull()
   })
 
+  it("reads Loading… while a changed date is in flight, never the previous date's rooms (Scope)", async () => {
+    clockAt(LONDON_NOW)
+    const stub = stubFetchDeferred()
+    renderRooms('Europe/London')
+    await stub.answer(0, 200, bodyOf('rooms-on-a-date'))
+    expect(shown()).toEqual(ON_A_DATE)
+    fireEvent.change(dateInput(), { target: { value: '2027-10-31' } })
+    expect(stub.routes()).toEqual([`GET ${ON_A_DATE_PATH}`, `GET ${CLOCK_CHANGE_PATH}`])
+    expect(screen.getByText('Loading…')).toBeInTheDocument()
+    expect(list()).toBeNull()
+    // Exact lines catch the room headings; the titles catch a booking line relabelled against the new date.
+    for (const line of ON_A_DATE) expect(screen.queryAllByText(line)).toHaveLength(0)
+    expect(screen.queryAllByText(/Sprint planning|Design review/)).toHaveLength(0)
+    await stub.answer(1, 200, bodyOf('rooms-on-a-clock-change-day'))
+    expect(shown()).toEqual(CLOCK_CHANGE)
+  })
+
   it('rooms-no-token: a 401 calls onSessionExpired (D1)', async () => {
     clockAt(LONDON_NOW)
     stubFetch(fixture('rooms-no-token'))

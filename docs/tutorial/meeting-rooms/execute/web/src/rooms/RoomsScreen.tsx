@@ -16,7 +16,8 @@ export interface RoomsScreenProps {
 type ListState =
   | { readonly kind: 'none' }
   | { readonly kind: 'loading' }
-  | { readonly kind: 'loaded'; readonly rooms: readonly Room[] }
+  // `date` is the date the rooms were fetched for, so they are never shown under another.
+  | { readonly kind: 'loaded'; readonly rooms: readonly Room[]; readonly date: IsoDate }
   | { readonly kind: 'unavailable' }
 
 // Shared values, so setting a state the screen already holds renders nothing again.
@@ -45,7 +46,8 @@ function rangeOf(date: IsoDate, zone: ZoneName): DayRange | undefined {
  * D8). The lines come from `roomViews`, rooms and bookings in the order
  * received (G13). The latest date wins: an answer for an earlier date, or
  * one after unmount, is dropped, `onSessionExpired` included (design
- * rationale 5).
+ * rationale 5). A list shows only under the date it was fetched for; any
+ * other date reads `Loading…` until its own answer arrives.
  */
 export function RoomsScreen({ token, zone, onHome, onSessionExpired }: RoomsScreenProps) {
   const dateId = useId()
@@ -72,7 +74,7 @@ export function RoomsScreen({ token, zone, onHome, onSessionExpired }: RoomsScre
     // D8: fetchRooms writes the instants into the query unencoded.
     void fetchRooms(token, range.start, range.end).then((result) => {
       if (stale) return
-      if (result.ok) setList({ kind: 'loaded', rooms: result.value })
+      if (result.ok) setList({ kind: 'loaded', rooms: result.value, date })
       else if (result.reason === 'unauthorized') onSessionExpiredRef.current() // D1
       else setList(UNAVAILABLE) // D3
     })
@@ -80,6 +82,12 @@ export function RoomsScreen({ token, zone, onHome, onSessionExpired }: RoomsScre
       stale = true
     }
   }, [token, zone, date])
+
+  // The render after a date change still holds the previous date's list; the
+  // effect above sets Loading… only after it. A list fetched for another date
+  // reads Loading… in that render too, so no frame pairs one date's rooms with
+  // another date (Scope: "While a fetch is in flight the list reads `Loading…`").
+  const shownList: ListState = list.kind === 'loaded' && list.date !== date ? LOADING : list
 
   return (
     <main className="rooms">
@@ -93,15 +101,15 @@ export function RoomsScreen({ token, zone, onHome, onSessionExpired }: RoomsScre
             Home
           </button>
         </header>
-        {list.kind === 'none' ? null : list.kind === 'loading' ? (
+        {shownList.kind === 'none' ? null : shownList.kind === 'loading' ? (
           <p className="rooms-message">Loading…</p>
-        ) : list.kind === 'unavailable' ? (
+        ) : shownList.kind === 'unavailable' ? (
           <p className="rooms-message" role="status">
             {MESSAGES.unavailable}
           </p>
         ) : (
           <ul className="rooms-list">
-            {roomViews(list.rooms, date, zone).map((room) => (
+            {roomViews(shownList.rooms, shownList.date, zone).map((room) => (
               <li key={room.id}>
                 <p className="rooms-room">{room.heading}</p>
                 {room.bookings.length === 0 ? (
