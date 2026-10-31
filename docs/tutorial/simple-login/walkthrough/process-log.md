@@ -365,6 +365,12 @@ prescribes:
    with Sign-off left blank.
 5. The HSDD review gate at the phase's tier, then Sign-off.
 
+Since v0.10.2 the derivative names the execution skill by review tier, so
+a re-run would execute backend.2, web.3 and integration.1 (full-review)
+with `superpowers:subagent-driven-development` and the rest with
+`executing-plans`. Its constraints also name `test-driven-development`,
+`verification-before-completion` and `systematic-debugging`.
+
 ### simple-login.backend.1 (gate-only), 23:54 to 23:59 WIB
 
 - **Plan:** `docs/superpowers/plans/2026-10-29-simple-login.backend.1.md`,

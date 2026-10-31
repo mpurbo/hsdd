@@ -6,6 +6,10 @@ app with two screens (Login, Home), all data in memory. It goes from a
 one-page PRD to running, tested code through every HSDD step, with the
 superpowers skills as the coding method.
 
+Recorded with the HSDD v0.10.0 skills. A run with a later release differs
+where the walkthrough's hints say so; [`CHANGELOG.md`](../../../CHANGELOG.md)
+lists each change.
+
 ## The three folders
 
 | Folder | What it is | Use it to |

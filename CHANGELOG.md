@@ -123,7 +123,9 @@ migration phase's context) stays as it is.
   their setup installs only the skills, and so is each tree's conventions
   file. Each finding fixed here is marked in the process logs and the
   walkthroughs; the walkthroughs' embedded snapshots (`data.js`) keep the
-  text the runs recorded.
+  text the runs recorded. Each README names the skill version its run was
+  recorded with, and the walkthroughs and the first process log note where
+  the superpowers derivative now differs.
 - `spec/hsdd-spec-v0_10.md` states the same in place (§2.6, §3.1, §3.4,
   §3.5, §3.6, §7.6, §8.2, §8.4, §9.2, §9.7, §9.8, §9.9, §10.2, §10.3,
   §11.2, §11.3, §12.7, §14.1, §14.2, glossary), with the upgrade in §15.1

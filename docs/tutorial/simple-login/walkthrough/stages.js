@@ -335,7 +335,7 @@ const STAGES = [
     present: () => `
       ${list([
         "The generic context: the phase's bullet block, its node's boundaries, the full text of its contracts and ADRs, the discipline lines.",
-        "The superpowers derivative wraps it with eight Global Constraints: test-first, the task cap, the gate, the verification doc, the governance freeze.",
+        "The superpowers derivative wraps it with eight Global Constraints: test-first, the task cap, the gate, the verification doc, the governance freeze. Since v0.10.2 there are ten, and they name the superpowers skills they rely on.",
         "Pick a phase in the panel to see what it sees, and what it never sees.",
       ])}
       ${wrong(["The self-contained gate tripped twice: web.2 and web.3 each named the other contract inside a guarantee. Fixed in the file, as the skill says: each gained the referenced contract's text. v0.10.1 names that direction referenced.", "backend.1 builds the replay rig but consumes no contract, so its context had no fixture format; the session had to follow the links. Fixed in v0.10.1: every contract subsection carries its Validation section."])}
@@ -344,7 +344,7 @@ const STAGES = [
       ${prompt("Set up HSDD for superpowers.")}
       ${prompt("/hsdd-config simple-login.backend.1")}
       ${checks("context", ["hsdd/conventions.md says Coding method: superpowers.", "hsdd-context/simple-login.backend.1.md and hsdd-context/superpowers/simple-login.backend.1.md exist.", "The two bodies are identical (the switch's diff check prints nothing).", "Every contract or ADR id in the file has its text in the file."])}
-      <p class="hint">With HSDD v0.10.1 or later, each contract subsection also carries its Validation section, and a contract the file names that the phase neither consumes nor produces is headed referenced. The recorded files below come from v0.10.0 and have neither. With v0.10.2 or later, the file also carries each node decision its Phase block cites, such as backend.2's D1 and D2.</p>
+      <p class="hint">With HSDD v0.10.1 or later, each contract subsection also carries its Validation section, and a contract the file names that the phase neither consumes nor produces is headed referenced. The recorded files below come from v0.10.0 and have neither. With v0.10.2 or later, the file also carries each node decision its Phase block cites, such as backend.2's D1 and D2, and the superpowers derivative names test-driven-development, verification-before-completion and systematic-debugging in its constraints and the execution skill, by review tier, in its header.</p>
       <p class="files-line">Compare: ${fileBtn("hsdd-context/superpowers/simple-login.backend.1.md")}</p>`,
     visual: (s) => `<h3>What a phase sees</h3>${contextView(s)}`,
   },

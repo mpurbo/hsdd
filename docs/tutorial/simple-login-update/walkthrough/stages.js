@@ -342,7 +342,7 @@ const STAGES = [
         "profile-api@v1 appears as referenced, and a Referenced line in Discipline names it.",
         "The equality check prints nothing for all three.",
       ])}
-      <p class="hint">With HSDD v0.10.2 or later, a context also carries the node decisions its Phase block cites (web.4's names D1 to D5), and its test-first line says what to fail against when the dependency already merged.</p>
+      <p class="hint">With HSDD v0.10.2 or later, a context also carries the node decisions its Phase block cites (web.4's names D1 to D5), and its test-first line says what to fail against when the dependency already merged. The superpowers derivative's constraints also name test-driven-development, verification-before-completion and systematic-debugging, and its header names the execution skill by review tier: executing-plans for all three phases here, which are spot-check.</p>
       <p class="files-line">Compare: ${fileBtn("hsdd-context/simple-login.web.4.md")}</p>`,
     visual: (s) => `<h3>What each phase sees</h3>${contextView(s)}`,
   },
