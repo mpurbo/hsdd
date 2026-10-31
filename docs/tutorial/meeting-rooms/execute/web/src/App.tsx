@@ -49,11 +49,15 @@ export default function App() {
   }
 
   // D1: a 401 from any booking-api@v1 call ends the session as GET /api/me's does.
-  // Stable, so Home never sees a new callback identity.
+  // The callback is bound to the token of the session it renders for, so the
+  // reducer can ignore an expiry from an earlier session (D1). It changes
+  // identity only when that token does.
+  const signedInToken = state.kind === 'signed-in' ? state.session.token : null
   const onSessionExpired = useCallback((): void => {
+    if (signedInToken === null) return
     clearSession()
-    dispatch({ type: 'session-expired' })
-  }, [])
+    dispatch({ type: 'session-expired', token: signedInToken })
+  }, [signedInToken])
 
   // ADR-001: sign-out is client-side; there is no logout endpoint.
   const onSignOut = (): void => {
