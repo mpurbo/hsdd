@@ -1,0 +1,15 @@
+{
+  "name": "login-empty-username",
+  "description": "The username is an empty string.",
+  "request": {
+    "method": "POST",
+    "path": "/api/login",
+    "headers": { "content-type": "application/json" },
+    "body": { "username": "", "password": "sunrise-42" }
+  },
+  "response": {
+    "status": 400,
+    "body": { "error": { "code": "VALIDATION_FAILED", "message": "Username and password are required." } }
+  },
+  "replay": "exact"
+}
