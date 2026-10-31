@@ -17,6 +17,21 @@ const store = () => createBookingStore(db.pool);
 const count = async () => Number((await db.pool.query("SELECT count(*) AS n FROM booking")).rows[0].n);
 beforeEach(() => db.resetBookings());
 
+/** Resolves once a session of this database waits on a lock of that kind; throws after 5 s. */
+async function blockedOn(waitEvent: "advisory" | "transactionid"): Promise<void> {
+  const deadline = Date.now() + 5000;
+  while (Date.now() < deadline) {
+    const { rows } = await db.pool.query(
+      `SELECT count(*) AS n FROM pg_stat_activity
+       WHERE datname = current_database() AND wait_event_type = 'Lock' AND wait_event = $1`,
+      [waitEvent],
+    );
+    if (Number(rows[0].n) > 0) return;
+    await new Promise((resolve) => setTimeout(resolve, 10));
+  }
+  throw new Error(`no session waited on a ${waitEvent} lock within 5 s`);
+}
+
 describe("insert", () => {
   it("stores touching bookings of one room (G3)", async () => {
     const s = store();
@@ -94,6 +109,56 @@ describe("find", () => {
     const id = stored.value.id;
     for (const bad of ["not-a-uuid", id.toUpperCase(), id.replaceAll("-", "")]) {
       await expect(store().find(bad)).resolves.toBeUndefined();
+    }
+  });
+});
+
+describe("remove", () => {
+  const made = async () => {
+    const r = await store().insert(booking());
+    if (!r.ok) throw new Error("insert refused");
+    return r.value;
+  };
+
+  it("removes the booking, and the next insert books the same range (G11)", async () => {
+    const was = await made();
+    expect(await store().remove(was)).toBe(true);
+    expect(await store().find(was.id)).toBeUndefined();
+    const again = await store().insert(booking());
+    expect(again.ok).toBe(true);
+    if (!again.ok) return;
+    expect(again.value.id).not.toBe(was.id);
+  });
+
+  it("gives false when the booking was already gone", async () => {
+    const was = await made();
+    expect(await store().remove(was)).toBe(true);
+    expect(await store().remove(was)).toBe(false);
+  });
+
+  it("two removes of one booking at once give one true and one false", async () => {
+    const was = await made();
+    const results = await Promise.all([store().remove(was), store().remove(was)]);
+    expect([...results].sort()).toEqual([false, true]);
+  });
+
+  it("waits for the room's lock", async () => {
+    const was = await made();
+    const holder = await db.pool.connect();
+    let open = false;
+    try {
+      await holder.query("BEGIN");
+      open = true;
+      await holder.query("SELECT pg_advisory_xact_lock(hashtext('merapi'))");
+      const removing = store().remove(was);
+      await blockedOn("advisory");
+      expect(await store().find(was.id)).toEqual(was);
+      await holder.query("COMMIT");
+      open = false;
+      expect(await removing).toBe(true);
+    } finally {
+      if (open) await holder.query("ROLLBACK");
+      holder.release();
     }
   });
 });

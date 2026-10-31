@@ -39,27 +39,31 @@ const insertOn = async (client: PoolClient, b: NewBooking): Promise<Result<Store
   return { ok: true, value: toStoredBooking(inserted.rows[0]) };
 };
 
+// One lock per room, held to the end of the transaction (D7).
+const LOCK_ROOM = "SELECT pg_advisory_xact_lock(hashtext($1))";
+
 export function createBookingStore(pool: Pool): BookingStore {
-  return {
-    async insert(b) {
-      const client = await pool.connect();
-      let releaseWith: Error | undefined;
+  const inTransaction = async <T>(work: (client: PoolClient) => Promise<T>): Promise<T> => {
+    const client = await pool.connect();
+    let releaseWith: Error | undefined;
+    try {
+      await client.query("BEGIN");
+      const result = await work(client);
+      await client.query("COMMIT");
+      return result;
+    } catch (error) {
       try {
-        await client.query("BEGIN");
-        const result = await insertOn(client, b);
-        await client.query("COMMIT");
-        return result;
-      } catch (error) {
-        try {
-          await client.query("ROLLBACK");
-        } catch (rollbackError) {
-          releaseWith = rollbackError instanceof Error ? rollbackError : new Error(String(rollbackError));
-        }
-        throw error;
-      } finally {
-        client.release(releaseWith);
+        await client.query("ROLLBACK");
+      } catch (rollbackError) {
+        releaseWith = rollbackError instanceof Error ? rollbackError : new Error(String(rollbackError));
       }
-    },
+      throw error;
+    } finally {
+      client.release(releaseWith);
+    }
+  };
+  return {
+    insert: (b) => inTransaction((client) => insertOn(client, b)),
     async overlapping(from, to) {
       const { rows } = await pool.query<Row>(
         `SELECT ${COLUMNS} FROM booking
@@ -81,8 +85,11 @@ export function createBookingStore(pool: Pool): BookingStore {
       const { rows } = await pool.query<Row>(`SELECT ${COLUMNS} FROM booking WHERE id = $1`, [id]);
       return rows[0] === undefined ? undefined : toStoredBooking(rows[0]);
     },
-    async remove() {
-      throw new Error("not implemented");
-    },
+    remove: (booking) =>
+      inTransaction(async (client) => {
+        await client.query(LOCK_ROOM, [booking.roomId]);
+        const deleted = await client.query("DELETE FROM booking WHERE id = $1", [booking.id]);
+        return deleted.rowCount === 1;
+      }),
   };
 }
