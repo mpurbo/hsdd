@@ -666,3 +666,77 @@ New findings about HSDD from this phase:
   made `stable` by S21, after the plan was written.
 
 ### 02:37 · backend.5 (spot-check) and backend.6 (full-review), in parallel
+
+**backend.5, 02:37 to 03:03 (agent), signed 03:05.** The booking rules
+as pure functions: instants, the rooms query, the new booking's request
+and limits in contract order, the views, cancelling and the error
+responses, plus a test that scans the module's source for I/O, clock
+reads and zone names. Gate 111 to 195 (two new test files: 45 rules, 39
+over the 16 fixtures that answer 400, 403, 404 or 422). Spot-check
+review: 1 Important (a `checkCancel` that checked the id's form after
+ownership passed all 83 tests), fixed with a failing test. Outstanding:
+the Scope says the content-type rule is "as for sign-in", code outside
+the phase's context; deferred to backend.7's route tests.
+
+- **Finding (HSDD).** A Scope that points at behavior ("as for sign-in")
+  rather than an id slips past the self-contained check, which counts
+  ids only.
+- **Process slip, declared:** the agent read 30 header lines of
+  backend.4's plan for format before noticing the rule against reading
+  other phases' plans.
+
+**web.6, 02:32 to 03:13 (agent), signed 03:15.** The time module: zone
+names, `todayIn`, `dayRange`, the form's quarter-hour options, and the
+formatters, all pure and taking the zone as an argument; guards that ban
+every `Date` local getter and any zone literal but `'UTC'` outside the
+module. Gate 199 to 262; the 63 time tests also pass under Europe/London,
+America/St_Johns, Asia/Jakarta and UTC. Full review: per-task reviewers
+(one Important: unparsable instants silently gave empty options) and a
+final reviewer (one Important: `parseInstant` read a date-time without `Z`
+in the ambient zone), each fixed and re-reviewed; the final reviewer also
+brute-forced all 418 IANA zones over 2026 to 2028 and found no mismatch.
+Outstanding (en-GB output in Chromium, the browser's ambient zone)
+deferred to the integration browser phases. The doc cited a gate log in
+the git-ignored `.superpowers/` workspace; the signature notes the
+orchestrator's rerun instead, and later phase agents are told that
+evidence must be in the repository.
+
+- **Finding (HSDD).** hsdd-config's filling rule takes referenced
+  contracts only from the Phase block or a contract subsection, while
+  step 9 and rule 2 take every `@v` in the file; inlined D{n} decisions
+  that cite contracts cascade, so a phase that consumes nothing carried
+  about 500 of its 707 context lines in contract text. Contract order
+  ("the order the file first names it") is circular when the first naming
+  is in Decisions, after Contracts.
+- **Finding (HSDD).** The Scope cited an experiment directory and the
+  intake record, which the Links do not name; the agent did not read
+  them and reproduced the pinned values with a prototype instead.
+
+### 03:16 · web.7 (full-review)
+
+**backend.6, 02:37 to 03:40 (agent), signed 03:45.** The booking store
+on PostgreSQL: insert, find, overlapping, `notEndedOf` and remove, with
+D7's per-room advisory lock. Gate 111 to 140 on its own branch (224 once
+merged with backend.5). The race test runs 10 rounds of 20 simultaneous
+inserts, 13 to 30 ms each, with no deadlock in PostgreSQL's log. Full
+review, six reviewers: a read-before-lock mutant passed every test the
+plan listed (Important, fixed with a cancel-under-lock test both that and
+a no-lock mutant fail); the final wave pinned `READ COMMITTED` after a
+run under SERIALIZABLE failed with 40001, and added a `FOR UPDATE NOWAIT`
+probe for the remove's lock order. The 40P01 path is tested with a real,
+deliberately provoked deadlock.
+
+- **Finding (HSDD).** D7 relies on READ COMMITTED without saying so, and
+  the phase's Verification line ("no `deadlock detected`") could not
+  catch the read-before-lock mutant, which logged 183 ERROR lines and no
+  deadlock: a Verification line that names a symptom instead of the
+  invariant.
+- **Finding (HSDD).** The Scope cites G3 to G17 without naming the
+  contract; booking-api@v1 entered the context only through the
+  self-contained gate.
+
+### 03:47 · backend.7 (full-review)
+
+The lane agent's prompt names the two items earlier sign-offs deferred to
+this phase (the content-type comparison with sign-in, the pool's missing
+`'error'` listener).
