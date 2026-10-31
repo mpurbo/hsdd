@@ -15,6 +15,9 @@ const addFormats = ajvFormats.default;
 
 export type ContractSlug = "auth-api" | "profile-api" | "profile-api.v2";
 
+/** A booking-api@v1 fixture's `given` booking; `account` is a built-in username. */
+export type GivenBooking = { id: string; account: string; roomId: string; title: string; start: string; end: string };
+
 export type Fixture = {
   name: string;
   description: string;
