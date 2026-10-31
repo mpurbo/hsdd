@@ -3,6 +3,7 @@
 // pure function of the text; loadTree is the one reader of the repository.
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { basename, join } from "node:path";
+import { versionName, versionNumber } from "./contracts.mjs";
 
 // ---------- markdown primitives ----------
 
@@ -353,14 +354,18 @@ const breakingLineOf = (lines) => {
   return [clean[i].replace(/^\s*(?:[-*+]\s+)?Breaking\s*:\s*/i, ""), ...rest].join(" ").trim();
 };
 
+// `slug` is the contract's id (v0.10.0 §3.1): its front-matter `id`, else the file name without
+// `.md` and without the `.v{n}` of a later version; `stem` is the file name without `.md`.
 export const parseContract = (text, file) => {
   const front = parseFrontMatter(text);
   const f = front ?? {};
   const ls = toLines(text);
   const hs = headings(ls);
   const versioning = sectionLines(ls, hs, /^versioning\b/i);
+  const stem = basename(file).replace(/\.md$/i, "");
   return {
-    slug: basename(file).replace(/\.md$/i, ""),
+    slug: str(f.id) ?? versionName(stem)?.id ?? stem,
+    stem,
     file,
     front,
     text: String(text ?? ""),
@@ -450,38 +455,52 @@ const byId = (a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
 export const leafParentsOf = (tree) =>
   [...tree.nodes.values()].filter((n) => n.kind === "leaf-parent" && n.status !== "retired").map((n) => n.id);
 
+// Contract files by id (v0.10.0 §3.1): each id maps to its current version's file record, the highest
+// `v{n}` (the first in file order on a tie), with `versions`, every file of the id, lowest version first.
+const versionRank = (c) => (Number.isNaN(versionNumber(c.version)) ? -1 : versionNumber(c.version));
+const contractIndex = (files) => {
+  const byId = files.reduce((m, c) => m.set(c.slug, [...(m.get(c.slug) ?? []), c]), new Map());
+  return new Map([...byId].map(([id, cs]) => {
+    const versions = [...cs].sort((a, b) => versionRank(a) - versionRank(b));
+    const current = versions.reduce((best, c) => (versionRank(c) > versionRank(best) ? c : best));
+    return [id, { ...current, versions }];
+  }));
+};
+
 // Citations (adrCites, oqCites, contractCites) cover the spec, contract and ADR files,
 // the set checks C3, C5 and C6 read (spec 10.6); each id is listed once per file, files
 // in that order. A stage rule that counts only what a spec cites filters on `file`.
 export const loadTree = (repoRoot, layout, { root = null } = {}) => {
   const specFiles = listMd(repoRoot, layout.spec);
-  const contractFiles = listMd(repoRoot, layout.contract);
+  const contractTexts = listMd(repoRoot, layout.contract);
   const adrFiles = listMd(repoRoot, layout.adr);
   const nodes = new Map(specFiles.map(({ file, text }) => parseNodeSpec(text, file)).sort(byId).map((n) => [n.id, n]));
   const rootId = root ?? [...nodes.keys()].find((id) => !id.includes(".")) ?? null;
   const textByFile = new Map(specFiles.map(({ file, text }) => [file, text]));
-  const contracts = new Map(contractFiles.map(({ file, text }) => {
+  // A version's schema and fixtures carry its file name: `{slug}` for the first, `{slug}.v{n}` after.
+  const contractRecords = contractTexts.map(({ file, text }) => {
     const c = parseContract(text, file);
-    const schema = `${layout.contract}/schema/${c.slug}.schema.json`;
-    return [c.slug, {
+    const schema = `${layout.contract}/schema/${c.stem}.schema.json`;
+    return {
       ...c,
       schemaFile: existsSync(join(repoRoot, schema)) ? schema : null,
-      fixtureFiles: listFiles(repoRoot, `${layout.contract}/fixture/${c.slug}`),
-    }];
-  }));
+      fixtureFiles: listFiles(repoRoot, `${layout.contract}/fixture/${c.stem}`),
+    };
+  });
   const adrs = new Map();
   for (const { file, text } of adrFiles) {
     const a = parseAdr(text, file);
     const key = a.id ?? file;
     if (!adrs.has(key)) adrs.set(key, a);
   }
-  const citeFiles = [...specFiles, ...contractFiles, ...adrFiles];
+  const citeFiles = [...specFiles, ...contractTexts, ...adrFiles];
   return {
     root: rootId,
     rootFile: rootId !== null && nodes.has(rootId) ? nodes.get(rootId).file : null,
     nodes,
     mentionOrder: mentionOrderOf(nodes, (id) => textByFile.get(nodes.get(id).file) ?? "", rootId),
-    contracts,
+    contracts: contractIndex(contractRecords),
+    contractFiles: contractRecords,
     adrs,
     specFiles,
     oqDefs: specFiles.flatMap(({ file, text }) => {

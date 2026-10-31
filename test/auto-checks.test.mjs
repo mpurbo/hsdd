@@ -11,6 +11,8 @@ import { loadContext } from "../skills/hsdd-auto/scripts/lib/context.mjs";
 import { loadIntakeRecords, parseIntakeRecord } from "../skills/hsdd-auto/scripts/lib/intake.mjs";
 import { resolveLayout } from "../skills/hsdd-auto/scripts/lib/paths.mjs";
 import { makeRepo } from "./helpers/auto-repo.mjs";
+import { V2, deprecatedV1, v2Files, v2Text } from "./helpers/auto-contract-v2.mjs";
+import { contractsNotFinal } from "../skills/hsdd-auto/scripts/next.mjs";
 
 const HERE = dirname(new URL(import.meta.url).pathname);
 const INTAKE = join(HERE, "fixtures", "auto", "intake");
@@ -29,6 +31,7 @@ const API = "hsdd/spec/shop.api.md";
 const WEB = "hsdd/spec/shop.web.app.md";
 const CONTRACT = "hsdd/contract/order-api.md";
 const ADR = "hsdd/adr/001-order-ids.md";
+const readV1Draft = () => readFileSync(join(HERE, "fixtures", "auto", "tree", "06-planned", "hsdd", "contract", "order-api.md"), "utf8").replace("status: stable", "status: draft");
 const intakeRecord = (name) => parseIntakeRecord(readFileSync(join(INTAKE, name), "utf8"), `hsdd/management/${name}`);
 
 // ---------- C0 and C1 ----------
@@ -177,6 +180,20 @@ test("C3 reads the contract side of Governed by from governed_by", () => {
   assert.deepEqual(fs.map((f) => [f.level, f.file]), [["error", CONTRACT]]);
 });
 
+test("C3 resolves {id}@v{n} to that version's file", () => {
+  // v2's governed_by names ADR-001: an ADR that affects v2 passes on v2's file.
+  const dir = makeRepo({ stage: "06-planned", files: v2Files() });
+  edit(dir, ADR, "affects: [shop.api, order-api@v1]", "affects: [shop.api, order-api@v1, order-api@v2]");
+  assert.deepEqual(c3(treeOf(dir), {}), []);
+  // v2 without it fails on v2's file, whatever v1 says.
+  edit(dir, V2, "governed_by: [ADR-001]", "governed_by: []");
+  assert.deepEqual(c3(treeOf(dir), {}).map((f) => [f.level, f.file]), [["error", V2]]);
+  // A later version with no file yet is hsdd-adr's forward reference.
+  const ahead = repo("06-planned");
+  edit(ahead, ADR, "affects: [shop.api, order-api@v1]", "affects: [shop.api, order-api@v1, order-api@v2]");
+  assert.deepEqual(c3(treeOf(ahead), {}).map((f) => [f.level, f.message]), [["warn", "ADR-001 affects order-api@v2, which has no file yet"]]);
+});
+
 test("C3 warns on an affects target with no file", () => {
   const dir = repo("06-planned");
   edit(dir, ADR, "affects: [shop.api, order-api@v1]", "affects: [shop.api, order-api@v1, shop.missing]");
@@ -231,6 +248,33 @@ test("C4 checks the validation paths of a stable contract; a draft without them 
   assert.deepEqual(ids(c4of(draft)), ["warn:C4"]);
 });
 
+test("C4 accepts a later version in its own file, {id}.v{n}.md, and checks it as a file of its own", () => {
+  const dir = makeRepo({ stage: "06-planned", files: v2Files() });
+  assert.deepEqual(c4of(dir), []);
+  // Its name carries its version; a `.v3` file at v2 is a mistake.
+  const wrong = makeRepo({ stage: "06-planned", files: { "hsdd/contract/order-api.v3.md": v2Text() } });
+  const fs = c4of(wrong).filter((f) => f.level === "error");
+  assert.deepEqual(fs.map((f) => [f.level, f.file]), [["error", "hsdd/contract/order-api.v3.md"]]);
+  assert.match(fs[0].message, /v2/);
+  // `{id}.v{n}.md` is a later version only beside a lower version of the same id.
+  const alone = makeRepo({ stage: "06-planned", files: { [V2]: v2Text() } });
+  rmSync(join(alone, CONTRACT));
+  assert.deepEqual(c4of(alone).filter((f) => f.file === V2 && /file name/.test(f.message)).length, 1);
+  // A second version written before 0.10.2 under another name stands (v0.10.0 §15.1).
+  const named = makeRepo({ stage: "06-planned", files: { "hsdd/contract/orders-2.md": v2Text() } });
+  assert.deepEqual(c4of(named).filter((f) => f.level === "error"), []);
+  // Each version's own front matter and validation paths: a stable v2 needs phase_ids final.
+  const stable = makeRepo({ stage: "06-planned", files: v2Files({ status: "stable" }) });
+  assert.deepEqual(c4of(stable).map((f) => [f.level, f.file]), [["error", V2]]);
+});
+
+test("C4 reports two files with the same id and version", () => {
+  const dir = makeRepo({ stage: "06-planned", files: { ...v2Files(), "hsdd/contract/orders-2.md": v2Text() } });
+  const fs = c4of(dir);
+  assert.deepEqual(fs.map((f) => [f.level, f.file]), [["error", V2], ["error", "hsdd/contract/orders-2.md"]], "each file of the pair, so the one a step changed is in scope");
+  assert.match(fs[0].message, /order-api@v2 is also hsdd\/contract\/orders-2\.md/);
+});
+
 // ---------- C5 ----------
 
 test("C5 passes on a finished tree", () => assert.deepEqual(c5(treeOf(repo("06-planned")), {}), []));
@@ -276,6 +320,43 @@ test("C5 skips an external citation", () => {
   const dir = repo("06-planned");
   edit(dir, WEB, "- **Consumes:** [order-api@v1]\n- **Produces:** none\n- **Scope:** a typed", "- **Consumes:** [order-api@v1, ledger-api@v4 (ext)]\n- **Produces:** none\n- **Scope:** a typed");
   assert.deepEqual(c5(treeOf(dir), {}), []);
+});
+
+test("C5 accepts a citation of every version that has a file, whatever its status", () => {
+  const dir = makeRepo({ stage: "06-planned", files: v2Files() });
+  edit(dir, WEB, "- **Consumes:** [order-api@v1]\n- **Produces:** none\n- **Scope:** a typed", "- **Consumes:** [order-api@v2]\n- **Produces:** none\n- **Scope:** a typed");
+  edit(dir, ADR, "affects: [shop.api, order-api@v1]", "affects: [shop.api, order-api@v1, order-api@v2]");
+  assert.deepEqual(c5(treeOf(dir), {}), []);
+  const deprecated = makeRepo({ stage: "06-planned", files: v2Files({ v1: deprecatedV1 }) });
+  assert.deepEqual(c5(treeOf(deprecated), {}), [], "a deprecated v1 is still a version with a file");
+  // A version with neither a file nor a mention in the current version's ## Versioning is an error.
+  edit(dir, WEB, "- **Consumes:** [order-api@v2]\n- **Produces:** none\n- **Scope:** a typed", "- **Consumes:** [order-api@v3]\n- **Produces:** none\n- **Scope:** a typed");
+  const fs = c5(treeOf(dir), {});
+  assert.deepEqual(fs.map((f) => [f.level, f.file]), [["error", WEB]]);
+  assert.match(fs[0].message, /order-api@v3/);
+});
+
+test("C5 warns on a version a pending contract handoff will create", () => {
+  const dir = repo("06-planned");
+  edit(dir, WEB, "- **Consumes:** [order-api@v1]\n- **Produces:** none\n- **Scope:** a typed", "- **Consumes:** [order-api@v2]\n- **Produces:** none\n- **Scope:** a typed");
+  assert.deepEqual(c5(treeOf(dir), { willCreateContracts: new Set(["order-api.v2"]) }).map((f) => [f.level, f.file]), [["warn", WEB]]);
+  assert.deepEqual(c5(treeOf(dir), {}).map((f) => f.level), ["error"]);
+});
+
+test("C7 checks the phase ids of every version file", () => {
+  const dir = makeRepo({ stage: "06-planned", files: v2Files({ phaseIds: "final", status: "stable" }) });
+  const fs = c7(treeOf(dir));
+  assert.deepEqual(fs.map((f) => [f.level, f.file]), [["error", V2], ["error", V2]]);
+  assert.match(fs[0].message, /^order-api\.v2: shop\.api\.3 /);
+});
+
+test("the done definition counts every version file: a draft v2 is not final; a deprecated v1 is exempt", () => {
+  const dir = makeRepo({ stage: "06-planned", files: v2Files({ v1: deprecatedV1 }) });
+  assert.deepEqual(contractsNotFinal(treeOf(dir)), ["order-api.v2"]);
+  const coexisting = makeRepo({ stage: "06-planned", files: v2Files({ status: "stable", phaseIds: "final" }) });
+  assert.deepEqual(contractsNotFinal(treeOf(coexisting)), []);
+  const v1Draft = makeRepo({ stage: "06-planned", files: v2Files({ status: "stable", phaseIds: "final", v1: readV1Draft() }) });
+  assert.deepEqual(contractsNotFinal(treeOf(v1Draft)), ["order-api"]);
 });
 
 // ---------- C6 ----------

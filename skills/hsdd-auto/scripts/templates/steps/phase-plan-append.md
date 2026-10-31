@@ -40,12 +40,14 @@ Each line names its file; check it there before relying on it.
 ### What to do
 
 as `phase-plan`, plus append mode's rules (v0.10.0 §11.3): never renumber;
-never rewrite a shipped phase (one with a verification doc on the repository's
-default branch, v0.10.0 §11.3); rewrite an unshipped phase in place only when
-the invocation says so (§12.1); every phase rewritten or appended cites in its
-Scope the intake record, or in a plan segment the `insert-step` item's id;
-when there is a record, the request joins the node's Sources; the pending
-section gets a new emission date line.
+never rewrite a shipped phase (one with a verification doc on the conventions'
+`**Main line:**`, `main` when absent, v0.10.0 §14.2); rewrite an unshipped
+phase in place only when the invocation says so (§12.1); every phase
+rewritten or appended cites in its Scope the intake record, or in a plan
+segment the `insert-step` item's id; when there is a record, the change
+request's own path (the facts name it, never the record's) joins the node's
+Sources with the sections that govern it; the pending section gets a new
+emission date line.
 
 ### Done when
 

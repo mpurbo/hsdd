@@ -720,7 +720,9 @@ from, target, kind, text}`, with `step_kind` and `step_target` for an
   with a `plan` decision (§8.7).
 
 **Targets** are written as: a node id (`acme.backend.auth`), a contract slug
-without version (`auth-token`), an ADR id (`ADR-003`), an intake handoff id
+without version (`auth-token`, the contract's `id`, which stands for every
+version file of it), the file name of one later version without `.md`
+(`auth-token.v2`, v0.10.0 §3.1), an ADR id (`ADR-003`), an intake handoff id
 (`H7a`), or `run` (the run itself). A step's target string is its node id,
 contract slug or ADR id; for `citation-touch`, the touched file's node id,
 slug or ADR id; for `reconcile` and `align`, a comma-separated list of node
@@ -1396,9 +1398,10 @@ spec, then in the parent spec. A cycle among the candidates is a `shape`
 stop (`next.mjs` returns `stop`).
 
 **Done** for a plan segment (`state.mjs done`): every stage is done; every
-contract above `v0` is `status: stable` with `phase_ids: final` (this
-document exempts `v0`: an adopted contract, v0.10.0 §6.3, whose phases are
-not planned until promotion); the registries
+contract version above `v0`, each its own file (v0.10.0 §3.1), is
+`status: stable` with `phase_ids: final`, except a `deprecated` or
+`retired` one (this document exempts `v0`: an adopted contract, v0.10.0
+§6.3, whose phases are not planned until promotion); the registries
 regenerate clean; every cited ADR, contract, open-question and phase id
 resolves; no `must-address` item is open; the ledger validates; and the
 working tree is clean apart from `owner_files`. The final gate (F1) checks
@@ -1437,7 +1440,7 @@ before the align). The orchestrator applies it through `insert-step` items,
 each accepted by a `plan` decision that cites the rule.
 
 **Done** for an intake segment: every stage is done; no `must-address` item
-is open; every contract above `v0` is `status: stable` with `phase_ids:
+is open; every contract version above `v0` is `status: stable` with `phase_ids:
 final` (§9.1); the
 registries regenerate clean;
 every cited id resolves; the ledger validates; and the working tree is clean
@@ -1446,14 +1449,24 @@ its phases ship (v0.10.0 §11.5); `hsdd-auto` never closes it.
 
 ### 9.3 When the request is a new version of a source
 
-An intake whose request is a new version of a source document (or one that
-bumps contract versions) also moves citations. The `setup` step updates
-`sources`: the new version becomes normative or informative with its
-`version`, and the old one moves to `baseline` with its own. It also updates
-the `orchestrator_files` that name the normative source. Both are recorded
+An intake whose request is a new version of a source document also moves
+citations of the source, and one that supersedes a contract version (a
+`lockstep` bump deprecates the old version in the run that drafts the next,
+v0.10.0 §3.5) moves citations of that version. A `coexisting` bump moves
+none: the old version stays live, and each consumer moves in a phase of its
+own (§12.4). For a new source version the `setup` step updates `sources`:
+the new version becomes normative or informative with its `version`, and the
+old one moves to `baseline` with its own. It also updates the
+`orchestrator_files` that name the normative source. Both are recorded
 decisions. The intake record then routes one `citation-touch` per artifact
-that may still cite a superseded version, with `when: cites-superseded`
-(§12.2), after the content handoffs, and the touches follow §12.4.
+that may still cite a superseded string, with `when: cites-superseded`
+(§12.2), after the content handoffs, and the touches follow §12.4. No touch
+moves a contract version in a node header or an ADR's `affects`:
+`hsdd-reconcile`'s version ripple writes a confirmed version into the
+headers and the specs above them, and `hsdd-adr` adds the new version to
+`affects`. So each leaf-parent the change lands on gets a
+`phase-plan-append` and a `reconcile`, and a `spec-touch` only when its own
+text changes.
 
 ---
 
@@ -1726,10 +1739,10 @@ is imported from `next.mjs`.
 | C1 | When the generator exists, `node H/scripts/gen-registry.mjs --root {tmp}` on a temporary copy of `H/` exits 0 and writes registries byte-identical to the tree's, so the gate itself never writes into the tree. | error |
 | C2 | Every node spec has a `# {node-id}: {Name}` title matching its file name and a `Kind` field; every child id its `Decomposes into` names has a spec file (a value that is empty or starts with `phases` names none). | scoped |
 | C3 | Every ADR file has front matter with `id`, `status`, `affects` and `date`; every cited `ADR-{nnn}` has a file, or is one a plan-mode stage rule, or a not yet executed intake handoff of kind `adr`, will create (warning); every `affects` target that has a file carries a `Governed by` that names the ADR (a node or phase in its header; a contract in the optional front-matter field `governed_by`, §15.3); a target with no file yet is a warning, `hsdd-adr`'s forward reference. | scoped |
-| C4 | Every contract file (`H/contract/*.md` except `INDEX.md`) has front matter with `id`, `version`, `status`, `kind`, `owner`, `produced_by`, `consumers` and `phase_ids` (`compatibility` is optional, v0.10.0 §15.1); `id` matches the file name; `status: stable` implies `phase_ids: final` except at `version: v0` (an adopted contract, v0.10.0 §6.3); a `stable` contract without `validation: grandfathered` names, in `## Validation`, a schema or fixture path that exists and is not an empty directory (a `draft` without one is a warning). | scoped |
-| C5 | Every `{slug}@v{n}` citation names an existing contract at its current version, or a version its `## Versioning` section names; a contract a plan-mode stage rule, or a not yet executed intake handoff of kind `contract`, will create is a warning. | scoped |
+| C4 | Every contract file (`H/contract/*.md` except `INDEX.md`), one per version (v0.10.0 §3.1), has front matter with `id`, `version`, `status`, `kind`, `owner`, `produced_by`, `consumers` and `phase_ids` (`compatibility` is optional, v0.10.0 §15.1); its file name is its `id`, or, for a later version (a file with the same `id` holds a lower version), `{id}.v{n}` with `v{n}` its `version` (a later version written before 0.10.2 under a name of another form stands, v0.10.0 §15.1); no two files have the same `id` and `version` (each is reported); `status: stable` implies `phase_ids: final` except at `version: v0` (an adopted contract, v0.10.0 §6.3); a `stable` file without `validation: grandfathered` names, in `## Validation`, a schema or fixture path that exists and is not an empty directory (a `draft` without one is a warning). | scoped |
+| C5 | Every `{slug}@v{n}` citation names a version a file of that contract `id` holds, whatever its status, or a version below the current one (the highest a file holds) that the current file's `## Versioning` names (the history of a bump in place before 0.10.2); a contract a plan-mode stage rule, or a not yet executed intake handoff of kind `contract`, will create is a warning, and so is a version a not yet executed handoff of kind `contract` on `{id}.v{n}` will create. | scoped |
 | C6 | Every open-question id is defined once, as a heading in one spec, and every citation of one resolves. | scoped |
-| C7 | Every phase id a contract's `produced_by` or `consumers` names is a phase heading in its node's spec file, in the full form or the short `{n}.{i}` form (v0.10.0 §7.5). | scoped when the contract's `phase_ids` is `final`, else warning |
+| C7 | Every phase id a contract file's `produced_by` or `consumers` names is a phase heading in its node's spec file, in the full form or the short `{n}.{i}` form (v0.10.0 §7.5). | scoped when the file's `phase_ids` is `final`, else warning |
 | C8 | An intake record's slug contains none of `progress`, `execution-plan`, `milestones`, `atlas`; its header has every field of v0.10.0 §11.2; its handoff block (§12.2), when present, parses against appendix A.7, and each handoff's `prompt` appears verbatim in the `## Routing` prose, in the block's order. In an `intake` step the block is required, and may be empty only when `**Class:**` is `structural`. | scoped |
 | D1 | No changed write-set text file contains a banned character or phrase, with §7.6's exemptions (step reports, sidecars, a segment report's generated parts, `H/conventions.md`, the bundled copies under `H/scripts/` and `.claude/`); a segment report's prose slots are checked. | `prose_rules.level` |
 
@@ -1746,7 +1759,7 @@ The final gate runs C0 to C8 over the whole tree with the final scope, then:
 | Id | Check | Level |
 |----|-------|-------|
 | F1 | Every condition of the mode's done definition (§9.1, §9.2) holds, except the `report` stage and the clean working tree. | error |
-| F2 | References to a contract version that is no longer current, outside that contract's own file: one line per file and version, with a count. Dated history may name old versions on purpose (§12.4); the report states the count and that each was read. | warning |
+| F2 | References to a superseded contract version (§12.2: `deprecated` or `retired`, or with no file of its own), outside that contract's own files (every version file of its `id`, and the cited version's schema and fixtures): one line per file and version, with a count. Dated history may name old versions on purpose (§12.4); the report states the count and that each was read. | warning |
 | F3 | `ledger.mjs validate` passes. | error |
 | F4 | No `must-address` item is open, and no `insert-step` item is still `open` (undecided). | error |
 | F5 | `H/contract/INDEX.md` lists every contract slug the specs name. | error |
@@ -1873,7 +1886,10 @@ and kept across re-runs. Both modes have, in order:
 
 For an intake segment the `report` step also appends to the intake record's
 `## Produced` the contracts bumped (`id@v`), the ADRs amended and the nodes
-grafted, and one change-log line. This is the hand append `hsdd-intake`'s
+grafted, and one change-log line. A contract `id` counts as bumped when its
+current version is above the highest version any of its files held at the
+setup commit: a later version in a file of its own (v0.10.0 §3.1), or a bump
+in place; an `id` with no file then is new, not bumped. This is the hand append `hsdd-intake`'s
 template allows for grafts and bumps; §15.3 adds the report step to the
 conventions template's writers of `hsdd/management/`. Phases are not
 appended: `hsdd-checkpoint` appends them from their Scope citations (v0.10.0
@@ -2193,7 +2209,7 @@ A.7):
   |------|-------|--------|
   | `mid-level-spec`, `graft`, `promote`, `spec-touch` | `hsdd-spec` | a node id |
   | `adr`, `adr-update` | `hsdd-adr` | an ADR id |
-  | `contract`, `contract-touch` | `hsdd-contract` | a contract slug |
+  | `contract`, `contract-touch` | `hsdd-contract` | a contract slug (its `id`; `{id}.v{n}` names one later version, v0.10.0 §3.1) |
   | `citation-touch` | by the file: `hsdd-spec`, `hsdd-adr` or `hsdd-contract` | a node id, ADR id or contract slug |
   | `phase-plan`, `phase-plan-append` | `hsdd-phase-plan` | a leaf-parent's node id |
   | `reconcile`, `align` | `hsdd-reconcile` | node ids, comma-separated, or `all` |
@@ -2206,16 +2222,26 @@ A.7):
 
 **`cites-superseded`** holds when any of the target's files contains a
 superseded string. The superseded strings are: for every `baseline` source
-in `run.yaml`, its `path` and its `version`; and for every contract whose
-current version is `v{n}` with `n` above 0, each `{slug}@v{k}` with `k`
-below `n`, followed by a character that is not a letter, digit, `_` or `-`,
-or by the end of the text. The target's files are: for a contract,
-`H/contract/{slug}.md`, `H/contract/fixture/{slug}/**` and
-`H/contract/schema/{slug}.schema.json`; for an ADR, its file; for a node,
-its spec file. The match is textual and counts history too: a target whose
-only old-version mentions are history is still dispatched, and its touch
-keeps them (§12.4). `next.mjs` evaluates the condition when the handoff
-comes up, not when the record is written.
+in `run.yaml`, its `path` and its `version`; and for every contract `id`
+whose current version, the highest any file of that `id` holds (v0.10.0
+§3.1), is `v{n}` with `n` above 0, each `{id}@v{k}` with `k` below `n` that
+is superseded, followed by a character that is not a letter, digit, `_` or
+`-`, or by the end of the text. A lower version with a file of its own is
+superseded only when that file is `deprecated` or `retired`: under
+`coexisting` it stays `stable` while it has a live consumer (v0.10.0 §3.5),
+and a citation of it is live. A lower version with no file of its own lives
+only as history inside a later file (a bump in place, before 0.10.2) and is
+superseded. A version's own files (its contract file, schema and fixtures)
+describe it, so `{id}@v{k}` in them is no superseded string. The target's
+files are: for a contract `id`, every version's file with its schema and
+fixtures (`H/contract/{slug}.md`, `H/contract/fixture/{slug}/**` and
+`H/contract/schema/{slug}.schema.json` for the first version, `{slug}.v{n}`
+in place of `{slug}` for a later one); for `{id}.v{n}`, that version's
+files; for an ADR, its file; for a node, its spec file. The match is
+textual and counts history too: a target whose only old-version mentions
+are history is still dispatched, and its touch keeps them (§12.4).
+`next.mjs` evaluates the condition when the handoff comes up, not when the
+record is written.
 
 The block is optional, and its absence keeps a record conformant (v0.10.0
 §15.3). `hsdd-intake` writes it whenever it runs with `--unattended`, and may
@@ -2240,10 +2266,16 @@ section present, like the steps the skill's step 2 names. It is invoked as
 `/hsdd-reconcile align {node ids or all} after {what changed}` and, for each
 named node's plan text:
 
-1. moves every live citation of a contract version that is no longer current
-   to the current version, by §12.4's rule, in unshipped phases only;
+1. moves every live citation of a contract version that is superseded
+   (§12.2: `deprecated` or `retired`, or with no file of its own) to the
+   current version, by §12.4's rule, in unshipped phases only and never in
+   a node header's `Produces` or `Consumes` line; a citation of an earlier
+   version that stays live beside the new one (`coexisting`) stays, and
+   align routes one `consider` item to the node, naming the new version,
+   since moving a consumer is that node's planning, never align's;
 2. re-derives each phase gate's contract and guarantee arguments against the
-   current contract's validation artifacts, where the gate names them;
+   validation artifacts of the version the phase cites, where the gate names
+   them;
 3. checks that every phase id named in a contract's `produced_by`,
    `consumers` or delivery text exists, and that every phase Scope that cites
    an intake record cites one that exists;
@@ -2257,23 +2289,37 @@ gate argument".
 
 ### 12.4 Citation touches when a version moves
 
-When a source document or a contract moves to a new version, every artifact
-that cites the old version is touched once, by its owning skill
-(`hsdd-contract`, `hsdd-adr`, `hsdd-spec`), under this rule, invoked as
-`citation touch {file}: move its citations to the current versions`, which
-those three skills gain as a paragraph **Citation touch**:
+When a source document moves to a new version, or a contract version is
+superseded, every artifact that cites the old version is touched once, by
+its owning skill (`hsdd-contract`, `hsdd-adr`, `hsdd-spec`), under this
+rule, invoked as `citation touch {file}: move its citations to the current
+versions`, which those three skills gain as a paragraph **Citation touch**.
+A contract version is superseded as §12.2 says: its file is `deprecated` or
+`retired` (`lockstep` deprecates it in the run that drafts the next version,
+v0.10.0 §3.5), or it has no file of its own (a bump in place, before
+0.10.2). A `coexisting` version stays `stable` while it has a live consumer,
+and each consumer moves to the new version in a phase of its own.
 
-- A **live** citation moves to the current version: a node's Consumes or
-  Produces line, an unshipped phase's boundary or delivery line, a guarantee
-  citation, a fixture header comment, any sentence that states what holds
-  now.
-- A **shipped phase** (one whose verification doc is on the repository's
-  default branch, `origin/HEAD` when set and else `main`, v0.10.0 §11.3) is
-  history in full: nothing in it moves.
-  While a shipped phase or an `external_consumers` entry still names the old
-  version, that version keeps its `stable` standing in the contract's
-  `## Versioning` (v0.10.0 §3.5: the old version stays until all consumers
-  migrate), and the touch reports each such reference as kept.
+- A **live** citation of a superseded version moves to the current one: an
+  unshipped phase's boundary or delivery line, a guarantee citation, a
+  fixture header comment, a node's `Sources` entry for a source document,
+  any sentence that states what holds now.
+- Never move a contract version in a node header's `Produces` or `Consumes`
+  line, or in a copy of that line above the node (a parent's embedded
+  summary, child-node table or DAG, the root's contract matrix):
+  `hsdd-reconcile`'s version ripple writes those, keeping every version the
+  node's phases name (v0.10.0 §3.5). Never edit an ADR's `affects`:
+  `hsdd-adr` adds the new version there.
+- An earlier contract version that is neither `deprecated` nor `retired`
+  stays live beside the new one (`coexisting`): leave every citation of it,
+  and route one `consider` item, naming the new version, to the node whose
+  plan would move to it (the node of the citing phase, or the producer or
+  consumer the citing sentence is about), so that node's own planning
+  decides when it moves.
+- A **shipped phase** (one whose verification doc is on the spec repo's
+  main line, the conventions' `**Main line:**`, `main` when absent, v0.10.0
+  §14.2) is history in full: nothing in it moves, and the touch reports each
+  such reference as kept.
 - **Historical** text keeps the version it describes: a dated amendment
   entry, a migration note, a "Corrected" paragraph, an account of what an
   earlier version did.
@@ -2287,10 +2333,11 @@ those three skills gain as a paragraph **Citation touch**:
   need that, leave it, route it as a finding, and name the step it needs.
 - Classify the touch against the touched artifact's own versioning rules
   (it normally stays at its version) and record that as one decision.
-- Report how many citations moved and how many were kept as history.
+- Report how many citations moved and how many were kept, as history or
+  as a live earlier version.
 
-The final gate's F2 lists what still names an old version, so the report
-can say that each remaining reference was read and is history.
+The final gate's F2 lists what still names a superseded version, so the
+report can say that each remaining reference was read and is history.
 
 ### 12.5 What stays deferred
 
@@ -3564,12 +3611,12 @@ Each line names its file; check it there before relying on it.
 | Kind | `{fact_lines}` holds |
 |------|----------------------|
 | `root-spec` | Each source's path, role, version and authority (or `absent`); whether `hsdd/` and `hsdd/conventions.md` exist. The owner facts are already in the preamble. |
-| `mid-level-spec`, `graft`, `promote`, `spec-touch` | The target's header fields and `Decomposes into`; each contract it produces or consumes with `version`, `status`, `phase_ids`; each ADR that governs it with `status`; the parent's embedded summary of it; for a graft, the parent's children.; for a promotion, the node's `Adopted` line and its `## Observed surface` heading. |
+| `mid-level-spec`, `graft`, `promote`, `spec-touch` | The target's header fields and `Decomposes into`; each contract version it produces or consumes with `version`, `status`, `phase_ids`, read from the file that holds that version (v0.10.0 §3.1); each ADR that governs it with `status`; the parent's embedded summary of it; for a graft, the parent's children.; for a promotion, the node's `Adopted` line and its `## Observed surface` heading. |
 | `adr`, `adr-update` | The spec lines that propose or cite the ADR; its current front matter (update); the specs and contracts it `affects`. |
-| `contract`, `contract-touch` | The producing node's `Produces` line and each consuming node's `Consumes` line; each ADR whose `affects` names this contract; the contracts it builds on, with versions and statuses; its current front matter and `## Versioning` (touch); its validation paths and whether they exist. |
-| `citation-touch` | Every contract's current `version`; every source's citation name and version, with the baseline sources marked; the superseded strings of §12.2; every phase id with a verification doc on the default branch, by node (§12.4). |
-| `phase-plan`, `phase-plan-append` | The node's `Purpose`, `Owns`, `Produces` and `Consumes`; each consumed and produced contract with `version`, `status`, `phase_ids` and validation paths; the governing ADRs; `conventions.md`'s ordering policy, coding method and teams lines; for append, the existing phase ids, which of them have a verification doc on the repository's default branch, and the intake record's path. |
-| `reconcile`, `align` | Every pending section in the tree with its entry counts, the named nodes first; every contract those entries name with `version`, `status`, `phase_ids`; for align, every phase id with a verification doc on the default branch, by node (§12.4). |
+| `contract`, `contract-touch` | The producing node's `Produces` line and each consuming node's `Consumes` line; each ADR whose `affects` names this contract; the contracts it builds on, with versions and statuses; for an `id` with more than one version file, or a `{id}.v{n}` target, each version's `version`, `status` and `phase_ids`; the front matter and `## Versioning` of each file the target resolves to (touch); their validation paths and whether they exist. |
+| `citation-touch` | Every contract's current `version`, and each lower version that stays live (a file of its own, neither `deprecated` nor `retired`); every source's citation name and version, with the baseline sources marked; the superseded strings of §12.2; every phase id with a verification doc on the main line (the conventions' `**Main line:**`, `main` when absent), by node (§12.4). |
+| `phase-plan`, `phase-plan-append` | The node's `Purpose`, `Owns`, `Produces` and `Consumes`; each consumed and produced contract version with `version`, `status`, `phase_ids` and validation paths, read from the file that holds that version; the governing ADRs; `conventions.md`'s ordering policy, coding method and teams lines; for append, the existing phase ids, which of them have a verification doc on the main line, the intake record's path, and the change request's own path, which joins the node's Sources. |
+| `reconcile`, `align` | Every pending section in the tree with its entry counts, the named nodes first; every contract version those entries name with `version`, `status`, `phase_ids`, from the file that holds it; for align, every phase id with a verification doc on the main line, by node (§12.4). |
 | `intake` | The request's path and authority; every open intake record's path and landings; the atlas's path, or the tree's node list; for a new source version, the old and new paths and versions; the number of earlier `would_upstream` decisions, and `node hsdd/scripts/auto/state.mjs upstream`, which lists them. |
 
 ### C.3 Instructions per kind
@@ -3650,11 +3697,14 @@ text. Done when: the change is in
 place, classified and recorded.
 
 **`citation-touch`** (`hsdd-contract`, `hsdd-adr` or `hsdd-spec`). Default
-invocation: "Citation touch `{target_file}`: move its citations to the
-current versions." What to do: apply §12.4's citation-touch rule exactly; report the
-counts moved and kept in `notes`. Done when: no live citation in the files
-names a superseded string, and every sentence that restates another artifact
-is true against its current text.
+invocation: "Citation touch {target_file}: move its citations to the
+current versions." What to do: apply §12.4's citation-touch rule exactly:
+never move a contract version in a node header's `Produces` or `Consumes`
+line, a copy of it above the node, or an ADR's `affects`; leave every
+citation of a live earlier version (`coexisting`) and route a `consider`
+item for it; report the counts moved and kept in `notes`. Done when: no
+citation the rule moves names a superseded string, and every sentence that
+restates another artifact is true against its current text.
 
 **`phase-plan`** (`hsdd-phase-plan`). Default invocation: "Plan the phases
 of `{target}`." What to do: follow the skill's phase record and
@@ -3671,11 +3721,12 @@ and pending section.
 invocation: "Append phases to `{target}` per {record}." What to do: as
 `phase-plan`, plus append mode's rules (v0.10.0 §11.3): never renumber;
 never rewrite a shipped phase (one with a verification doc on the
-repository's default branch, v0.10.0 §11.3); rewrite an unshipped phase in place only when the invocation says
+conventions' `**Main line:**`, `main` when absent, v0.10.0 §14.2); rewrite an unshipped phase in place only when the invocation says
 so (§12.1); every phase rewritten or appended cites in its Scope the intake
 record, or in a plan segment the `insert-step` item's id; when there is a
-record, the request joins the node's Sources; the pending section gets a new
-emission date line. Done when: as `phase-plan`, and every phase the
+record, the change request's own path (the facts name it, never the
+record's) joins the node's Sources with the sections that govern it; the
+pending section gets a new emission date line. Done when: as `phase-plan`, and every phase the
 invocation names is rewritten or explained.
 
 **`reconcile`** (`hsdd-reconcile`). Default invocation: "Reconcile
@@ -3691,7 +3742,7 @@ and the flips the skill allows are made.
 **`align`** (`hsdd-reconcile`, align mode). Default invocation: "Align
 {target} after {reason}." What to do: §12.3. Route
 every finding beyond citations and gate arguments to its owning skill. Done
-when: the named plans cite only current versions, except history.
+when: the named plans cite no superseded version, except history.
 
 **`intake`** (`hsdd-intake`). Default invocation: "Route `{request}`
 ({authority}) into the tree." What to do: follow `hsdd-intake`: read every
@@ -3702,7 +3753,9 @@ a `shape` stop. A landing on an as-built node puts a `promote` handoff first
 (ADRs and contracts before the specs and plans that consume them); then one
 `citation-touch` per artifact that may still cite a superseded string
 (`when: cites-superseded`); then, for each affected leaf-parent, a
-`spec-touch`, a `phase-plan-append` and a `reconcile`. Order no align: the
+`phase-plan-append` and a `reconcile` (a `spec-touch` only for a change to
+the node's own text, never for the contract version in its header, which
+the reconcile writes). Order no align: the
 segment's align stage follows the handoffs (§9.2). State an insert rule. Read the earlier `would_upstream` decisions in
 the facts against the request, and record in `notes` which it adopts,
 contradicts or leaves open. Write no spec, contract or ADR. Done when: the
@@ -3714,8 +3767,8 @@ block, and the two agree.
 | Slot | Filled from |
 |------|-------------|
 | `{target}` | The step's target (§6.5). |
-| `{target_file}` | The file the target resolves to: `H/contract/{slug}.md`, the ADR's file, or `H/spec/{node}.md`. |
-| `{target_version}` | The version the specs cite for the contract (`v1` when none). |
+| `{target_file}` | The files the target resolves to, each in backticks, comma-separated: for a contract `id`, every version's file (`H/contract/{slug}.md`, then each later version's, v0.10.0 §3.1), for `{id}.v{n}` that version's file (`H/contract/{id}.v{n}.md` before it exists); the ADR's file; or `H/spec/{node}.md`. |
+| `{target_version}` | For `{id}.v{n}`, `v{n}`; for a contract `id`, the highest version the specs cite for it (`v1` when none). |
 | `{proposing_spec}` | The first spec file, in the root spec's order, that cites the ADR. |
 | `{reason}` | The text of the `insert-step` item the step executes, or of the routed items it closes, joined; or for an `align` from a stage rule, `the consistency pass` in plan mode and `the segment's handoffs` in intake mode. |
 | `{record}` | The path of the segment's intake record; in a plan segment, `the insert-step item {id}` that ordered the step. |

@@ -1,4 +1,4 @@
-<!-- default_invocation: Citation touch `{target_file}`: move its citations to the current versions. -->
+<!-- default_invocation: Citation touch {target_file}: move its citations to the current versions. -->
 ## Your step: {step} ({kind}{handoff_suffix})
 
 - **step_ref:** {step}
@@ -39,12 +39,15 @@ Each line names its file; check it there before relying on it.
 
 ### What to do
 
-apply §12.4's citation-touch rule exactly; report the counts moved and kept in
-`notes`.
+apply §12.4's citation-touch rule exactly: never move a contract version in a
+node header's `Produces` or `Consumes` line, a copy of it above the node, or
+an ADR's `affects`; leave every citation of a live earlier version
+(`coexisting`) and route a `consider` item for it; report the counts moved
+and kept in `notes`.
 
 ### Done when
 
-- No live citation in the files names a superseded string, and every sentence
+- No citation the rule moves names a superseded string, and every sentence
   that restates another artifact is true against its current text.
 - Your report validates and lists every routed item above in `closes`.
 - `node hsdd/scripts/auto/gate.mjs --step {step}` passes. You may run it

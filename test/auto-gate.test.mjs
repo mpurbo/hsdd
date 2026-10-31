@@ -12,6 +12,7 @@ import { P, reportPath, stepPaths } from "../skills/hsdd-auto/scripts/lib/paths.
 import { appendJsonl, readDispatch, writeDispatch } from "../skills/hsdd-auto/scripts/lib/records.mjs";
 import { nowStamp } from "../skills/hsdd-auto/scripts/lib/time.mjs";
 import { addSegment, baseConfig, fakeStep, gitIn, installScripts, makeRepo, openStep, run } from "./helpers/auto-repo.mjs";
+import { V2, deprecatedV1, v2Files } from "./helpers/auto-contract-v2.mjs";
 
 const SEG = "2026-10-22-plan";
 const API = "hsdd/spec/shop.api.md";
@@ -737,6 +738,18 @@ test("F2 lists references to a contract version that is no longer current", () =
   assert.ok(fs.some((f) => f.file === "hsdd/contract/fixture/order-api/create-order.json"), "fixtures are scanned");
   assert.ok(!fs.some((f) => f.file === CONTRACT || f.file === INDEX), "not the contract's own file or the registry");
   assert.deepEqual(of(final(finished()), "F2"), []);
+});
+
+test("F2 with a later version in its own file: a coexisting version is current; a deprecated one is listed outside the contract's files", () => {
+  const withFiles = (files) => (d) => Object.entries(files).forEach(([rel, text]) => put(d, rel, text));
+  assert.deepEqual(of(final(finished({ prepare: withFiles(v2Files()) })), "F2"), [], "v1 stays stable beside v2 (coexisting)");
+  const fs = of(final(finished({ prepare: withFiles(v2Files({ mode: "lockstep", v1: deprecatedV1 })) })), "F2");
+  const files = fs.map((f) => f.file);
+  assert.ok(files.includes(API) && files.includes(WEB), show(fs));
+  assert.match(fs.find((f) => f.file === API).message, /order-api@v1 2 times, current is v2/);
+  for (const own of [CONTRACT, V2, "hsdd/contract/fixture/order-api/create-order.json", "hsdd/contract/schema/order-api.schema.json", INDEX]) {
+    assert.ok(!files.includes(own), `${own} is not listed: ${show(fs)}`);
+  }
 });
 
 test("F3 fails when the ledger does not validate", () => {

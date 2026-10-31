@@ -12,6 +12,7 @@ import { dateOf, nowStamp, stampMs } from "./lib/time.mjs";
 import { showFile } from "./lib/git.mjs";
 import { headings, parseContract, plain, sectionEnd, toLines } from "./lib/tree.mjs";
 import { segmentRecord } from "./lib/intake.mjs";
+import { versionNumber, versionsOf } from "./lib/contracts.mjs";
 import { idNum, readReports, sidecarEntries } from "./lib/records.mjs";
 import { validate } from "./lib/schema.mjs";
 import { finalGate } from "./gate.mjs";
@@ -300,11 +301,21 @@ export const buildReport = (ctx, segmentId, existing = null) => {
 
 // ---------- the intake record's ## Produced (S-7) ----------
 
-const versionNum = (v) => Number(/^v(\d+)$/.exec(String(v ?? ""))?.[1] ?? NaN);
+// The highest version any file of the contract id held at `rev`, of the files the id has now (NaN when
+// none of them was there, or none had a version).
+const versionAt = (ctx, rev, slug, entry) => {
+  const then = versionsOf(entry).flatMap((c) => {
+    const was = showFile(ctx.repoRoot, rev, c.file);
+    const old = was === null ? null : parseContract(was, c.file);
+    return old !== null && old.slug === slug && !Number.isNaN(versionNumber(old.version)) ? [versionNumber(old.version)] : [];
+  });
+  return then.length > 0 ? Math.max(...then) : NaN;
+};
 
-// What the intake segment produced, mechanically: contracts whose version at the setup commit is
-// lower than now (a contract absent then is new, not bumped), ADR files changed in the segment, and
-// the nodes of completed graft steps whose spec file exists.
+// What the intake segment produced, mechanically: contract ids whose current version is above the
+// highest version any file of the id held at the setup commit, a later version in a file of its own
+// (v0.10.0 §3.1) or a bump in place (an id with no file then is new, not bumped); ADR files changed in
+// the segment; and the nodes of completed graft steps whose spec file exists.
 export const producedAdditions = (ctx, segmentId) => {
   const none = { contracts: [], adrs: [], nodes: [] };
   const { segment } = segmentOf(ctx, segmentId);
@@ -314,10 +325,7 @@ export const producedAdditions = (ctx, segmentId) => {
   const first = same.find((id) => ctx.setupCommit(id) !== null);
   if (first === undefined) return none;
   const base = ctx.setupCommit(first);
-  const contracts = [...ctx.tree.contracts].flatMap(([slug, c]) => {
-    const was = showFile(ctx.repoRoot, base, c.file);
-    return was !== null && versionNum(c.version) > versionNum(parseContract(was, c.file).version) ? [`${slug}@${c.version}`] : [];
-  }).sort();
+  const contracts = [...ctx.tree.contracts].flatMap(([slug, c]) => (versionNumber(c.version) > versionAt(ctx, base, slug, c) ? [`${slug}@${c.version}`] : [])).sort();
   const changed = ctx.changedSinceSetup(first);
   const adrs = [...ctx.tree.adrs.values()].filter((a) => changed.has(a.file)).map((a) => a.id ?? a.file).sort();
   const nodes = unique(ctx.committedRunLines

@@ -3,12 +3,12 @@
 import { existsSync } from "node:fs";
 import { join } from "node:path";
 import { loadConfig, currentSegment } from "./config.mjs";
-import { P, resolveLayout } from "./paths.mjs";
+import { P, resolveLayout, resolveMainLine } from "./paths.mjs";
 import { loadTree } from "./tree.mjs";
 import { checkRegistries } from "./registry.mjs";
 import { loadIntakeRecords, segmentRecord } from "./intake.mjs";
 import {
-  branchExists, changedPaths, changedSince, currentBranch, defaultBranch as defaultBranchOf, headSha, listTree, revExists, showFile,
+  branchExists, changedPaths, changedSince, currentBranch, headSha, listTree, revExists, showFile,
 } from "./git.mjs";
 import { committedJsonl, listDispatches, readDispatch, readJsonl } from "./records.mjs";
 
@@ -40,7 +40,8 @@ const readDispatchSafe = (repoRoot, step) => {
   }
 };
 
-// Phase ids with `{verify}/{phase-id}.verification.md` on the default branch (12.4); empty when the branch is missing.
+// Phase ids with `{verify}/{phase-id}.verification.md` on the main line (12.4): the local branch, else its
+// remote-tracking branch `origin/{branch}`; empty when neither exists.
 const verifiedPhasesOf = (repoRoot, layout, branch) => {
   const rev = branchExists(repoRoot, branch) ? branch : revExists(repoRoot, `origin/${branch}`) ? `origin/${branch}` : null;
   if (rev === null) return new Set();
@@ -62,7 +63,9 @@ export const loadContext = (repoRoot, { registry = checkRegistries } = {}) => {
   const inProgress = steps.filter((s) => !committed.has(s)).at(-1) ?? null;
   const segment = currentSegment(config);
   const records = loadIntakeRecords(repoRoot, layout);
-  const defaultBranch = defaultBranchOf(repoRoot);
+  // The conventions' **Main line:** (v0.10.0 §14.2), `main` when absent: where a shipped phase's
+  // verification doc is.
+  const mainLine = resolveMainLine(repoRoot);
 
   const setupCommit = memoizeBy((segmentId) =>
     runLines.find((l) => l.segment === segmentId && l.kind === "setup")?.commit ?? null);
@@ -111,8 +114,8 @@ export const loadContext = (repoRoot, { registry = checkRegistries } = {}) => {
       records,
       record: segment?.mode === "intake" ? segmentRecord(records, segment.request) : null,
     },
-    verifiedPhases: verifiedPhasesOf(repoRoot, layout, defaultBranch),
-    defaultBranch,
+    verifiedPhases: verifiedPhasesOf(repoRoot, layout, mainLine),
+    mainLine,
     setupCommit,
     segmentChain,
     changedSinceSetup,

@@ -74,10 +74,23 @@ export const parseLayout = (text) => {
   return { ...layout, relocated: layout.contract !== DEFAULT_LAYOUT.contract || layout.adr !== DEFAULT_LAYOUT.adr };
 };
 
-export const resolveLayout = (repoRoot) => {
+const conventionsText = (repoRoot) => {
   const file = join(repoRoot, P.conventions);
-  return parseLayout(existsSync(file) ? readFileSync(file, "utf8") : "");
+  return existsSync(file) ? readFileSync(file, "utf8") : "";
 };
+
+export const resolveLayout = (repoRoot) => parseLayout(conventionsText(repoRoot));
+
+// Pure: the branch a conventions text's `**Main line:**` line names (v0.10.0 §14.2), the spec repo's
+// branch "on main" means: a phase is shipped once its verification doc is on it. `main` when absent.
+const MAIN_LINE = /^\s*(?:[-*+]\s+)?\*\*Main line:\*\*(.*)$/;
+export const parseMainLine = (text) => {
+  const line = String(text ?? "").split(/\r?\n/).map((l) => MAIN_LINE.exec(l)).find(Boolean);
+  const branch = line?.[1].replace(/`/g, "").trim().split(/\s+/)[0].replace(/[.,;:]+$/, "");
+  return branch ? branch : "main";
+};
+
+export const resolveMainLine = (repoRoot) => parseMainLine(conventionsText(repoRoot));
 
 // ---------- globs ----------
 

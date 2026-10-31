@@ -138,7 +138,7 @@ test("loadContext on a planned tree", () => {
   assert.equal(ctx.stopCommitted, false);
   assert.equal(ctx.branch, "main");
   assert.match(ctx.head, /^[0-9a-f]{7,}$/);
-  assert.equal(ctx.defaultBranch, "main");
+  assert.equal(ctx.mainLine, "main");
   assert.equal(ctx.dispatches.size, 0);
   assert.equal(ctx.intake.record, null);
   assert.equal(ctx.changedInSegment("2026-10-22-plan").size, 0);
@@ -208,4 +208,33 @@ test("loadContext: the intake record of an intake segment", () => {
   const ctx = loadContext(dir);
   assert.equal(ctx.intake.records.length, 1);
   assert.equal(ctx.intake.record.slug, "order-v2");
+});
+
+// v0.10.0 §14.2: "shipped" means a verification doc on the conventions' **Main line:**, main when absent.
+test("loadContext reads shipped phases from the conventions' Main line, main when it is absent", () => {
+  const dir = makeRepo({ stage: "06-planned" });
+  put(dir, "hsdd/verify/shop.api.1.verification.md", "# v\n");
+  gitIn(dir, "add", "hsdd/verify");
+  gitIn(dir, "commit", "-q", "-m", "shop.api.1 shipped on main");
+  gitIn(dir, "checkout", "-q", "-b", "develop");
+  put(dir, "hsdd/verify/shop.web.app.1.verification.md", "# v\n");
+  gitIn(dir, "add", "hsdd/verify");
+  gitIn(dir, "commit", "-q", "-m", "shop.web.app.1 shipped on develop");
+  gitIn(dir, "checkout", "-q", "main");
+  // origin/HEAD names main; it plays no part.
+  gitIn(dir, "update-ref", "refs/remotes/origin/main", "main");
+  gitIn(dir, "symbolic-ref", "refs/remotes/origin/HEAD", "refs/remotes/origin/main");
+  const absent = loadContext(dir);
+  assert.equal(absent.mainLine, "main");
+  assert.deepEqual([...absent.verifiedPhases], ["shop.api.1"]);
+
+  const conventions = readFileSync(join(dir, "hsdd/conventions.md"), "utf8");
+  put(dir, "hsdd/conventions.md", `${conventions}\n## Main line\n**Main line:** develop\n`);
+  const develop = loadContext(dir);
+  assert.equal(develop.mainLine, "develop");
+  assert.deepEqual([...develop.verifiedPhases].sort(), ["shop.api.1", "shop.web.app.1"]);
+  // A main line that is only a remote-tracking branch here is read there.
+  gitIn(dir, "update-ref", "refs/remotes/origin/develop", "develop");
+  gitIn(dir, "branch", "-q", "-D", "develop");
+  assert.deepEqual([...loadContext(dir).verifiedPhases].sort(), ["shop.api.1", "shop.web.app.1"]);
 });

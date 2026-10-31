@@ -17,13 +17,13 @@ const nodeOf = (tree, name) => {
 };
 
 // Who produces and who consumes each contract slug, as sets of node ids: node and phase Produces and
-// Consumes fields, contract `owner` and `consumers`.
+// Consumes fields, and the `owner` and `consumers` of every version file of the contract.
 export const contractRoles = (tree) => {
   const fromNodes = [...tree.nodes.values()].flatMap((n) => [
     ...[...n.produces, ...n.phases.flatMap((p) => p.produces)].map((r) => ["produces", r.slug, n.id]),
     ...[...n.consumes, ...n.phases.flatMap((p) => p.consumes)].map((r) => ["consumes", r.slug, n.id]),
   ]);
-  const fromContracts = [...tree.contracts.values()].flatMap((c) => [
+  const fromContracts = tree.contractFiles.flatMap((c) => [
     ...(c.owner ? [["produces", c.slug, nodeOf(tree, c.owner)]] : []),
     ...c.consumers.map((name) => ["consumes", c.slug, nodeOf(tree, name)]),
   ]);

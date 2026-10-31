@@ -4,7 +4,7 @@ import { createHash } from "node:crypto";
 import { mkdtempSync, mkdirSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { P, stepPaths, reportPath, resolveLayout, parseLayout, globToRegExp, matchesAny, judgementSet, expandHome, ownerFileHash, ownerMatcher } from "../skills/hsdd-auto/scripts/lib/paths.mjs";
+import { P, stepPaths, reportPath, resolveLayout, parseLayout, parseMainLine, globToRegExp, matchesAny, judgementSet, expandHome, ownerFileHash, ownerMatcher } from "../skills/hsdd-auto/scripts/lib/paths.mjs";
 import {
   KINDS, ORCHESTRATOR_KINDS, SUBAGENT_KINDS, INSERTABLE_KINDS, STOP_CLASSES, STOPPABLE, RAISED_WHEN,
   targetType, skillFor, decisionTypeFor, writeSet, neverPatterns,
@@ -46,6 +46,14 @@ test("resolveLayout keeps a default for a missing bullet, and only spec relocate
   assert.equal(l.spec, "docs/arch");
   assert.equal(l.contract, "hsdd/contract");
   assert.equal(l.relocated, false);
+});
+test("parseMainLine: the conventions' **Main line:** branch, main when the line is absent or empty", () => {
+  assert.equal(parseMainLine(""), "main");
+  assert.equal(parseMainLine("## Main line\n**Main line:** main\n"), "main");
+  assert.equal(parseMainLine("## Main line\n**Main line:** `develop`\n\nThe spec repo's branch.\n"), "develop");
+  assert.equal(parseMainLine("- **Main line:** release/2026.\n"), "release/2026");
+  assert.equal(parseMainLine("**Main line:**\n"), "main");
+  assert.equal(parseMainLine("The **Main line:** is not a line of its own.\n"), "main");
 });
 test("fixed paths and step paths", () => {
   assert.equal(P.runYaml, "hsdd/auto/run.yaml");
@@ -212,4 +220,26 @@ test("RAISED_WHEN quotes 8.2", () => {
   assert.deepEqual([...STOPPABLE], loadSchema("run-config").$defs.stoppable.enum);
   assert.ok(RAISED_WHEN["breaking-amend"].endsWith("(`hsdd-contract`'s versioning policy)."));
   assert.ok(validate("run-config", baseConfig()).length === 0);
+});
+
+// ---------- contract versions (v0.10.0 §3.1) ----------
+
+test("targetType: `{id}.v{n}` names one version of a contract id; a dotted id that is not one stays a node", () => {
+  assert.equal(targetType("order-api.v2", tree), "contract");
+  assert.equal(targetType("order-api.v12", tree), "contract");
+  assert.equal(targetType("pay-api.v2", tree), "node");
+  assert.equal(targetType("order-api.vx", tree), "node");
+  assert.equal(skillFor("citation-touch", "order-api.v2", tree), "hsdd-contract");
+  assert.equal(decisionTypeFor("citation-touch", "order-api.v2", tree, "shop"), "contract");
+});
+
+test("a contract citation touch writes every version's files of the id, or the one version's", () => {
+  const v1 = { slug: "order-api", stem: "order-api", file: "hsdd/contract/order-api.md", version: "v1" };
+  const v2 = { slug: "order-api", stem: "order-api.v2", file: "hsdd/contract/order-api.v2.md", version: "v2" };
+  const versioned = { ...ctx, tree: { ...tree, contracts: new Map([["order-api", { ...v2, versions: [v1, v2] }]]) } };
+  const all = writeSet("citation-touch", "order-api", versioned);
+  for (const p of ["hsdd/contract/order-api.md", "hsdd/contract/fixture/order-api/**", "hsdd/contract/schema/order-api.schema.json",
+    "hsdd/contract/order-api.v2.md", "hsdd/contract/fixture/order-api.v2/**", "hsdd/contract/schema/order-api.v2.schema.json"]) assert.ok(all.includes(p), p);
+  const one = writeSet("citation-touch", "order-api.v2", versioned);
+  assert.ok(one.includes("hsdd/contract/order-api.v2.md") && !one.includes("hsdd/contract/order-api.md"), one.join(", "));
 });

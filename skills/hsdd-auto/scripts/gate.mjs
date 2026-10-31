@@ -18,6 +18,8 @@ import { P, filesUnder, judgementSet, matchesAny, ownerFileHash, ownerMatcher, o
 import { git, headSha } from "./lib/git.mjs";
 import { WARN_BYTES, dispatchErrors, idNum, readReports, sidecarEntries } from "./lib/records.mjs";
 import { CONTRACT_REF, leafParentsOf } from "./lib/tree.mjs";
+import { supersededVersions, versionsOf } from "./lib/contracts.mjs";
+import { ownFiles } from "./lib/intake.mjs";
 import { expectedReports, reportRuleErrors } from "./lib/report-rules.mjs";
 import { decisionRuleErrors } from "./decide.mjs";
 import { validateLedger } from "./ledger.mjs";
@@ -413,15 +415,20 @@ const d1 = (v) => {
 
 // ---------- F: the final checks ----------
 
-const versionNumber = (v) => Number(/^v(\d+)$/.exec(v ?? "")?.[1] ?? NaN);
+// The files where `{id}@{version}` is not a citation: every version file of the contract (its own
+// `## Versioning` names earlier versions on purpose), and the schema and fixtures of that version.
+const contractOwn = (entry, version) => new Set([
+  ...versionsOf(entry).map((c) => c.file),
+  ...versionsOf(entry).filter((c) => c.version === version).flatMap(ownFiles),
+]);
 
-// F2 over [{ file, text }]: per file and version, how often a contract is cited below its current
-// version, outside that contract's own file.
+// F2 over [{ file, text }]: per file and version, how often a superseded contract version (deprecated
+// or retired, or with no file of its own, lib/contracts.mjs) is cited outside that contract's own files.
 export const staleVersionRefs = (files, contracts) => files.flatMap(({ file, text }) => {
   const counts = new Map();
   for (const m of text.matchAll(CONTRACT_REF)) {
     const c = contracts.get(m[1]);
-    if (!c || c.file === file || !(versionNumber(m[2]) < versionNumber(c.version))) continue;
+    if (!c || !supersededVersions(c).some((v) => v.version === m[2]) || contractOwn(c, m[2]).has(file)) continue;
     const key = `${m[1]}@${m[2]}`;
     counts.set(key, (counts.get(key) ?? 0) + 1);
   }

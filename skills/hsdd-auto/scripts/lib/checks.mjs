@@ -7,6 +7,7 @@ import { existsSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { blockErrors } from "./intake.mjs";
 import { phaseNodeOf } from "./tree.mjs";
+import { refFile, splitRef, versionName, versionNumber, versionsOf } from "./contracts.mjs";
 
 const finding = (id, level, message, file, related = []) => ({
   id, level, message, file: file ?? null, ...(related.length > 0 ? { related } : {}),
@@ -37,17 +38,18 @@ export const c2 = (tree) => [...tree.nodes.values()].flatMap((n) => {
 
 const ADR_FIELDS = ["id", "status", "affects", "date"];
 
-const stripVersion = (target) => target.replace(/@v\d+$/, "");
-
-// An affects target's file and whether its Governed by names the ADR; null when it has no file.
+// An affects target's file and whether its Governed by names the ADR; null when it has no file. A
+// contract target `{id}@v{n}` resolves to that version's file (lib/contracts.mjs refFile).
 const governance = (tree, target, adrId) => {
-  const name = stripVersion(target);
+  const { name, version } = splitRef(target);
   const node = tree.nodes.get(name);
   if (node) {
     return { file: node.file, governed: node.governedBy.includes(adrId) || node.phases.some((p) => p.governedBy.includes(adrId)), where: "its header" };
   }
-  const contract = tree.contracts.get(name);
-  if (contract) return { file: contract.file, governed: contract.governedBy.includes(adrId), where: "its governed_by front matter" };
+  if (tree.contracts.has(name)) {
+    const contract = refFile(tree, name, version);
+    return contract ? { file: contract.file, governed: contract.governedBy.includes(adrId), where: "its governed_by front matter" } : null;
+  }
   const owner = tree.nodes.get(phaseNodeOf(name));
   const phase = owner?.phases.find((p) => p.id === name || p.short === name);
   if (phase) return { file: owner.file, governed: phase.governedBy.includes(adrId), where: "its phase header" };
@@ -77,7 +79,7 @@ export const c3 = (tree, { willCreateAdrs } = {}) => {
   return [...shape, ...c3Cited(tree, { willCreateAdrs }), ...governed];
 };
 
-// ---------- C4: contract files ----------
+// ---------- C4: contract files (one per version, v0.10.0 §3.1) ----------
 
 const CONTRACT_FIELDS = ["id", "version", "status", "kind", "owner", "produced_by", "consumers", "phase_ids"];
 
@@ -88,22 +90,42 @@ const hasFiles = (full) => {
   return s.isFile() || (s.isDirectory() && readdirSync(full).some((n) => hasFiles(join(full, n))));
 };
 
-export const c4 = (tree, { repoRoot }) => [...tree.contracts.values()].flatMap((c) => {
+// A file's name is its id (the first version, or a contract bumped in place before 0.10.2) or, for a
+// later version, `{id}.v{n}` with `v{n}` its version (v0.10.0 §3.1). A later version written before
+// 0.10.2 under another name stands (v0.10.0 §15.1); only a name of the `{id}.v{n}` form is held to it.
+const nameProblem = (tree, c) => {
+  if (c.front.id === undefined || c.stem === c.slug) return null;
+  const lower = versionsOf(tree.contracts.get(c.slug)).some((x) => versionNumber(x.version) < versionNumber(c.version));
+  if (!lower) return `id ${c.front.id} does not match the file name, and no file of ${c.slug} holds a version below ${c.version ?? "this one"}`;
+  const named = versionName(c.stem);
+  return named !== null && named.id === c.slug && named.version !== c.version
+    ? `the file name says ${named.version}, but its version is ${c.version ?? "missing"}`
+    : null;
+};
+
+// One file per version: the other files of the same id at the same version.
+const sameVersion = (tree, c) => versionsOf(tree.contracts.get(c.slug)).filter((x) => x !== c && x.version !== null && x.version === c.version);
+
+// Each finding names the file it is about, its name without `.md` (the id, for a first version).
+export const c4 = (tree, { repoRoot }) => tree.contractFiles.flatMap((c) => {
   const out = [];
-  const err = (m) => out.push(finding("C4", "error", `${c.slug}: ${m}`, c.file));
+  const err = (m) => out.push(finding("C4", "error", `${c.stem}: ${m}`, c.file));
   if (c.front === null) {
     err("no front matter");
     return out;
   }
   for (const f of CONTRACT_FIELDS) if (c.front[f] === undefined) err(`front matter has no ${f}`);
-  if (c.front.id !== undefined && c.front.id !== c.slug) err(`id ${c.front.id} does not match the file name`);
+  const name = nameProblem(tree, c);
+  if (name !== null) err(name);
+  const twins = sameVersion(tree, c);
+  if (twins.length > 0) err(`${c.slug}@${c.version} is also ${twins.map((x) => x.file).join(", ")}; a version has one file`);
   if (c.status === "stable" && c.phaseIds !== "final" && c.version !== "v0") {
     err(`status stable needs phase_ids final (it is ${c.phaseIds ?? "missing"}), except at version v0`);
   }
   if ((c.status === "stable" || c.status === "draft") && c.validation !== "grandfathered") {
     const present = c.validationPaths.some((v) => hasFiles(join(repoRoot, v.path)));
     if (!present) {
-      const message = `${c.slug}: ## Validation names no schema or fixture path that exists and holds a file`;
+      const message = `${c.stem}: ## Validation names no schema or fixture path that exists and holds a file`;
       out.push(finding("C4", c.status === "stable" ? "error" : "warn", message, c.file));
     }
   }
@@ -112,18 +134,16 @@ export const c4 = (tree, { repoRoot }) => [...tree.contracts.values()].flatMap((
 
 // ---------- C5: contract citations ----------
 
-const versionNumber = (v) => Number(/^v(\d+)$/.exec(v ?? "")?.[1] ?? NaN);
-
-// A cited version is acceptable when it is the current one, or an earlier one the contract's
-// ## Versioning section names. A later version the section only announces is not a version yet.
-const namesVersion = (contract, version) => {
-  const cited = versionNumber(version);
-  const current = versionNumber(contract.version);
-  if (cited === current) return true;
-  if (!(cited < current) || contract.versioningText === null) return false;
-  return new RegExp(`(?<![A-Za-z0-9._@-])${version}(?![A-Za-z0-9]|\\.\\d)`).test(contract.versioningText);
+// A cited version is acceptable when a file of the contract holds it, whatever its status, or when it
+// is below the current version and the current file's ## Versioning names it (the history of a bump
+// in place, before 0.10.2). A later version the section only announces is not a version yet.
+const namesVersion = (entry, version) => {
+  if (versionsOf(entry).some((c) => c.version === version)) return true;
+  if (!(versionNumber(version) < versionNumber(entry.version)) || entry.versioningText === null) return false;
+  return new RegExp(`(?<![A-Za-z0-9._@-])${version}(?![A-Za-z0-9]|\\.\\d)`).test(entry.versioningText);
 };
 
+// `willCreateContracts` holds ids, and `{id}.v{n}` for a version a pending `contract` handoff will write.
 export const c5 = (tree, { willCreateContracts } = {}) => {
   const creating = asSet(willCreateContracts);
   return tree.contractCites.filter((c) => !c.ext).flatMap((c) => {
@@ -133,9 +153,10 @@ export const c5 = (tree, { willCreateContracts } = {}) => {
         ? finding("C5", "warn", `${c.slug}@${c.version} is cited and ${c.slug} has no file yet; a stage rule or an intake handoff will create it`, c.file)
         : finding("C5", "error", `${c.slug}@${c.version} is cited and ${c.slug} has no contract file`, c.file)];
     }
-    return namesVersion(contract, c.version)
-      ? []
-      : [finding("C5", "error", `${c.slug}@${c.version} is cited, but the current version is ${contract.version} and ## Versioning does not name ${c.version}`, c.file)];
+    if (namesVersion(contract, c.version)) return [];
+    return [creating.has(`${c.slug}.${c.version}`)
+      ? finding("C5", "warn", `${c.slug}@${c.version} is cited and no file of ${c.slug} holds ${c.version} yet; an intake handoff will create it`, c.file)
+      : finding("C5", "error", `${c.slug}@${c.version} is cited, but no file of ${c.slug} holds ${c.version}, and the ## Versioning of its current version, ${contract.version}, does not name it`, c.file)];
   });
 };
 
@@ -163,14 +184,14 @@ const phaseExists = (tree, name) => {
 };
 
 // The finding names the contract's file; the spec file of the phase's node is related.
-export const c7 = (tree) => [...tree.contracts.values()].flatMap((c) => {
+export const c7 = (tree) => tree.contractFiles.flatMap((c) => {
   const level = c.phaseIds === "final" ? "error" : "warn";
   return unique([...c.producedBy, ...c.consumers])
     .filter((name) => PHASE_ID_SHAPE.test(name) && !tree.nodes.has(name))
     .filter((name) => !phaseExists(tree, name))
     .map((name) => {
       const nodeFile = tree.nodes.get(phaseNodeOf(name))?.file;
-      return finding("C7", level, `${c.slug}: ${name} is not a phase heading in its node's spec file`, c.file, nodeFile ? [nodeFile] : []);
+      return finding("C7", level, `${c.stem}: ${name} is not a phase heading in its node's spec file`, c.file, nodeFile ? [nodeFile] : []);
     });
 });
 

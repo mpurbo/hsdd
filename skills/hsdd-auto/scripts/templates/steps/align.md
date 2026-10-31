@@ -44,7 +44,7 @@ skill.
 
 ### Done when
 
-- The named plans cite only current versions, except history.
+- The named plans cite no superseded version, except history.
 - Your report validates and lists every routed item above in `closes`.
 - `node hsdd/scripts/auto/gate.mjs --step {step}` passes. You may run it
   yourself before ending.

@@ -7,6 +7,7 @@ import { fileURLToPath } from "node:url";
 import { loadTree, parseNodeSpec, parseContract, parseAdr, contractRefs, phaseNodeOf } from "../skills/hsdd-auto/scripts/lib/tree.mjs";
 import { parseLayout, resolveLayout } from "../skills/hsdd-auto/scripts/lib/paths.mjs";
 import { makeRepo, gitIn, SKILLS } from "./helpers/auto-repo.mjs";
+import { V1, V2, V2_FIXTURE, V2_SCHEMA, v2Files } from "./helpers/auto-contract-v2.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const FIXTURES = join(HERE, "fixtures", "auto");
@@ -421,4 +422,25 @@ test("mention order: a leaf-parent's spec does not contribute", () => {
 test("from stage 04 the root's embedded shop.web block names shop.web.app", () => {
   assert.deepEqual(tree("04-mid").nodes.get("shop").decomposesInto, ["shop.api", "shop.web"]);
   assert.match(readFileSync(join(repo("04-mid"), "hsdd/spec/shop.md"), "utf8"), /\*\*Decomposes into:\*\* shop\.web\.app/);
+});
+
+// ---------- contract versions (v0.10.0 §3.1) ----------
+
+test("contracts are indexed by front-matter id: a later version's own file joins its id, the highest version is current", () => {
+  const dir = makeRepo({ stage: "06-planned", files: v2Files() });
+  const t = loadTree(dir, LAYOUT, { root: "shop" });
+  assert.deepEqual([...t.contracts.keys()], ["order-api"]);
+  const c = t.contracts.get("order-api");
+  assert.deepEqual([c.slug, c.stem, c.version, c.status, c.file], ["order-api", "order-api.v2", "v2", "draft", V2]);
+  assert.equal(c.schemaFile, V2_SCHEMA);
+  assert.deepEqual(c.fixtureFiles, [V2_FIXTURE]);
+  assert.deepEqual(c.versions.map((v) => [v.file, v.version, v.status]), [[V1, "v1", "stable"], [V2, "v2", "draft"]]);
+  assert.equal(c.versions[0].schemaFile, "hsdd/contract/schema/order-api.schema.json");
+  assert.deepEqual(t.contractFiles.map((f) => f.file), [V1, V2]);
+  // Without an id, a file's id is its name without the `.v{n}` of a later version.
+  const bare = makeRepo({ stage: "06-planned", files: { [V2]: v2Files()[V2].replace("id: order-api\n", "") } });
+  assert.deepEqual([...loadTree(bare, LAYOUT, { root: "shop" }).contracts.keys()], ["order-api"]);
+  // Found by front matter, never by file name: a second version under another name joins its id.
+  const named = makeRepo({ stage: "06-planned", files: { "hsdd/contract/orders-2.md": v2Files()[V2] } });
+  assert.deepEqual(loadTree(named, LAYOUT, { root: "shop" }).contracts.get("order-api").versions.map((v) => v.file), [V1, "hsdd/contract/orders-2.md"]);
 });

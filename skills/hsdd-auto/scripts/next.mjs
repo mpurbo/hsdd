@@ -13,6 +13,7 @@ import { blockErrors, citesSuperseded, guardedHandoffTargets, supersededStrings,
 import { P, ownerMatcher, stepPaths } from "./lib/paths.mjs";
 import { contractOrder, contractRoles, firstCited, nodeFiles, ordered, producerOrder } from "./lib/order.mjs";
 import { idNum, stepNum } from "./lib/records.mjs";
+import { contractTarget, refFile, splitRef, targetVersions } from "./lib/contracts.mjs";
 import { leafParentsOf, matches, queueItems } from "./routed.mjs";
 import { validateLedger } from "./ledger.mjs";
 
@@ -120,19 +121,26 @@ const reportCommitted = (v) => v.segLines.some((l) => l.kind === "report" && l.s
 // ---------- results ----------
 
 const parentFiles = (tree, id) => [...tree.nodes.values()].filter((n) => n.decomposesInto.includes(id)).map((n) => n.file);
-const nodeContracts = (n) => [...n.consumes, ...n.produces].map((r) => r.slug);
-const contractFiles = (tree, slugs) => slugs.map((s) => tree.contracts.get(s)?.file);
+// The file of each version a node's Consumes and Produces cite (v0.10.0 §3.1).
+const refFiles = (tree, refs) => refs.map((r) => refFile(tree, r.slug, r.version)?.file);
 const adrFiles = (tree, ids) => ids.map((id) => tree.adrs.get(id)?.file);
 const targetNodes = (tree, target) => (target === "all" ? leafParentsOf(tree) : target.split(",").map((s) => s.trim()));
 
-const fileOfTarget = (tree, target) => {
+// A target's files: a contract id's every version file, or the one version `{id}.v{n}` names.
+const filesOfTarget = (tree, target) => {
   switch (targetType(target, tree)) {
-    case "node": return tree.nodes.get(target)?.file;
-    case "contract": return tree.contracts.get(target)?.file;
-    case "adr": return tree.adrs.get(target)?.file;
-    case "request": return target;
-    default: return null;
+    case "node": return [tree.nodes.get(target)?.file];
+    case "contract": return targetVersions(tree, target).map((c) => c.file);
+    case "adr": return [tree.adrs.get(target)?.file];
+    case "request": return [target];
+    default: return [];
   }
+};
+
+// An ADR's `affects` entry: a node or phase's spec file, or the file of the contract version it names.
+const affectsFiles = (tree, ref) => {
+  const { name, version } = splitRef(ref);
+  return contractTarget(tree, name) !== null ? [refFile(tree, name, version)?.file] : filesOfTarget(tree, name);
 };
 
 // The files the step's template names (appendix C.2a), as far as the tree knows them; target first.
@@ -140,7 +148,7 @@ const inputsFor = (ctx, kind, target) => {
   const { tree, config } = ctx;
   const node = tree.nodes.get(target);
   const forNode = (withParent) => (node
-    ? [node.file, ...(withParent ? parentFiles(tree, target) : []), ...contractFiles(tree, nodeContracts(node)), ...adrFiles(tree, node.governedBy)]
+    ? [node.file, ...(withParent ? parentFiles(tree, target) : []), ...refFiles(tree, [...node.consumes, ...node.produces]), ...adrFiles(tree, node.governedBy)]
     : []);
   const paths = (() => {
     switch (kind) {
@@ -151,19 +159,20 @@ const inputsFor = (ctx, kind, target) => {
       case "phase-plan": case "phase-plan-append":
         return forNode(false);
       case "adr": case "adr-update": {
-        const affects = (tree.adrs.get(target)?.affects ?? []).map((a) => fileOfTarget(tree, a.replace(/@v\d+$/, "")));
+        const affects = (tree.adrs.get(target)?.affects ?? []).flatMap((a) => affectsFiles(tree, a));
         const files = specFileOrder(tree);
         const citing = files.filter((f) => tree.adrCites.some((c) => c.id === target && c.file === f));
         return [tree.adrs.get(target)?.file, ...citing, ...affects];
       }
       case "contract": case "contract-touch": {
+        const id = contractTarget(tree, target)?.id ?? target;
         const { producers, consumers } = contractRoles(tree);
-        const governing = [...tree.adrs.values()].filter((a) => a.affects.some((x) => x.replace(/@v\d+$/, "") === target)).map((a) => a.file);
-        return [tree.contracts.get(target)?.file, ...nodeFiles(tree, [...(producers.get(target) ?? [])]),
-          ...nodeFiles(tree, [...(consumers.get(target) ?? [])]), ...governing];
+        const governing = [...tree.adrs.values()].filter((a) => a.affects.some((x) => splitRef(x).name === id)).map((a) => a.file);
+        return [...filesOfTarget(tree, target), ...nodeFiles(tree, [...(producers.get(id) ?? [])]),
+          ...nodeFiles(tree, [...(consumers.get(id) ?? [])]), ...governing];
       }
       case "citation-touch":
-        return [fileOfTarget(tree, target)];
+        return filesOfTarget(tree, target);
       case "reconcile": case "align":
         return [...nodeFiles(tree, targetNodes(tree, target)), ...[...tree.nodes.values()].filter((n) => n.pending.entries > 0).map((n) => n.file)];
       case "intake":
@@ -524,7 +533,7 @@ const nextHandoff = (v, pending) => {
   const files = targetFiles(h.kind, h.target, ctx.layout, ctx.tree);
   return citesSuperseded(ctx.repoRoot, files, supersededStrings(ctx.config, ctx.tree))
     ? stepResult(v, { kind: h.kind, target: h.target, handoff: h.id, why: `${why}; cites-superseded holds for ${files.join(", ")}` })
-    : { skip: { handoff: h.id, reason: `cites-superseded does not hold: ${files.join(", ") || `no file of ${h.target}`} names no baseline source path or version and no contract version below the current one` } };
+    : { skip: { handoff: h.id, reason: `cites-superseded does not hold: ${files.join(", ") || `no file of ${h.target}`} names no baseline source path or version and no superseded contract version` } };
 };
 
 const handoffStage = {
@@ -647,17 +656,18 @@ const scoped = (ctx, findings) => {
   return errors.filter((f) => inScope(f, changed)).map(findingLine);
 };
 
-// Every contract above v0 is stable with phase_ids final; deprecated and retired ones are exempt (S-2).
+// Every contract version above v0 is stable with phase_ids final; deprecated and retired ones are
+// exempt (S-2). Each version is its own file (v0.10.0 §3.1), named by its file name without `.md`.
 const finalExempt = (c) => c.version === "v0" || c.status === "deprecated" || c.status === "retired";
-export const contractsNotFinal = (tree) => [...tree.contracts.values()]
+export const contractsNotFinal = (tree) => tree.contractFiles
   .filter((c) => !finalExempt(c) && (c.status !== "stable" || c.phaseIds !== "final"))
-  .map((c) => c.slug);
+  .map((c) => c.stem);
 
-const contractLines = (tree) => [...tree.contracts.values()]
+const contractLines = (tree) => tree.contractFiles
   .filter((c) => !finalExempt(c))
   .flatMap((c) => [
-    ...(c.status === "stable" ? [] : [`contract ${c.slug} is ${c.status ?? "without a status"}`]),
-    ...(c.phaseIds === "final" ? [] : [`contract ${c.slug} has phase_ids ${c.phaseIds ?? "missing"}`]),
+    ...(c.status === "stable" ? [] : [`contract ${c.stem} is ${c.status ?? "without a status"}`]),
+    ...(c.phaseIds === "final" ? [] : [`contract ${c.stem} has phase_ids ${c.phaseIds ?? "missing"}`]),
   ]);
 
 const cleanTreeLines = (ctx) => {

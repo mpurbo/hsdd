@@ -19,6 +19,7 @@ import {
   MAX_BYTES, WARN_BYTES, dispatchErrors, dispatchText, judgementCommitted, nextFreeStep, readDispatch, reportSeries, seriesOf, writeDispatch,
 } from "./lib/records.mjs";
 import { targetFiles } from "./lib/intake.mjs";
+import { targetVersions, versionName } from "./lib/contracts.mjs";
 import { leafParentsOf } from "./lib/tree.mjs";
 import { specFilesInOrder } from "./lib/order.mjs";
 import { factLines } from "./lib/facts.mjs";
@@ -91,7 +92,7 @@ export const dispatchContext = (repoRoot) => {
   const ctx = loadContext(repoRoot);
   const textOf = (rel) => (existsSync(join(repoRoot, rel)) ? readFileSync(join(repoRoot, rel), "utf8") : null);
   const candidates = [
-    ...[...ctx.tree.contracts.values()].flatMap((c) => c.validationPaths.map((v) => v.path)),
+    ...ctx.tree.contractFiles.flatMap((c) => c.validationPaths.map((v) => v.path)),
     `${ctx.layout.management}/atlas.md`,
   ];
   const stepsDir = join(repoRoot, P.stepsDir);
@@ -277,19 +278,29 @@ const recordPath = (ctx) => ctx.intake.record?.path ?? null;
 
 const handoffOf = (ctx, id) => (ctx.intake.record?.block?.handoffs ?? []).find((h) => h.id === id) ?? null;
 
+// The target's files, each in backticks, comma-separated: for a contract id every version's file, for
+// `{id}.v{n}` that version's (v0.10.0 §3.1), its conventional path while it has none.
 const targetFile = (ctx, target) => {
-  switch (targetType(target, ctx.tree)) {
-    case "contract": return `${ctx.layout.contract}/${target}.md`;
-    case "adr": return ctx.tree.adrs.get(target)?.file ?? null;
-    case "node": return `${ctx.layout.spec}/${target}.md`;
-    default: return null;
-  }
+  const one = (() => {
+    switch (targetType(target, ctx.tree)) {
+      case "contract": {
+        const files = targetVersions(ctx.tree, target).map((c) => c.file);
+        return files.length > 0 ? files : [`${ctx.layout.contract}/${target}.md`];
+      }
+      case "adr": return ctx.tree.adrs.get(target)?.file ? [ctx.tree.adrs.get(target).file] : null;
+      case "node": return [`${ctx.layout.spec}/${target}.md`];
+      default: return null;
+    }
+  })();
+  return one === null ? null : one.map(code).join(", ");
 };
 
-// The highest version the specs cite for the contract, v1 when none.
-const targetVersion = (ctx, slug) => {
-  const inSpecs = ctx.tree.contractCites.filter((c) => c.slug === slug && c.file.startsWith(`${ctx.layout.spec}/`));
-  const versions = [...ctx.tree.contractNames, ...inSpecs].filter((c) => c.slug === slug).map((c) => Number(c.version.slice(1)));
+// The version `{id}.v{n}` names; for an id, the highest version the specs cite for it, v1 when none.
+const targetVersion = (ctx, target) => {
+  const named = versionName(target);
+  if (named !== null) return named.version;
+  const inSpecs = ctx.tree.contractCites.filter((c) => c.slug === target && c.file.startsWith(`${ctx.layout.spec}/`));
+  const versions = [...ctx.tree.contractNames, ...inSpecs].filter((c) => c.slug === target).map((c) => Number(c.version.slice(1)));
   return versions.length > 0 ? `v${Math.max(...versions)}` : "v1";
 };
 

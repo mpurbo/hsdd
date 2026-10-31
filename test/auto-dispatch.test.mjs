@@ -13,6 +13,7 @@ import { appendJsonl, nextFreeStep, readDispatch, readJsonl } from "../skills/hs
 import { P } from "../skills/hsdd-auto/scripts/lib/paths.mjs";
 import { nowStamp } from "../skills/hsdd-auto/scripts/lib/time.mjs";
 import { addSegment, baseConfig, fakeStep, gitIn, makeRepo, openStep, run } from "./helpers/auto-repo.mjs";
+import { V1, V2, deprecatedV1, v2Files } from "./helpers/auto-contract-v2.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const TEMPLATES = join(HERE, "..", "skills", "hsdd-auto", "scripts", "templates");
@@ -728,4 +729,73 @@ test("contract facts cite the node file for a reference and name a role with no 
   assert.ok(facts.includes("`order-api` names `shop.admin.1` as its consumer, which has no spec file (hsdd/contract/order-api.md)"), facts.join("\n"));
   const phase = factLines(ctx, { kind: "phase-plan", target: "shop.web.app", handoff: null, queue_item: null });
   assert.ok(phase.some((l) => l.startsWith("Consumes `order-api@v1` (hsdd/spec/shop.web.app.md); contract `order-api` is at version v1")), phase.join("\n"));
+});
+
+// ---------- contract versions in their own files (v0.10.0 §3.1, §3.5) ----------
+
+const touchFacts = (files) => factLines(dispatchContext(planRepo("06-planned", { files })), { kind: "citation-touch", target: "shop.web.app", handoff: null, queue_item: null });
+
+test("citation-touch facts: the current version per id, and a lower version superseded only when deprecated", () => {
+  const live = touchFacts(v2Files());
+  assert.ok(live.includes(`\`order-api\` is at v2 (${V2})`), live.join("\n"));
+  assert.ok(live.includes(`\`order-api@v1\` is stable, a lower version that stays live beside v2 (coexisting): a citation of it is not superseded (${V1})`), live.join("\n"));
+  assert.ok(!live.some((l) => l.startsWith("Superseded string `order-api@v1`")), live.join("\n"));
+  assert.ok(live.includes(`Superseded string \`order-api@v0\`: order-api is at v2, and no file holds v0 (${V2})`), live.join("\n"));
+  const dead = touchFacts(v2Files({ mode: "lockstep", v1: deprecatedV1 }));
+  assert.ok(dead.includes(`Superseded string \`order-api@v1\`: order-api is at v2, and its v1 file is deprecated (${V1})`), dead.join("\n"));
+  assert.ok(!dead.some((l) => l.startsWith("`order-api.v2`")), "one id, not one contract per file");
+});
+
+const factsOf2 = (files, kind, target) => factLines(dispatchContext(planRepo("06-planned", { files })), { kind, target, handoff: null, queue_item: null });
+
+test("facts resolve {id}@v{n} to that version's file", () => {
+  const files = { ...v2Files(), "hsdd/spec/shop.web.app.md": readFileSync(join(HERE, "fixtures/auto/tree/06-planned/hsdd/spec/shop.web.app.md"), "utf8").replace("- **Consumes:** [order-api@v1]\n- **Produces:** none\n- **Sources:**", "- **Consumes:** [order-api@v1, order-api@v2]\n- **Produces:** none\n- **Sources:**") };
+  const phase = factsOf2(files, "phase-plan-append", "shop.web.app");
+  assert.ok(phase.includes("Consumes `order-api@v2` (hsdd/spec/shop.web.app.md); contract `order-api` is at version v2, status draft, phase_ids provisional, validation schema hsdd/contract/schema/order-api.v2.schema.json, fixture hsdd/contract/fixture/order-api.v2/ (hsdd/contract/order-api.v2.md)"), phase.join("\n"));
+  assert.ok(phase.includes("Consumes `order-api@v1` (hsdd/spec/shop.web.app.md); contract `order-api` is at v2; its v1 file has status stable, phase_ids final, validation schema hsdd/contract/schema/order-api.schema.json, fixture hsdd/contract/fixture/order-api/ (hsdd/contract/order-api.md)"), phase.join("\n"));
+});
+
+test("contract facts for an id list every version file; a version target names its own", () => {
+  const touch = factsOf2(v2Files({ consumers: "[shop.admin.1]" }), "contract-touch", "order-api");
+  for (const want of [
+    `\`order-api@v1\` front matter \`version: v1\` (${V1})`, `\`order-api@v2\` front matter \`version: v2\` (${V2})`,
+    `\`order-api@v2\` \`## Versioning\`: - v2 current. Migration mode: coexisting. Migration note: read \`total.amount_cents\` where v1 read \`total_cents\`. (${V2})`,
+    `\`order-api@v1\` validation schema \`hsdd/contract/schema/order-api.schema.json\` exists (${V1})`,
+    `\`order-api@v2\` validation schema \`hsdd/contract/schema/order-api.v2.schema.json\` exists (${V2})`,
+    `\`order-api@v2\` names \`shop.admin.1\` as its consumer, which has no spec file (${V2})`,
+  ]) assert.ok(touch.some((l) => l.includes(want)), `${want}\n${touch.join("\n")}`);
+  const created = factsOf2({}, "contract", "order-api.v2");
+  assert.ok(created.includes("`order-api.v2` has no contract file yet, so no validation path (hsdd/contract/order-api.v2.md)"), created.join("\n"));
+  assert.ok(created.includes(`\`order-api@v1\`: version v1, status stable, phase_ids final (${V1})`), created.join("\n"));
+});
+
+test("reconcile facts name each pending version with its own file's state", () => {
+  const pending = "## Governance updates (pending reconcile)\n\n- confirm `order-api@v2` consumers: [shop.web.app.3]\n";
+  const web = readFileSync(join(HERE, "fixtures/auto/tree/06-planned/hsdd/spec/shop.web.app.md"), "utf8").replace(/## Governance updates \(pending reconcile\)[\s\S]*$/, pending);
+  const facts = factsOf2({ ...v2Files(), "hsdd/spec/shop.web.app.md": web }, "reconcile", "shop.web.app");
+  assert.ok(facts.includes(`Pending entries name \`order-api@v2\`: version v2, status draft, phase_ids provisional (${V2})`), facts.join("\n"));
+});
+
+test("the target line, the citation-touch invocation and the inputs name every version's file of an id", () => {
+  const dir = planRepo("06-planned", { files: v2Files() });
+  const ctx = dispatchContext(dir);
+  const fills = instructionFills(ctx, { kind: "citation-touch", target: "order-api", handoff: null, queue_item: null }, []);
+  assert.equal(fills.target_file, `\`${V1}\`, \`${V2}\``);
+  const line = stepFills(ctx, { kind: "citation-touch", skill: "hsdd-contract", target: "order-api", handoff: null, queue_item: null, write_set: [] }, { step: "S02", head: "abc1234" }).target_line;
+  assert.ok(line.startsWith(`\`order-api\`, resolving to \`${V1}\``) && line.includes(`\`${V2}\``), line);
+  assert.equal(instructionFills(ctx, { kind: "contract", target: "order-api.v3", handoff: null, queue_item: null }, []).target_version, "v3");
+});
+
+test("shipped-phase facts name the conventions' Main line", () => {
+  const conventions = readFileSync(join(HERE, "fixtures/auto/tree/01-root/hsdd/conventions.md"), "utf8");
+  const dir = planRepo("06-planned", { files: { "hsdd/conventions.md": `${conventions}\n## Main line\n**Main line:** develop\n` } });
+  const facts = factLines(dispatchContext(dir), { kind: "phase-plan-append", target: "shop.web.app", handoff: null, queue_item: null });
+  assert.ok(facts.includes("Of them, with a verification doc on develop: none (develop:hsdd/verify)"), facts.join("\n"));
+});
+
+// v0.10.0 §11.3 as of 0.10.2: the change request's own path joins the node's Sources, never the record's.
+test("phase-plan-append facts in an intake segment name the change request beside the record", () => {
+  const facts = factLines(dispatchContext(intakeRepo({ record: ORDER })), { kind: "phase-plan-append", target: "shop.web.app", handoff: null, queue_item: null });
+  assert.ok(facts.includes(`The segment's intake record is \`${RECORD}\` (${RECORD})`), facts.join("\n"));
+  assert.ok(facts.includes(`The change request is \`${REQUEST}\`; its own path, never the record's, joins the node's Sources (hsdd/auto/run.yaml)`), facts.join("\n"));
 });
