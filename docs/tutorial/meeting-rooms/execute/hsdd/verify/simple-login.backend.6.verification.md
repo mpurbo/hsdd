@@ -195,12 +195,10 @@ From the final review: `find` is safe on any string. `overlapping` expects `from
 - Size: estimated ~3 files (~330 lines) and at most 6 tasks; actual 4 files, 597 lines (1.8 times the estimate), 5 tasks. The source fits the estimate; the overrun is test code: four contention tests that each drive a second session with its own containment, plus the SERIALIZABLE, zone and restart tests on their own pools. The fourth file is the 6-line `url` in `test/db.ts`. The diff still fit one review sitting.
 
 ## Sign-off
-- Reviewer / date:
-- Review tier applied:
-- Disposition of each Outstanding item: verified | waived (reason) |
-  deferred to {phase-id}
-- Disposition of each Learning: spec-updated | contract-bumped (id@v) |
-  adr-proposed (ADR-nnn) | dropped (reason)
+- Reviewer / date: Claude for Purbo Mohamad (owner proxy, delegated by the owner before the run), 2026-11-01
+- Review tier applied: full-review: per-task reviewers and a final whole-branch reviewer read (Task 4: 1 Important, a read-before-lock mutant passed every test, fixed with a cancel-under-lock test both mutants fail; final: 0 Important, five Minors fixed in one wave, READ COMMITTED pinned after a SERIALIZABLE run failed with 40001); the race file's 10 rounds of 20 inserts with no deadlock noted; the gate rerun green by the orchestrator (16 files, 140 tests). Evidence under the git-ignored .superpowers/ workspace is local; the rerun and the committed tests stand in for it
+- Disposition of each Outstanding item: the retry bound and the error filter untested: waived (they act only for a writer that skips the room's lock, and no code path does); six-digit years and from not before to: verified (simple-login.backend.5's isInstant refuses +010000 and its rooms rule refuses from not before to, booking-rules.test.ts lines 45 to 72)
+- Disposition of each Learning: all five dropped from this tree and carried to the checkpoint as findings: the hsdd-config rule disagreement (an HSDD finding), D7's reliance on READ COMMITTED (pinned in code and tested), D10's missing upper bound (the four-digit year refused in simple-login.backend.5 covers it), the Verification line's deadlock check, and the template's em dash
 
 > The review gate is not passed while an Outstanding item or a Learning
 > lacks a disposition. Dispositions execute at the root through the owning
