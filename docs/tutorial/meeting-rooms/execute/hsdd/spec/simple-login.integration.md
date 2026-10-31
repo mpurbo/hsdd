@@ -2,22 +2,50 @@
 
 - **Kind:** leaf-parent
 - **Purpose:** prove the real service and the real web app work together, end to end
-- **Owns:** the root `package.json` scripts, the end-to-end browser test, the run instructions
+- **Owns:** the root `package.json` scripts, which run the real service with its PostgreSQL 17, started through simple-login.backend's Docker Compose service, beside the real web app; the end-to-end browser test; the scripted tests PRD v2 Success names (20 simultaneous attempts to book the same room for the same time, every acceptance criterion including on London's clock-change days, bookings surviving a restart of the service); the run instructions
 - **Does not own:** any code under `backend/` or `web/`
 - **Consumes:** [auth-api@v1, profile-api@v1, profile-api@v2]
 - **Produces:** none
 - **Governed by:** [ADR-002]
 - **Sources:** hsdd/context/prd-simple-login.md (Success, Team and delivery, Demo accounts), hsdd/context/rfc-simple-login.md (§1 Summary, §7 Testing, §8 Repository layout), hsdd/context/update-1-add-phone.md (Change: AC-2.1 amended, AC-2.4; Demo accounts)
 - **Decomposes into:** phases (see hsdd-phase-plan)
-- **Isolation strategy:** none by design: its edges are `hard`, so it runs the real service and the real web app and drives a real browser against them
+- **Isolation strategy:** none by design: its edges are `hard`, so it runs the real service on its real PostgreSQL 17, never a mock or an in-memory stand-in (PRD v2 Constraints), beside the real web app, and drives a real browser against them in a time zone that is neither account's nor UTC (ADR-002); the service runs on the real clock
 
 ## Overview
 
 The node that turns two independently tested halves into one product. It
-starts the real backend and the real web app, replays the contract fixtures
-through the dev proxy, and drives a browser through every acceptance
-criterion in the PRD. It also owns the one command a newcomer runs to start
-everything.
+starts PostgreSQL 17, the real service on it and the real web app, replays
+the contract fixtures through the dev proxy, and drives a browser through
+PRD v2's acceptance criteria. It also owns the one command a newcomer runs
+to start everything, the database included. The database, its Docker
+Compose service and that service's Compose file are simple-login.backend's
+(PRD v2 Team and delivery); this node's root scripts start them, on the
+laptop and through Colima on macOS (PRD v2 Constraints).
+
+It owns the scripted tests PRD v2 Success names, run against the real
+service and its real PostgreSQL, never a mock or an in-memory stand-in
+(PRD v2 Constraints):
+
+- 20 simultaneous attempts to book the same room for the same time give
+  exactly one booking: one 201 and nineteen 409 `BOOKING_CONFLICT`
+  (booking-api@v1 G5).
+- Every acceptance criterion passes, on London's clock-change days too
+  (PRD v2 AC-4.4).
+- A restart of the service keeps every booking with its id. The same
+  restart ends every token, so the test signs in again before it lists
+  them (booking-api@v1 G17, auth-api@v1 G3, ADR-001).
+
+Nothing here sets the service's clock: it runs on the real one. A
+clock-change test therefore takes the next last Sunday of March or of
+October after it, never a fixed date, and booking-api@v1's 365-day limit
+keeps that day bookable (ADR-002 Consequences, booking-api@v1 G10). A
+restart stays the expired-token stand-in for PRD v2 AC-2.3, since after it
+every earlier token is rejected exactly as an expired one is (auth-api@v1
+G3). Where a criterion turns on the backend's clock, a booking that has
+started (PRD v2 AC-5.5, AC-6.2), the phase plan names the scripted test
+that covers it. The proxy replay covers the fixtures the running service
+can answer as written; a booking-api@v1 fixture that needs a set clock or
+seeded bookings is not among them (booking-api@v1 Validation).
 
 ## Phase Plan
 
