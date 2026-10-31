@@ -7,7 +7,7 @@
 - **Consumes:** none
 - **Produces:** none
 - **Governed by:** [ADR-001, ADR-002]
-- **Sources:** hsdd/context/prd-simple-login.md, hsdd/context/rfc-simple-login.md, hsdd/context/update-1-add-phone.md
+- **Sources:** hsdd/context/prd-simple-login.v2.md, hsdd/context/rfc-simple-login.md
 - **Decomposes into:** simple-login.backend, simple-login.web, simple-login.integration
 - **Isolation strategy:** the children meet only at auth-api@v1, profile-api@v1, profile-api@v2 and booking-api@v1; each child builds and tests against those contracts' schemas and fixtures, and only the integration node runs both for real
 
@@ -45,25 +45,27 @@ Normalized from the sources:
   acceptance criterion passes in a scripted test, including on London's
   clock-change days; restarting the service keeps every booking (PRD v2
   Success).
-- **Assumption:** "same message, never says which was wrong" (AC-1.2)
-  extends to timing, as the RFC's section 4 states.
+- **Assumption:** "same message, never says which was wrong" (PRD v2
+  AC-1.2) extends to timing, as the RFC's section 4 states.
 
 ## Sources
 
-- `hsdd/context/prd-simple-login.md` · PRD (approved) · product scope, user
-  stories US-1 to US-3 with their acceptance criteria, screens, demo
-  accounts, team and delivery, success criteria
+- `hsdd/context/prd-simple-login.v2.md` · PRD v2 (approved) · product scope,
+  user stories US-1 to US-6 with their acceptance criteria, screens, demo
+  accounts, rooms, constraints, what it leaves to engineering, team and
+  delivery, success criteria
 - `hsdd/context/rfc-simple-login.md` · accepted RFC · the API and its error
   envelope, the session model, password storage, the backend and frontend
   stacks, testing approach, repository layout, security notes
 
 ## Decomposition axis
 
-The PRD answers "who builds what?": one backend developer builds the
-service, one frontend developer builds the web app, and they ship
-separately. The split therefore follows the stack: a backend node and a web
-node, joined by the API as contracts. Inside each node one person owns
-everything, so no further split is needed and both are leaf-parents.
+PRD v2 answers "who builds what?" (Team and delivery): one backend
+developer builds the service, one frontend developer builds the web app,
+and they ship separately. The split therefore follows the stack: a backend
+node and a web node, joined by the API as contracts. Inside each node one
+person owns everything, so no further split is needed and both are
+leaf-parents.
 
 The children exchange contracts, so the tree also gets
 `simple-login.integration`, a leaf-parent with `hard` edges to both, which
@@ -86,7 +88,7 @@ proves the real pieces work together.
 - **Consumes:** none
 - **Produces:** [auth-api@v1, profile-api@v1, profile-api@v2]
 - **Governed by:** [ADR-001, ADR-002]
-- **Sources:** hsdd/context/prd-simple-login.md (US-1, US-2, Demo accounts, Scope), hsdd/context/rfc-simple-login.md (§2 API, §3 Session model, §4 Passwords, §5 Backend stack, §7 Testing, §9 Security notes), hsdd/context/update-1-add-phone.md (Change: AC-2.1 amended, AC-2.4; Demo accounts; Scope)
+- **Sources:** hsdd/context/prd-simple-login.v2.md (US-1, US-2, Demo accounts, Scope), hsdd/context/rfc-simple-login.md (§2 API, §3 Session model, §4 Passwords, §5 Backend stack, §7 Testing, §9 Security notes)
 - **Decomposes into:** phases (see hsdd-phase-plan)
 - **Isolation strategy:** Fastify `app.inject()` with an injected clock and random source; tests that read or write bookings run against a real PostgreSQL 17, never a mock or an in-memory stand-in (PRD v2 Constraints); the gate replays the auth-api, profile-api and booking-api fixtures against the real routes, the injected clock reading each booking-api fixture's `clock` and the database holding exactly its `given` bookings; no browser, and the service itself opens no port
 
@@ -99,7 +101,7 @@ proves the real pieces work together.
 - **Consumes:** [auth-api@v1, profile-api@v1, profile-api@v2]
 - **Produces:** none
 - **Governed by:** [ADR-001, ADR-002]
-- **Sources:** hsdd/context/prd-simple-login.md (US-1, US-2, US-3, Screens), hsdd/context/rfc-simple-login.md (§1 Summary, §2 API, §6 Frontend stack, §7 Testing), hsdd/context/update-1-add-phone.md (AC-2.1 amended, AC-2.4, Screen, Scope)
+- **Sources:** hsdd/context/prd-simple-login.v2.md (US-1, US-2, US-3, Screens, Scope), hsdd/context/rfc-simple-login.md (§1 Summary, §2 API, §6 Frontend stack, §7 Testing)
 - **Decomposes into:** phases (see hsdd-phase-plan)
 - **Isolation strategy:** `fetch` is stubbed with the auth-api, profile-api and booking-api fixtures; the backend never needs to run; the time functions are tested on their own on London's clock-change days, and every test runs with `TZ` set to a zone that is neither account's nor UTC (ADR-002)
 
@@ -112,7 +114,7 @@ proves the real pieces work together.
 - **Consumes:** [auth-api@v1, profile-api@v1, profile-api@v2]
 - **Produces:** none
 - **Governed by:** [ADR-002]
-- **Sources:** hsdd/context/prd-simple-login.md (Success, Team and delivery, Demo accounts), hsdd/context/rfc-simple-login.md (§1 Summary, §7 Testing, §8 Repository layout), hsdd/context/update-1-add-phone.md (Change: AC-2.1 amended, AC-2.4; Demo accounts)
+- **Sources:** hsdd/context/prd-simple-login.v2.md (Success, Team and delivery, Constraints, Demo accounts, AC-2.1, AC-2.4), hsdd/context/rfc-simple-login.md (§1 Summary, §7 Testing, §8 Repository layout)
 - **Decomposes into:** phases (see hsdd-phase-plan)
 - **Isolation strategy:** none by design: its edges are `hard`, so it runs the real service on its real PostgreSQL 17, never a mock or an in-memory stand-in (PRD v2 Constraints), beside the real web app, and drives a real browser against them in a time zone that is neither account's nor UTC (ADR-002); the service runs on the real clock
 
@@ -204,9 +206,10 @@ flowchart LR
 
 ### OQ1: Deployment beyond a laptop
 
-The PRD scopes delivery to a local demo, and the RFC (section 9) relies on
+PRD v2 keeps delivery on the local laptop (Constraints) and puts
+deployment beyond it out of scope (Scope), and the RFC (section 9) relies on
 the Vite dev proxy so the browser sees one origin and CORS stays off. A real
 deployment must choose one origin behind a reverse proxy, or two origins
-with CORS enabled on the service. Nothing in v1 is contingent on it; it is
-recorded so the next change that deploys the product starts from a named
+with CORS enabled on the service. Nothing in PRD v2 is contingent on it; it
+is recorded so the next change that deploys the product starts from a named
 question.
