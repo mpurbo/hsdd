@@ -50,7 +50,7 @@ is visible outside this node.
 | simple-login.backend.4 | Time zones, booking types, PostgreSQL and the booking replay rig | gate-only | ~14 files (~400 lines), ≤7 tasks | 3 |
 | simple-login.backend.5 | Booking rules (pure core) | spot-check | ~4 files (~350 lines), ≤6 tasks | 4 |
 | simple-login.backend.6 | The booking store on PostgreSQL | full-review | ~3 files (~330 lines), ≤6 tasks | 4 |
-| simple-login.backend.7 | Booking endpoints, the service on its database (booking-api@v1) | full-review | ~8 files (~380 lines), ≤7 tasks | 5, 6 |
+| simple-login.backend.7 | Booking endpoints, the service on its database (booking-api@v1) | full-review | ~9 files (~400 lines), ≤7 tasks | 5, 6 |
 
 Ordering policy: `interfaces-first` (from `hsdd/conventions.md`). Phase 1
 holds the types, the account data and the test rig with no business logic;
@@ -104,6 +104,20 @@ tasks, over one review sitting; phase 6 also holds the concurrency logic, a
 risk reviewed on its own. They stay split. A phase of its own for the time
 zone (about 15 lines) would have been a merge candidate by the smell, so it
 is part of phase 4.
+
+Rewrite, 2026-11-01 (PRD v2, per
+hsdd/management/2026-10-31-intake-prd-simple-login-v2.md).
+simple-login.backend.7 is rewritten in place and keeps its id, name, tier,
+gate, contracts and dependencies. booking-api@v1's Development address, as
+reconciled on 2026-11-01, promises that the service creates its tables in
+an empty database before it listens and that a database holding them keeps
+its bookings, and a producer's gate proves what its contract states; until
+now every backend test ran on a database created with the schema. Phase
+7's `start` test now runs the service on a database created without it,
+then starts it again on the same database, and that second start replaces
+the second `buildApp` that stood in for a restart, so the phase stays at
+about 400 lines. No phase is appended, so the sizing floor has nothing new
+to run over.
 
 ### Decisions
 
@@ -259,10 +273,10 @@ is part of phase 4.
 - **Consumes:** none
 - **Produces:** [booking-api@v1]
 - **Governed by:** [ADR-001, ADR-002]
-- **Scope:** per hsdd/management/2026-10-31-intake-prd-simple-login-v2.md. The four endpoints of booking-api@v1, each checking the bearer token first as `GET /api/me` does, 401 `UNAUTHORIZED` `Sign in to continue.` for a missing, unknown or expired one (G16; ADR-001), then phase 5's rules, then phase 6's store: `GET /api/rooms?from={instant}&to={instant}` (200 `{ "rooms": [...] }`, 400); `GET /api/me/bookings` (200 `{ "bookings": [...] }`); `POST /api/bookings` (201 `Booking`, 400, 422, and 409 `BOOKING_CONFLICT` with `error.conflict`); `DELETE /api/bookings/{id}` (204 with no body, 404, 403, 422, and 404 when the store finds the booking already gone). A request Fastify refuses before a handler on a booking route, such as a body over its size limit, still answers by its endpoint's order: 401 when the token fails, else 400 `VALIDATION_FAILED` with booking-api@v1's message; `POST /api/login` keeps auth-api@v1's 400 body. `buildApp(deps)` gains the store. `backend/src/server.ts` creates the pool from `DATABASE_URL` (D4), applies the schema (D6), closes the pool when the app closes, never logs the URL, a password or a token (RFC-001 §9), and exits with a message naming `npm --prefix backend run db:up` when the database cannot be reached. Sessions stay in memory (ADR-001), so a restart signs everyone out and keeps every booking. The replay: `contract.replay.test.ts` adds the slug `booking-api`, with a `prepare` hook that sets the injected clock to each fixture's `clock` and seeds exactly its `given` bookings into the file's test database, so `npm --prefix backend run replay` replays auth-api@v1 (5 fixtures), profile-api@v2 (5) and booking-api@v1 (35). The sequences no fixture holds (booking-api@v1 Validation) are this phase's own tests, against the real PostgreSQL: 20 simultaneous `POST`s through `app.inject()` for the same room and time give one 201 and nineteen 409 `BOOKING_CONFLICT` whose `error.conflict` is the 201's booking, never a 5xx (G5); after a 204, the next request books the same range (G11); a second `buildApp` on the same database, standing in for a restart, answers the old token with 401 and, after a new sign-in, lists every booking with its id (G17; auth-api@v1 G3). The `start` test in `server.test.ts` runs against a test database.
-- **Size estimate:** ~8 files (~380 lines), <= 7 OpenSpec tasks
+- **Scope:** per hsdd/management/2026-10-31-intake-prd-simple-login-v2.md. The four endpoints of booking-api@v1, each checking the bearer token first as `GET /api/me` does, 401 `UNAUTHORIZED` `Sign in to continue.` for a missing, unknown or expired one (G16; ADR-001), then phase 5's rules, then phase 6's store: `GET /api/rooms?from={instant}&to={instant}` (200 `{ "rooms": [...] }`, 400); `GET /api/me/bookings` (200 `{ "bookings": [...] }`); `POST /api/bookings` (201 `Booking`, 400, 422, and 409 `BOOKING_CONFLICT` with `error.conflict`); `DELETE /api/bookings/{id}` (204 with no body, 404, 403, 422, and 404 when the store finds the booking already gone). A request Fastify refuses before a handler on a booking route, such as a body over its size limit, still answers by its endpoint's order: 401 when the token fails, else 400 `VALIDATION_FAILED` with booking-api@v1's message; `POST /api/login` keeps auth-api@v1's 400 body. `buildApp(deps)` gains the store. `backend/src/server.ts`: `start` takes the database URL beside the port, and only its `import.meta.main` block reads `PORT` and `DATABASE_URL` (default per D4). `start` creates the pool from that URL and applies the schema (D6) before it listens, so a database that exists but is empty gets its tables and one that already holds them keeps its bookings; the rooms need no loading (D3; booking-api@v1 Development address). The app closes the pool when it closes; nothing logs the URL, a password or a token (RFC-001 §9); when the database cannot be reached, `start` rejects and the `import.meta.main` block exits non-zero with a message naming `npm --prefix backend run db:up`. Sessions stay in memory (ADR-001), so a restart signs everyone out and keeps every booking. The replay: `contract.replay.test.ts` adds the slug `booking-api`, with a `prepare` hook that sets the injected clock to each fixture's `clock` and seeds exactly its `given` bookings into the file's test database, so `npm --prefix backend run replay` replays auth-api@v1 (5 fixtures), profile-api@v2 (5) and booking-api@v1 (35). The sequences no fixture holds (booking-api@v1 Validation) are this phase's own tests, against the real PostgreSQL: 20 simultaneous `POST`s through `app.inject()` for the same room and time give one 201 and nineteen 409 `BOOKING_CONFLICT` whose `error.conflict` is the 201's booking, never a 5xx (G5); after a 204, the next request books the same range (G11). The restart is proven through `start` itself, in `server.test.ts`, on a test database created without the schema: D8's helper in `backend/test/db.ts` gains an option that creates the database empty, used by this file alone and dropped after the file like the others, and every other test keeps D8's database with the schema. The test calls `start` on port 0 with that empty database and, over a real socket: the server's address is `127.0.0.1` (the shipped `start` check, folded in); `ayu` signs in; `GET /api/rooms` over one hour from a quarter-hour instant at least a day after the real clock lists Merapi, Bromo, Thames and Kew in that order, each with `"bookings": []`; `POST /api/bookings` books Merapi for that hour and answers 201. The test closes that app and calls `start` again on the same database, where the first token answers 401 and, after a new sign-in, `GET /api/rooms` over the same hour and `GET /api/me/bookings` each list that booking exactly as the 201 returned it, id included (booking-api@v1 Development address, G17; auth-api@v1 G3; PRD v2 Success: restarting the service keeps every booking). No second `buildApp` stands in for a restart. The test's cleanup closes every app it started, since a pool still connected to the database makes the file's drop fail with `55006` (hsdd/auto/experiments/backend-start-empty-database/).
+- **Size estimate:** ~9 files (~400 lines), <= 7 OpenSpec tasks
 - **Gate:** node default plus contract replay for booking-api, profile-api.v2 and auth-api: `npm --prefix backend run replay`
-- **Verification:** after `npm --prefix backend run db:up` and `npm --prefix backend start`, signed in as `ayu` with `curl`: `GET /api/rooms` for the next day in Jakarta (from 17:00Z to 17:00Z) lists Merapi, Bromo, Thames and Kew in that order; booking Merapi for an hour that day answers 201, and an overlapping second request 409 naming the first; restart the service: the old token gets 401, and after signing in again `GET /api/me/bookings` lists the booking with the same id; `DELETE` of it answers 204 with no body.
+- **Verification:** after `npm --prefix backend run db:up` and `npm --prefix backend start`, signed in as `ayu` with `curl`: `GET /api/rooms` for the next day in Jakarta (from 17:00Z to 17:00Z) lists Merapi, Bromo, Thames and Kew in that order; booking Merapi for an hour that day answers 201, and an overlapping second request 409 naming the first; restart the service: the old token gets 401, and after signing in again `GET /api/me/bookings` lists the booking with the same id; `DELETE` of it answers 204 with no body. Started with `DATABASE_URL` naming a database just created empty on the Compose service, the service lists the four rooms with no bookings, and the database then holds the `booking` table.
 - **Review tier:** full-review
 - **Dependencies:** simple-login.backend.5 (the rules and views), simple-login.backend.6 (the store); booking-api@v1 `stable`, which hsdd-reconcile sets once its producer and consumers are confirmed (H15, H17, H19; root Dev flow: lane 1 starts from `stable` contracts)
 
@@ -319,3 +333,12 @@ flowchart TD
 > Reconciled 2026-10-30 by hsdd-reconcile. Drained entries are in git history.
 
 > Reconciled 2026-11-01 by hsdd-reconcile. Drained entries are in git history.
+
+> Emitted by hsdd-phase-plan on 2026-11-01 (rewrite in place:
+> simple-login.backend.7, per
+> hsdd/management/2026-10-31-intake-prd-simple-login-v2.md: its `start`
+> test runs the service on a database created without the schema, then
+> again on the same database, as the restart test). No entry: the phase's
+> id, contracts and dependencies are unchanged, and what it proves is
+> already in booking-api@v1 (Development address, G17). Drained by
+> hsdd-reconcile; do not apply by hand.
