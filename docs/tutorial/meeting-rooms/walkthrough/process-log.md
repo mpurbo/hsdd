@@ -586,3 +586,83 @@ ADR-002 amendment through a later intake), not acted on in this run, so
 the build follows ADR-002 as written.
 
 `auto/meeting-rooms` merged into the sandbox's `main` (2e9ef03).
+
+## The build
+
+hsdd-auto plans and stops there, so the twelve phases go through the
+ordinary per-phase path: `hsdd-config`'s switch, then the superpowers
+derivative it writes (planning, the execution skill the review tier names,
+the discipline skills), the gate, a verification doc, and the owner's
+sign-off, here Claude as owner proxy.
+
+- **Lanes.** Two worktrees of the sandbox, cut from `main` at 2e9ef03:
+  `lane/backend` (backend.4 to .7) and `lane/web` (web.5 to .9), each run
+  by one agent per phase; integration.3 to .5 after both. Each phase agent
+  may launch its own subagents (checked: subagents here can start agents
+  and load skills), so the full-review tier runs as
+  `subagent-driven-development` intends.
+- **Isolation.** A phase agent's whole specification is its two context
+  files and the files their Links name; other nodes' specs and other
+  phases' contexts are off limits.
+- **Sign-off.** The agent leaves `## Sign-off` empty; after reading its
+  report, the orchestrator signs as owner proxy, merges the lane into
+  `main` with `--no-ff`, and starts the lane's next phase.
+
+### 02:05 · backend.4 (gate-only) and web.5 (spot-check), in parallel
+
+**web.5, 01:58 to 02:24 (agent), signed 02:31.** Ten commits on
+`lane/web`. Gate 90 to 199 tests (client 19 to 124; a new ambient-zone
+guard). Seven tasks, each test watched failing first, or run against a
+named mutant where the behavior already existed (4 mutants, all caught).
+Spot-check review by a fresh reviewer: 0 Critical, 1 Important (a client
+sort of the rooms would pass every test, since the fixtures already come
+in order; a sorting mutant passed 176/176) and a Minor raised to
+Important (the deciders' `error.code` half untested), both fixed with a
+failing mutant shown. Product 675 lines added, 1.8 times the Size
+estimate, mostly fixture tables. Signed by the orchestrator after
+rerunning the gate (199 green); five Learnings dropped with reasons.
+Findings about HSDD from the phase:
+
+- The verification template's title carries an em dash
+  (`{phase-id} — {Phase Name}`), which collides with the owner's prose
+  rule; the project's copy is also stale (no delegated sign-off line),
+  and the switch leaves it alone.
+- "What to eyeball", which spot-check depth asks for, has no heading in
+  the template.
+- The self-contained check counts `@v`, `ADR-`, `OQ` and `D{n}` ids only,
+  so the phase block's "H17 and H19" (handoff ids of the intake) passed
+  undefined.
+- The referenced-contract closure pulls in `profile-api@v1` through
+  auth-api@v1's G2, although this node's stub refuses v1's fixtures.
+- D7's rule (a zone name `Intl` refuses counts as absent) names no phase
+  to apply it.
+
+### 02:32 · web.6 (full-review)
+
+**backend.4, 01:58 to 02:30 (agent), signed 02:36.** Eleven commits on
+`lane/backend`. Before: the backend gate was red (68/72), exactly the
+red window S07 predicted: `me-ayu` and `me-budi` now carry `timeZone`.
+After: 111 tests in 14 files, replay 10/10, the gate starting PostgreSQL
+itself; a curl of `GET /api/me` shows each account's zone. Gate-only tier,
+so one final reviewer (`executing-plans` has no per-task reviewers): 0
+Critical, 2 Important (a test database leaked when its schema failed;
+the replay rig reported a schema failure as every `oneOf` branch, 176
+lines for one wrong id), both fixed test-first. Product +850 lines, 696 of
+them tests: twice the Size estimate. Outstanding: the `docker compose`
+plugin branch of `db-up.mjs`, never run on this host; waived at sign-off.
+New findings about HSDD from this phase:
+
+- The superpowers derivative template wraps the Gate in backticks, which
+  doubles them when the Gate already carries its own.
+- booking-api@v1's own `###` headings land at the same level as the
+  context's contract subsections (`### {id}@{v}`).
+- The template's bold labels have no blank lines around them, so a
+  contract body ending in a list swallows the next label.
+- `writing-plans`' header names both execution skills, while the
+  derivative's Plan check says "no other"; and `executing-plans` puts the
+  final review after the last task, which in HSDD is the verification doc
+  that should record the review.
+- Phase 4's Dependencies line still calls booking-api@v1 `draft`; it was
+  made `stable` by S21, after the plan was written.
+
+### 02:37 · backend.5 (spot-check) and backend.6 (full-review), in parallel
