@@ -275,6 +275,7 @@ describe('App: Home and Rooms (AC-4.1, D1, D2, D4)', () => {
     expect(sessionStorage.getItem('simple-login.session')).toBeNull()
   })
 
+  // App's two guards are pinned in App.expiry.test.tsx; this test covers Rooms' own drop of an answer after unmount.
   it('a late 401 from Rooms cannot clear a newer session (D1, Review Focus 3)', async () => {
     store()
     const login = loadFixture('auth-api', 'login-success')

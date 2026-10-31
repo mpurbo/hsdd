@@ -1,7 +1,11 @@
+/* Centred across, top-aligned down: the card's height changes with the list
+   (Loading…, D3's message, a day's rooms), and a vertically centred card would
+   move the date input on every date change. */
 .rooms {
   min-height: 100vh;
   display: grid;
-  place-items: center;
+  align-items: start;
+  justify-items: center;
   padding: 16px;
   box-sizing: border-box;
 }
