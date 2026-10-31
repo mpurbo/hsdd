@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import type { FastifyInstance } from "fastify";
 import { ACCOUNTS } from "../src/accounts.ts";
 import { buildApp } from "../src/app.ts";
+import { errorResponse } from "../src/booking-rules.ts";
 import type { BookingStore } from "../src/domain.ts";
 import { createBookingStore } from "../src/booking-store.ts";
 import { testDatabase } from "./db.ts";
@@ -294,5 +295,68 @@ describe("DELETE /api/bookings/{id}", () => {
       expect(got.statusCode).toBe(401);
       expect(got.body).toBe(expected.body);
     }
+  });
+});
+
+describe("requests Fastify refuses before a handler (D-d)", () => {
+  const HUGE = JSON.stringify({ title: "x".repeat(2 * 1024 * 1024) }); // over Fastify's 1 MiB bodyLimit
+  const NOT_FOUND = errorResponse({ code: "BOOKING_NOT_FOUND" }).body;
+  const bearer = (token: string | undefined) => (token === undefined ? {} : { authorization: `Bearer ${token}` });
+
+  it("POST /api/bookings over the size limit answers 400 with booking-api's body when the token is valid", async () => {
+    const { signIn, post } = service();
+    const res = await post(HUGE, await signIn("ayu"));
+    expect(res.statusCode).toBe(400);
+    expect(res.json()).toEqual(BOOKING_INVALID);
+  });
+
+  it("POST /api/bookings over the size limit answers 401 when the token is missing or expired", async () => {
+    const { signIn, post, setClock } = service();
+    const expired = await signIn("ayu");
+    setClock("2026-11-04T12:30:01.000Z");
+    for (const token of [undefined, expired]) {
+      const res = await post(HUGE, token);
+      expect(res.statusCode).toBe(401);
+      expect(res.json()).toEqual(UNAUTHORIZED);
+    }
+  });
+
+  it("DELETE /api/bookings/{id} with a body over the size limit answers 400, else 401 (Scope)", async () => {
+    const { app: a, signIn } = service();
+    const token = await signIn("ayu");
+    const del = (t?: string) =>
+      a.inject({ method: "DELETE", url: `/api/bookings/${ID1}`, headers: { "content-type": "application/json", ...bearer(t) }, payload: HUGE });
+    const ok = await del(token);
+    expect(ok.statusCode).toBe(400);
+    expect(ok.json()).toEqual(BOOKING_INVALID);
+    const none = await del();
+    expect(none.statusCode).toBe(401);
+    expect(none.json()).toEqual(UNAUTHORIZED);
+  });
+
+  it("POST /api/login over the size limit keeps auth-api's 400", async () => {
+    const { app: a } = service();
+    const res = await a.inject({ method: "POST", url: "/api/login", headers: { "content-type": "application/json" }, payload: HUGE });
+    expect(res.statusCode).toBe(400);
+    expect(res.json()).toEqual(LOGIN_INVALID);
+  });
+
+  it.each(["%E0%A4%A", "a".repeat(101)])("DELETE /api/bookings/%s answers 404 BOOKING_NOT_FOUND with a token, 401 without", async (id) => {
+    const { app: a, signIn } = service();
+    const token = await signIn("ayu");
+    const del = (t?: string) => a.inject({ method: "DELETE", url: `/api/bookings/${id}`, headers: bearer(t) });
+    const found = await del(token);
+    expect(found.statusCode).toBe(404);
+    expect(found.json()).toEqual(NOT_FOUND);
+    const none = await del();
+    expect(none.statusCode).toBe(401);
+    expect(none.json()).toEqual(UNAUTHORIZED);
+  });
+
+  it("keeps Fastify's own body for a bad URL outside DELETE /api/bookings/", async () => {
+    const { app: a } = service();
+    const res = await a.inject({ method: "GET", url: "/api/rooms/%E0%A4%A" });
+    expect(res.statusCode).toBe(400);
+    expect(res.json().code).toBe("FST_ERR_BAD_URL");
   });
 });
