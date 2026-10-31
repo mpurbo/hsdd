@@ -4,7 +4,7 @@ version: v2
 status: stable
 kind: api
 owner: simple-login.backend
-governed_by: [ADR-001]
+governed_by: [ADR-001, ADR-002]
 compatibility: additive-only
 produced_by: [simple-login.backend.3]
 consumers: [simple-login.web.4, simple-login.integration.2]
@@ -13,7 +13,7 @@ phase_ids: final
 
 # Contract: profile-api (v2)
 
-- **Governed by:** [ADR-001]
+- **Governed by:** [ADR-001, ADR-002]
 
 ## Interface
 

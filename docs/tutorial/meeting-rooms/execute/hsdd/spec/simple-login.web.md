@@ -6,7 +6,7 @@
 - **Does not own:** accounts, password checks, sessions on the server
 - **Consumes:** [auth-api@v1, profile-api@v1, profile-api@v2]
 - **Produces:** none
-- **Governed by:** [ADR-001]
+- **Governed by:** [ADR-001, ADR-002]
 - **Sources:** hsdd/context/prd-simple-login.md (US-1, US-2, US-3, Screens), hsdd/context/rfc-simple-login.md (§1 Summary, §2 API, §6 Frontend stack, §7 Testing), hsdd/context/update-1-add-phone.md (AC-2.1 amended, AC-2.4, Screen, Scope)
 - **Decomposes into:** phases (see hsdd-phase-plan)
 - **Isolation strategy:** `fetch` is stubbed with the auth-api and profile-api fixtures; the backend never needs to run

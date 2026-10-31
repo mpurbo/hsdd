@@ -5,3 +5,4 @@
 | id | status | affects |
 |----|--------|---------|
 | `ADR-001` | accepted | simple-login, simple-login.backend, simple-login.web, auth-api@v1, profile-api@v1, profile-api@v2, booking-api@v1 |
+| `ADR-002` | accepted | simple-login, simple-login.backend, simple-login.web, simple-login.integration, profile-api@v2, booking-api@v1 |

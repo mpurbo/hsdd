@@ -6,7 +6,7 @@
 - **Does not own:** sign-up, password reset, profile editing, persistence (out of scope in the PRD)
 - **Consumes:** none
 - **Produces:** none
-- **Governed by:** [ADR-001]
+- **Governed by:** [ADR-001, ADR-002]
 - **Sources:** hsdd/context/prd-simple-login.md, hsdd/context/rfc-simple-login.md, hsdd/context/update-1-add-phone.md
 - **Decomposes into:** simple-login.backend, simple-login.web, simple-login.integration
 - **Isolation strategy:** the children meet only at auth-api@v1, profile-api@v1 and profile-api@v2; each child builds and tests against those contracts' schemas and fixtures, and only the integration node runs both for real
@@ -67,7 +67,7 @@ proves the real pieces work together.
 - **Does not own:** screens, where the browser keeps the token, the dev proxy
 - **Consumes:** none
 - **Produces:** [auth-api@v1, profile-api@v1, profile-api@v2]
-- **Governed by:** [ADR-001]
+- **Governed by:** [ADR-001, ADR-002]
 - **Sources:** hsdd/context/prd-simple-login.md (US-1, US-2, Demo accounts, Scope), hsdd/context/rfc-simple-login.md (§2 API, §3 Session model, §4 Passwords, §5 Backend stack, §7 Testing, §9 Security notes), hsdd/context/update-1-add-phone.md (Change: AC-2.1 amended, AC-2.4; Demo accounts; Scope)
 - **Decomposes into:** phases (see hsdd-phase-plan)
 - **Isolation strategy:** Fastify `app.inject()` with an injected clock and random source; the gate replays the auth-api and profile-api fixtures against the real routes; no browser and no open port needed
@@ -80,7 +80,7 @@ proves the real pieces work together.
 - **Does not own:** accounts, password checks, sessions on the server
 - **Consumes:** [auth-api@v1, profile-api@v1, profile-api@v2]
 - **Produces:** none
-- **Governed by:** [ADR-001]
+- **Governed by:** [ADR-001, ADR-002]
 - **Sources:** hsdd/context/prd-simple-login.md (US-1, US-2, US-3, Screens), hsdd/context/rfc-simple-login.md (§1 Summary, §2 API, §6 Frontend stack, §7 Testing), hsdd/context/update-1-add-phone.md (AC-2.1 amended, AC-2.4, Screen, Scope)
 - **Decomposes into:** phases (see hsdd-phase-plan)
 - **Isolation strategy:** `fetch` is stubbed with the auth-api and profile-api fixtures; the backend never needs to run
@@ -93,6 +93,7 @@ proves the real pieces work together.
 - **Does not own:** any code under `backend/` or `web/`
 - **Consumes:** [auth-api@v1, profile-api@v1, profile-api@v2]
 - **Produces:** none
+- **Governed by:** [ADR-002]
 - **Sources:** hsdd/context/prd-simple-login.md (Success, Team and delivery, Demo accounts), hsdd/context/rfc-simple-login.md (§1 Summary, §7 Testing, §8 Repository layout), hsdd/context/update-1-add-phone.md (Change: AC-2.1 amended, AC-2.4; Demo accounts)
 - **Decomposes into:** phases (see hsdd-phase-plan)
 - **Isolation strategy:** none by design: its edges are `hard`, so it runs the real service and the real web app and drives a real browser against them
