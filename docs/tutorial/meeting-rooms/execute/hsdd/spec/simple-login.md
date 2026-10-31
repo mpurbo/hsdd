@@ -1,32 +1,50 @@
 # simple-login: Simple Login
 
 - **Kind:** internal
-- **Purpose:** let a registered user sign in with a username and password, see their own profile, and sign out
-- **Owns:** the whole product: sign-in, sessions, the profile view, the two-endpoint API between them
-- **Does not own:** sign-up, password reset, profile editing, persistence (out of scope in the PRD)
+- **Purpose:** let a registered user sign in with a username and password, see their own profile, find a free meeting room and book it, see and cancel their own bookings, and sign out, with every time shown in their own time zone
+- **Owns:** the whole product: the built-in accounts, sign-in, sessions, the profile view, the pre-loaded rooms, booking and cancelling, the PostgreSQL 17 database that keeps the bookings, and the API between the service and the web app
+- **Does not own:** editing a booking, recurring bookings, attendees and invitations, reminders, managing rooms, sign-up, password reset, profile editing, multi-factor sign-in, rate limiting, deployment beyond the laptop (out of scope in PRD v2 Scope)
 - **Consumes:** none
 - **Produces:** none
 - **Governed by:** [ADR-001, ADR-002]
 - **Sources:** hsdd/context/prd-simple-login.md, hsdd/context/rfc-simple-login.md, hsdd/context/update-1-add-phone.md
 - **Decomposes into:** simple-login.backend, simple-login.web, simple-login.integration
-- **Isolation strategy:** the children meet only at auth-api@v1, profile-api@v1 and profile-api@v2; each child builds and tests against those contracts' schemas and fixtures, and only the integration node runs both for real
+- **Isolation strategy:** the children meet only at auth-api@v1, profile-api@v1, profile-api@v2 and booking-api@v1; each child builds and tests against those contracts' schemas and fixtures, and only the integration node runs both for real
 
 ## Overview
 
-A user signs in on a Login screen, lands on a Home screen that shows their
-display name, username, email, phone number (update 1) and join date, and
-can sign out. Accounts are
-built in; nothing is persisted. The product is two deployables, a backend
-HTTP service and a web single-page app, joined by an API of exactly two
-endpoints (`POST /api/login`, `GET /api/me`).
+A user signs in on a Login screen and lands on a Home screen that shows
+their display name, username, email, phone number, time zone and join
+date, lists their bookings that have not ended, and lets them cancel one or
+sign out. On a Rooms screen they pick a date, see every room's bookings on
+it, and book a room; the aim is a free room found and booked in under a
+minute (PRD v2 Goal). Every time on screen is in the user's own time zone.
+Accounts are built in, the rooms of the Jakarta and London offices are
+pre-loaded, and bookings are kept in PostgreSQL 17. The product is two
+deployables, a backend HTTP service and a web single-page app, joined by an
+HTTP API whose endpoints its contracts define; PRD v2 fixes no number of
+endpoints.
 
 Normalized from the sources:
 
-- **Primary flows:** sign in (US-1), see my profile (US-2), sign out (US-3).
-- **Hard constraints:** no database; exactly two endpoints; built-in demo
-  accounts; local laptop only.
-- **Success criteria:** Home within 3 seconds of Sign in; every acceptance
-  criterion passes in a scripted test.
+- **Primary flows:** sign in (US-1), see my profile with my time zone
+  (US-2), sign out (US-3), find a free room on a date (US-4), book a room
+  (US-5), see and cancel my bookings (US-6), as PRD v2 User stories number
+  them.
+- **Hard constraints:** bookings are kept in PostgreSQL 17, run on the
+  laptop with Docker Compose (Colima on macOS), and survive a restart of
+  the service; tests that read or write bookings run against a real
+  PostgreSQL, never a mock or an in-memory stand-in (PRD v2 Constraints); a
+  room is never booked twice for the same time, not even when two people
+  book it at the same moment, and every time on screen is in the user's own
+  time zone (PRD v2 Goal); accounts are built in, with no sign-up, and rooms
+  are pre-loaded, never managed in the app (PRD v2 Users, Rooms); local
+  laptop only.
+- **Success criteria:** in a scripted test, 20 simultaneous attempts to
+  book the same room for the same time produce exactly one booking; every
+  acceptance criterion passes in a scripted test, including on London's
+  clock-change days; restarting the service keeps every booking (PRD v2
+  Success).
 - **Assumption:** "same message, never says which was wrong" (AC-1.2)
   extends to timing, as the RFC's section 4 states.
 
@@ -148,10 +166,35 @@ flowchart LR
 
 - **ADR-001 (proposed here, accepted from RFC §3):** opaque bearer tokens in
   an in-memory session store, a fixed 30-minute lifetime, sign-out on the
-  client. It spans both nodes and both contracts, so it is an ADR, not a
-  node-local `D{n}`. Materialized by hsdd-adr as `hsdd/adr/001-session-tokens.md`.
-- Node-local choices (Fastify, React, Vite, sessionStorage, scrypt) stay in
-  the RFC and the node specs that own them.
+  client. Its 2026-10-31 amendments keep all three under PRD v2: sessions
+  never go into PostgreSQL, so a restart of the service signs every user out
+  and keeps every booking, and there is still no logout endpoint. It spans
+  the backend, the web app and every contract that issues or takes the
+  token, so it is an ADR, not a node-local `D{n}`. Materialized by hsdd-adr
+  as `hsdd/adr/001-session-tokens.md`.
+- **ADR-002 (proposed by the intake record for PRD v2, DEC-009; accepted by
+  the unattended run for the owner's review, DEC-037):** a booking's start
+  and end are instants, UTC strings on the wire and `timestamptz` in
+  PostgreSQL; the user's zone is the account's IANA name, served with the
+  profile, and each room carries its office's; the web app converts and
+  formats every time; the backend's clock decides whether a booking has
+  started or ended. PRD v2's Goal puts every time on screen in the user's
+  own zone, which binds all three children, the profile and the booking
+  API, so it is an ADR, not a node-local `D{n}`. Materialized by hsdd-adr as
+  `hsdd/adr/002-time-model.md`.
+- Node-local choices stay in RFC-001 and the node specs that own them:
+  Fastify and scrypt, and what is chosen about PostgreSQL 17 (driver,
+  schema, migrations, how exactly one of two overlapping bookings wins), in
+  simple-login.backend, whose developer owns the database (PRD v2 Team and
+  delivery); React, Vite and sessionStorage, and how the app moves between
+  its screens (its D4), in simple-login.web. PostgreSQL 17 under Docker
+  Compose is a PRD v2 constraint, not an engineering choice, so it has no
+  ADR (DEC-010, DEC-012).
+- RFC-001 was written for version 1. Its two-endpoint API (RFC-001 §1,
+  §3), its "no database" (RFC-001 §3) and its two screens without a router
+  (RFC-001 §6) are overtaken by PRD v2: booking-api, ADR-001's amendments,
+  this spec's hard constraints and the web's D4 hold there instead. Its
+  authors are asked to amend it or write an RFC for version 2 (DEC-013).
 
 ## Open questions
 
