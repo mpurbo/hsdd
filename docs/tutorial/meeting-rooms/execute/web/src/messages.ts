@@ -18,4 +18,20 @@ export const MESSAGES = {
   timeZoneNotAvailable: 'Not available',
   /** D7: shown in place of the bookings list. */
   bookingsNeedTimeZone: 'Bookings need your time zone, which is not available.',
+  /** D10: a Book answered 201. */
+  booked: 'Booked.',
+  /** D10: a Book answered 422 `BOOKING_STARTED`. */
+  bookStarted: 'That time has already started.',
+  /** D10: a Book answered 422 `BOOKING_TOO_LONG`. */
+  bookTooLong: 'A booking can last at most 8 hours.',
+  /** D10: a Book answered 422 `BOOKING_TOO_FAR_AHEAD`. */
+  bookTooFarAhead: 'A booking can start at most 365 days ahead.',
+  /** D10: a Book answered 400 or another invalid-booking code. */
+  bookInvalid: 'That booking is not valid. Check the times and the title.',
+  /** D11: the picked date has no start left. */
+  noTimesLeft: 'No times left on this date.',
 } as const
+
+/** D10: a Book answered 409; the booking's own times, written in the user's zone, never `error.message` (G18). */
+export const bookConflictMessage = (roomName: string, start: string, end: string): string =>
+  `${roomName} is already booked from ${start} to ${end}.`
