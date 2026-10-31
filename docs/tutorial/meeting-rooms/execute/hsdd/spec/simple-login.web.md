@@ -14,7 +14,7 @@
 ## Overview
 
 A React 19 single-page app in TypeScript, built with Vite, with three
-screens (PRD v2 Screens). Login signs a user in (PRD v2 US-1). Home shows
+screens (PRD v2 US-1, Screens). Login signs a user in (PRD v2 US-1). Home shows
 the signed-in user's display name, username, email, phone number, time zone
 and join date, lists their bookings that have not ended, soonest first,
 lets them cancel one that has not started, and offers Book a room, which
