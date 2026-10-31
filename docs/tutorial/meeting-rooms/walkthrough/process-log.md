@@ -740,3 +740,48 @@ deliberately provoked deadlock.
 The lane agent's prompt names the two items earlier sign-offs deferred to
 this phase (the content-type comparison with sign-in, the pool's missing
 `'error'` listener).
+
+**web.7, 03:16 to 04:05 (agent), signed 04:07.** Home: the Time zone row,
+My bookings (loading, empty, refusal and 401 handling), Cancel, and the
+flow's `session-expired` event wired in App. Gate 262 to 296. Full
+review: overlapping Cancels made a cancelled booking's button usable
+again before the refetch (Important, fixed: the newest list request
+wins); the final reviewer found that a screen reader heard nothing after
+a Cancel and focus fell to the page (Important, fixed with `role="alert"`
+and focus to the heading). Browser checks deferred to integration.4.
+Owner-proxy ruling at sign-off: a cancel gets no success message,
+because PRD v2 AC-6.2's confirmation is the booking leaving the list.
+
+- **Finding (HSDD).** The Scope said "Home as PRD v2 Screens draws it",
+  but hsdd-config never inlines source documents and the Links did not
+  name the PRD, so the phase agent had no wireframe; the update
+  tutorial's web.4 met the same gap. The final reviewer read the PRD
+  anyway: the layout matched but for an indent.
+
+### 04:08 · web.8 (full-review)
+
+**backend.7, 03:47 to 04:36 (agent), signed 04:42.** The four booking
+endpoints, the service starting on its database (schema applied, pool
+closed on shutdown), and requests Fastify refuses answered in each
+endpoint's own check order. Gate 224 to 299; the replay now runs all 45
+fixtures (46 with a count test). backend.5's deferred content-type item
+settled by comparison: `POST /api/login` and `POST /api/bookings` answer
+`text/plain` 400/400, no content type 400/400, `application/json;
+charset=utf-8` 200/201. Full review: the final reviewer reproduced a
+crash when a connection dropped while a request held it (waiting on a
+room's lock); fixed with a listener on each connection. Evidence committed
+under `docs/superpowers/evidence/simple-login.backend.7/`. The one
+Outstanding item, a real PostgreSQL restart under a running service, was
+verified by the orchestrator before signing: 200 before, 500 during the
+outage with the process alive, 200 right after `db:up`.
+
+- **Finding (HSDD).** The Scope's "else 400" for a refused DELETE body
+  contradicted the contract's DELETE table; the context never mentions
+  Fastify's `frameworkErrors` path. The Scope also cites RFC-001 §9,
+  which the context does not excerpt (the self-contained rule covers
+  contracts, ADRs and OQs, not sources).
+- **Finding (superpowers).** Its task-brief script copies only the task
+  text into each subagent's brief, leaving out the plan's Global
+  Constraints; the phase agent shared a common-context file instead.
+
+### 04:44 · integration.3 (full-review), after the backend lane
