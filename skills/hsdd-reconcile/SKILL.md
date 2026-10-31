@@ -6,7 +6,8 @@ description: >
   Triggers: "reconcile the worktrees", "drain pending governance updates",
   "merge the phase plans", "apply governance updates", "resolve contract
   requests", "finalize phase ids", "the contract is still provisional", "sweep
-  the resolved open question". Also "mark the grandfathered contracts",
+  the resolved open question", "align the plans after the contract moved". Also
+  "mark the grandfathered contracts",
   "discharge the grandfather mark", "retire the contracts of {node}", "move
   the migrated consumers", "retire {contract}@v{n}". Runs at
   the root lineage after branches are
@@ -162,6 +163,30 @@ edits governance files); this skill performs the semantic merge.
     contracts, ADRs, phase plans — and update every citation that still
     treats it as open (contingency markers, "pending OQ-x" prose). Report
     the swept locations.
+14. **Align.** An operation of its own, run standalone with no pending
+    section present, like the steps step 2 names; step 13's sweep of resolved
+    open questions and its trigger words are unchanged. See Align Mode below.
+
+## Align Mode (citations and gate arguments after a version moved)
+
+Invoked as `/hsdd-reconcile align {node ids or all} after {what changed}`.
+Align runs standalone, with no pending section present, and for each named
+node's plan text:
+
+1. moves every live citation of a contract version that is no longer current
+   to the current version, by the Citation touch rule of `hsdd-spec`, in
+   unshipped phases only;
+2. re-derives each phase gate's contract and guarantee arguments against the
+   current contract's validation artifacts, where the gate names them;
+3. checks that every phase id named in a contract's `produced_by`,
+   `consumers` or delivery text exists, and that every phase Scope that cites
+   an intake record cites one that exists;
+4. records every finding it cannot fix within citations and gate arguments
+   (a Scope that is now wrong, a phase that no longer fits) as a routed item
+   for the owning skill, never rewriting a phase's scope itself.
+
+It drains nothing and flips nothing unless the invocation also names those
+steps.
 
 ## Entry Handling
 
@@ -174,6 +199,56 @@ edits governance files); this skill performs the semantic merge.
 | grandfather step (from a checkpoint plan step) | contract frontmatter | mark: add `validation: grandfathered` to listed `stable` contracts without artifacts, never to a `draft`, never to a new contract, never to one whose history carried the key; discharge: remove the key from a listed contract whose artifact now exists |
 | migrated consumers (from a checkpoint plan step) | contract frontmatter | move the named phase ids from `consumers` to `former_consumers`; never delete one |
 | retire (node retired, or a `deprecated` version past its sunset) | contract frontmatter | `status: retired` for each such version with no live consumer; otherwise a finding |
+
+## Unattended runs
+
+When your arguments contain `--unattended {step}`, you run as step
+`{step}` of an `hsdd-auto` run, and your dispatch file
+`hsdd/auto/dispatch/{step}.md` names your report. Then:
+
+1. At each ask point in the table below, act on its disposition.
+   `return`: write your report with `status: "stopped"` and a `stop`
+   object (the question verbatim, the rule of this skill that requires it,
+   the stop class, the options with their consequences, your
+   recommendation, what it blocks), leave your partial artifacts in place,
+   and end your turn. Never answer it yourself. `decide`: take the decision
+   and record it with `would_have_asked: true` and the class the table
+   gives, or `false` where the table gives none, unless a careful engineer
+   would have asked the owner first: then `true` with class `judgement`.
+2. Record every decision when you take it, with
+   `node hsdd/scripts/auto/decide.mjs --step {step} --stdin` and the
+   decision as JSON in the shape your dispatch file shows. Never write a
+   time or an id yourself.
+3. Do not invoke interactive companion skills such as brainstorming; the
+   run's decision policy replaces their dialogue.
+4. Copy each of this skill's quality gates (for `hsdd-phase-plan`, the
+   items of its Phase Design Checklist) verbatim into the report's
+   `self_check`, with `pass`, `fail` or `n/a` and a note. A gate that
+   requires a human act (the human confirmed, decided or stated) is `n/a`,
+   and its note names the decision that stood in for that act. So is a
+   gate that a give-way rule of the table below overrides, its note naming
+   the decision that applied the rule, and a gate whose subject this step
+   did not touch, its note reading `not exercised by this step`.
+5. A predecided answer in your dispatch file for a class in the table
+   replaces the `return` for that class: apply it, record your decision
+   citing the predecided decision's id, and continue. The exception is a
+   breaking change under `compatibility: frozen` or at `v0`, which you
+   report as a run-stop candidate whatever the predecided answers say
+   (§8.2).
+6. Where the table says a rule of this skill gives way, the recorded
+   decision replaces the human act that rule requires, and the owner's
+   later review of that decision is the act.
+
+| Ask point | Disposition | Class |
+|-----------|-------------|-------|
+| A collision | return | `collision` |
+| An `amend` or a `request` answer that breaks a consumer of a `stable` contract under `compatibility: versioned` (`frozen` or `v0`: a run-stop candidate, §8.2) | return | `breaking-amend` |
+| The same for a `draft` contract | decide (the rule that it "goes to the human" gives way for drafts) | `judgement` |
+| A `request` answer that breaks no consumer | decide (the rule "resolve `request` entries with the human" gives way) | `judgement` |
+| Step 5's cross-cutting answer for `hsdd-adr`; step 7's `hsdd-contract` step for a missing validation artifact | route an `insert-step` (`adr` or `adr-update`; `contract-touch`), and never write the ADR or the artifact yourself | none |
+
+No step kind invokes reconcile's grandfather marking, discharge or retirement
+(its steps 8 and 9), so their inputs never arise in a run.
 
 ## Quality Gates
 
@@ -188,6 +263,7 @@ edits governance files); this skill performs the semantic merge.
 - [ ] `node hsdd/scripts/gen-registry.mjs` ran after the last contract edit.
 - [ ] No artifact still cites a resolved OQ as open; sweep locations
       reported.
+- [ ] Every change align made is a citation or a gate argument.
 
 ## Anti-Rationalization
 

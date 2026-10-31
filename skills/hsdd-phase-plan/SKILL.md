@@ -337,6 +337,9 @@ appends phases to an existing plan. Rules:
 - The dependency graph gains the new nodes; existing edges are not redrawn.
 - The pending-governance section is appended to, with a new emission date
   line, and drained by `hsdd-reconcile` as usual.
+- When the invoking prompt names an unshipped phase, append mode may rewrite
+  it in place; the phase keeps its id, and the new emission date line of the
+  pending section names the rewrite.
 
 ## Phase Dependency Graph
 
@@ -363,6 +366,53 @@ flowchart TD
     P4 --> P5
     X1 -. "{contract}@v1" .-> P5
 ```
+
+## Unattended runs
+
+When your arguments contain `--unattended {step}`, you run as step
+`{step}` of an `hsdd-auto` run, and your dispatch file
+`hsdd/auto/dispatch/{step}.md` names your report. Then:
+
+1. At each ask point in the table below, act on its disposition.
+   `return`: write your report with `status: "stopped"` and a `stop`
+   object (the question verbatim, the rule of this skill that requires it,
+   the stop class, the options with their consequences, your
+   recommendation, what it blocks), leave your partial artifacts in place,
+   and end your turn. Never answer it yourself. `decide`: take the decision
+   and record it with `would_have_asked: true` and the class the table
+   gives, or `false` where the table gives none, unless a careful engineer
+   would have asked the owner first: then `true` with class `judgement`.
+2. Record every decision when you take it, with
+   `node hsdd/scripts/auto/decide.mjs --step {step} --stdin` and the
+   decision as JSON in the shape your dispatch file shows. Never write a
+   time or an id yourself.
+3. Do not invoke interactive companion skills such as brainstorming; the
+   run's decision policy replaces their dialogue.
+4. Copy each of this skill's quality gates (for `hsdd-phase-plan`, the
+   items of its Phase Design Checklist) verbatim into the report's
+   `self_check`, with `pass`, `fail` or `n/a` and a note. A gate that
+   requires a human act (the human confirmed, decided or stated) is `n/a`,
+   and its note names the decision that stood in for that act. So is a
+   gate that a give-way rule of the table below overrides, its note naming
+   the decision that applied the rule, and a gate whose subject this step
+   did not touch, its note reading `not exercised by this step`.
+5. A predecided answer in your dispatch file for a class in the table
+   replaces the `return` for that class: apply it, record your decision
+   citing the predecided decision's id, and continue. The exception is a
+   breaking change under `compatibility: frozen` or at `v0`, which you
+   report as a run-stop candidate whatever the predecided answers say
+   (§8.2).
+6. Where the table says a rule of this skill gives way, the recorded
+   decision replaces the human act that rule requires, and the owner's
+   later review of that decision is the act.
+
+| Ask point | Disposition | Class |
+|-----------|-------------|-------|
+| A gap in a consumed contract that changes which phases exist or what they produce | return | `shape` |
+| A contingency on a question with no minted id | return | `procedural` |
+| The node still contains subsystems (the skill's precondition) | return, routing an `insert-step` of kind `mid-level-spec` on the node | `procedural` |
+| A gap that does not change the plan's shape | decide: record a `request` entry with its assumption | none |
+| Tier, gate and sizing choices | decide | none |
 
 ## Phase Design Checklist
 

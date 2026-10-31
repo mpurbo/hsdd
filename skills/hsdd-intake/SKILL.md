@@ -127,6 +127,117 @@ admissibility rule as everywhere else. `hsdd-checkpoint` appends the
 phases whose Scope cites the record, ticks `**Status:** closed (date)` and
 appends to the change log; this skill never closes a record.
 
+## Handoff block
+
+The record's `## Routing` section may carry, after its prose, one fenced
+block with the info string `hsdd-handoffs` holding JSON. The block is
+optional, and its absence keeps a record conformant. This skill writes it
+whenever it runs with `--unattended`, and may write it otherwise.
+
+````markdown
+```hsdd-handoffs
+{
+  "version": 1,
+  "handoffs": [
+    { "id": "H1", "kind": "adr-update", "skill": "hsdd-adr", "target": "ADR-003",
+      "prompt": "Amend ADR-003 for ...", "when": null, "after": [] },
+    { "id": "H7a", "kind": "citation-touch", "skill": "hsdd-contract", "target": "topic-model",
+      "prompt": "Touch topic-model@v1 for ...", "when": "cites-superseded", "after": ["H1"] }
+  ],
+  "insert_rule": "A contract change that alters what an unshipped phase implements or replays adds phase-plan-append and reconcile steps on that phase's node, before the final align."
+}
+```
+````
+
+- `id`: `H{n}` with an optional lower-case letter for a family (`H7a`).
+- `kind`: a step kind of the table below; `skill` the one the table gives
+  it; `target` in the form the table gives for that kind:
+
+  | Kind | Skill | Target |
+  |------|-------|--------|
+  | `root-spec`, `mid-level-spec`, `graft`, `promote`, `spec-touch` | `hsdd-spec` | a node id |
+  | `adr`, `adr-update` | `hsdd-adr` | an ADR id |
+  | `contract`, `contract-touch` | `hsdd-contract` | a contract slug |
+  | `citation-touch` | by the file: `hsdd-spec`, `hsdd-adr` or `hsdd-contract` | a node id, ADR id or contract slug |
+  | `phase-plan`, `phase-plan-append` | `hsdd-phase-plan` | a leaf-parent's node id |
+  | `reconcile`, `align` | `hsdd-reconcile` | node ids, comma-separated, or `all` |
+- `prompt`: the exact handoff prompt, as the record's prose gives it.
+- `when`: `null` (always dispatched) or `cites-superseded`.
+- `after`: handoff ids that must be executed or skipped first. An empty list
+  means "after the previous handoff in the list"; the first handoff waits on
+  nothing.
+- `insert_rule`: optional, plain text; the orchestrator applies it.
+
+**`cites-superseded`** holds when any of the target's files contains a
+superseded string. The superseded strings are: for every `baseline` source
+in `run.yaml`, its `path` and its `version`; and for every contract whose
+current version is `v{n}` with `n` above 0, each `{slug}@v{k}` with `k`
+below `n`, followed by a character that is not a letter, digit, `_` or `-`,
+or by the end of the text. The target's files are: for a contract,
+`hsdd/contract/{slug}.md`, `hsdd/contract/fixture/{slug}/**` and
+`hsdd/contract/schema/{slug}.schema.json`; for an ADR, its file; for a node,
+its spec file. The match is textual and counts history too: a target whose
+only old-version mentions are history is still dispatched, and its touch
+keeps them. The orchestrator evaluates the condition when the handoff comes
+up, not when the record is written.
+
+A `structural` record's block has an empty `handoffs` list, since its
+handoffs are the owner's decision. The continuation after the owner's answer
+re-classifies the request, rewrites `## Routing` with the handoffs and the
+block, and logs the change in `## Change log`.
+
+The prose stays authoritative for people, and the block must say the same
+thing: the prose quotes each handoff's prompt verbatim, in the block's order.
+
+## Unattended runs
+
+When your arguments contain `--unattended {step}`, you run as step
+`{step}` of an `hsdd-auto` run, and your dispatch file
+`hsdd/auto/dispatch/{step}.md` names your report. Then:
+
+1. At each ask point in the table below, act on its disposition.
+   `return`: write your report with `status: "stopped"` and a `stop`
+   object (the question verbatim, the rule of this skill that requires it,
+   the stop class, the options with their consequences, your
+   recommendation, what it blocks), leave your partial artifacts in place,
+   and end your turn. Never answer it yourself. `decide`: take the decision
+   and record it with `would_have_asked: true` and the class the table
+   gives, or `false` where the table gives none, unless a careful engineer
+   would have asked the owner first: then `true` with class `judgement`.
+2. Record every decision when you take it, with
+   `node hsdd/scripts/auto/decide.mjs --step {step} --stdin` and the
+   decision as JSON in the shape your dispatch file shows. Never write a
+   time or an id yourself.
+3. Do not invoke interactive companion skills such as brainstorming; the
+   run's decision policy replaces their dialogue.
+4. Copy each of this skill's quality gates (for `hsdd-phase-plan`, the
+   items of its Phase Design Checklist) verbatim into the report's
+   `self_check`, with `pass`, `fail` or `n/a` and a note. A gate that
+   requires a human act (the human confirmed, decided or stated) is `n/a`,
+   and its note names the decision that stood in for that act. So is a
+   gate that a give-way rule of the table below overrides, its note naming
+   the decision that applied the rule, and a gate whose subject this step
+   did not touch, its note reading `not exercised by this step`.
+5. A predecided answer in your dispatch file for a class in the table
+   replaces the `return` for that class: apply it, record your decision
+   citing the predecided decision's id, and continue. The exception is a
+   breaking change under `compatibility: frozen` or at `v0`, which you
+   report as a run-stop candidate whatever the predecided answers say
+   (§8.2).
+6. Where the table says a rule of this skill gives way, the recorded
+   decision replaces the human act that rule requires, and the owner's
+   later review of that decision is the act.
+
+| Ask point | Disposition | Class |
+|-----------|-------------|-------|
+| Class `structural` | return | `shape` |
+| A landing on an as-built node | decide: write the `**Promotes:**` line and order a `promote` handoff first (§9.2); the `promotion` stop is `hsdd-spec`'s, in that step | none |
+| Serializing or merging with an open intake | decide | `judgement` |
+
+When the orchestrator answers a `return` (§8.3, case B), the resumed step
+applies the answer, and the quality gate that names the human act is `n/a`
+with the orchestrator's decision id.
+
 ## Quality Gates
 
 - [ ] Every open intake was read before routing; collisions are named in
@@ -138,6 +249,8 @@ appends to the change log; this skill never closes a record.
 - [ ] `## Routing` carries the exact handoff prompt; `structural` stopped
       with options written, not a question asked.
 - [ ] No spec, contract or ADR was written by this skill.
+- [ ] The handoff block, when present, lists the same handoffs as the prose,
+      in the same order, with the same prompts.
 
 ## Anti-Rationalization
 

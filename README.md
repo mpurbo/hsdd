@@ -111,7 +111,7 @@ HSDD ships as agent skills, installable with the [`skills`](https://github.com/v
 CLI (works with Claude Code, Cursor, Codex, and 70+ agents):
 
 ```bash
-# All eleven HSDD skills (replace with your repo path)
+# All twelve HSDD skills (replace with your repo path)
 npx skills add mpurbo/hsdd
 
 # Or a single skill
@@ -143,6 +143,7 @@ re-implementing them; `hsdd-config` wires them into each phase's coding session,
 | `hsdd-checkpoint` | Run the weekly (or context-triggered) evidence pass across the spec repo and every implementation repo, emitting a progress report, a revised execution plan, a regenerated atlas, and ticked milestone gates. One pass, four views; every finding becomes a plan step or an explicit waiver. |
 | `hsdd-milestone` | Generate a campaign's stakeholder milestone document once every leaf-parent in its scope is phase-planned. Each checkpoint is a demo and a gate; externally-gated work sits in a contingent tail outside the launch gate. Re-baseline the document when the dates move. |
 | `hsdd-summary` | Render offline HTML reading aids: the plan page (root to phase cards, for a reviewer, a stakeholder or an implementer) and the checkpoint page (the newest progress report and execution plan, for the lead running the sync, each lane's executor, and stakeholders). |
+| `hsdd-auto` | Run HSDD's planning chain unattended: compute the next step, dispatch one fresh subagent per skill invocation, answer or stop on each ask point per the owner's stop policy, gate and commit each step, and record every decision for one review sitting. |
 
 ## How it works
 
@@ -171,6 +172,10 @@ not complete, phases complete.
 6. **Review** every phase: a human reads the diff and runs the verification, at a
    depth set by the phase's review tier. Then move to the next phase.
 
+```text
+hsdd-auto (unattended) -> runs the chain above, records every decision
+```
+
 Run `openspec init` once, at the repo root (the directory that holds `hsdd/`,
 where every HSDD artifact lives). One HSDD tree has one OpenSpec project; phases are
 isolated by the per-phase context switch, not by separate projects.
@@ -178,6 +183,26 @@ isolated by the per-phase context switch, not by separate projects.
 Each phase is one PE (defined above), sized so the AI run plus the human review fit
 one Claude Code rolling window. Phase sizing is the control knob for context,
 tokens, time, and quality.
+
+## Unattended runs
+
+`/hsdd-auto` runs the planning chain (steps 1 to 4, and intake handoffs) without
+you at each ask point. It dispatches one fresh subagent per skill invocation,
+gates and commits every step, and never implements a phase or passes a review
+gate. Two modes: `plan` plans an empty tree through reconcile; `intake` routes
+one change request into a planned tree through `hsdd-intake` and every handoff
+its record names.
+
+You choose the stop policy per segment. `stop` ends the run with
+`hsdd/judgement/STOP.md` at a stop-set condition (the decomposition axis, a
+breaking contract change, a collision and a few more); `decide-and-record`
+decides it and records the decision with `would_have_asked: true`. Everything
+lands in `hsdd/auto/` (plan, dispatch files, step reports, one report per
+segment) and `hsdd/judgement/` (the decision ledger, the run log, your
+`decision-reviews.jsonl`). Human review moves from each ask point to one
+sitting over the ledger: the report's "Decisions to look at first" section
+lists every answer the run gave on your behalf. Nothing starts a run on a
+timer. See the [v0.11 specification](spec/hsdd-spec-v0_11.md).
 
 ## Quickstart
 
@@ -190,18 +215,21 @@ tokens, time, and quality.
 "Reconcile the worktrees."                                      -> hsdd-reconcile
 "Set up OpenSpec config for this project."                      -> hsdd-config
 "/hsdd-phase acme.backend.auth.2"   (switch context, then opsx:new)
+"/hsdd-auto"                        (plan the tree unattended, review the ledger after)
 ```
 
 ## Learn more
 
 - [Interactive guide](docs/guide/index.html): a visual, step-by-step
   introduction for newcomers, from the tree and contracts to brownfield
-  adoption and change intake. Open it in a browser from a checkout; it works
-  offline.
+  adoption, change intake and unattended runs. Open it in a browser from a
+  checkout; it works offline.
 - [Methodology specification](spec/hsdd-spec-v0_10.md): the single current
   specification, with the full model and every settled decision and its
   provenance. The superseded delta series
   (v0.3–v0.7.1) remains in `spec/` as history; nothing requires reading it.
+- [v0.11 specification](spec/hsdd-spec-v0_11.md): the delta that adds
+  `hsdd-auto`; read it with v0.10.
 - [User's guide](docs/users-guide.md): worked examples for a simple single-level
   project and a multi-level system, plus running the project week to week.
 

@@ -1109,6 +1109,84 @@ checkpoint ticks the gates; `hsdd-milestone` runs again only to re-baseline —
 a gate red two checkpoints running, or a scope change the dates cannot absorb —
 and then states the old window and the new one together, so slips stay visible.
 
+### Unattended runs
+
+`/hsdd-auto` plans the tree, or routes one change request into it, without
+you at each ask point. It dispatches one fresh subagent per skill
+invocation, gates and commits every step, and records every decision. It
+never implements a phase, never runs `hsdd-config` and never passes a review
+gate. Start it from a clean working tree in the repository that holds
+`hsdd/`, with Node.js 20 or later and the six planning skills installed.
+
+**First run.** With no `hsdd/auto/run.yaml` on any local branch,
+`/hsdd-auto` asks ten questions in one batch, each with a proposed default:
+the run's name, root, branch, base and skills directory; who builds what;
+the sources; read-only and out-of-bounds paths; owner facts; toolchain
+prefixes; stop policy and stop set; owner files; prose rules; commit
+trailers. The proposals come from
+`node hsdd/scripts/auto/state.mjs defaults` plus the root spec's
+`## Sources`, `hsdd/conventions.md` and your agent instruction files. It
+writes the answers to `hsdd/auto/run.yaml` and never asks again. Answer
+"decide" to who builds what and the root step decides the axis itself and
+records it with `would_have_asked: true`. Later configuration changes are
+`setup` decisions of a new segment. `run.yaml` lives on the run branch: run
+`/hsdd-auto` from another branch and it names the branch that holds the file
+and asks you to check it out, instead of asking the questions again.
+
+**A plan segment.** `/hsdd-auto` plans an empty tree through reconcile: the
+root decomposition, the ADRs and contracts it names, each mid-level node,
+each leaf-parent's phase plan, the consistency items, an align, and the
+report. `/hsdd-auto status` shows where the run is and changes nothing.
+
+**An intake segment.** `/hsdd-auto intake {request path}` routes one change
+request: `hsdd-intake` writes the record, then one step per handoff the
+record names, then the consistency items, an align and the report.
+`--authority accepted-rfc|draft|ticket|incident|braindump` states how much
+the request binds (default `draft`). It never closes the intake record.
+
+**The stop policy.** Per segment, `--stop-policy stop|decide-and-record`.
+Under `stop`, a stop-set condition (`axis`, `shape`, `promotion`,
+`breaking-amend`, `collision`, `external`, `gate-twice`) ends the run with
+`hsdd/judgement/STOP.md`. Under `decide-and-record` the run decides it and
+records the decision with `would_have_asked: true` and the class. Either
+way, `external` with no in-repository alternative, a second `gate-twice`
+and three other hard stops end the run with `STOP.md`. When a segment will
+meet one class many times (an intake that breaks several stable contracts),
+decide it once, under `decide-and-record` only: the decision goes into
+`predecided` in `run.yaml` and every later prompt carries it. A predecided
+answer never covers a breaking change to a `frozen` or `v0` contract.
+
+**Answering `STOP.md`.** It holds the stopped step, the stop class, the
+question verbatim, the options with a recommendation, what the stop
+blocks, and how to resume. A bare `/hsdd-auto` is refused while it exists.
+Answer in one message and run `/hsdd-auto` with it: the answer opens a new
+segment, is recorded as an owner decision, and the stopped step continues
+with it.
+
+**Reviewing a segment.** Review moves from each ask point to one sitting.
+
+1. Read `hsdd/auto/report/{segment id}.md`. The report's "Decisions to look
+   at first" section lists every answer the run gave on your behalf (the
+   `would_have_asked` decisions); the other sections cover the steps, the
+   assumptions about your intent and what the generated record leaves out.
+2. For each decision you disagree with, or that the run should have asked
+   you, append a line to `hsdd/judgement/decision-reviews.jsonl`:
+   `decision`, `at`, `review` (`agree`, `disagree` or `should-have-asked`)
+   and a `reason` for the last two. The run never writes this file.
+3. Guidance: to reverse a decision, write the reversal as a short request
+   document and route it with `/hsdd-auto intake {path}`, or run the owning
+   skill yourself.
+4. `/hsdd-summary` re-renders the reading aids afterwards; the run does not
+   drive it.
+
+On Claude Code, the first `setup` installs permission deny rules and a Bash
+hook that keep a run inside its declared inputs. Hosts read them at session
+start, so they apply from the next session; the setup records that as a
+decision. The adapter stays installed after the run:
+`node hsdd/scripts/auto/adapter.mjs uninstall` removes exactly what install
+added. For the strongest memory isolation, start the session with
+`CLAUDE_CONFIG_DIR` set to a directory used only for the run.
+
 ### Open questions
 
 Open questions get the same discipline as contracts: minted once in the owning
