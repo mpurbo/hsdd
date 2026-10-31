@@ -334,11 +334,4 @@ flowchart TD
 
 > Reconciled 2026-11-01 by hsdd-reconcile. Drained entries are in git history.
 
-> Emitted by hsdd-phase-plan on 2026-11-01 (rewrite in place:
-> simple-login.backend.7, per
-> hsdd/management/2026-10-31-intake-prd-simple-login-v2.md: its `start`
-> test runs the service on a database created without the schema, then
-> again on the same database, as the restart test). No entry: the phase's
-> id, contracts and dependencies are unchanged, and what it proves is
-> already in booking-api@v1 (Development address, G17). Drained by
-> hsdd-reconcile; do not apply by hand.
+> Reconciled 2026-11-01 by hsdd-reconcile. Drained entries are in git history.
