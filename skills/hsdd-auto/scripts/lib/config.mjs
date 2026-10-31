@@ -20,6 +20,13 @@ export const SOURCE_KINDS = ["normative", "informative", "baseline"];
 // Every source of a (defaulted) configuration, each with its `role`: normative, informative, then baseline.
 export const sourcesOf = (config) => SOURCE_KINDS.flatMap((role) => (config.sources[role] ?? []).map((s) => ({ ...s, role })));
 
+// An authority as a prompt or a record writes it, in hsdd-intake's words (3.3): one entry per value of
+// run-config's authority enum. A value outside the map is written as it stands; an absent one stays absent.
+const AUTHORITY_TEXT = Object.freeze({
+  "accepted-rfc": "accepted RFC", "approved-prd": "approved PRD", draft: "draft", ticket: "ticket", incident: "incident", braindump: "braindump",
+});
+export const authorityText = (authority) => (Object.hasOwn(AUTHORITY_TEXT, authority) ? AUTHORITY_TEXT[authority] : authority);
+
 // A.1 "checked in code", with S-9: a segment moves a version exactly when sources.baseline is not empty.
 const codeRules = (raw) => {
   const errors = [];

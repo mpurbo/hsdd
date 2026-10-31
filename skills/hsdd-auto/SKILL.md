@@ -41,8 +41,10 @@ answer you give on the owner's behalf is listed, never hidden.
 ```
 
 Flags: `--stop-policy stop|decide-and-record` sets the opening segment's
-policy; for an intake, `--authority accepted-rfc|draft|ticket|incident|braindump`
-gives the request's authority, default `draft`. `status` runs
+policy; for an intake,
+`--authority accepted-rfc|approved-prd|draft|ticket|incident|braindump`
+gives the request's authority, default `draft`; an approved amendment to a
+PRD is `approved-prd`. `status` runs
 `node hsdd/scripts/auto/state.mjs` and shows its output (with no
 `hsdd/auto/run.yaml`, say no run is configured).
 

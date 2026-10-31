@@ -9,7 +9,7 @@ import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
 import { loadContext } from "./lib/context.mjs";
-import { ConfigError, sourcesOf } from "./lib/config.mjs";
+import { ConfigError, authorityText, sourcesOf } from "./lib/config.mjs";
 import { KINDS, RAISED_WHEN, skillFor, targetType, writeSet } from "./lib/kinds.mjs";
 import { P, reportPath, stepPaths } from "./lib/paths.mjs";
 import { RenderError, renderTemplate, slotNames } from "./lib/render.mjs";
@@ -208,7 +208,7 @@ const segmentContext = (ctx) => {
 const sourceLines = (config) => {
   const all = sourcesOf(config);
   if (all.length === 0) return "- no sources are configured;";
-  return all.map((s) => `- ${code(s.path)}: ${ROLE_TEXT[s.role]}, cited as ${code(s.cite)}, version ${s.version ?? "not given"}, authority ${s.authority ?? "absent"};`).join("\n");
+  return all.map((s) => `- ${code(s.path)}: ${ROLE_TEXT[s.role]}, cited as ${code(s.cite)}, version ${s.version ?? "not given"}, authority ${authorityText(s.authority) ?? "absent"};`).join("\n");
 };
 
 const toolchainLines = ({ rules = [], commands = {} }) => {
@@ -331,7 +331,7 @@ export const instructionFills = (ctx, next, routed = routedItems(ctx, next)) => 
   reason: asReason(reasonText(ctx, next, routed)),
   record: recordText(ctx, next),
   request: ctx.segment.request ?? null,
-  authority: ctx.segment.authority ?? null,
+  authority: authorityText(ctx.segment.authority) ?? null,
 });
 
 const invocationText = (ctx, next, c4) => {

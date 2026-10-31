@@ -258,9 +258,14 @@ needs its own model call, which is building the judge first.
 
 Flags: `--stop-policy stop|decide-and-record` overrides the opening
 segment's policy; for an intake, `--authority
-accepted-rfc|draft|ticket|incident|braindump` gives the request's authority
-(default `draft`). Prompts render these in `hsdd-intake`'s words:
-`accepted-rfc` as "accepted RFC", the others unchanged.
+accepted-rfc|approved-prd|draft|ticket|incident|braindump` gives the
+request's authority (default `draft`), from v0.10.0 §11.2's list; an
+approved amendment to a PRD is `approved-prd`, as `hsdd-intake` says.
+Prompts and records render an authority in `hsdd-intake`'s words, through
+one map for every value: `accepted-rfc` as "accepted RFC", `approved-prd` as
+"approved PRD", the others as written. So the intake record's
+`**Request:**` line, and the root's `## Sources` entry that
+`hsdd-reconcile` copies from it, carry those words.
 
 The slash command is a one-line delegator, `commands/hsdd-auto.md`, like
 every other skill's (v0.10.0 §14.3).
@@ -451,7 +456,7 @@ JSON Schema is appendix A.1.
 | `owner_facts` | yes | Facts the owner states, one string each. Steps use them as given and never re-decide them. |
 | `preferences` | no | The owner's standing engineering preferences, one string each, passed to every step. |
 | `prose_rules` | no | `banned_chars` and `banned_phrases` (lists), `token_forms` (§7.6: `empty_cell`, `id_separator`, `reason_separator`, `source_separator`), and `level`: `warn` (default) or `error`, how the gate treats a violation. |
-| `sources` | yes | `normative`, `informative`, `baseline`: lists of `{path, cite, version, authority}`. `cite` is the short name prompts and artifacts use when citing it (`Spec`, `Guide`). `version` is the version string the document goes by (`v0.15.1`); it is required for every source of a segment that moves a version (§9.3), because §12.2's `cites-superseded` condition matches on it. `authority` is what the root spec's `## Sources` records for the document (`accepted-rfc`, `draft`, `ticket`, `incident` or `braindump`); when absent, the `root-spec` step decides it and records the decision. |
+| `sources` | yes | `normative`, `informative`, `baseline`: lists of `{path, cite, version, authority}`. `cite` is the short name prompts and artifacts use when citing it (`Spec`, `Guide`). `version` is the version string the document goes by (`v0.15.1`); it is required for every source of a segment that moves a version (§9.3), because §12.2's `cites-superseded` condition matches on it. `authority` is what the root spec's `## Sources` records for the document (`accepted-rfc`, `approved-prd`, `draft`, `ticket`, `incident` or `braindump`, rendered as §3.3 says); when absent, the `root-spec` step decides it and records the decision. |
 | `read_only` | yes | Paths no step may write. Always includes every source path. |
 | `out_of_bounds` | no | Paths no agent in the run may read, as the owner writes them (absolute, `~/`, or project-relative). |
 | `owner_files` | no | Paths no step may change, hashed at the start of each segment (§6.10). |
@@ -2790,7 +2795,7 @@ checks them in code.
           "stop_policy": { "$ref": "#/$defs/stopPolicy" },
           "first_step": { "$ref": "#/$defs/stepRef" },
           "request": { "type": "string", "minLength": 1 },
-          "authority": { "enum": ["accepted-rfc", "draft", "ticket", "incident", "braindump"] }
+          "authority": { "enum": ["accepted-rfc", "approved-prd", "draft", "ticket", "incident", "braindump"] }
         }
       }
     }
@@ -2807,7 +2812,7 @@ checks them in code.
           "path": { "type": "string", "minLength": 1 },
           "cite": { "type": "string", "minLength": 1 },
           "version": { "type": "string", "minLength": 1 },
-          "authority": { "enum": ["accepted-rfc", "draft", "ticket", "incident", "braindump"] }
+          "authority": { "enum": ["accepted-rfc", "approved-prd", "draft", "ticket", "incident", "braindump"] }
         }
       }
     },
@@ -3719,4 +3724,4 @@ block, and the two agree.
 | `{proposing_spec}` | The first spec file, in the root spec's order, that cites the ADR. |
 | `{reason}` | The text of the `insert-step` item the step executes, or of the routed items it closes, joined; or for an `align` from a stage rule, `the consistency pass` in plan mode and `the segment's handoffs` in intake mode. |
 | `{record}` | The path of the segment's intake record; in a plan segment, `the insert-step item {id}` that ordered the step. |
-| `{request}`, `{authority}` | The segment entry. |
+| `{request}`, `{authority}` | The segment entry; `{authority}` in `hsdd-intake`'s words (§3.3). |

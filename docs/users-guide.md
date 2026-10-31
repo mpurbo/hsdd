@@ -1141,8 +1141,9 @@ report. `/hsdd-auto status` shows where the run is and changes nothing.
 **An intake segment.** `/hsdd-auto intake {request path}` routes one change
 request: `hsdd-intake` writes the record, then one step per handoff the
 record names, then the consistency items, an align and the report.
-`--authority accepted-rfc|draft|ticket|incident|braindump` states how much
-the request binds (default `draft`). It never closes the intake record.
+`--authority accepted-rfc|approved-prd|draft|ticket|incident|braindump`
+states how much the request binds (default `draft`). It never closes the
+intake record.
 
 **The stop policy.** Per segment, `--stop-policy stop|decide-and-record`.
 Under `stop`, a stop-set condition (`axis`, `shape`, `promotion`,

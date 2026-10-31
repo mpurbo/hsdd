@@ -2,10 +2,10 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { writeFileSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { loadConfig, withDefaults, currentSegment, ConfigError } from "../skills/hsdd-auto/scripts/lib/config.mjs";
+import { loadConfig, withDefaults, currentSegment, ConfigError, authorityText } from "../skills/hsdd-auto/scripts/lib/config.mjs";
 import { git, GitError, headSha, currentBranch, branchExists, changedPaths, indexEmpty, headSubject, commitStamp, showFile, revExists, defaultBranch, listTree, changedSince } from "../skills/hsdd-auto/scripts/lib/git.mjs";
 import { STAMP_RE } from "../skills/hsdd-auto/scripts/lib/time.mjs";
-import { validate } from "../skills/hsdd-auto/scripts/lib/schema.mjs";
+import { loadSchema, validate } from "../skills/hsdd-auto/scripts/lib/schema.mjs";
 import { baseConfig, makeRepo, gitIn, run, fakeStep, addSegment, installScripts, SCRIPTS } from "./helpers/auto-repo.mjs";
 
 const intake = { id: "2026-10-22-intake-x", mode: "intake", opened_at: "2026-10-22T10:00:00Z", instruction: "do it", stop_policy: "stop", first_step: "S00", request: "ref/x.md", authority: "ticket" };
@@ -64,6 +64,19 @@ test("loadConfig code rules", () => {
   assert.doesNotMatch(msg, /ref\/old\.md/);
   assert.match(errorsOf({ sources: { normative: [{ path: "ref/new.md", cite: "Spec", version: "v1" }], baseline: [{ path: "ref/old.md", cite: "Spec" }] } }), /ref\/old\.md/);
   assert.equal(errorsOf({ sources: { normative: [{ path: "ref/new.md", cite: "Spec" }] } }), null);
+});
+// v0.10.2's hsdd-intake list, in its order; a run.yaml value renders in its words (spec 3.3).
+const AUTHORITIES = ["accepted-rfc", "approved-prd", "draft", "ticket", "incident", "braindump"];
+test("an authority is one of hsdd-intake's, approved-prd among them, in a segment and a source", () => {
+  const schema = loadSchema("run-config");
+  assert.deepEqual(schema.properties.segments.items.properties.authority.enum, AUTHORITIES);
+  assert.deepEqual(schema.$defs.sources.items.properties.authority.enum, AUTHORITIES);
+  assert.equal(errorsOf({ segments: [{ ...intake, authority: "approved-prd" }] }), null);
+  assert.equal(errorsOf({ sources: { normative: [{ path: "ref/spec.md", cite: "Spec", version: "v1", authority: "approved-prd" }] } }), null);
+  assert.match(errorsOf({ segments: [{ ...intake, authority: "approved PRD" }] }), /authority/);
+});
+test("authorityText renders every authority with one map: acronyms restored, the rest as written", () => {
+  assert.deepEqual(AUTHORITIES.map(authorityText), ["accepted RFC", "approved PRD", "draft", "ticket", "incident", "braindump"]);
 });
 test("read_only covers every source path", () => {
   const sources = {
