@@ -1,21 +1,36 @@
 // Test helper: answers stubbed `fetch` calls with the contract fixtures in
-// hsdd/contract/fixture/: auth-api@v1's and profile-api@v2's. profile-api@v1's
-// are refused, so no test of this node can depend on them (simple-login.web.4).
-// Only a fixture's `response` is used to answer; its `request.method` and
-// `request.path` pick which fixture answers a call.
+// hsdd/contract/fixture/: auth-api@v1's, profile-api@v2's and booking-api@v1's.
+// profile-api@v1's are refused, so no test of this node can depend on them
+// (simple-login.web.4). Only a fixture's `response` is used to answer; its
+// `request.method` and `request.path` pick which fixture answers a call, and
+// its `clock` and `given` only explain the answer: they are never sent.
 import { readdirSync, readFileSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { vi } from 'vitest'
 
 /** The fixture directories this node's tests may read. */
-const FIXTURE_APIS = ['auth-api', 'profile-api.v2'] as const
+const FIXTURE_APIS = ['auth-api', 'profile-api.v2', 'booking-api'] as const
 
 export type FixtureApi = (typeof FIXTURE_APIS)[number]
+
+/** A booking that exists before a booking-api@v1 fixture's request. */
+export interface GivenBooking {
+  id: string
+  account: string
+  roomId: string
+  title: string
+  start: string
+  end: string
+}
 
 export interface Fixture {
   name: string
   description: string
+  /** booking-api@v1 only: the instant the producer's clock reads. */
+  clock?: string
+  /** booking-api@v1 only: the bookings that exist before the request. */
+  given?: GivenBooking[]
   request: { method: string; path: string; headers: Record<string, string>; body?: unknown }
   response: { status: number; body: unknown }
   replay: 'exact' | 'schema'
@@ -75,22 +90,41 @@ function install(answer: (call: RecordedCall, signal: AbortSignal | undefined) =
   return { calls }
 }
 
+/** A 204 has no body: `Response` throws when given one, even `null` as JSON. */
+function responseOf(fixture: Fixture): Response {
+  const { status, body } = fixture.response
+  if (status === 204) return new Response(null, { status })
+  return new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } })
+}
+
+/**
+ * Answers each call with the fixture for its method and path. Several fixtures
+ * on one route answer in the order given, and the last one repeats (a list
+ * fetched before and after a Cancel).
+ */
 export function stubFetch(...fixtures: Fixture[]): FetchStub {
-  const routes = new Map<string, Fixture>()
+  const routes = new Map<string, Fixture[]>()
   for (const fixture of fixtures) {
     const route = routeOf(fixture.request.method, fixture.request.path)
-    if (routes.has(route)) throw new Error(`two fixtures for ${route}`)
-    routes.set(route, fixture)
+    routes.set(route, [...(routes.get(route) ?? []), fixture])
   }
   return install(async (call) => {
     const route = routeOf(call.method, call.path)
-    const fixture = routes.get(route)
-    if (!fixture) throw new Error(`no fixture for ${route}`)
-    return new Response(JSON.stringify(fixture.response.body), {
-      status: fixture.response.status,
-      headers: { 'content-type': 'application/json' },
-    })
+    const queue = routes.get(route)
+    const fixture = queue?.[0]
+    if (!queue || !fixture) throw new Error(`no fixture for ${route}`)
+    if (queue.length > 1) queue.shift()
+    return responseOf(fixture)
   })
+}
+
+/**
+ * The fixture, answering at `path` instead of its own: for a call no fixture
+ * names, such as a Cancel on a listed booking. Method, status and body stay
+ * the fixture's.
+ */
+export function atPath(fixture: Fixture, path: string): Fixture {
+  return { ...fixture, request: { ...fixture.request, path } }
 }
 
 export function stubFetchUnreachable(): FetchStub {

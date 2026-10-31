@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
-import { listFixtures, loadFixture, stubFetch, stubFetchHanging, stubFetchUnreachable, type FixtureApi } from './fetchStub'
+import { atPath, listFixtures, loadFixture, stubFetch, stubFetchHanging, stubFetchUnreachable, type FixtureApi } from './fetchStub'
 
 describe('fixture-backed fetch stub', () => {
-  it('lists the five fixtures of each API', () => {
+  it('lists the fixtures of each API', () => {
     expect(listFixtures('auth-api').map((f) => f.name)).toEqual([
       'login-empty-username',
       'login-missing-password',
@@ -17,6 +17,25 @@ describe('fixture-backed fetch stub', () => {
       'me-no-token',
       'me-unknown-token',
     ])
+    expect(listFixtures('booking-api')).toHaveLength(35)
+  })
+
+  it("types a booking fixture's clock and given, and never sends them", async () => {
+    const fixture = loadFixture('booking-api', 'book-overlap')
+    const clock: string | undefined = fixture.clock
+    expect(clock).toBe('2026-11-04T12:00:00.000Z')
+    expect(fixture.given?.[0]?.id).toBe('00000000-0000-4000-8000-000000000023')
+    stubFetch(fixture)
+    const res = await fetch('/api/bookings', { method: 'POST', body: JSON.stringify(fixture.request.body) })
+    expect(res.status).toBe(409)
+    expect(await res.json()).toEqual(fixture.response.body)
+  })
+
+  it('answers a 204 with no body', async () => {
+    stubFetch(loadFixture('booking-api', 'cancel-my-booking'))
+    const res = await fetch('/api/bookings/00000000-0000-4000-8000-000000000031', { method: 'DELETE' })
+    expect(res.status).toBe(204)
+    expect(await res.text()).toBe('')
   })
 
   it('refuses the profile-api@v1 fixtures: this node consumes profile-api@v2', () => {
@@ -50,10 +69,24 @@ describe('fixture-backed fetch stub', () => {
     await expect(fetch('/api/me')).rejects.toThrow('no fixture for GET /api/me')
   })
 
-  it('refuses two fixtures on one route', () => {
-    expect(() =>
-      stubFetch(loadFixture('auth-api', 'login-success'), loadFixture('auth-api', 'login-wrong-password')),
-    ).toThrow('two fixtures for POST /api/login')
+  it('answers several fixtures on one route in the order given, the last repeating', async () => {
+    const budi = loadFixture('booking-api', 'my-bookings-budi')
+    const none = loadFixture('booking-api', 'my-bookings-none')
+    stubFetch(budi, none)
+    const bodies = []
+    for (let i = 0; i < 3; i++) bodies.push(await (await fetch('/api/me/bookings')).json())
+    expect(bodies).toEqual([budi.response.body, none.response.body, none.response.body])
+  })
+
+  it("atPath answers a call at the named path with the fixture's response", async () => {
+    const started = loadFixture('booking-api', 'cancel-started')
+    stubFetch(atPath(started, '/api/bookings/00000000-0000-4000-8000-000000000011'))
+    const res = await fetch('/api/bookings/00000000-0000-4000-8000-000000000011', { method: 'DELETE' })
+    expect(res.status).toBe(422)
+    expect(await res.json()).toEqual(started.response.body)
+    await expect(fetch(started.request.path, { method: 'DELETE' })).rejects.toThrow(
+      'no fixture for DELETE /api/bookings/00000000-0000-4000-8000-000000000033',
+    )
   })
 
   it('simulates an unreachable server', async () => {
