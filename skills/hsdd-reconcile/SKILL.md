@@ -248,8 +248,9 @@ When your arguments contain `--unattended {step}`, you run as step
 | A `request` answer that breaks no consumer | decide (the rule "resolve `request` entries with the human" gives way) | `judgement` |
 | Step 5's cross-cutting answer for `hsdd-adr`; step 7's `hsdd-contract` step for a missing validation artifact | route an `insert-step` (`adr` or `adr-update`; `contract-touch`), and never write the ADR or the artifact yourself | none |
 
-No step kind invokes reconcile's grandfather marking, discharge or retirement
-(its steps 8 and 9), so their inputs never arise in a run.
+No step kind invokes reconcile's grandfather marking, discharge, the
+migrated-consumer move or retirement (its steps 8 and 9), so their inputs
+never arise in a run.
 
 ## Quality Gates
 
