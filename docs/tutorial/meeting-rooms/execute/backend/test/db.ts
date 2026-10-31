@@ -79,11 +79,11 @@ export async function createTestDatabase(apply: (pool: Pool) => Promise<void> = 
   };
 }
 
-/** This file's database: created before its tests, dropped after them. */
-export function testDatabase(): Omit<TestDatabase, "drop"> {
+/** This file's database: created before its tests, dropped after them. `empty` skips the schema (for a test that starts the service on it). */
+export function testDatabase(options: { empty?: boolean } = {}): Omit<TestDatabase, "drop"> {
   let db: TestDatabase | undefined;
   beforeAll(async () => {
-    db = await createTestDatabase();
+    db = await createTestDatabase(options.empty === true ? async () => {} : applySchema);
   });
   afterAll(async () => {
     await db?.drop();
