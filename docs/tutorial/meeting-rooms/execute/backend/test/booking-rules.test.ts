@@ -148,3 +148,39 @@ describe("POST /api/bookings request (G2, G8)", () => {
     expect(result.ok && result.value.title).toBe("  Retro  ");
   });
 });
+
+describe("POST /api/bookings limits, in order (G7, G9, G10, G15)", () => {
+  const at = (start: string, end: string, now = NOW) => {
+    const result = book({ ...valid, start, end }, "application/json", now);
+    return result.ok ? "ok" : result.error.code;
+  };
+
+  it("G9: exactly 8 hours is accepted, 8 hours 15 minutes refused", () => {
+    expect(at("2026-11-05T01:00:00.000Z", "2026-11-05T09:00:00.000Z")).toBe("ok");
+    expect(at("2026-11-05T01:00:00.000Z", "2026-11-05T09:15:00.000Z")).toBe("BOOKING_TOO_LONG");
+  });
+
+  it("G9: length is elapsed time: London 00:00 to 08:00 on its 25-hour day is 9 hours", () => {
+    expect(at("2027-10-30T23:00:00.000Z", "2027-10-31T08:00:00.000Z", new Date("2027-10-01T09:00:00.000Z"))).toBe("BOOKING_TOO_LONG");
+  });
+
+  it("G7: a clock reading start, or later, has started; a millisecond before has not", () => {
+    expect(at(valid.start, valid.end, new Date(valid.start))).toBe("BOOKING_STARTED");
+    expect(at(valid.start, valid.end, new Date("2026-11-05T02:30:00.000Z"))).toBe("BOOKING_STARTED");
+    expect(at(valid.start, valid.end, new Date("2026-11-05T01:59:59.999Z"))).toBe("ok");
+  });
+
+  it("G10: 8,760 hours ahead is accepted, 8,760 hours 15 minutes refused", () => {
+    const now = new Date("2026-11-04T00:00:00.000Z");
+    expect(Date.parse("2027-11-04T00:00:00.000Z") - now.getTime()).toBe(8760 * 60 * 60 * 1000);
+    expect(at("2027-11-04T00:00:00.000Z", "2027-11-04T01:00:00.000Z", now)).toBe("ok");
+    expect(at("2027-11-04T00:15:00.000Z", "2027-11-04T01:15:00.000Z", now)).toBe("BOOKING_TOO_FAR_AHEAD");
+  });
+
+  it("G15: the first rule that applies answers", () => {
+    expect(at("2026-11-05T01:00:00.000Z", "2026-11-05T09:15:00.000Z", new Date("2026-11-05T02:00:00.000Z"))).toBe("BOOKING_TOO_LONG");
+    expect(at("2028-01-01T00:00:00.000Z", "2028-01-01T09:00:00.000Z")).toBe("BOOKING_TOO_LONG");
+    const invalidAndLong = book({ ...valid, start: "2026-11-05T01:00:00.000Z", end: "2026-11-05T09:15:00.000Z", title: "" }, "application/json", new Date("2026-11-05T02:00:00.000Z"));
+    expect(invalidAndLong).toStrictEqual(refused);
+  });
+});

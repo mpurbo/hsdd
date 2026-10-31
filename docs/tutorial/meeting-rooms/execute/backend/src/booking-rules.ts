@@ -31,6 +31,11 @@ export function checkRoomsQuery(query: unknown): Result<RoomsQuery, { code: "VAL
   return range.from.getTime() < range.to.getTime() ? { ok: true, value: range } : fail("VALIDATION_FAILED");
 }
 
+/** G9: the longest booking, 8 hours of elapsed time. */
+export const MAX_BOOKING_MS = 8 * 60 * 60 * 1000;
+/** G10: the latest start, 8,760 hours (365 days) after the clock, the boundary included. */
+export const MAX_AHEAD_MS = 8760 * 60 * 60 * 1000;
+
 export type NewBookingRequest = { contentType: string | undefined; body: unknown; accountId: string; now: Date };
 export type NewBookingFailure = { code: "VALIDATION_FAILED" | "BOOKING_TOO_LONG" | "BOOKING_STARTED" | "BOOKING_TOO_FAR_AHEAD" };
 
@@ -53,15 +58,22 @@ const isTitle = (value: unknown): value is string => {
 
 const isRoomId = (value: unknown): value is string => ROOMS.some((room) => room.id === value);
 
-/** POST /api/bookings: the request's shape (400), kept exactly as sent; other fields are ignored. */
+/**
+ * POST /api/bookings: the request's shape (400), then the limits in booking-api@v1's
+ * order (G15). The title is kept exactly as sent; other fields are ignored.
+ */
 export function checkNewBooking(request: NewBookingRequest): Result<NewBooking, NewBookingFailure> {
-  const { contentType, body, accountId } = request;
+  const { contentType, body, accountId, now } = request;
   if (!isJson(contentType) || !isObject(body)) return fail("VALIDATION_FAILED");
   const { roomId, start, end, title } = body;
   if (!isRoomId(roomId) || !isQuarterHourInstant(start) || !isQuarterHourInstant(end) || !isTitle(title)) {
     return fail("VALIDATION_FAILED");
   }
   const booking = { roomId, accountId, title, start: new Date(start), end: new Date(end) };
-  if (booking.end.getTime() <= booking.start.getTime()) return fail("VALIDATION_FAILED");
+  const [startMs, endMs, nowMs] = [booking.start.getTime(), booking.end.getTime(), now.getTime()];
+  if (endMs <= startMs) return fail("VALIDATION_FAILED");
+  if (endMs - startMs > MAX_BOOKING_MS) return fail("BOOKING_TOO_LONG");
+  if (nowMs >= startMs) return fail("BOOKING_STARTED");
+  if (startMs - nowMs > MAX_AHEAD_MS) return fail("BOOKING_TOO_FAR_AHEAD");
   return { ok: true, value: booking };
 }
