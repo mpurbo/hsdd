@@ -1160,7 +1160,9 @@ orchestrator then:
   step's sidecar (`decide.mjs --step {step} --by orchestrator`, with
   `would_have_asked: true` and the class, the subagent's options plus any it
   adds, and a `why` for the owner reading cold that names the signal that
-  would have changed it). It resumes the same subagent with
+  would have changed it). An answer to a `breaking-amend` stop names the
+  migration mode, as a predecided one does (§8.4). It resumes the same
+  subagent with
   `dispatch.mjs --resume {step} --reason answer --message-file {file}`, whose
   message gives the answer and the decision id. The step continues; nothing is committed in between. When the
   host cannot resume a subagent, the orchestrator instead commits the step as
@@ -1216,6 +1218,11 @@ that meets that class applies the answer, records its own decision with
 `would_have_asked: true`, the class, and the predecided decision's id in its
 evidence, and does not stop. Each such decision is therefore still listed
 for review.
+
+A predecided `breaking-amend` answer names the migration mode, `coexisting`
+or `lockstep` (v0.10.0 §3.5), because every bump it covers needs one. A step
+whose answer names no mode decides it and records that decision with the
+class `breaking-amend` (§12.1).
 
 ### 8.5 Reviewing a step
 
@@ -2121,6 +2128,9 @@ items are unchanged. A changed decision supersedes instead." The
 | A breaking change to a `stable` contract under `compatibility: versioned` | return. The skill applies its versioning rule itself, so this stop is the section's own: `skill_rule` quotes its sentence "under an unattended run, a breaking change to a `stable` contract under `compatibility: versioned` is returned to the orchestrator" | `breaking-amend` |
 | A breaking change to a `frozen` contract, or to a `v0` contract | report it as a run-stop candidate; no predecided answer applies (a frozen contract takes a new contract, a `v0` one a redesign) | `breaking-amend` |
 | A breaking change to a `draft` contract | decide between `v{n+1}` with a migration note and a change in place with a `## Versioning` line (the rule "a breaking change creates `v{n+1}`" gives way for drafts) | `judgement` |
+| The migration mode of a breaking change, `coexisting` or `lockstep` | decide, `would_have_asked: true`, unless the bump's answer (predecided, the orchestrator's or the owner's) names the mode | `breaking-amend`; `judgement` for a `draft` contract |
+| Under `lockstep`, a consumer node of v{n} with no migration phase planned | route an `insert-step` of kind `phase-plan-append` on that node | none |
+| The ADR `affects` handoff of a bump | route an `insert-step` of kind `adr-update` on each such ADR, and never edit the ADR yourself | none |
 | Interface and guarantee choices the sources leave open | decide | `judgement` when a careful engineer would ask |
 
 `hsdd-contract`'s template gains: the front-matter field `governed_by`
@@ -2151,6 +2161,7 @@ and the new emission date line of the pending section names the rewrite."
 | A collision | return | `collision` |
 | An `amend` or a `request` answer that breaks a consumer of a `stable` contract under `compatibility: versioned` (`frozen` or `v0`: a run-stop candidate, §8.2) | return | `breaking-amend` |
 | The same for a `draft` contract | decide (the rule that it "goes to the human" gives way for drafts) | `judgement` |
+| The migration mode of the next version a breaking answer writes (step 5), `coexisting` or `lockstep` | decide, `would_have_asked: true`, unless the bump's answer (predecided, the orchestrator's or the owner's) names the mode | `breaking-amend`; `judgement` for a `draft` contract |
 | A `request` answer that breaks no consumer | decide (the rule "resolve `request` entries with the human" gives way) | `judgement` |
 | Step 5's cross-cutting answer for `hsdd-adr`; step 7's `hsdd-contract` step for a missing validation artifact | route an `insert-step` (`adr` or `adr-update`; `contract-touch`), and never write the ADR or the artifact yourself | none |
 
@@ -2533,6 +2544,7 @@ without the packaging.
 | Stop policy | Per segment: `stop` or `decide-and-record`; a hard stop for needs outside the repository (§8.2). | field-tested for `decide-and-record`; the `stop` path is reasoned-only |
 | Stopped steps | Committed as `stopped`, then continued by a new step once the stop is resolved; an answered stop resumes the same subagent instead (§8.3). | reasoned-only |
 | Answering stops in advance | Predecided answers per stop class (§8.4). | field-tested |
+| A bump's migration mode | Part of the `breaking-amend` answer, so a bump costs one stop and one predecided answer; a step whose answer names no mode decides it, recorded with that class (§8.4, §12.1). A separate stop class would keep a `stop`-policy run asking the owner about the mode, at a second stop per bump. | reasoned-only |
 | Rework | Resume the same subagent first, within a limit (§8.6). | field-tested (once) |
 | Waiting | For the hand-back, never polling (§8.8). | field-tested |
 | Owner files | Hash snapshot per segment, checked by the gate (§6.10). | field-tested |
@@ -3650,9 +3662,11 @@ when: the file and its validation paths exist.
 contract's own `## Versioning`. A breaking change to a `stable` contract is a
 `breaking-amend` stop unless a predecided answer covers it; then apply the
 answer; under `compatibility: frozen` or at `v0` it is a run-stop candidate
-whatever the predecided answers say (§8.2). Update the fixtures of the
-version you change; a new version writes its own schema and fixtures beside
-the old ones. Done when: the change is in
+whatever the predecided answers say (§8.2). The answer names the migration
+mode, `coexisting` or `lockstep`; when it names none, decide the mode and
+record it (§12.1). Update the fixtures of the version you change; a new
+version writes its own schema and fixtures beside the old ones. Done when:
+the change is in
 place, classified and recorded.
 
 **`citation-touch`** (`hsdd-contract`, `hsdd-adr` or `hsdd-spec`). Default

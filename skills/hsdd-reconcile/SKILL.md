@@ -244,6 +244,7 @@ When your arguments contain `--unattended {step}`, you run as step
 | A collision | return | `collision` |
 | An `amend` or a `request` answer that breaks a consumer of a `stable` contract under `compatibility: versioned` (`frozen` or `v0`: a run-stop candidate, §8.2) | return | `breaking-amend` |
 | The same for a `draft` contract | decide (the rule that it "goes to the human" gives way for drafts) | `judgement` |
+| The migration mode of the next version a breaking answer writes (step 5), `coexisting` or `lockstep` | decide, `would_have_asked: true`, unless the bump's answer (predecided, the orchestrator's or the owner's) names the mode | `breaking-amend`; `judgement` for a `draft` contract |
 | A `request` answer that breaks no consumer | decide (the rule "resolve `request` entries with the human" gives way) | `judgement` |
 | Step 5's cross-cutting answer for `hsdd-adr`; step 7's `hsdd-contract` step for a missing validation artifact | route an `insert-step` (`adr` or `adr-update`; `contract-touch`), and never write the ADR or the artifact yourself | none |
 
