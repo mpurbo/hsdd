@@ -4,6 +4,7 @@ version: v1
 status: stable
 kind: api
 owner: simple-login.backend
+governed_by: [ADR-001]
 compatibility: versioned
 produced_by: [simple-login.backend.2]
 consumers: [simple-login.web.1, simple-login.web.2, simple-login.integration.1, simple-login.integration.2]
