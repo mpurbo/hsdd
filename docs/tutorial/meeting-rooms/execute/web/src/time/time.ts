@@ -13,6 +13,10 @@ type WallClock = {
   readonly offsetMs: number // wall time as if UTC, minus the instant (truncated to the second)
 }
 
+function fail(type: string): never {
+  throw new RangeError(`Intl gave no ${type} part`)
+}
+
 // The one wall-clock reader: a single formatToParts call per instant.
 function wallClock(ms: number, zone: ZoneName): WallClock {
   const parts = new Intl.DateTimeFormat('en-GB', {
@@ -26,7 +30,7 @@ function wallClock(ms: number, zone: ZoneName): WallClock {
     second: '2-digit',
   }).formatToParts(new Date(ms))
   const field = (type: Intl.DateTimeFormatPartTypes): string =>
-    parts.find((p) => p.type === type)?.value ?? ''
+    parts.find((p) => p.type === type)?.value ?? fail(type)
   const year = field('year').padStart(4, '0')
   const [month, day, hour, minute] = [
     field('month'),
@@ -65,4 +69,67 @@ export function sameZone(a: ZoneName, b: ZoneName): boolean {
 
 export function todayIn(now: Instant, zone: ZoneName): IsoDate {
   return wallClock(Date.parse(now), zone).date
+}
+
+const QUARTER_MS = 15 * 60_000
+const HOUR_MS = 60 * 60_000
+const MAX_BOOKING_MS = 8 * HOUR_MS
+
+// Design note 5: one validator for every function that takes an IsoDate.
+// Returns the date's UTC midnight in ms; throws RangeError unless it is a real YYYY-MM-DD.
+function dateToUtcMs(date: IsoDate): number {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(date)
+  if (m === null) throw new RangeError(`Not a YYYY-MM-DD date: ${JSON.stringify(date)}`)
+  const ms = Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3]))
+  if (new Date(ms).toISOString().slice(0, 10) !== date) {
+    throw new RangeError(`Not a real calendar date: ${date}`)
+  }
+  return ms
+}
+
+// Calendar arithmetic, never 24 hours of instants.
+function nextDate(date: IsoDate): IsoDate {
+  const d = new Date(dateToUtcMs(date))
+  return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate() + 1))
+    .toISOString()
+    .slice(0, 10)
+}
+
+// First quarter-hour instant whose wall date is >= date (design note 2), as ms.
+function startOf(date: IsoDate, zone: ZoneName): number {
+  const midnight = dateToUtcMs(date)
+  const from = midnight - 15 * HOUR_MS
+  const to = midnight + 15 * HOUR_MS
+  for (let ms = from; ms <= to; ms += QUARTER_MS) {
+    if (wallClock(ms, zone).date >= date) return ms
+  }
+  throw new RangeError(`No start found for ${date}`)
+}
+
+export function dayRange(date: IsoDate, zone: ZoneName): DayRange {
+  return {
+    start: new Date(startOf(date, zone)).toISOString(),
+    end: new Date(startOf(nextDate(date), zone)).toISOString(),
+  }
+}
+
+export function startOptions(date: IsoDate, zone: ZoneName, now: Instant): readonly Instant[] {
+  const start = startOf(date, zone)
+  const end = startOf(nextDate(date), zone)
+  const nowMs = Date.parse(now)
+  const out: Instant[] = []
+  for (let ms = start; ms < end; ms += QUARTER_MS) {
+    if (ms > nowMs) out.push(new Date(ms).toISOString())
+  }
+  return out
+}
+
+export function endOptions(start: Instant, date: IsoDate, zone: ZoneName): readonly Instant[] {
+  const startMs = Date.parse(start)
+  const limit = Math.min(startMs + MAX_BOOKING_MS, startOf(nextDate(date), zone))
+  const out: Instant[] = []
+  for (let ms = startMs + QUARTER_MS; ms <= limit; ms += QUARTER_MS) {
+    out.push(new Date(ms).toISOString())
+  }
+  return out
 }
