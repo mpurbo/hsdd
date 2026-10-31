@@ -28,9 +28,13 @@ function parseInstant(instant: Instant): number {
   return ms
 }
 
-// The one wall-clock reader: a single formatToParts call per instant.
-function wallClock(ms: number, zone: ZoneName): WallClock {
-  const parts = new Intl.DateTimeFormat('en-GB', {
+// Memoization keyed by zone: observably pure, bounded by the zones in use, and independent of
+// TZ because every formatter has an explicit timeZone.
+const wallClockFormats = new Map<ZoneName, Intl.DateTimeFormat>()
+function wallClockFormat(zone: ZoneName): Intl.DateTimeFormat {
+  const cached = wallClockFormats.get(zone)
+  if (cached !== undefined) return cached
+  const made = new Intl.DateTimeFormat('en-GB', {
     timeZone: zone,
     hourCycle: 'h23',
     year: 'numeric',
@@ -39,7 +43,14 @@ function wallClock(ms: number, zone: ZoneName): WallClock {
     hour: '2-digit',
     minute: '2-digit',
     second: '2-digit',
-  }).formatToParts(new Date(ms))
+  })
+  wallClockFormats.set(zone, made)
+  return made
+}
+
+// The one wall-clock reader: a single formatToParts call per instant.
+function wallClock(ms: number, zone: ZoneName): WallClock {
+  const parts = wallClockFormat(zone).formatToParts(new Date(ms))
   const field = (type: Intl.DateTimeFormatPartTypes): string =>
     parts.find((p) => p.type === type)?.value ?? fail(type)
   const year = field('year').padStart(4, '0')
