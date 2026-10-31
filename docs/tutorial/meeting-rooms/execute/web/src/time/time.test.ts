@@ -1,4 +1,7 @@
-import { describe, expect, it } from 'vitest'
+import { readdirSync, readFileSync, statSync } from 'node:fs'
+import { dirname, join, relative } from 'node:path'
+import { fileURLToPath } from 'node:url'
+import { afterEach, describe, expect, it } from 'vitest'
 import {
   asTimeZone,
   dayRange,
@@ -205,5 +208,54 @@ describe('formatRange', () => {
   })
   it('reads 2027-10-31 in London: 23:30 to Mon 1 Nov 00:00', () => {
     expect(formatRange('2027-10-31T23:30:00.000Z', '2027-11-01T00:00:00.000Z', LONDON, '2027-10-31')).toBe('23:30 to Mon 1 Nov 00:00')
+  })
+})
+
+const AMBIENT = ['Asia/Kolkata', 'Europe/London', 'Asia/Jakarta', 'UTC', 'America/St_Johns', 'Pacific/Kiritimati']
+
+describe('any ambient zone (ADR-002 Consequences)', () => {
+  const saved = process.env.TZ
+  afterEach(() => {
+    if (saved === undefined) delete process.env.TZ
+    else process.env.TZ = saved
+  })
+  it.each(AMBIENT)('gives the same answers under TZ=%s', (tz) => {
+    process.env.TZ = tz
+    expect(dayRange('2027-10-31', LONDON)).toEqual({ start: '2027-10-30T23:00:00.000Z', end: '2027-11-01T00:00:00.000Z' })
+    expect(todayIn('2026-11-04T17:00:00.000Z', JAKARTA)).toBe('2026-11-05')
+    expect(startOptions('2026-11-05', JAKARTA, '2026-11-05T02:00:00.000Z')).toHaveLength(59)
+    expect(formatDate('2026-11-05')).toBe('Thu 5 Nov')
+    expect(formatRange('2026-11-05T16:00:00.000Z', '2026-11-05T19:00:00.000Z', JAKARTA, '2026-11-05')).toBe('23:00 to Fri 6 Nov 02:00')
+    expect(formatRange('2027-10-31T01:00:00.000Z', '2027-10-31T01:30:00.000Z', LONDON, '2027-10-31')).toBe('01:00 GMT to 01:30 GMT')
+  })
+})
+
+describe('module boundary (D6, the phase Verification line)', () => {
+  const SRC = join(dirname(fileURLToPath(import.meta.url)), '..') // web/src
+  const files = (dir: string): string[] =>
+    readdirSync(dir).flatMap((n) => {
+      const p = join(dir, n)
+      return statSync(p).isDirectory() ? files(p) : /\.tsx?$/.test(n) ? [p] : []
+    })
+  const isTest = (p: string) => /\.test\.tsx?$/.test(p) || relative(SRC, p).startsWith('test/')
+  const source = files(SRC).filter((p) => !isTest(p))
+  const inTime = (p: string) => relative(SRC, p).startsWith('time/')
+
+  it('scans the files it is meant to cover', () => {
+    expect(source.map((p) => relative(SRC, p))).toContain('time/time.ts')
+  })
+  it('web/src/time/ imports nothing', () => {
+    const offenders = source.filter(inTime).filter((p) => /^\s*import\b/m.test(readFileSync(p, 'utf8')))
+    expect(offenders).toEqual([])
+  })
+  it('web/src/time/ names no zone outside its tests', () => {
+    const zone = /['"`][A-Z][A-Za-z_]+\/[A-Za-z_+-]+['"`]/
+    const offenders = source.filter(inTime).filter((p) => zone.test(readFileSync(p, 'utf8')))
+    expect(offenders).toEqual([])
+  })
+  it('nowhere in web/src outside web/src/time/ calls getHours, getDate, a toLocale method or Intl.DateTimeFormat', () => {
+    const banned = /\.getHours\(|\.getDate\(|\.toLocale\w*\(|Intl\.DateTimeFormat/
+    const offenders = source.filter((p) => !inTime(p)).filter((p) => banned.test(readFileSync(p, 'utf8'))).map((p) => relative(SRC, p))
+    expect(offenders).toEqual([])
   })
 })
