@@ -351,12 +351,10 @@ token of the session that rendered the screen.
 - Escaped defects: none known yet.
 
 ## Sign-off
-- Reviewer / date:
-- Review tier applied:
-- Disposition of each Outstanding item: verified | waived (reason) |
-  deferred to {phase-id}
-- Disposition of each Learning: spec-updated | contract-bumped (id@v) |
-  adr-proposed (ADR-nnn) | dropped (reason)
+- Reviewer / date: Claude for Purbo Mohamad (owner proxy, delegated by the owner before the run), 2026-11-01
+- Review tier applied: full-review: per-task reviewers and a final whole-branch reviewer read (Task 5: 1 Important, a comment claiming either expiry guard alone sufficed, fixed with a test pinning each guard; final: 2 Important, the Rooms header jumping on a date change and Loading not pinned after one, both fixed and re-reviewed clean); the 360 px evidence under docs/superpowers/evidence/simple-login.web.8/ looked at; the gate rerun green by the orchestrator (16 files, 331 tests)
+- Disposition of each Outstanding item: the comparison with PRD v2's wireframe and a run against the real backend: deferred to simple-login.integration.5 (Rooms browser tests); Safari, Firefox and screen-reader checks: waived (the product is a one-laptop demo tested in Chrome, PRD v2 Constraints)
+- Disposition of each Learning: all four dropped: the missing wireframe is an HSDD finding carried to the checkpoint; D1's 'whose session' is settled by the token binding this phase built; focus on a screen change and a retry on Rooms are product improvements for a later intake (picking another date already retries)
 
 > The review gate is not passed while an Outstanding item or a Learning
 > lacks a disposition. Dispositions execute at the root through the owning
