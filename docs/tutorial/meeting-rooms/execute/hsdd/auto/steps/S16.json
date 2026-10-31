@@ -1,0 +1,185 @@
+{
+  "step_ref": "S16",
+  "skill": "hsdd-phase-plan",
+  "target": "simple-login.backend",
+  "status": "completed",
+  "stop": null,
+  "artifacts": [
+    "hsdd/spec/simple-login.backend.md"
+  ],
+  "experiments": [
+    {
+      "path": "hsdd/auto/experiments/booking-store-postgres/",
+      "question": "How should the backend's store hold booking-api@v1 G4 to G6 on PostgreSQL 17 under 20 simultaneous overlapping bookings, which booking-api@v1 values does PostgreSQL refuse, how do instants pass through node-postgres, what does a database per test file cost, and which Compose command exists under Colima?",
+      "finding": "A per-room advisory lock (lock, read the earliest overlap, insert) gave one 201 and nineteen 409s naming it in 60 of 60 rounds, slowest 71 ms, no deadlock. The exclusion constraint alone sometimes settled only through 40P01 deadlocks (76/570 and 38/190 losers, up to 19 s a round; none in a third run), and re-reading then retrying after them left 18 attempts unbooked after ten retries, one round 215 s, 219 deadlocks. U+0000 in a title fails with 22021; an unpaired surrogate reads back as U+FFFD; year 0000 fails as timestamptz (22008); non-UUID text to a uuid column fails (22P02). Instants round-trip under any session zone with TZ=Asia/Kolkata; gen_random_uuid() is lower case. A database per test file costs about 36 ms. Only docker-compose 5.6.1 exists on this laptop (docker compose is unknown); up -d --wait with a pg_isready healthcheck works."
+    }
+  ],
+  "self_check": [
+    {
+      "gate": "Phase 1 defines all shared types and contract-bounded interfaces.",
+      "status": "pass",
+      "note": "Append mode: the shipped phase 1 is untouched; the first appended phase, simple-login.backend.4, defines every new shared type (Room, StoredBooking, NewBooking, the wire Booking, the booking error codes and message table) and the BookingStore interface that phases 6 and 7 meet at, with no business logic (DEC-136)."
+    },
+    {
+      "gate": "Phases 2..N-1 are maximally independent (parallelizable where possible).",
+      "status": "pass",
+      "note": "Phases 5 (pure rules) and 6 (the store) each depend only on phase 4 and touch different files, so they can run in parallel; phase 7 composes both."
+    },
+    {
+      "gate": "Each phase has <= 8 OpenSpec tasks (split if more).",
+      "status": "pass",
+      "note": "Phases 4 to 7: at most 7, 6, 6 and 7 tasks."
+    },
+    {
+      "gate": "Adjacent same-tier phases were checked against the sizing floor; every merge candidate kept separate names its reason (tier boundary, parallel lane, isolated risk).",
+      "status": "pass",
+      "note": "The floor ran over phases 4 to 7 only. 4/5 and 5/6 are tier boundaries; 6 and 7 (both full-review) would exceed the window merged (about 710 lines, 13 tasks), and 6 is the concurrency risk reviewed alone; recorded under the summary table. A lone timeZone phase was merged into 4 (DEC-137, DEC-147)."
+    },
+    {
+      "gate": "Contract ids are defined before the phase that implements them.",
+      "status": "pass",
+      "note": "booking-api@v1 was drafted at S05 with schema and fixtures before phase 7 produces it; profile-api@v2 was touched at S07 before phase 4 adds timeZone."
+    },
+    {
+      "gate": "Phase N is testable against contract fixtures even if Phase N-1 is not implemented.",
+      "status": "pass",
+      "note": "Phase 4's rig tests every booking-api@v1 fixture against the schema and an echo app; phase 5 runs every 400, 403, 404 and 422 fixture against the pure rules without the store; phase 6 tests against a real PostgreSQL without the rules. Phase 7 is the composition and replays the fixtures against the real routes."
+    },
+    {
+      "gate": "No phase couples to another phase's internals.",
+      "status": "pass",
+      "note": "Phase 7 calls phase 5's exported rules and phase 6 only through phase 4's BookingStore interface; phases 5 and 6 do not see each other."
+    },
+    {
+      "gate": "Each phase has a concrete gate, a verification description, and a review tier.",
+      "status": "pass",
+      "note": "Gates: 4 and 7 node default plus npm --prefix backend run replay; 5 and 6 node default. Tiers gate-only, spot-check, full-review, full-review (DEC-147)."
+    },
+    {
+      "gate": "The phase dependency graph is included as a Mermaid flowchart and matches the Dependencies fields.",
+      "status": "pass",
+      "note": "New nodes B4 to B7 and I3 with edges B3->B4, B4->B5, B4->B6, B5->B7, B6->B7, matching each Dependencies line; dashed cross-node edges to the web node and the integration node name the contract; existing edges kept."
+    },
+    {
+      "gate": "Summary table opens the section and matches the phase sections.",
+      "status": "pass",
+      "note": "The Default gate line and the table still open the Phase Plan; four rows appended whose names, tiers, sizes and dependencies match the four new phase sections."
+    },
+    {
+      "gate": "Field blocks are bullet lists; empty lists say \"none\".",
+      "status": "pass",
+      "note": "Every new phase field block is a bullet list; empty Consumes and Produces say none."
+    },
+    {
+      "gate": "Every contingent phase names the OQ id it waits on; no contingency without a minted OQ.",
+      "status": "pass",
+      "note": "No appended phase is contingent and no request entry was emitted; phase 7 waits on booking-api@v1 reaching stable, which is reconcile's (H15, H17, H19), not an open question."
+    },
+    {
+      "gate": "The plan names the ordering policy it followed, matching the conventions line (or `interfaces-first` when absent, `fp-progression` when only the pre-v0.10 `FP ordering:` bullet is present).",
+      "status": "pass",
+      "note": "The append paragraph says phases 4 to 7 follow interfaces-first, the conventions line's policy."
+    },
+    {
+      "gate": "Every producing phase's Gate includes the contract replay for each contract it produces.",
+      "status": "pass",
+      "note": "Phase 4 (profile-api@v2): node default plus replay for profile-api.v2. Phase 7 (booking-api@v1): node default plus replay for booking-api, profile-api.v2 and auth-api."
+    },
+    {
+      "gate": "In append mode: no existing id changed, no shipped phase edited, numbering continued from the highest existing id, the node header untouched, the floor run over the appended phases only.",
+      "status": "pass",
+      "note": "Phases 1 to 3 (all shipped, verification docs on main) are unchanged; numbering continues at 4. In the header only the Sources field changed, which append mode extends (sections appended to the PRD v2 entry, DEC-144); Produces and Consumes are untouched, the new booking-api@v1 travels in the confirm entry. D3 to D10 were appended to the Decisions list."
+    },
+    {
+      "gate": "No Scope or Verification line leans on a pointer to text the phase context does not carry (a source's section, another phase's text); the binding detail is in the line itself.",
+      "status": "pass",
+      "note": "The time zones, room rows, messages, limits, check orders, Compose port and URL, gate scripts and rig rules are written into the lines; each phase names the D{n} it relies on, and phases 4 and 5 name booking-api@v1 so its text arrives as referenced. Phase 6 lists the five BookingStore operations itself rather than pointing at phase 4."
+    }
+  ],
+  "routed": [
+    {
+      "target": "H18",
+      "kind": "consider",
+      "text": "From S16 (simple-login.backend's PRD v2 append, D4, D7, D8; pending note entry). The root scripts start PostgreSQL with `npm --prefix backend run db:up`, which runs `backend/compose.yaml` (service postgres, 127.0.0.1:55432, database meeting_rooms) through `docker compose` or, where only that exists, `docker-compose`, and returns once healthy: on the run's laptop `docker compose` is an unknown command and only docker-compose 5.6.1 is installed (hsdd/auto/experiments/booking-store-postgres/), so a root script that calls `docker compose` directly fails there. `npm --prefix backend start` needs the database up first and reads DATABASE_URL (default postgres://meeting_rooms:meeting_rooms@127.0.0.1:55432/meeting_rooms). The backend's gate and replay scripts start the database themselves and test on databases of their own, never meeting_rooms; the integration tests write to meeting_rooms unless they set DATABASE_URL. booking-api@v1 is produced by simple-login.backend.7 (confirm entry; the provisional simple-login.backend.4 is replaced). Under D7, 20 simultaneous attempts settled in under 100 ms in the experiment."
+    }
+  ],
+  "closes": [
+    {
+      "id": "Q-051",
+      "outcome": "addressed",
+      "note": "timestamptz and the half-open rule are D6's schema and phase 6's queries; the 23P01 one-row DETAIL is moot under D7, which reads the earliest overlap under a per-room lock and keeps the re-read only as a fallback; no zone arithmetic (phase 5, phase 6); the quarter-hour check on the UTC instant and start-equal-to-now as started are phase 5's; timeZone joins the account data in phase 4; the gate runs with TZ=Asia/Kolkata and a guard test (phase 4, DEC-143)."
+    },
+    {
+      "id": "Q-052",
+      "outcome": "addressed",
+      "note": "Phase 4 extends backend/test/replay.ts for booking-api@v1: clock, given seeded directly with their ids into a test database (D8), DELETE, a 204's null body against an empty response without res.json(), a 201 whose id must match BookingId and differ from every given id, the expired token issued 30 min 1 s before clock, and each response checked against the top-level schema and its endpoint's $defs. Phase 7 replays all 35 against the real routes. Ids are gen_random_uuid(), lower case (experiment), never reused (D6)."
+    },
+    {
+      "id": "Q-053",
+      "outcome": "addressed",
+      "note": "G6 is held by D7's read under the room lock, with the 23P01/40P01 re-read as a fallback; the experiment showed the suggested re-read-and-retry path livelocking under 20-way contention (DEC-149). Phase 5 holds G1 (toISOString round trip), percent-decoded query values, the limits as instant arithmetic, code-point title length, one non-whitespace character, stored as sent, the POST and DELETE check orders, and a non-UUID id answering 404 (DEC-148); rooms and list orders are phase 5's views. produced_by is confirmed as simple-login.backend.7 (DEC-138)."
+    },
+    {
+      "id": "Q-054",
+      "outcome": "addressed",
+      "note": "Phase 4 adds timeZone to the accounts (ayu Asia/Jakarta, budi Europe/London), updates the accounts tests to the seven profile-api@v2 fields and the v2 me-ayu/me-budi bodies, and its gate replays profile-api.v2; it produces profile-api@v2 and is confirmed as a producer (DEC-137, DEC-138). simple-login.backend.3's Verification line is left as shipped history."
+    },
+    {
+      "id": "Q-055",
+      "outcome": "addressed",
+      "note": "D4 puts the Compose file at backend/compose.yaml behind db:up (DEC-141) and tells simple-login.integration through a note entry and a consider item to H18; D8 gives each test file its own database on the same service (DEC-142); the gate and replay scripts run db:up before Vitest (DEC-143)."
+    },
+    {
+      "id": "Q-056",
+      "outcome": "explained",
+      "note": "No appended phase serves or replays profile-api@v1: phase 4 produces profile-api@v2 and every new gate replays profile-api.v2. The header's Produces line and the shipped phases' citations of v1 stay, as S13 decided; deprecating v1 waits on Sync A's A-1 (execution plan C-1), after which reconcile's version ripple moves the copies."
+    },
+    {
+      "id": "Q-057",
+      "outcome": "addressed",
+      "note": "The Sources entry for hsdd/context/prd-simple-login.v2.md gains US-4, US-5, US-6, Rooms, Constraints, Left to engineering, Team and delivery and Success, appended after the existing four (DEC-144); H15's version ripple copies it into the root's embedded summary."
+    }
+  ],
+  "reads_outside": [
+    {
+      "path": "backend/src/*.ts, backend/test/*.ts, backend/package.json, backend/tsconfig.json, package.json, .gitignore",
+      "why": "The shipped code the appended phases change: the replay rig, the accounts tests, the gate scripts and buildApp, to size the phases and name the files (Q-052, Q-054 cite them)."
+    },
+    {
+      "path": "hsdd/spec/simple-login.md",
+      "why": "The root's embedded summary and Decisions (what is the backend's D{n}), a shared decomposition artifact."
+    },
+    {
+      "path": "hsdd/spec/simple-login.integration.md",
+      "why": "Header and Overview only (not its phase plan), to see how the integration node starts the database through this node's Compose service (Q-055)."
+    },
+    {
+      "path": "hsdd/verify/simple-login.backend.3.verification.md",
+      "why": "To confirm phase 3 is shipped and what its replay covered."
+    },
+    {
+      "path": "hsdd/auto/run.yaml, hsdd/auto/experiments/*/README.md, hsdd/auto/experiments/time-model-postgres/",
+      "why": "The run's sources and the earlier experiments the routed items cite."
+    },
+    {
+      "path": "hsdd/auto/steps/S13.json, hsdd/auto/steps/S05.decisions.jsonl (DEC-053)",
+      "why": "The origin of the routed items and of the provisional produced_by guess."
+    },
+    {
+      "path": ".claude/skills/hsdd-reconcile/SKILL.md",
+      "why": "How confirm and note entries are drained, to write them in the form reconcile applies."
+    },
+    {
+      "path": "hsdd/scripts/auto/gate.mjs, hsdd/scripts/auto/lib/checks.mjs, hsdd/scripts/auto/lib/tree.mjs, hsdd/scripts/auto/lib/report-rules.mjs, hsdd/scripts/auto/routed.mjs, hsdd/scripts/auto/schema/step-report.schema.json",
+      "why": "To make the plan and this report pass the step gate (phase headings, pending entries, report rules, routed targets)."
+    }
+  ],
+  "notes": [
+    "DEC-149's why says the lock settled 90 rounds over three runs; it was 60 rounds over runs 2 and 3 (run 1 was stopped before reaching the lock variant). The counts for the constraint-alone variants in that decision are as captured. The experiment README states the correct figure.",
+    "booking-api@v1's produced_by still names the provisional simple-login.backend.4, which now exists as a heading but is the interface phase; the confirm entry moves it to simple-login.backend.7 at H15. Its consumers simple-login.web.5 and simple-login.integration.3 remain unplanned guesses until H16 and H18.",
+    "The amend on booking-api@v1 (titles with U+0000 or an unpaired surrogate refused) narrows what the draft v1 accepts; it is not a breaking-amend stop because the contract is draft with provisional phase ids and no consumer phase exists (DEC-145). Reconcile also has hsdd-contract add the rule to the schema's $defs.Title.",
+    "The experiment's Compose project (s16-booking-store) was brought down with its volume after each run; no container is left running. Its node_modules and package-lock.json are git-ignored.",
+    "The backend gate is red on this branch until simple-login.backend.4 ships: the me-ayu and me-budi fixtures of profile-api@v2 carry timeZone and the shipped accounts do not."
+  ],
+  "read_check": "d9d07b26"
+}
