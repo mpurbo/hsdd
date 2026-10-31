@@ -1,8 +1,19 @@
-// API client for auth-api@v1 and profile-api@v2. An effectful shell (`send`)
-// over pure deciders that read only the status and `error.code`, never
-// `error.message`. Anything the contracts do not name is `unavailable` (D3);
-// fields a contract does not name are ignored.
-import type { Profile, ProfileFailure, Result, Session, SignInFailure } from './types'
+// API client for auth-api@v1, profile-api@v2 and booking-api@v1. An effectful
+// shell (`send`) over pure deciders that read only the status and
+// `error.code`, never `error.message`. Anything the contracts do not name is
+// `unavailable` (D3); fields a contract does not name are ignored, and the
+// decoders rebuild each value from the fields its type names (G18).
+import type {
+  Booking,
+  MyBookingsFailure,
+  Profile,
+  ProfileFailure,
+  Result,
+  Room,
+  RoomsFailure,
+  Session,
+  SignInFailure,
+} from './types'
 
 /**
  * A request that has not answered after this long is `unavailable`, so every
@@ -27,6 +38,73 @@ const stringField = (body: unknown, key: string): string | undefined => {
 
 const errorCode = (body: unknown): string | undefined =>
   isRecord(body) ? stringField(body.error, 'code') : undefined
+
+const INSTANT_FORM = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/
+
+/**
+ * booking-api@v1 G1: an instant is exactly what `toISOString()` writes for it.
+ * Only a string already in that form is parsed, so no date-time without `Z`
+ * is ever read as a local time.
+ */
+const isInstant = (v: unknown): v is string => {
+  if (typeof v !== 'string' || !INSTANT_FORM.test(v)) return false
+  const ms = Date.parse(v)
+  return Number.isFinite(ms) && new Date(ms).toISOString() === v
+}
+
+const instantField = (body: unknown, key: string): string | undefined => {
+  const v = isRecord(body) ? body[key] : undefined
+  return isInstant(v) ? v : undefined
+}
+
+/** Every element decoded, or `undefined` when the value is not a list or any element fails. */
+function decodeList<T>(v: unknown, decode: (element: unknown) => T | undefined): readonly T[] | undefined {
+  if (!Array.isArray(v)) return undefined
+  const decoded: T[] = []
+  for (const element of v) {
+    const value = decode(element)
+    if (value === undefined) return undefined
+    decoded.push(value)
+  }
+  return decoded
+}
+
+function decodeBooking(v: unknown): Booking | undefined {
+  const id = stringField(v, 'id')
+  const roomId = stringField(v, 'roomId')
+  const roomName = stringField(v, 'roomName')
+  const title = stringField(v, 'title')
+  const start = instantField(v, 'start')
+  const end = instantField(v, 'end')
+  return id !== undefined &&
+    roomId !== undefined &&
+    roomName !== undefined &&
+    title !== undefined &&
+    start !== undefined &&
+    end !== undefined
+    ? { id, roomId, roomName, title, start, end }
+    : undefined
+}
+
+function decodeRoom(v: unknown): Room | undefined {
+  if (!isRecord(v)) return undefined
+  const id = stringField(v, 'id')
+  const name = stringField(v, 'name')
+  const office = stringField(v, 'office')
+  const timeZone = stringField(v, 'timeZone')
+  const seats = typeof v.seats === 'number' ? v.seats : undefined
+  const bookings = decodeList(v.bookings, decodeBooking)
+  return id !== undefined &&
+    name !== undefined &&
+    office !== undefined &&
+    timeZone !== undefined &&
+    seats !== undefined &&
+    bookings !== undefined
+    ? { id, name, office, timeZone, seats, bookings }
+    : undefined
+}
+
+const bearer = (token: string): Record<string, string> => ({ Authorization: `Bearer ${token}` })
 
 /** One HTTP exchange; `null` when the request fails, times out, or the body is not JSON. */
 async function send(path: string, init: RequestInit): Promise<Answer | null> {
@@ -82,6 +160,22 @@ function decideProfile(answer: Answer | null): Result<Profile, ProfileFailure> {
   return fail('unavailable')
 }
 
+/** A 200 decodes the list under `key`, in the order received; a 401 `UNAUTHORIZED` is `unauthorized`. */
+function decideList<T>(
+  answer: Answer | null,
+  key: string,
+  decode: (element: unknown) => T | undefined,
+): Result<readonly T[], 'unauthorized' | 'unavailable'> {
+  if (answer === null) return fail('unavailable')
+  const { status, body } = answer
+  if (status === 200) {
+    const list = decodeList(isRecord(body) ? body[key] : undefined, decode)
+    return list === undefined ? fail('unavailable') : ok(list)
+  }
+  if (status === 401 && errorCode(body) === 'UNAUTHORIZED') return fail('unauthorized')
+  return fail('unavailable')
+}
+
 /** POST /api/login. The username is sent exactly as typed (auth-api@v1 matches it exactly). */
 export async function signIn(username: string, password: string): Promise<Result<Session, SignInFailure>> {
   return decideSignIn(
@@ -96,4 +190,18 @@ export async function signIn(username: string, password: string): Promise<Result
 /** GET /api/me with the opaque token sent back verbatim. */
 export async function fetchProfile(token: string): Promise<Result<Profile, ProfileFailure>> {
   return decideProfile(await send('/api/me', { method: 'GET', headers: { Authorization: `Bearer ${token}` } }))
+}
+
+/**
+ * GET /api/rooms: every room with its bookings that overlap [from, to), in the
+ * order received (G13). The instants are written into the query as they are,
+ * never encoded (D8).
+ */
+export async function fetchRooms(token: string, from: string, to: string): Promise<Result<readonly Room[], RoomsFailure>> {
+  return decideList(await send(`/api/rooms?from=${from}&to=${to}`, { method: 'GET', headers: bearer(token) }), 'rooms', decodeRoom)
+}
+
+/** GET /api/me/bookings: the user's bookings that have not ended, in the order received (G14), never sorted here. */
+export async function fetchMyBookings(token: string): Promise<Result<readonly Booking[], MyBookingsFailure>> {
+  return decideList(await send('/api/me/bookings', { method: 'GET', headers: bearer(token) }), 'bookings', decodeBooking)
 }

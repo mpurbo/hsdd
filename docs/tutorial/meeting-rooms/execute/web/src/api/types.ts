@@ -1,5 +1,6 @@
-// The web node's own types for auth-api@v1 and profile-api@v2 (no shared code
-// package: each node writes its types from the contract's Interface).
+// The web node's own types for auth-api@v1, profile-api@v2 and booking-api@v1
+// (no shared code package: each node writes its types from the contract's
+// Interface).
 
 /** What the web app keeps of a 200 from POST /api/login (D2). The token is opaque. */
 export interface Session {
@@ -25,6 +26,30 @@ export interface Profile {
 export type SignInFailure = 'invalid-credentials' | 'invalid-input' | 'unavailable'
 
 export type ProfileFailure = 'unauthorized' | 'unavailable'
+
+/** booking-api@v1 `Booking`. `start` and `end` are instants, kept as the strings received. */
+export interface Booking {
+  readonly id: string
+  readonly roomId: string
+  readonly roomName: string
+  readonly title: string
+  readonly start: string
+  readonly end: string
+}
+
+/** booking-api@v1 `RoomWithBookings`: a room and its bookings that overlap the requested range. */
+export interface Room {
+  readonly id: string
+  readonly name: string
+  readonly office: string
+  readonly timeZone: string
+  readonly seats: number
+  readonly bookings: readonly Booking[]
+}
+
+export type RoomsFailure = 'unauthorized' | 'unavailable'
+
+export type MyBookingsFailure = 'unauthorized' | 'unavailable'
 
 export type Result<T, F> =
   | { readonly ok: true; readonly value: T }

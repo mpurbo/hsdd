@@ -1,7 +1,17 @@
 import { describe, expect, it, vi } from 'vitest'
 import { listFixtures, loadFixture, stubFetch, stubFetchHanging, stubFetchUnreachable, type Fixture } from '../test/fetchStub'
-import { REQUEST_TIMEOUT_MS, fetchProfile, signIn } from './client'
-import type { Profile, ProfileFailure, Result, Session, SignInFailure } from './types'
+import { REQUEST_TIMEOUT_MS, fetchMyBookings, fetchProfile, fetchRooms, signIn } from './client'
+import type {
+  Booking,
+  MyBookingsFailure,
+  Profile,
+  ProfileFailure,
+  Result,
+  Room,
+  RoomsFailure,
+  Session,
+  SignInFailure,
+} from './types'
 
 const TOKEN = 'q8Vn3xR2bT0kLw7YcZ1pHs5mJd9fAe4uGi6oNr2vXyQ'
 
@@ -138,5 +148,104 @@ describe('API client', () => {
     await vi.advanceTimersByTimeAsync(REQUEST_TIMEOUT_MS)
     expect(await pendingSignIn).toEqual({ ok: false, reason: 'unavailable' })
     expect(await pendingProfile).toEqual({ ok: false, reason: 'unavailable' })
+  })
+})
+
+// booking-api@v1. Each fixture's `request` names the call; its token
+// placeholder is replaced by TOKEN, and only its `response` answers.
+type Json = { [key: string]: any }
+const bookingFixture = (name: string): Fixture => loadFixture('booking-api', name)
+const bodyOf = (name: string): Json => bookingFixture(name).response.body as Json
+/** The fixture with its response body edited on a deep copy. */
+const editBody = (name: string, edit: (body: Json) => void): Fixture => {
+  const fixture = bookingFixture(name)
+  const body = structuredClone(fixture.response.body) as Json
+  edit(body)
+  return { ...fixture, response: { ...fixture.response, body } }
+}
+const roomsOf = (name: string): Room[] => bodyOf(name).rooms as Room[]
+const bookingsOf = (name: string): Booking[] => bodyOf(name).bookings as Booking[]
+/** `from` and `to` as the fixture's path writes them (D8: unencoded). */
+const roomsQuery = (path: string): [string, string] => {
+  const match = /^\/api\/rooms\?from=(.*)&to=(.*)$/.exec(path)
+  if (!match) throw new Error(`not a rooms path: ${path}`)
+  return [match[1] ?? '', match[2] ?? '']
+}
+const bearerGet = (path: string) => [{ method: 'GET', path, headers: { authorization: `Bearer ${TOKEN}` }, body: undefined }]
+
+const roomsCases: Record<string, Result<readonly Room[], RoomsFailure>> = {
+  'rooms-from-not-before-to': { ok: false, reason: 'unavailable' },
+  'rooms-instant-without-milliseconds': { ok: false, reason: 'unavailable' },
+  'rooms-no-token': { ok: false, reason: 'unauthorized' },
+  'rooms-on-a-clock-change-day': { ok: true, value: roomsOf('rooms-on-a-clock-change-day') },
+  'rooms-on-a-date': { ok: true, value: roomsOf('rooms-on-a-date') },
+  'rooms-range-edges': { ok: true, value: roomsOf('rooms-range-edges') },
+}
+
+const myBookingsCases: Record<string, Result<readonly Booking[], MyBookingsFailure>> = {
+  'my-bookings-budi': { ok: true, value: bookingsOf('my-bookings-budi') },
+  'my-bookings-expired-token': { ok: false, reason: 'unauthorized' },
+  'my-bookings-none': { ok: true, value: [] },
+}
+
+describe('API client: booking-api@v1', () => {
+  it.each(Object.entries(roomsCases))('fetchRooms: %s', async (name, expected) => {
+    const fixture = bookingFixture(name)
+    const stub = stubFetch(fixture)
+    const [from, to] = roomsQuery(fixture.request.path)
+    expect(await fetchRooms(TOKEN, from, to)).toEqual(expected)
+    expect(stub.calls).toEqual(bearerGet(fixture.request.path))
+  })
+
+  it.each(Object.entries(myBookingsCases))('fetchMyBookings: %s', async (name, expected) => {
+    const fixture = bookingFixture(name)
+    const stub = stubFetch(fixture)
+    expect(await fetchMyBookings(TOKEN)).toEqual(expected)
+    expect(stub.calls).toEqual(bearerGet('/api/me/bookings'))
+  })
+
+  it("fetchRooms keeps the rooms' order (G13)", async () => {
+    stubFetch(bookingFixture('rooms-on-a-date'))
+    const result = await fetchRooms(TOKEN, '2026-11-05T00:00:00.000Z', '2026-11-06T00:00:00.000Z')
+    expect(result.ok && result.value.map((room) => room.id)).toEqual(['merapi', 'bromo', 'thames', 'kew'])
+  })
+
+  it('fetchMyBookings keeps the order received, with no client sort (G14)', async () => {
+    stubFetch(editBody('my-bookings-budi', (body) => body.bookings.reverse()))
+    expect(await fetchMyBookings(TOKEN)).toEqual({ ok: true, value: [...bookingsOf('my-bookings-budi')].reverse() })
+  })
+
+  it.each<[string, (body: Json) => void]>([
+    ['a booking start with an offset', (body) => (body.rooms[0].bookings[0].start = '2026-11-05T09:00:00.000+07:00')],
+    ['a booking start without milliseconds', (body) => (body.rooms[0].bookings[0].start = '2026-11-05T02:00:00Z')],
+    ['a booking start on a date that does not exist', (body) => (body.rooms[0].bookings[0].start = '2026-02-30T00:00:00.000Z')],
+    ['a room without timeZone', (body) => delete body.rooms[1].timeZone],
+    ['seats as a string', (body) => (body.rooms[0].seats = '8')],
+    ['rooms that is not a list', (body) => (body.rooms = {})],
+    ['a booking without title', (body) => delete body.rooms[2].bookings[0].title],
+  ])('fetchRooms: a 200 with %s is unavailable', async (_name, edit) => {
+    stubFetch(editBody('rooms-on-a-date', edit))
+    expect(await fetchRooms(TOKEN, '2026-11-05T00:00:00.000Z', '2026-11-06T00:00:00.000Z')).toEqual({
+      ok: false,
+      reason: 'unavailable',
+    })
+  })
+
+  it('fetchMyBookings: a 200 with an end without Z is unavailable (G1)', async () => {
+    stubFetch(editBody('my-bookings-budi', (body) => (body.bookings[0].end = '2026-11-05T11:00:00.000')))
+    expect(await fetchMyBookings(TOKEN)).toEqual({ ok: false, reason: 'unavailable' })
+  })
+
+  it('fetchRooms drops fields it does not know (G18)', async () => {
+    stubFetch(
+      editBody('rooms-on-a-date', (body) => {
+        body.rooms[0].floor = 3
+        body.rooms[0].bookings[0].owner = 'budi'
+      }),
+    )
+    expect(await fetchRooms(TOKEN, '2026-11-05T00:00:00.000Z', '2026-11-06T00:00:00.000Z')).toEqual({
+      ok: true,
+      value: roomsOf('rooms-on-a-date'),
+    })
   })
 })
