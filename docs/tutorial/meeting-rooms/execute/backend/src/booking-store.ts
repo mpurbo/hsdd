@@ -11,7 +11,7 @@ type Row = { id: string; room_id: string; account_id: string; title: string; sta
 // D10: PostgreSQL has no year 0 or earlier in ISO input (22008), so a bound before
 // year 1 goes as year 1. Stored instants are never earlier, so the answer is unchanged.
 const EARLIEST = new Date("0001-01-01T00:00:00.000Z");
-export const sqlInstant = (bound: Date): string => (bound < EARLIEST ? EARLIEST : bound).toISOString();
+const sqlInstant = (bound: Date): string => (bound < EARLIEST ? EARLIEST : bound).toISOString();
 
 const toStoredBooking = (row: Row): StoredBooking => ({
   id: row.id,
@@ -61,7 +61,9 @@ export function createBookingStore(pool: Pool): BookingStore {
     const client = await pool.connect();
     let releaseWith: Error | undefined;
     try {
-      await client.query("BEGIN");
+      // Explicit: lock-then-read relies on a fresh snapshot per statement, and a session or
+      // database default of SERIALIZABLE would raise 40001 here, which is not retried.
+      await client.query("BEGIN ISOLATION LEVEL READ COMMITTED");
       const result = await work(client);
       await client.query("COMMIT");
       return result;
