@@ -32,10 +32,10 @@ describe("built-in accounts", () => {
     expect(toProfile(ACCOUNTS[0]!)).not.toHaveProperty("password");
   });
 
-  it("a profile has exactly the six profile-api@v2 fields", () => {
+  it("a profile has exactly the seven profile-api@v2 fields", () => {
     for (const account of ACCOUNTS) {
       expect(Object.keys(toProfile(account)).sort()).toEqual(
-        ["displayName", "email", "id", "memberSince", "phone", "username"],
+        ["displayName", "email", "id", "memberSince", "phone", "timeZone", "username"],
       );
     }
   });

@@ -10,6 +10,7 @@ export const ACCOUNTS: readonly Account[] = [
     email: "ayu@example.com",
     phone: "+62 812 3456 7890",
     memberSince: "2024-03-14",
+    timeZone: "Asia/Jakarta",
     password: {
       salt: "41bd1b70afb78cb94af0bc1671a727ee",
       hash: "48de88b257285fde8323a9afebd55d2318f42ebafac48ef9476f284c280bd31edf3cb3b184384a4c06bdf00d00e42a2e6e8e184882809f9d5197bc81e9387023",
@@ -22,6 +23,7 @@ export const ACCOUNTS: readonly Account[] = [
     email: "budi@example.com",
     phone: "+62 813 9876 5432",
     memberSince: "2025-01-09",
+    timeZone: "Europe/London",
     password: {
       salt: "21be5d709ae5ec27c3a3f21fcddfee08",
       hash: "f3cbc76cf27ba724debf5684a537f232244d9bf9442a67180f592248ebbe5ba014bcecb897314aaa43db63b5c7db0378696c521eb6eace9108e8503e639a94fb",
