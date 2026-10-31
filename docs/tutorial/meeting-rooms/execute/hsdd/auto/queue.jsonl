@@ -165,3 +165,4 @@
 {"id":"Q-084","at":"2026-10-31T18:27:38Z","status":"accepted","decision":"DEC-209"}
 {"id":"Q-085","at":"2026-10-31T18:27:38Z","status":"open","from":"S23","target":"run","kind":"insert-step","text":"Reconcile simple-login.backend after Q-084's in-place rewrite of simple-login.backend.7, per the intake record's insert rule (DEC-209).","step_kind":"reconcile","step_target":"simple-login.backend"}
 {"id":"Q-085","at":"2026-10-31T18:27:38Z","status":"accepted","decision":"DEC-209"}
+{"id":"Q-084","at":"2026-10-31T18:37:49Z","status":"addressed","by":"S24","note":"step S24 committed"}
