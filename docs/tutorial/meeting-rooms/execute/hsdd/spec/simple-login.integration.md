@@ -7,7 +7,7 @@
 - **Consumes:** [auth-api@v1, profile-api@v1, profile-api@v2]
 - **Produces:** none
 - **Governed by:** [ADR-002]
-- **Sources:** hsdd/context/prd-simple-login.md (Success, Team and delivery, Demo accounts), hsdd/context/rfc-simple-login.md (§1 Summary, §7 Testing, §8 Repository layout), hsdd/context/update-1-add-phone.md (Change: AC-2.1 amended, AC-2.4; Demo accounts)
+- **Sources:** hsdd/context/prd-simple-login.v2.md (Success, Team and delivery, Constraints, Demo accounts, AC-2.1, AC-2.4), hsdd/context/rfc-simple-login.md (§1 Summary, §7 Testing, §8 Repository layout)
 - **Decomposes into:** phases (see hsdd-phase-plan)
 - **Isolation strategy:** none by design: its edges are `hard`, so it runs the real service on its real PostgreSQL 17, never a mock or an in-memory stand-in (PRD v2 Constraints), beside the real web app, and drives a real browser against them in a time zone that is neither account's nor UTC (ADR-002); the service runs on the real clock
 
