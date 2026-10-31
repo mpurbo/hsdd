@@ -7,7 +7,7 @@
 - **Consumes:** [auth-api@v1, profile-api@v1, profile-api@v2]
 - **Produces:** none
 - **Governed by:** [ADR-001, ADR-002]
-- **Sources:** hsdd/context/prd-simple-login.md (US-1, US-2, US-3, Screens), hsdd/context/rfc-simple-login.md (§1 Summary, §2 API, §6 Frontend stack, §7 Testing), hsdd/context/update-1-add-phone.md (AC-2.1 amended, AC-2.4, Screen, Scope)
+- **Sources:** hsdd/context/prd-simple-login.v2.md (US-1, US-2, US-3, Screens, Scope), hsdd/context/rfc-simple-login.md (§1 Summary, §2 API, §6 Frontend stack, §7 Testing)
 - **Decomposes into:** phases (see hsdd-phase-plan)
 - **Isolation strategy:** `fetch` is stubbed with the auth-api, profile-api and booking-api fixtures; the backend never needs to run; the time functions are tested on their own on London's clock-change days, and every test runs with `TZ` set to a zone that is neither account's nor UTC (ADR-002)
 
@@ -79,9 +79,10 @@ reopened, so it stays one small phase.
 - **D2. The session lives in `sessionStorage`** under one key,
   `simple-login.session`, as `{ token, expiresAt }` (RFC §6).
 - **D3. One message per failure.** `INVALID_CREDENTIALS` shows "Incorrect
-  username or password." (AC-1.2); a 401 on `/api/me` shows "Your session
-  has expired. Please sign in again." (AC-2.3); a network failure or an
-  unexpected status shows "Could not reach the server. Please try again."
+  username or password." (PRD v2 AC-1.2); a 401 on `/api/me` shows "Your
+  session has expired. Please sign in again." (PRD v2 AC-2.3); a network
+  failure or an unexpected status shows "Could not reach the server.
+  Please try again."
   `VALIDATION_FAILED` (`invalid-input`) shows the AC-1.2 message; the form
   cannot send such a request, so it means credentials that match nothing.
   (Added at the simple-login.web.2 gate, 2026-10-30.)
