@@ -524,7 +524,7 @@ const nextHandoff = (v, pending) => {
   const files = targetFiles(h.kind, h.target, ctx.layout, ctx.tree);
   return citesSuperseded(ctx.repoRoot, files, supersededStrings(ctx.config, ctx.tree))
     ? stepResult(v, { kind: h.kind, target: h.target, handoff: h.id, why: `${why}; cites-superseded holds for ${files.join(", ")}` })
-    : { skip: { handoff: h.id, reason: `cites-superseded does not hold: ${files.join(", ") || `no file of ${h.target}`} names no baseline source path or version and no contract version below the current one` } };
+    : { skip: { handoff: h.id, reason: `cites-superseded does not hold: ${files.join(", ") || `no file of ${h.target}`} names no baseline source path or version and no superseded contract version` } };
 };
 
 const handoffStage = {
@@ -647,17 +647,18 @@ const scoped = (ctx, findings) => {
   return errors.filter((f) => inScope(f, changed)).map(findingLine);
 };
 
-// Every contract above v0 is stable with phase_ids final; deprecated and retired ones are exempt (S-2).
+// Every contract version above v0 is stable with phase_ids final; deprecated and retired ones are
+// exempt (S-2). Each version is its own file (v0.10.0 §3.1), named by its file name without `.md`.
 const finalExempt = (c) => c.version === "v0" || c.status === "deprecated" || c.status === "retired";
-export const contractsNotFinal = (tree) => [...tree.contracts.values()]
+export const contractsNotFinal = (tree) => tree.contractFiles
   .filter((c) => !finalExempt(c) && (c.status !== "stable" || c.phaseIds !== "final"))
-  .map((c) => c.slug);
+  .map((c) => c.stem);
 
-const contractLines = (tree) => [...tree.contracts.values()]
+const contractLines = (tree) => tree.contractFiles
   .filter((c) => !finalExempt(c))
   .flatMap((c) => [
-    ...(c.status === "stable" ? [] : [`contract ${c.slug} is ${c.status ?? "without a status"}`]),
-    ...(c.phaseIds === "final" ? [] : [`contract ${c.slug} has phase_ids ${c.phaseIds ?? "missing"}`]),
+    ...(c.status === "stable" ? [] : [`contract ${c.stem} is ${c.status ?? "without a status"}`]),
+    ...(c.phaseIds === "final" ? [] : [`contract ${c.stem} has phase_ids ${c.phaseIds ?? "missing"}`]),
   ]);
 
 const cleanTreeLines = (ctx) => {

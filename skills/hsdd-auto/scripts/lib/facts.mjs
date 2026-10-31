@@ -7,6 +7,7 @@ import { P } from "./paths.mjs";
 import { sourcesOf } from "./config.mjs";
 import { contractRefs, leafParentsOf, phaseNodeOf, toLines } from "./tree.mjs";
 import { contractRoles, nodeFiles, specFilesInOrder } from "./order.mjs";
+import { lowerVersions, supersededVersions, versionsOf } from "./contracts.mjs";
 
 const unique = (xs) => [...new Set(xs)];
 const code = (s) => `\`${s}\``;
@@ -193,25 +194,30 @@ const contractFacts = (ctx, step) => {
   ];
 };
 
-// The superseded strings of 12.2 as text: baseline paths and versions, and every older contract version.
+// The superseded strings of 12.2 as text: baseline paths and versions, and every superseded contract
+// version (lib/contracts.mjs: deprecated or retired, or with no file of its own).
 const supersededLines = (ctx) => {
   const baseline = ctx.config.sources.baseline ?? [];
   const lines = [
     ...unique(baseline.map((s) => s.path)).map((p) => cite(`Superseded string ${code(p)}: the path of a baseline source`, P.runYaml)),
     ...unique(baseline.map((s) => s.version).filter(Boolean)).map((v) => cite(`Superseded string ${code(v)}: the version of a baseline source`, P.runYaml)),
-    ...[...ctx.tree.contracts.values()].flatMap((c) => {
-      const n = Number(/^v(\d+)$/.exec(c.version ?? "")?.[1] ?? 0);
-      return Array.from({ length: n }, (_, k) => cite(`Superseded string ${code(`${c.slug}@v${k}`)}: ${c.slug} is at ${c.version}`, c.file));
-    }),
+    ...[...ctx.tree.contracts.values()].flatMap((c) => supersededVersions(c).map((v) => (v.file
+      ? cite(`Superseded string ${code(`${c.slug}@${v.version}`)}: ${c.slug} is at ${c.version}, and its ${v.version} file is ${v.file.status}`, v.file.file)
+      : cite(`Superseded string ${code(`${c.slug}@${v.version}`)}: ${c.slug} is at ${c.version}${versionsOf(c).length > 1 ? `, and no file holds ${v.version}` : ""}`, c.file)))),
   ];
-  return lines.length > 0 ? lines : [cite("No superseded string: no baseline source, and no contract above v0", P.runYaml)];
+  return lines.length > 0 ? lines : [cite("No superseded string: no baseline source, and no superseded contract version", P.runYaml)];
 };
+
+// A lower version with a file of its own that is neither deprecated nor retired: live beside the current
+// one (coexisting, v0.10.0 §3.5), so a citation of it is not superseded.
+const liveLowerLines = (c) => lowerVersions(c).filter((v) => !v.superseded)
+  .map((v) => cite(`${code(`${c.slug}@${v.version}`)} is ${v.file.status ?? "without a status"}, a lower version that stays live beside ${c.version} (coexisting): a citation of it is not superseded`, v.file.file));
 
 const citationFacts = (ctx) => {
   const contracts = [...ctx.tree.contracts.values()];
   return [
     ...(contracts.length > 0
-      ? contracts.map((c) => cite(`${code(c.slug)} is at ${c.version ?? "no version"}`, c.file))
+      ? contracts.flatMap((c) => [cite(`${code(c.slug)} is at ${c.version ?? "no version"}`, c.file), ...liveLowerLines(c)])
       : [cite("No contract file exists", `${ctx.layout.contract}/*.md`)]),
     ...sourcesOf(ctx.config).map((s) => cite(`Source ${code(s.cite)} (${code(s.path)}): ${s.role === "baseline" ? "baseline, superseded" : s.role}, version ${s.version ?? "not given"}`, P.runYaml)),
     ...supersededLines(ctx),

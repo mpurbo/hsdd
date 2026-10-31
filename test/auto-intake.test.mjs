@@ -11,6 +11,7 @@ import { loadTree } from "../skills/hsdd-auto/scripts/lib/tree.mjs";
 import { parseLayout } from "../skills/hsdd-auto/scripts/lib/paths.mjs";
 import { withDefaults } from "../skills/hsdd-auto/scripts/lib/config.mjs";
 import { makeRepo, baseConfig } from "./helpers/auto-repo.mjs";
+import { V1, V2, V2_FIXTURE, V2_SCHEMA, deprecatedV1, v2Files } from "./helpers/auto-contract-v2.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const INTAKE = join(HERE, "fixtures", "auto", "intake");
@@ -103,7 +104,9 @@ test("cites-superseded both ways", () => {
     "notes/version-tail.md": "Per Spec v10 and Spec v1.2 and spec-v1x.\n",
   } });
   const tree = loadTree(dir, LAYOUT, { root: "shop" });
-  const atV2 = { ...tree, contracts: new Map([["order-api", { ...tree.contracts.get("order-api"), version: "v2" }]]) };
+  // order-api bumped in place, the model before 0.10.2: one file at v2 whose ## Versioning names v1.
+  const inPlace = makeRepo({ stage: "06-planned", files: { [V1]: readFileSync(join(HERE, "fixtures/auto/tree/06-planned", V1), "utf8").replace("version: v1", "version: v2") } });
+  const atV2 = loadTree(inPlace, LAYOUT, { root: "shop" });
   const config = withDefaults(baseConfig({ sources: {
     normative: [{ path: "ref/spec-v2.md", cite: "Spec", version: "v2" }],
     baseline: [{ path: "ref/spec.md", cite: "Spec", version: "v1" }],
@@ -132,7 +135,7 @@ test("supersededStrings: every lower contract version, no baseline means no plai
   const tree = { contracts: new Map([["a", { version: "v3" }], ["b", { version: "v1" }], ["c", { version: "v0" }], ["d", { version: null }]]) };
   const s = supersededStrings(withDefaults(baseConfig()), tree);
   assert.deepEqual(s.plain, []);
-  const text = (t) => s.refs.some((r) => r.test(t));
+  const text = (t) => s.refs.some((r) => r.re.test(t));
   assert.equal(text("a@v0"), true);
   assert.equal(text("a@v1)"), true);
   assert.equal(text("see a@v2"), true);
@@ -141,7 +144,7 @@ test("supersededStrings: every lower contract version, no baseline means no plai
   assert.equal(text("b@v0"), true);
   assert.equal(text("xa@v1"), false);
   assert.equal(text("a@v1_x"), false);
-  assert.equal(s.refs.every((r) => !r.global && !r.sticky), true);
+  assert.equal(s.refs.every((r) => !r.re.global && !r.re.sticky), true);
   const noBaseline = supersededStrings(baseConfig(), tree);
   assert.deepEqual(noBaseline.plain, []);
 });
@@ -162,6 +165,37 @@ test("targetFiles names the target's files; a contract's fixture directory expan
   assert.deepEqual(targetFiles("align", "shop.api,shop.web.app", LAYOUT, tree), ["hsdd/spec/shop.api.md", "hsdd/spec/shop.web.app.md"]);
   assert.deepEqual(targetFiles("align", "all", LAYOUT, tree), ["hsdd/spec/shop.api.md", "hsdd/spec/shop.web.app.md"]);
   assert.deepEqual(targetFiles("contract", "new-api", LAYOUT, tree), ["hsdd/contract/new-api.md", "hsdd/contract/schema/new-api.schema.json"]);
+});
+test("supersededStrings with a later version's own file: a lower version is superseded only when deprecated or retired", () => {
+  const config = withDefaults(baseConfig());
+  const notes = { "notes/v1.md": "Built against order-api@v1.\n", "notes/v0.md": "Observed as order-api@v0.\n" };
+  // coexisting: v1 stays stable beside a draft v2, so its citations are live.
+  const coexisting = makeRepo({ stage: "06-planned", files: { ...v2Files(), ...notes } });
+  const live = supersededStrings(config, loadTree(coexisting, LAYOUT, { root: "shop" }));
+  assert.equal(citesSuperseded(coexisting, ["notes/v1.md"], live), false);
+  assert.equal(citesSuperseded(coexisting, ["hsdd/spec/shop.web.app.md"], live), false);
+  assert.equal(citesSuperseded(coexisting, ["notes/v0.md"], live), true, "v0 has no file of its own: history inside a later file");
+  // lockstep: v1 is deprecated in the run that drafts v2.
+  const lockstep = makeRepo({ stage: "06-planned", files: { ...v2Files({ mode: "lockstep", v1: deprecatedV1 }), ...notes } });
+  const tree = loadTree(lockstep, LAYOUT, { root: "shop" });
+  const dead = supersededStrings(config, tree);
+  assert.equal(citesSuperseded(lockstep, ["notes/v1.md"], dead), true);
+  assert.equal(citesSuperseded(lockstep, ["hsdd/spec/shop.web.app.md"], dead), true);
+  // A version's own files describe it: v1's fixtures name order-api@v1 and are not a superseded citation.
+  assert.equal(citesSuperseded(lockstep, ["hsdd/contract/fixture/order-api/create-order.json", "hsdd/contract/schema/order-api.schema.json"], dead), false);
+  // v2's interface names v1 ("As order-api@v1, except ..."), a citation from another version's file.
+  assert.equal(citesSuperseded(lockstep, [V2], dead), true);
+  assert.equal(citesSuperseded(lockstep, targetFiles("citation-touch", "order-api", LAYOUT, tree), dead), true);
+});
+test("targetFiles: a contract id resolves to every version's files, {id}.v{n} to that version's", () => {
+  const dir = makeRepo({ stage: "06-planned", files: v2Files() });
+  const tree = loadTree(dir, LAYOUT, { root: "shop" });
+  const v1Files = [V1, "hsdd/contract/fixture/order-api/create-order.json", "hsdd/contract/fixture/order-api/get-missing-order.json", "hsdd/contract/schema/order-api.schema.json"];
+  const v2Own = [V2, V2_FIXTURE, V2_SCHEMA];
+  assert.deepEqual(targetFiles("contract-touch", "order-api", LAYOUT, tree), [...v1Files, ...v2Own]);
+  assert.deepEqual(targetFiles("citation-touch", "order-api", LAYOUT, tree), [...v1Files, ...v2Own]);
+  assert.deepEqual(targetFiles("contract", "order-api.v2", LAYOUT, tree), v2Own);
+  assert.deepEqual(targetFiles("contract", "order-api.v3", LAYOUT, tree), ["hsdd/contract/order-api.v3.md", "hsdd/contract/schema/order-api.v3.schema.json"]);
 });
 test("parseHandoffBlock: absent, invalid JSON, unterminated, two blocks, other fences", () => {
   assert.deepEqual(parseHandoffBlock("prose only\n"), { block: null, error: null });

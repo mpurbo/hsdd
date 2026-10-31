@@ -91,7 +91,7 @@ export const dispatchContext = (repoRoot) => {
   const ctx = loadContext(repoRoot);
   const textOf = (rel) => (existsSync(join(repoRoot, rel)) ? readFileSync(join(repoRoot, rel), "utf8") : null);
   const candidates = [
-    ...[...ctx.tree.contracts.values()].flatMap((c) => c.validationPaths.map((v) => v.path)),
+    ...ctx.tree.contractFiles.flatMap((c) => c.validationPaths.map((v) => v.path)),
     `${ctx.layout.management}/atlas.md`,
   ];
   const stepsDir = join(repoRoot, P.stepsDir);

@@ -5,6 +5,7 @@ import { basename, join } from "node:path";
 import { validate } from "./schema.mjs";
 import { skillFor, targetType } from "./kinds.mjs";
 import { headings, listItems, plain, sectionEnd, toLines, word } from "./tree.mjs";
+import { supersededVersions, targetVersions } from "./contracts.mjs";
 
 const unique = (xs) => [...new Set(xs)];
 const cmp = (a, b) => (a < b ? -1 : a > b ? 1 : 0);
@@ -209,19 +210,23 @@ const escapeRe = (s) => s.replace(/[.*+?^${}()|[\]\\/]/g, "\\$&");
 // (`v10`, `v1.2`), a word or a contract reference (`order-api@v1` is a contract's version).
 const versionRe = (v) => new RegExp(`(?<![A-Za-z0-9_.@-])${escapeRe(v)}(?![A-Za-z0-9_-]|\\.\\d)`);
 
-// `{slug}@v{k}` followed by a character that is not a letter, digit, `_` or `-`, or by the end.
-const contractVersionRe = (slug, k) => new RegExp(`(?<![A-Za-z0-9_-])${escapeRe(slug)}@v${k}(?![A-Za-z0-9_-])`);
+// `{slug}@{version}` followed by a character that is not a letter, digit, `_` or `-`, or by the end.
+const contractVersionRe = (slug, version) => new RegExp(`(?<![A-Za-z0-9_-])${escapeRe(slug)}@${version}(?![A-Za-z0-9_-])`);
 
+// A version's own files: its contract file, schema and fixtures, which describe it.
+export const ownFiles = (c) => [c.file, ...(c.schemaFile ? [c.schemaFile] : []), ...(c.fixtureFiles ?? [])];
+
+// `plain`: the baseline paths. `refs`: [{ re, except }], a baseline version, or a superseded version of a
+// contract (lib/contracts.mjs: deprecated or retired, or with no file of its own), `except` the files
+// of that version itself, where the string is not a citation.
 export const supersededStrings = (config, tree) => {
   const baseline = config?.sources?.baseline ?? [];
   const versions = unique(baseline.map((s) => s.version).filter((v) => typeof v === "string" && v !== ""));
-  const contractRefs = [...tree.contracts.entries()].flatMap(([slug, c]) => {
-    const n = /^v(\d+)$/.exec(c.version ?? "")?.[1];
-    return n === undefined ? [] : Array.from({ length: Number(n) }, (_, k) => contractVersionRe(slug, k));
-  });
+  const contractRefs = [...tree.contracts.entries()].flatMap(([slug, entry]) => supersededVersions(entry)
+    .map((v) => ({ re: contractVersionRe(slug, v.version), except: new Set(v.file ? ownFiles(v.file) : []) })));
   return {
     plain: unique(baseline.map((s) => s.path).filter((p) => typeof p === "string" && p !== "")),
-    refs: [...versions.map(versionRe), ...contractRefs],
+    refs: [...versions.map((v) => ({ re: versionRe(v), except: new Set() })), ...contractRefs],
   };
 };
 
@@ -229,7 +234,7 @@ export const citesSuperseded = (repoRoot, files, strings) => files.some((rel) =>
   const full = join(repoRoot, rel);
   if (!existsSync(full) || !statSync(full).isFile()) return false;
   const text = readFileSync(full, "utf8");
-  return strings.plain.some((s) => text.includes(s)) || strings.refs.some((r) => r.test(text));
+  return strings.plain.some((s) => text.includes(s)) || strings.refs.some((r) => !r.except.has(rel) && r.re.test(text));
 });
 
 // ---------- the target's files (spec 12.2) ----------
@@ -241,14 +246,15 @@ const TYPE_BY_KIND = {
   "phase-plan": "node", "phase-plan-append": "node",
 };
 
+// A contract id resolves to the files of every version of it, `{id}.v{n}` to that version's (v0.10.0
+// §3.1); a contract or version with no file yet to the paths its first file would take.
 export const targetFiles = (kind, target, layout, tree) => {
   switch (TYPE_BY_KIND[kind] ?? targetType(target, tree)) {
-    case "contract":
-      return [
-        `${layout.contract}/${target}.md`,
-        ...(tree.contracts.get(target)?.fixtureFiles ?? []),
-        `${layout.contract}/schema/${target}.schema.json`,
-      ];
+    case "contract": {
+      const versions = targetVersions(tree, target);
+      if (versions.length > 0) return unique(versions.flatMap((c) => [c.file, ...(c.fixtureFiles ?? []), ...(c.schemaFile ? [c.schemaFile] : [])]));
+      return [`${layout.contract}/${target}.md`, `${layout.contract}/schema/${target}.schema.json`];
+    }
     case "adr": {
       const adr = tree.adrs?.get(target);
       return adr ? [adr.file] : [];

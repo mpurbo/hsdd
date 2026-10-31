@@ -585,7 +585,7 @@ const conditionOf = (ctx, entry) => {
   const files = targetFiles(entry.kind, entry.target, ctx.layout, ctx.tree);
   return {
     holds: citesSuperseded(ctx.repoRoot, files, supersededStrings(ctx.config, ctx.tree)),
-    why: `${entry.id}'s condition cites-superseded holds: ${files.join(", ") || `no file of ${entry.target}`} still names a baseline source or a contract version below the current one, so the handoff runs (spec 12.2)`,
+    why: `${entry.id}'s condition cites-superseded holds: ${files.join(", ") || `no file of ${entry.target}`} still names a baseline source or a superseded contract version, so the handoff runs (spec 12.2)`,
   };
 };
 

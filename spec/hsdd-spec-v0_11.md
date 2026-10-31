@@ -1396,9 +1396,10 @@ spec, then in the parent spec. A cycle among the candidates is a `shape`
 stop (`next.mjs` returns `stop`).
 
 **Done** for a plan segment (`state.mjs done`): every stage is done; every
-contract above `v0` is `status: stable` with `phase_ids: final` (this
-document exempts `v0`: an adopted contract, v0.10.0 §6.3, whose phases are
-not planned until promotion); the registries
+contract version above `v0`, each its own file (v0.10.0 §3.1), is
+`status: stable` with `phase_ids: final`, except a `deprecated` or
+`retired` one (this document exempts `v0`: an adopted contract, v0.10.0
+§6.3, whose phases are not planned until promotion); the registries
 regenerate clean; every cited ADR, contract, open-question and phase id
 resolves; no `must-address` item is open; the ledger validates; and the
 working tree is clean apart from `owner_files`. The final gate (F1) checks
@@ -1437,7 +1438,7 @@ before the align). The orchestrator applies it through `insert-step` items,
 each accepted by a `plan` decision that cites the rule.
 
 **Done** for an intake segment: every stage is done; no `must-address` item
-is open; every contract above `v0` is `status: stable` with `phase_ids:
+is open; every contract version above `v0` is `status: stable` with `phase_ids:
 final` (§9.1); the
 registries regenerate clean;
 every cited id resolves; the ledger validates; and the working tree is clean
@@ -1726,10 +1727,10 @@ is imported from `next.mjs`.
 | C1 | When the generator exists, `node H/scripts/gen-registry.mjs --root {tmp}` on a temporary copy of `H/` exits 0 and writes registries byte-identical to the tree's, so the gate itself never writes into the tree. | error |
 | C2 | Every node spec has a `# {node-id}: {Name}` title matching its file name and a `Kind` field; every child id its `Decomposes into` names has a spec file (a value that is empty or starts with `phases` names none). | scoped |
 | C3 | Every ADR file has front matter with `id`, `status`, `affects` and `date`; every cited `ADR-{nnn}` has a file, or is one a plan-mode stage rule, or a not yet executed intake handoff of kind `adr`, will create (warning); every `affects` target that has a file carries a `Governed by` that names the ADR (a node or phase in its header; a contract in the optional front-matter field `governed_by`, §15.3); a target with no file yet is a warning, `hsdd-adr`'s forward reference. | scoped |
-| C4 | Every contract file (`H/contract/*.md` except `INDEX.md`) has front matter with `id`, `version`, `status`, `kind`, `owner`, `produced_by`, `consumers` and `phase_ids` (`compatibility` is optional, v0.10.0 §15.1); `id` matches the file name; `status: stable` implies `phase_ids: final` except at `version: v0` (an adopted contract, v0.10.0 §6.3); a `stable` contract without `validation: grandfathered` names, in `## Validation`, a schema or fixture path that exists and is not an empty directory (a `draft` without one is a warning). | scoped |
-| C5 | Every `{slug}@v{n}` citation names an existing contract at its current version, or a version its `## Versioning` section names; a contract a plan-mode stage rule, or a not yet executed intake handoff of kind `contract`, will create is a warning. | scoped |
+| C4 | Every contract file (`H/contract/*.md` except `INDEX.md`), one per version (v0.10.0 §3.1), has front matter with `id`, `version`, `status`, `kind`, `owner`, `produced_by`, `consumers` and `phase_ids` (`compatibility` is optional, v0.10.0 §15.1); its file name is its `id`, or, for a later version (a file with the same `id` holds a lower version), `{id}.v{n}` with `v{n}` its `version` (a later version written before 0.10.2 under a name of another form stands, v0.10.0 §15.1); no two files have the same `id` and `version` (each is reported); `status: stable` implies `phase_ids: final` except at `version: v0` (an adopted contract, v0.10.0 §6.3); a `stable` file without `validation: grandfathered` names, in `## Validation`, a schema or fixture path that exists and is not an empty directory (a `draft` without one is a warning). | scoped |
+| C5 | Every `{slug}@v{n}` citation names a version a file of that contract `id` holds, whatever its status, or a version below the current one (the highest a file holds) that the current file's `## Versioning` names (the history of a bump in place before 0.10.2); a contract a plan-mode stage rule, or a not yet executed intake handoff of kind `contract`, will create is a warning, and so is a version a not yet executed handoff of kind `contract` on `{id}.v{n}` will create. | scoped |
 | C6 | Every open-question id is defined once, as a heading in one spec, and every citation of one resolves. | scoped |
-| C7 | Every phase id a contract's `produced_by` or `consumers` names is a phase heading in its node's spec file, in the full form or the short `{n}.{i}` form (v0.10.0 §7.5). | scoped when the contract's `phase_ids` is `final`, else warning |
+| C7 | Every phase id a contract file's `produced_by` or `consumers` names is a phase heading in its node's spec file, in the full form or the short `{n}.{i}` form (v0.10.0 §7.5). | scoped when the file's `phase_ids` is `final`, else warning |
 | C8 | An intake record's slug contains none of `progress`, `execution-plan`, `milestones`, `atlas`; its header has every field of v0.10.0 §11.2; its handoff block (§12.2), when present, parses against appendix A.7, and each handoff's `prompt` appears verbatim in the `## Routing` prose, in the block's order. In an `intake` step the block is required, and may be empty only when `**Class:**` is `structural`. | scoped |
 | D1 | No changed write-set text file contains a banned character or phrase, with §7.6's exemptions (step reports, sidecars, a segment report's generated parts, `H/conventions.md`, the bundled copies under `H/scripts/` and `.claude/`); a segment report's prose slots are checked. | `prose_rules.level` |
 
@@ -1746,7 +1747,7 @@ The final gate runs C0 to C8 over the whole tree with the final scope, then:
 | Id | Check | Level |
 |----|-------|-------|
 | F1 | Every condition of the mode's done definition (§9.1, §9.2) holds, except the `report` stage and the clean working tree. | error |
-| F2 | References to a contract version that is no longer current, outside that contract's own file: one line per file and version, with a count. Dated history may name old versions on purpose (§12.4); the report states the count and that each was read. | warning |
+| F2 | References to a superseded contract version (§12.2: `deprecated` or `retired`, or with no file of its own), outside that contract's own files (every version file of its `id`, and the cited version's schema and fixtures): one line per file and version, with a count. Dated history may name old versions on purpose (§12.4); the report states the count and that each was read. | warning |
 | F3 | `ledger.mjs validate` passes. | error |
 | F4 | No `must-address` item is open, and no `insert-step` item is still `open` (undecided). | error |
 | F5 | `H/contract/INDEX.md` lists every contract slug the specs name. | error |
@@ -2206,16 +2207,26 @@ A.7):
 
 **`cites-superseded`** holds when any of the target's files contains a
 superseded string. The superseded strings are: for every `baseline` source
-in `run.yaml`, its `path` and its `version`; and for every contract whose
-current version is `v{n}` with `n` above 0, each `{slug}@v{k}` with `k`
-below `n`, followed by a character that is not a letter, digit, `_` or `-`,
-or by the end of the text. The target's files are: for a contract,
-`H/contract/{slug}.md`, `H/contract/fixture/{slug}/**` and
-`H/contract/schema/{slug}.schema.json`; for an ADR, its file; for a node,
-its spec file. The match is textual and counts history too: a target whose
-only old-version mentions are history is still dispatched, and its touch
-keeps them (§12.4). `next.mjs` evaluates the condition when the handoff
-comes up, not when the record is written.
+in `run.yaml`, its `path` and its `version`; and for every contract `id`
+whose current version, the highest any file of that `id` holds (v0.10.0
+§3.1), is `v{n}` with `n` above 0, each `{id}@v{k}` with `k` below `n` that
+is superseded, followed by a character that is not a letter, digit, `_` or
+`-`, or by the end of the text. A lower version with a file of its own is
+superseded only when that file is `deprecated` or `retired`: under
+`coexisting` it stays `stable` while it has a live consumer (v0.10.0 §3.5),
+and a citation of it is live. A lower version with no file of its own lives
+only as history inside a later file (a bump in place, before 0.10.2) and is
+superseded. A version's own files (its contract file, schema and fixtures)
+describe it, so `{id}@v{k}` in them is no superseded string. The target's
+files are: for a contract `id`, every version's file with its schema and
+fixtures (`H/contract/{slug}.md`, `H/contract/fixture/{slug}/**` and
+`H/contract/schema/{slug}.schema.json` for the first version, `{slug}.v{n}`
+in place of `{slug}` for a later one); for `{id}.v{n}`, that version's
+files; for an ADR, its file; for a node, its spec file. The match is
+textual and counts history too: a target whose only old-version mentions
+are history is still dispatched, and its touch keeps them (§12.4).
+`next.mjs` evaluates the condition when the handoff comes up, not when the
+record is written.
 
 The block is optional, and its absence keeps a record conformant (v0.10.0
 §15.3). `hsdd-intake` writes it whenever it runs with `--unattended`, and may

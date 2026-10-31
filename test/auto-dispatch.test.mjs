@@ -13,6 +13,7 @@ import { appendJsonl, nextFreeStep, readDispatch, readJsonl } from "../skills/hs
 import { P } from "../skills/hsdd-auto/scripts/lib/paths.mjs";
 import { nowStamp } from "../skills/hsdd-auto/scripts/lib/time.mjs";
 import { addSegment, baseConfig, fakeStep, gitIn, makeRepo, openStep, run } from "./helpers/auto-repo.mjs";
+import { V1, V2, deprecatedV1, v2Files } from "./helpers/auto-contract-v2.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const TEMPLATES = join(HERE, "..", "skills", "hsdd-auto", "scripts", "templates");
@@ -728,4 +729,19 @@ test("contract facts cite the node file for a reference and name a role with no 
   assert.ok(facts.includes("`order-api` names `shop.admin.1` as its consumer, which has no spec file (hsdd/contract/order-api.md)"), facts.join("\n"));
   const phase = factLines(ctx, { kind: "phase-plan", target: "shop.web.app", handoff: null, queue_item: null });
   assert.ok(phase.some((l) => l.startsWith("Consumes `order-api@v1` (hsdd/spec/shop.web.app.md); contract `order-api` is at version v1")), phase.join("\n"));
+});
+
+// ---------- contract versions in their own files (v0.10.0 §3.1, §3.5) ----------
+
+const touchFacts = (files) => factLines(dispatchContext(planRepo("06-planned", { files })), { kind: "citation-touch", target: "shop.web.app", handoff: null, queue_item: null });
+
+test("citation-touch facts: the current version per id, and a lower version superseded only when deprecated", () => {
+  const live = touchFacts(v2Files());
+  assert.ok(live.includes(`\`order-api\` is at v2 (${V2})`), live.join("\n"));
+  assert.ok(live.includes(`\`order-api@v1\` is stable, a lower version that stays live beside v2 (coexisting): a citation of it is not superseded (${V1})`), live.join("\n"));
+  assert.ok(!live.some((l) => l.startsWith("Superseded string `order-api@v1`")), live.join("\n"));
+  assert.ok(live.includes(`Superseded string \`order-api@v0\`: order-api is at v2, and no file holds v0 (${V2})`), live.join("\n"));
+  const dead = touchFacts(v2Files({ mode: "lockstep", v1: deprecatedV1 }));
+  assert.ok(dead.includes(`Superseded string \`order-api@v1\`: order-api is at v2, and its v1 file is deprecated (${V1})`), dead.join("\n"));
+  assert.ok(!dead.some((l) => l.startsWith("`order-api.v2`")), "one id, not one contract per file");
 });

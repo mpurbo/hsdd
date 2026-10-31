@@ -170,16 +170,24 @@ whenever it runs with `--unattended`, and may write it otherwise.
 
 **`cites-superseded`** holds when any of the target's files contains a
 superseded string. The superseded strings are: for every `baseline` source
-in `run.yaml`, its `path` and its `version`; and for every contract whose
-current version is `v{n}` with `n` above 0, each `{slug}@v{k}` with `k`
-below `n`, followed by a character that is not a letter, digit, `_` or `-`,
-or by the end of the text. The target's files are: for a contract,
-`hsdd/contract/{slug}.md`, `hsdd/contract/fixture/{slug}/**` and
-`hsdd/contract/schema/{slug}.schema.json`; for an ADR, its file; for a node,
-its spec file. The match is textual and counts history too: a target whose
-only old-version mentions are history is still dispatched, and its touch
-keeps them. The orchestrator evaluates the condition when the handoff comes
-up, not when the record is written.
+in `run.yaml`, its `path` and its `version`; and for every contract `id`
+whose current version, the highest any file of that `id` holds, is `v{n}`
+with `n` above 0, each `{id}@v{k}` with `k` below `n` that is superseded,
+followed by a character that is not a letter, digit, `_` or `-`, or by the
+end of the text. A lower version with a file of its own is superseded only
+when that file is `deprecated` or `retired`; a `coexisting` version that is
+still `stable` is live. A lower version with no file of its own (bumped in
+place, before 0.10.2) is superseded. A version's own files (its contract
+file, schema and fixtures) never count as citing it. The target's files
+are: for a contract `id`, every version's file with its schema and fixtures
+(`hsdd/contract/{slug}.md`, `hsdd/contract/fixture/{slug}/**` and
+`hsdd/contract/schema/{slug}.schema.json` for the first version,
+`{slug}.v{n}` in place of `{slug}` for a later one); for `{id}.v{n}`, that
+version's files; for an ADR, its file; for a node, its spec file. The match
+is textual and counts history too: a target whose only old-version mentions
+are history is still dispatched, and its touch keeps them. The orchestrator
+evaluates the condition when the handoff comes up, not when the record is
+written.
 
 A `structural` record's block has an empty `handoffs` list, since its
 handoffs are the owner's decision. The continuation after the owner's answer
