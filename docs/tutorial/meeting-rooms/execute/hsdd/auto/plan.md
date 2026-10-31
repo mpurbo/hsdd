@@ -34,6 +34,7 @@ Decisions expected: the request's class and landing (the tree's backend, web and
 | S18 | 2026-10-31-intake-prd-simple-login-v2 | phase-plan-append | hsdd-phase-plan | simple-login.web | completed | 67f2701 |
 | S19 | 2026-10-31-intake-prd-simple-login-v2 | reconcile | hsdd-reconcile | simple-login.web | completed | d86830b |
 | S20 | 2026-10-31-intake-prd-simple-login-v2 | phase-plan-append | hsdd-phase-plan | simple-login.integration | completed | 8a0b50d |
+| S21 | 2026-10-31-intake-prd-simple-login-v2 | reconcile | hsdd-reconcile | simple-login.integration | completed | f27954f |
 
 ## Change log
 
