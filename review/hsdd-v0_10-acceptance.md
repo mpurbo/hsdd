@@ -10,8 +10,8 @@ record names.
 `docs/superpowers/plans/2026-10-10-v0_10-release.md` (this release's plan).
 Criteria A1 to A4 and B1 to C3 are carried from the v0.9 record unchanged;
 A5, D1 to D7 and E1 to E5 cover what v0.10.0 adds; A6 and A7 cover what
-v0.10.1 corrects. Every `Result:` is filled by the owner's run, never by the
-implementer.
+v0.10.1 corrects; F1 to F6 cover what v0.10.2 corrects. Every `Result:` is
+filled by the owner's run, never by the implementer.
 
 ## A. Phase context and coding methods
 
@@ -348,4 +348,83 @@ implementer.
 - **Expected:** an adoption run whose node specs carry no real `unknown:`
   line (only the script's placeholder, or none) fails E1 regardless of
   everything else being in order.
+- **Result:**
+
+## F. The change flow (v0.10.2)
+
+F1 to F3 run on a scratch repository holding a copy of
+`docs/tutorial/simple-login-update/template/`, committed, with the v0.10.2
+skills; they follow the tutorial's prompts in order.
+
+### F1. Intake names the authority and the request's path
+
+- **Run:** "A change request came in: @hsdd/context/update-1-add-phone.md
+  (approved by product). Route it into the tree."
+- **Expected:** the record's Request line ends `(approved PRD)`; its
+  Routing says the change request's path joins each landing node's Sources
+  and each planned phase cites the record in its Scope.
+- **Fails if:** the authority is any other value, or the record says its
+  own path joins Sources.
+- **Result:**
+
+### F2. A lockstep bump writes v2 beside v1 and deprecates v1
+
+- **Run:** "Draft profile-api@v2 (adds phone) per hsdd/management/{the record}."
+- **Expected:** `hsdd/contract/profile-api.v2.md`,
+  `schema/profile-api.v2.schema.json` and `fixture/profile-api.v2/` exist;
+  v1's three paths still exist, and only v1's frontmatter `status` and its
+  `## Versioning` changed; v2's migration note names `lockstep`; v1 is
+  `status: deprecated`, its sunset the first phase in v2's `produced_by`.
+- **Fails if:** a v1 file was renamed or moved, the note names no mode, or
+  v1 is still `stable`.
+- **Result:**
+
+### F3. Append mode leaves the header; reconcile writes the ripple
+
+- **Run:** the tutorial's three `/hsdd-phase-plan … per …` prompts, then
+  "Reconcile: drain the pending governance updates."
+- **Expected:** after planning, no node spec's `Produces` or `Consumes`
+  line changed; each Sources gained `hsdd/context/update-1-add-phone.md`,
+  never the intake record; no lone appended phase carries a sizing-floor
+  line; no appended Scope rests on "per the request's Screen" without the
+  row it means. After reconcile, every node header, the root's child
+  table, embedded summaries, DAG and contract matrix name profile-api@v2.
+- **Fails if:** a planner edited a header, a Sources entry names the
+  record, or a copy above a node still lacks v2 after reconcile.
+- **Result:**
+
+### F4. The context carries the node decisions a phase cites
+
+- **Run:** on a scratch copy of `docs/tutorial/simple-login/execute/`
+  without its `hsdd-context/`, `/hsdd-config simple-login.backend.2 --method superpowers`.
+- **Expected:** `## Decisions` has a `· node decision` subsection for D1
+  and one for D2, each verbatim from `hsdd/spec/simple-login.backend.md`;
+  the Discipline test-first line and constraint 1 carry the
+  merged-dependency sentence; the equality check prints nothing.
+- **Fails if:** a cited decision is missing or paraphrased, or a decision
+  the Phase block does not cite appears.
+- **Result:**
+
+### F5. The checkpoint reads liveness and delegated sign-offs
+
+- **Run:** on a scratch copy of `docs/tutorial/simple-login-update/execute/`
+  as it stood before its checkpoint (commit `a82f99a`, the subtree), "Run
+  the weekly checkpoint. This is the project's first."
+- **Expected:** findings, each with a plan step: profile-api@v1 `stable`
+  while nothing serves it, routed to `hsdd-contract`; web.1, web.3 and
+  integration.1 migrated, routed to `hsdd-reconcile` to move them to
+  `former_consumers`; the nine owner-proxy sign-offs in one finding for the
+  owner. The intake record closes. Executing the reconcile step moves the
+  three ids and deletes none.
+- **Fails if:** v1 is reported healthy, the migrated ids are deleted
+  rather than moved, or the proxy sign-offs count as done with no finding.
+- **Result:**
+
+### F6. Inverted: a sign-off that names no person is not done
+
+- **Run:** as F5, after changing simple-login.backend.3's Reviewer line to
+  `Claude, 2026-10-30`.
+- **Expected:** backend.3 is reported as a claim, the Reviewer naming no
+  person is a finding, and the intake record stays open.
+- **Fails if:** backend.3 counts as done, or the record closes.
 - **Result:**

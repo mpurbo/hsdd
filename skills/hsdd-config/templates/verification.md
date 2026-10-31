@@ -37,7 +37,7 @@ tokens if the harness reports them, product diff vs process artifacts in
 lines; escaped defects added later when found>
 
 ## Sign-off
-- Reviewer / date:
+- Reviewer / date: {person} | {agent} for {person} (delegated)
 - Review tier applied:
 - Disposition of each Outstanding item: verified | waived (reason) |
   deferred to {phase-id}
@@ -46,5 +46,7 @@ lines; escaped defects added later when found>
 
 > The review gate is not passed while an Outstanding item or a Learning
 > lacks a disposition. Dispositions execute at the root through the owning
-> skill (hsdd-contract, hsdd-adr, a node-spec edit), by the human running
-> the gate.
+> skill (hsdd-contract, hsdd-adr, a node-spec edit), by the person running
+> the gate, or by an agent they delegated the gate to. A delegated sign-off
+> names the person it answers to, by name or by a role only they hold (the
+> owner); the next checkpoint lists it for that person to ratify.

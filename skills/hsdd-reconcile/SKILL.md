@@ -7,7 +7,8 @@ description: >
   "merge the phase plans", "apply governance updates", "resolve contract
   requests", "finalize phase ids", "the contract is still provisional", "sweep
   the resolved open question". Also "mark the grandfathered contracts",
-  "discharge the grandfather mark", "retire the contracts of {node}". Runs at
+  "discharge the grandfather mark", "retire the contracts of {node}", "move
+  the migrated consumers", "retire {contract}@v{n}". Runs at
   the root lineage after branches are
   merged — from an implementation repo under the standalone-spec-repo profile,
   never from a standalone clone of the spec repo. Do NOT use for authoring
@@ -35,9 +36,10 @@ one place. Collisions are design decisions and belong to the human.
   `phase_ids: provisional` or `status: draft`, or that a phase is contingent
   on an open `request`.
 - A checkpoint plan step names contracts to mark or discharge as
-  grandfathered, a retired node, or a `draft` contract whose artifact now
-  exists. These invocations usually find no pending section; step 2 still
-  runs the steps they name.
+  grandfathered, a retired node, migrated consumers, a `deprecated` version
+  past its sunset, or a `draft` contract whose artifact now exists. These
+  invocations usually find no pending section; step 2 still runs the steps
+  they name.
 
 **Do NOT use for** authoring or versioning contract bodies (`hsdd-contract`),
 recording decisions (`hsdd-adr`), or phase planning (`hsdd-phase-plan`).
@@ -59,7 +61,8 @@ edits governance files); this skill performs the semantic merge.
    `hsdd/spec/*.md`. If none exist, say so; then still run, in order, the
    steps this invocation names (step 7 for a `draft` contract with
    `phase_ids: final` whose artifact now exists, step 8's grandfather
-   marking or discharge, step 9's retirement, the resolved-question sweep),
+   marking or discharge, step 9's migrated consumers and retirement, the
+   resolved-question sweep),
    then step 12 when any of them changed a contract, and stop. Entries may
    carry rationale sub-bullets, and `contingent phases: none` means nothing
    blocks; read both accordingly.
@@ -74,9 +77,18 @@ edits governance files); this skill performs the semantic merge.
    `consumers`). When both producer and consumer ids are confirmed, flip
    `phase_ids: provisional` to `phase_ids: final`. A side with no planned
    phase consumers (external or human consumers only) counts as confirmed.
+   **The version ripple:** when a confirmed version is one the node's
+   header `Produces` or `Consumes` does not list, add it there, and make
+   every spec above the node that copies those lists say the same: the
+   parent's child-node table and its embedded summary of the node, the
+   parent's DAG (edge labels and edge table), and the root's contract
+   matrix. The header lists every version the node's phases name, so an
+   earlier version stays. Append-mode planning never edits these lines;
+   this step is where a bump reaches them.
 5. **Resolve `request` entries with the human.** Apply contract-shaped answers
-   to the contract file under hsdd-contract rules (a breaking change bumps the
-   version and adds a migration note). Hand cross-cutting answers to hsdd-adr.
+   to the contract file under hsdd-contract rules (a breaking change writes
+   the next version in a new file beside the old one, with a migration note
+   naming its mode). Hand cross-cutting answers to hsdd-adr.
    State which assumption held so contingent phases can start.
 6. **Apply `amend` entries** to the owned contract's body (guarantees or
    semantics the producer's plan settled). A backward-compatible addition
@@ -120,12 +132,16 @@ edits governance files); this skill performs the semantic merge.
    carried". Discharge: when the invoking
    prompt or a checkpoint plan step names a grandfathered contract whose
    artifact now exists at its Validation paths, remove the key and say so.
-9. **Contract retirement.** When the invoking prompt or a checkpoint plan
-   step names a retired node (`- **Status:** retired`), set each contract
-   that node solely produced to `status: retired` **unless** a consumer or
-   an `external_consumers` entry still names the version; in that case
-   leave the status, and report the live consumer as a finding for the
-   checkpoint.
+9. **Migrated consumers and retirement.** When the invoking prompt or a
+   checkpoint plan step names migrated consumers of a version (the rule is
+   `hsdd-contract`'s), move those phase ids from `consumers` to
+   `former_consumers`, creating the key when absent, and never delete one.
+   When it names a `deprecated` version past its sunset, or a retired node
+   (`- **Status:** retired`), set that version, or each contract the node
+   solely produced, to `status: retired` **unless** a consumer or an
+   `external_consumers` entry still names the version; in that case leave
+   the status, and report the live consumer as a finding for the
+   checkpoint. `former_consumers` never blocks a retirement.
 10. **Apply `note` entries** to `hsdd/conventions.md` only when they change a
    convention. Drop notes that duplicate derived data; the registry already
    projects contract facts.
@@ -146,12 +162,13 @@ edits governance files); this skill performs the semantic merge.
 
 | Entry | Target | Rule |
 |-------|--------|------|
-| `confirm` | contract frontmatter | apply; flip `phase_ids` to `final` when both sides are confirmed |
+| `confirm` | contract frontmatter; node header and the specs above it | apply; flip `phase_ids` to `final` when both sides are confirmed; a version the node's header does not list joins it and every copy above (the version ripple) |
 | `request` | contract body (or a new ADR) | human resolves; skill applies; contingent phases unblock |
 | `amend` | contract body | producer-side enrichment; backward-compatible keeps the version, breaking goes to the human and bumps it |
 | `note` | `hsdd/conventions.md` | apply only if it changes a convention; drop derived facts |
 | grandfather step (from a checkpoint plan step) | contract frontmatter | mark: add `validation: grandfathered` to listed `stable` contracts without artifacts, never to a `draft`, never to a new contract, never to one whose history carried the key; discharge: remove the key from a listed contract whose artifact now exists |
-| retire (node retired) | contract frontmatter | `status: retired` for solely-produced contracts with no live consumer; otherwise a finding |
+| migrated consumers (from a checkpoint plan step) | contract frontmatter | move the named phase ids from `consumers` to `former_consumers`; never delete one |
+| retire (node retired, or a `deprecated` version past its sunset) | contract frontmatter | `status: retired` for each such version with no live consumer; otherwise a finding |
 
 ## Quality Gates
 
@@ -159,8 +176,10 @@ edits governance files); this skill performs the semantic merge.
 - [ ] No contract with both sides fully planned remains `phase_ids: provisional`; none with `phase_ids: final`, no open request and an existing validation artifact remains `status: draft`; none was flipped without its artifact.
 - [ ] Grandfather marks were added only to pre-existing fixtureless `stable` contracts named by the plan step (the upgrade step or one carrying it forward), none re-marked after a discharge, and removed wherever the artifact now exists.
 - [ ] No contract was retired while a consumer or external consumer still names it.
+- [ ] Every version a drained `confirm` names is in its node's header and in every copy above it.
+- [ ] Migrated consumers named by the plan step are under `former_consumers`; none was deleted.
 - [ ] Every collision was decided by the human, and the losing plan was updated to match.
-- [ ] Contract edits follow hsdd-contract versioning (breaking change = new version + migration note).
+- [ ] Contract edits follow hsdd-contract versioning (breaking change = a new version file beside the old one + a migration note naming its mode).
 - [ ] `node hsdd/scripts/gen-registry.mjs` ran after the last contract edit.
 - [ ] No artifact still cites a resolved OQ as open; sweep locations
       reported.
@@ -177,3 +196,5 @@ edits governance files); this skill performs the semantic merge.
 | "The OQ row says RESOLVED — done" | Citations elsewhere still gate phases on it and justify contract prose with it. Grep the id; sweep every stale citation. |
 | "The fixtures will come in the next phase; flip it to stable now" | Stable means a consumer can build against fixtures today. Leave it draft, name the hsdd-contract step that adds the artifact, and let hsdd-config warn consumers that it is draft. |
 | "This new contract has no fixtures; mark it grandfathered" | The set closed at upgrade. A new contract without an artifact is an error, not history. |
+| "The phase sections already say v2; the header can wait" | The header, the parent's tables and DAG, and the root's matrix are what the next planner, the checkpoint and the atlas read. The `confirm` entry carries the version; write it into every copy here, once. |
+| "The migrated phases are history; delete them from `consumers`" | Move them to `former_consumers`. The phase records still say they consumed that version, and the contract keeps the matching history. |

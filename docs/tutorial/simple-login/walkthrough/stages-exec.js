@@ -89,7 +89,7 @@ const EXEC = [
         "Look at the merge: the two lanes touched disjoint files, so it was clean by construction.",
       ])}`,
     self: () => `
-      ${prompt("/hsdd-phase simple-login.backend.1")}
+      ${prompt("/hsdd-config simple-login.backend.1")}
       ${prompt("Use superpowers:writing-plans to plan hsdd-context/superpowers/simple-login.backend.1.md")}
       ${checks("lanes", [
         "The plan is under docs/superpowers/plans/, has at most the task cap, and its Global Constraints match the derivative's.",
@@ -131,7 +131,7 @@ const EXEC = [
       ${RUN.integration.wrong.length ? wrong(RUN.integration.wrong) : ""}
       ${say(["This is the first moment the two halves meet. Everything before it was built against fixtures.", RUN.integration.say])}`,
     self: () => `
-      ${prompt("/hsdd-phase simple-login.integration.1")}
+      ${prompt("/hsdd-config simple-login.integration.1")}
       ${prompt("Use superpowers:writing-plans to plan hsdd-context/superpowers/simple-login.integration.1.md")}
       ${checks("integrate", [
         "npm run install:all && npm run dev starts both; http://localhost:5173 signs you in as ayu.",

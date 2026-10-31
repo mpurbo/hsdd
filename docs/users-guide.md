@@ -1155,6 +1155,20 @@ skills, and the next phase switch adds each contract's Validation section
 and any `referenced` contract to the phase context. A superpowers phase
 already in progress keeps the context it started with.
 
+Upgrading from v0.10.1 to v0.10.2 rewrites nothing either: reinstall the
+skills. The change flow gains the rules the second tutorial found missing.
+A later contract version is its own file, `{slug}.v{n}.md`, beside the
+first. A breaking change's migration note names its mode, and a `lockstep`
+bump (one endpoint, one shape) deprecates the old version at once. The
+checkpoint finds consumers that migrated and reconcile moves them to
+`former_consumers`, so `consumers` means live. Reconcile, not append mode,
+writes a new version into the node headers and the root spec. A phase line
+carries the detail it relies on, not a pointer to a source, and the phase
+context now carries the node decisions (`D1`) a phase cites. A sign-off an
+agent takes for you names you, counts as done, and comes back to you at
+the next checkpoint to ratify. Absent fields keep the 0.10.1 behavior; the
+spec's §15.1 has the table.
+
 Upgrading an existing (≥0.6.1) project to v0.10.0 rides the same
 behaviors: the first checkpoint after upgrading (its newest progress report
 has no grandfathered-contracts row) runs them, although the project already

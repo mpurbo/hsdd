@@ -285,7 +285,7 @@ Commit `995f28a`.
 
 ## Step 7: Switch the phase context (hsdd-config, the switch)
 
-**Prompt:** "/hsdd-phase simple-login.backend.1" (and so on per phase).
+**Prompt:** "/hsdd-config simple-login.backend.1" (and so on per phase).
 
 Each switch writes two files outside `hsdd/`:
 
@@ -639,7 +639,9 @@ each needed a judgment the skills do not make.
    direction `referenced`, the word this run chose.
 3. **Node-local decisions are not injected.** A phase Scope that says "per
    D1" points at text the context does not carry. Here the content survived
-   only because reconcile had copied it into a contract.
+   only because reconcile had copied it into a contract. Fixed in v0.10.2:
+   the switch injects every node decision the Phase block cites, under
+   Decisions.
 4. **No disposition for a compatible contract clarification.** The
    Learning vocabulary has `contract-bumped`, not "amended, same version".
 5. **superpowers' final review vs the HSDD tier.** executing-plans requires

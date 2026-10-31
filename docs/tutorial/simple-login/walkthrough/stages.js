@@ -342,9 +342,9 @@ const STAGES = [
       ${say(["This is the token saving: a phase reads one file of 65 to 190 lines, not the whole tree.", "It is also the discipline carrier: TDD and the verification doc travel in the file, not in someone's memory."])}`,
     self: () => `
       ${prompt("Set up HSDD for superpowers.")}
-      ${prompt("/hsdd-phase simple-login.backend.1")}
+      ${prompt("/hsdd-config simple-login.backend.1")}
       ${checks("context", ["hsdd/conventions.md says Coding method: superpowers.", "hsdd-context/simple-login.backend.1.md and hsdd-context/superpowers/simple-login.backend.1.md exist.", "The two bodies are identical (the switch's diff check prints nothing).", "Every contract or ADR id in the file has its text in the file."])}
-      <p class="hint">With HSDD v0.10.1 or later, each contract subsection also carries its Validation section, and a contract the file names that the phase neither consumes nor produces is headed referenced. The recorded files below come from v0.10.0 and have neither.</p>
+      <p class="hint">With HSDD v0.10.1 or later, each contract subsection also carries its Validation section, and a contract the file names that the phase neither consumes nor produces is headed referenced. The recorded files below come from v0.10.0 and have neither. With v0.10.2 or later, the file also carries each node decision its Phase block cites, such as backend.2's D1 and D2.</p>
       <p class="files-line">Compare: ${fileBtn("hsdd-context/superpowers/simple-login.backend.1.md")}</p>`,
     visual: (s) => `<h3>What a phase sees</h3>${contextView(s)}`,
   },

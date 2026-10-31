@@ -210,7 +210,7 @@ const STAGES = [
         "The record carries the five handoff prompts, in order. It was written before any of them ran.",
       ])}
       ${say(["The record is the audit trail: what was decided, before anyone did anything.", "Try the other classes in the panel: each one says why it does not apply."])}
-      ${wrong(["The skill's authority values (accepted RFC, draft, ticket, incident, braindump) have none for an approved PRD amendment, the most common product change. The record says ticket."])}`,
+      ${wrong(["The skill's authority values (accepted RFC, draft, ticket, incident, braindump) have none for an approved PRD amendment, the most common product change. The record says ticket. Fixed in v0.10.2: approved PRD is an authority value."])}`,
     self: () => `
       ${prompt("A change request came in: @hsdd/context/update-1-add-phone.md (approved by product). Route it into the tree.")}
       ${checks("intake", [
@@ -234,16 +234,17 @@ const STAGES = [
         `v2 states its fixture format in full rather than "same as auth-api's": since v0.10.1 a cross-reference pulls the other contract into every phase context.`,
       ])}
       ${proxy("Each version declares its own compatibility, so drafting v2 forced the choice. v2 declares additive-only: the next optional field amends v2 instead of minting v3. The price is a guarantee consumers must keep: ignore fields you do not know.")}
-      ${wrong(["hsdd-contract says a breaking change creates v{n+1} while the old version stays stable, but names one file per slug. Where two live versions sit was left to the run; it chose a .v2 suffix."])}
+      ${wrong(["hsdd-contract says a breaking change creates v{n+1} while the old version stays stable, but names one file per slug. Where two live versions sit was left to the run; it chose a .v2 suffix. Fixed in v0.10.2: a later version is a new file beside the first, as here, and the migration note names a mode. This bump is lockstep, which deprecates v1 in the same run instead of leaving it stable with nothing serving it."])}
       ${say(["Switch the policy in the panel: the same field costs an amend, a version or a new contract.", "The compatibility line in the frontmatter is the cheapest place to save a future version bump."])}`,
     self: () => `
-      ${prompt("Draft profile-api@v2 (adds phone) per hsdd/management/2026-10-30-intake-add-phone.md. v1 stays until its consumers migrate.")}
+      ${prompt("Draft profile-api@v2 (adds phone) per hsdd/management/2026-10-30-intake-add-phone.md.")}
       ${checks("contract", [
         "A v2 contract file with status: draft, phase_ids: provisional, and its own compatibility line.",
         "A v2 schema and five v2 fixtures; validate them against both schemas (Ajv strict): the two 200s fail v1's.",
         "A migration note in v2's Versioning.",
         "hsdd/contract/INDEX.md shows two profile-api rows.",
       ])}
+      <p class="hint">With HSDD v0.10.2 or later, the migration note names its mode, lockstep here, and v1 goes deprecated in the same run, its sunset the phase that ships v2. The recorded run used v0.10.1, where v1 stayed stable.</p>
       <p class="files-line">Compare: ${fileBtn("hsdd/contract/profile-api.v2.md")}</p>`,
     visual: (s) => `<h3>Why one field is a new version</h3>${contractView(s)}`,
   },
@@ -265,6 +266,7 @@ const STAGES = [
         "ADR-001's affects lists profile-api@v2.",
         "Note the node and root spec lines that still say v1: reconcile handles them later.",
       ])}
+      <p class="hint">Fixed in v0.10.2: reconcile's version ripple writes the node headers and the root spec from the confirm entries. The recorded run did it by ruling.</p>
       <p class="files-line">Compare: ${fileBtn("hsdd/contract/auth-api.md")} ${fileBtn("hsdd/adr/001-session-tokens.md")}</p>`,
     visual: (s) => `<h3>Every text that named the old version</h3>${rippleView(s)}`,
   },
@@ -293,6 +295,7 @@ const STAGES = [
         "Each plan ends with a new pending-governance block: a confirm for profile-api@v2.",
         "Did your planners notice the red window? Ours did.",
       ])}
+      <p class="hint">With HSDD v0.10.2 or later, append mode leaves each node header alone (reconcile writes it), Sources gains the change request's own path, and the sizing floor compares appended phases only.</p>
       <p class="files-line">Compare: ${fileBtn("hsdd/spec/simple-login.backend.md")} ${fileBtn("hsdd/spec/simple-login.web.md")}</p>`,
     visual: (s) => `<h3>Shipped rows stay; new rows append</h3>${planView(s)}`,
   },
@@ -314,7 +317,7 @@ const STAGES = [
         "profile-api@v2: status: stable, phase_ids: final.",
         "auth-api@v1 consumers include simple-login.integration.2.",
         "Each plan's new pending block replaced by a Reconciled stamp.",
-        "Decide where your node headers say v1 or v2; ours list both until v1 is deprecated.",
+        "The node headers and the root spec list profile-api@v2 beside v1. With v0.10.2 or later reconcile writes them; ours did by ruling.",
       ])}
       <p class="files-line">Compare: ${fileBtn("hsdd/contract/profile-api.v2.md")} ${fileBtn("hsdd/spec/simple-login.md")}</p>`,
     visual: (s) => `<h3>Seven entries, no collision</h3>${reconcileView(s)}`,
@@ -331,14 +334,15 @@ const STAGES = [
       ])}
       ${say(["Pick a phase in the panel: what it sees, and in which role."])}`,
     self: () => `
-      ${prompt("/hsdd-phase simple-login.backend.3")}
-      ${prompt("/hsdd-phase simple-login.web.4")}
-      ${prompt("/hsdd-phase simple-login.integration.2")}
+      ${prompt("/hsdd-config simple-login.backend.3")}
+      ${prompt("/hsdd-config simple-login.web.4")}
+      ${prompt("/hsdd-config simple-login.integration.2")}
       ${checks("context", [
         "Each context has a profile-api@v2 subsection with Interface, Guarantees and Validation.",
         "profile-api@v1 appears as referenced, and a Referenced line in Discipline names it.",
         "The equality check prints nothing for all three.",
       ])}
+      <p class="hint">With HSDD v0.10.2 or later, a context also carries the node decisions its Phase block cites (web.4's names D1 to D5), and its test-first line says what to fail against when the dependency already merged.</p>
       <p class="files-line">Compare: ${fileBtn("hsdd-context/simple-login.web.4.md")}</p>`,
     visual: (s) => `<h3>What each phase sees</h3>${contextView(s)}`,
   },

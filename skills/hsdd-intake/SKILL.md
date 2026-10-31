@@ -27,7 +27,8 @@ it never defines.
 ## Inputs
 
 - The change request: a path or URL, and its authority (accepted RFC |
-  draft | ticket | incident | braindump).
+  approved PRD | draft | ticket | incident | braindump). An approved
+  amendment to a PRD is `approved PRD`.
 - `hsdd/management/atlas.md` (the newest tree view); when no atlas exists,
   `hsdd/spec/` directly.
 - Every open intake record under `hsdd/management/` (step 1).
@@ -66,9 +67,11 @@ it never defines.
 
 5. **Write the record before the handoff** (shape below). The routing
    decision is auditable because it was written first, not inferred from
-   whatever the next skill did. The request's path also lands in
-   `## Sources` of every node it governs when those skills run; say so in
-   the record.
+   whatever the next skill did. The change request's own path (the
+   `**Request:**` line, never this record's path) also lands in
+   `## Sources` of every node it governs when those skills run, while each
+   phase planned for it cites this record in its Scope; say so in the
+   record.
 6. **Hand off** to the skill the class names, with the exact prompt to run;
    when the record names a promotion, that handoff runs first and the rest
    wait for its confirmation; or stop on `structural`. Under the
@@ -117,7 +120,8 @@ and bumps may be appended by hand}
 ```
 
 A record **closes** when `## Produced` names at least one phase and every
-listed phase has a verification doc on the spec repo's main branch, the
+listed phase has a verification doc on the spec repo's main line (the
+branch the conventions' `**Main line:**` names, `main` when absent), the
 same admissibility rule as everywhere else. `hsdd-checkpoint` appends the
 phases whose Scope cites the record, ticks `**Status:** closed (date)` and
 appends to the change log; this skill never closes a record.

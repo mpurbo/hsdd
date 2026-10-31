@@ -156,6 +156,7 @@ const EXEC = [
         "hsdd/management/ has a progress report, an execution plan and atlas.md.",
         "Every finding is in the register and has a plan step that owns it.",
       ])}
+      <p class="hint">With HSDD v0.10.2 or later, the checkpoint also reports v1's migrated consumers for reconcile to move to former_consumers, and lists the delegated sign-offs in one finding for the owner to ratify.</p>
       <p class="files-line">Compare: ${fileBtn(RECORD)}</p>`,
     visual: (s) => `<h3>What the checkpoint did</h3>${checkpointView(s)}`,
   },

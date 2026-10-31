@@ -92,7 +92,9 @@ be standing in produces a progress report that undercounts the project.
 ## Process
 
 1. **Pin the baselines.** Record the spec repo SHA and every implementation
-   repo SHA. Under the standalone-spec-repo profile, record each repo's
+   repo SHA. **Main**, here and in every rule below, is the spec repo's
+   main line: the branch the conventions' `**Main line:**` names, `main`
+   when the line is absent. Under the standalone-spec-repo profile, record each repo's
    submodule pointer; a pointer that is not a spec-repo main commit is a
    finding *now*, before any content review — every conclusion drawn through
    a forked submodule is suspect.
@@ -104,7 +106,15 @@ be standing in produces a progress report that undercounts the project.
      prose still treating a `RESOLVED` question as pending); undrained
      `## Governance updates (pending reconcile)` sections; verification-doc
      audit (every claimed-done phase has its doc on main, sign-off fields
-     filled, no template residue); management chain integrity (supersedes
+     filled, no template residue, and a Reviewer who names a person: a
+     sign-off delegated to an agent, `{agent} for {person}` or for a role
+     only one person holds such as the owner, counts as done, and the
+     delegated sign-offs since the last checkpoint form one finding whose
+     plan step has that person ratify them or re-run the gate; a Reviewer
+     who names no person leaves the phase a claim, and is a finding, except
+     that a phase an earlier progress report already counted done keeps
+     that status and the finding asks for the person's sign-off);
+     management chain integrity (supersedes
      links resolve by exact filename; baselines present on the progress
      report and execution plan; a milestone document names its Basis; the
      grandfather set's source resolves to a plan step, or reads `empty`);
@@ -145,7 +155,16 @@ be standing in produces a progress report that undercounts the project.
      **retirement health**: a
      contract version at `retired` that a consumer or an `external_consumers`
      entry still names, and a node at `- **Status:** retired` whose
-     solely-produced contracts are not retired, are findings.
+     solely-produced contracts are not retired, are findings. And
+     **migration health**, by `hsdd-contract`'s live-consumer rule: a
+     version's `consumers` naming a shipped phase that has migrated is a
+     finding whose plan step asks `hsdd-reconcile` to move it to
+     `former_consumers`; a `deprecated` version past its sunset is a
+     finding whose plan step asks `hsdd-reconcile` to retire it, or, while a
+     live consumer remains, a finding naming that consumer; a `stable`
+     version that nothing serves any more (the newest shipped phase of its
+     owning node that produces the contract produces a later version and
+     not this one) is a finding routed to `hsdd-contract` to deprecate it.
    - *Code vs plan (each implementation repo):* which phases the code
      actually completes versus what plans and the prior progress report
      claim; contract-surface drift in both directions (code behavior the
@@ -486,6 +505,10 @@ writes live under `hsdd/management/`, plus `hsdd/summary/` through
       diff register against plan, nothing orphaned.
 - [ ] "Done" claims verified against verification docs on main; claims
       without docs reported as claims.
+- [ ] Every sign-off names a person; the delegated ones are one finding for
+      the person they name; one that names no person left its phase a claim.
+- [ ] Migrated consumers, `deprecated` versions past their sunset, and
+      `stable` versions nothing serves are findings with plan steps.
 - [ ] In-progress read from both `openspec/changes/` and `hsdd-context/` in
       every implementation repo; a phase with either and no verification
       doc on main is in-progress, never done.
@@ -555,6 +578,8 @@ writes live under `hsdd/management/`, plus `hsdd/summary/` through
 | "This finding is minor — note it in the report only" | Every register row lands as a plan step or an explicit waiver. No third state; unlanded findings are how confusion compounds. |
 | "I'll fix the stale ADR note while I'm here" | Checkpoint is read-only toward governance. Route the fix to the owning skill as a plan step; a checkpoint that edits specs destroys its own evidence. |
 | "The code looks done, the developer said it's done" | Done = verification doc merged to spec-repo main. Everything else is a claim, and the report says so. |
+| "The Sign-off fields are filled, so the gate passed" | Filled is not signed. A sign-off counts when it names the person the gate answers to; a delegated one also goes to that person, in one finding, to ratify. |
+| "v1 is `stable` and nothing is wrong with it" | A stable version that nothing serves misleads every reader of the registry. If the producer's newest phase serves only a later version, deprecate it through `hsdd-contract`. |
 | "The old plan's link is broken — I'll fix the old file" | Historical docs are never rewritten. Record the finding; conformance applies from the next document forward. |
 | "The atlas from last week mostly holds, patch it" | The atlas is derived state, regenerated whole. A patched atlas is a hand-maintained cache — the failure mode it exists to replace. |
 | "Little changed; copy last week's numbers" | Carrying numbers forward is a scoped-mode privilege and must be stated in the doc. In full mode, count. |

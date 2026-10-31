@@ -138,13 +138,17 @@ replaced by the plan's default gate command in backticks}
 {the ADR's Decision section body, verbatim}
 **Consequences**
 {the ADR's Consequences section body, verbatim}
+### {node-id} {D-id} · node decision
+{the decision's entry in the node spec's Decisions section, verbatim}
 
 ## Open questions
 - {OQ-id} · {status} · {the Question cell, verbatim}
 
 ## Discipline
 - Test-first: write each behavior's failing test, and see it fail, before
-  the code that makes it pass.
+  the code that makes it pass. A test of behavior that a merged dependency
+  phase already delivered fails first against the tree before that phase,
+  or against a named mutant; the verification doc's Observed says which.
 - Governance freeze: change nothing under hsdd/ except this phase's
   verification doc; contracts, ADRs, specs and conventions change only
   through hsdd-contract, hsdd-adr and hsdd-reconcile.
@@ -186,7 +190,9 @@ replaced by the plan's default gate command in backticks}
   has no field block, use the `### {node-id}: …` block embedded in the parent's
   spec.
 - **Contracts:** every contract the phase's Consumes or Produces names, in that
-  order, one subsection each. Then every other contract the file names as
+  order, one subsection each. Find each by its frontmatter `id` and
+  `version`, never by its filename: a later version lives in
+  `{slug}.v{n}.md`. Then every other contract the file names as
   `{contract-id}@{version}`, in the Phase block or inside a contract
   subsection, gets a `referenced` subsection, in the order the file first
   names it. A referenced subsection can name another contract: repeat until
@@ -202,8 +208,11 @@ replaced by the plan's default gate command in backticks}
   contract in the Contracts section names in its own Governed by, and every
   ADR whose `affects` frontmatter names such a contract; each once, in ADR
   number order. A `proposed` ADR keeps its subsection and gains the line
-  `Not binding until accepted.` under its heading. When there are none, omit
-  the section.
+  `Not binding until accepted.` under its heading. Then every node decision
+  the Phase block cites by id (`D{n}`; a range `D{n} to D{m}` cites each id
+  in it), from the node spec's Decisions section, verbatim, in number
+  order. When there are no ADRs and no cited node decisions, omit the
+  section.
 - **Open questions:** only the ids the phase or its contracts cite, with the
   status and question from the owning spec's table. Omit the section when there
   are none.
@@ -228,8 +237,9 @@ replaced by the plan's default gate command in backticks}
    governance file, a fixed text from the template above, or a link. Write no
    sentence of your own into the file. Do not summarize a contract, reorder its
    guarantees, or drop a line you judge unimportant.
-2. **Self-contained.** Every contract, ADR and OQ id the file names has its
-   text inline in its section; a contract the phase neither consumes nor
+2. **Self-contained.** Every contract, ADR and OQ id the file names, and
+   every node decision (`D{n}`) the Phase block cites, has its text inline
+   in its section; a contract the phase neither consumes nor
    produces is inlined as `referenced`. Other phases' ids appear only in the
    Phase block's Dependencies and Collides with lines.
 3. **Push, not pull.** The links are for provenance and escalation. They never
@@ -310,7 +320,10 @@ other id makes OpenSpec reject the config. Quote any rule containing `: `.
 ## Global Constraints
 
 1. Every plan task except the last starts with a step that writes a failing
-   test and records its failing output. Implementation follows.
+   test and records its failing output. Implementation follows. When a
+   merged dependency phase already delivers the behavior a test covers, the
+   step runs the test against the commit before that phase, or against a
+   named mutant, and records which.
 2. The last task writes the verification doc, and it is the only task without
    a failing-test step.
 3. The plan has at most {N} tasks: the phase is sized to one review sitting.
@@ -416,7 +429,8 @@ Run this after writing-plans' self-review, before choosing an execution method.
    leaves it missing or stale hands the coding session a dangling obligation.
 8. **Write the generic phase context** from the template above.
 9. **Self-contained gate.** Check rule 2 against the file you wrote: list every
-   `@v`, `ADR-` and `OQ` id in it and confirm each has its subsection or line.
+   `@v`, `ADR-` and `OQ` id in it, and every `D{n}` in the Phase block, and
+   confirm each has its subsection or line.
    A contract id with none gets a `referenced` subsection, which can name
    further ids: list again until none is missing. Fix the file, never the
    rule.
@@ -471,8 +485,9 @@ review gate is not passed while an Outstanding item lacks a disposition**
       full phase id, with a stamp naming the spec SHA (and `-dirty` when it
       applies).
 - [ ] Every line in it is a verbatim excerpt, template text, or a link.
-- [ ] The self-contained gate passed: every contract, ADR and OQ id named has
-      its text inline, or its external one-liner.
+- [ ] The self-contained gate passed: every contract, ADR and OQ id named,
+      and every node decision the Phase block cites, has its text inline, or
+      its external one-liner.
 - [ ] Every contract subsection is headed `consumes` or `produces` exactly as
       the Phase block's Consumes and Produces say, or `referenced` for any
       other contract the file names, and carries the contract's Validation
