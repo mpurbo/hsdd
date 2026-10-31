@@ -4,8 +4,8 @@
 > planning chain unattended: from an empty tree to reconciled phase plans, or
 > from an incoming change request through every handoff its intake record
 > names. Every decision a human would have taken is recorded in a ledger for
-> one review sitting afterwards. Read it against v0.10.0; only the changes are
-> stated here. Everything in v0.10.0 not touched below still stands.
+> one review sitting afterwards. Read it against v0.10.2; only the changes are
+> stated here. Everything in v0.10.2 not touched below still stands.
 
 **Version:** 0.11.0 (draft)
 **Status:** For review
@@ -13,7 +13,7 @@
 **Owner:** Purbo Mohamad
 **Drafted from:** FT-3, the first unattended planning run on a live project
 (two segments, 96 steps, 90 subagent dispatches, 1071 recorded decisions),
-summarized in chapter 14. This document and v0.10.0 are the whole input for
+summarized in chapter 14. This document and v0.10.2 are the whole input for
 implementing the release; nothing from the FT-3 repository is needed.
 **Supersedes (in part):** v0.10.0 §1.5's skill count and table (one row
 added), §14.1's layout tree (three directories added), §15.1's compatibility
@@ -114,7 +114,7 @@ emptied.
 
 ### 1.4 Versions
 
-v0.11.0 follows v0.10.0 as a minor release. The v1.0 release criterion
+v0.11.0 follows v0.10.2 as a minor release. The v1.0 release criterion
 (v0.10.0 chapter 17, the published case study) is unchanged.
 
 ### 1.5 How to read this document
@@ -126,7 +126,10 @@ acceptance criteria. **Must** and **never** are requirements; **should** is
 a default a project may override in its run configuration. A section number
 without a version prefix refers to this document; v0.10.0's sections are
 written "v0.10.0 §n", and a list that follows that prefix stays in v0.10.0
-("v0.10.0 §16.3, §18.1").
+("v0.10.0 §16.3, §18.1"). The prefix names the v0.10 document,
+`spec/hsdd-spec-v0_10.md`, as of 0.10.2: 0.10.1 and 0.10.2 edited it in
+place without renumbering a section, so "v0.10.0 §n" reads that section's
+0.10.2 text.
 
 ---
 
