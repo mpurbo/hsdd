@@ -226,3 +226,73 @@ it("20 simultaneous POSTs for one room and time give one 201 and nineteen 409 na
     await pool.end();
   }
 });
+
+describe("DELETE /api/bookings/{id}", () => {
+  const del = (id: string, token?: string) =>
+    app!.inject({ method: "DELETE", url: `/api/bookings/${id}`, ...(token === undefined ? {} : { headers: { authorization: `Bearer ${token}` } }) });
+  const NOT_FOUND = { error: { code: "BOOKING_NOT_FOUND", message: "There is no such booking." } };
+
+  it("after a 204 the booking is gone at once and the next request books the same range (G11)", async () => {
+    const { signIn, get, post } = service();
+    const ayu = await signIn("ayu");
+    const created = (await post(bookingBody(), ayu)).json();
+    const res = await del(created.id, ayu);
+    expect(res.statusCode).toBe(204);
+    expect(res.body).toBe("");
+    expect((await get("/api/me/bookings", ayu)).json()).toEqual({ bookings: [] });
+    const rooms = await get(`/api/rooms?${DAY}`, ayu);
+    expect(rooms.json().rooms.flatMap((r: { bookings: unknown[] }) => r.bookings)).toEqual([]);
+    const again = await del(created.id, ayu);
+    expect(again.statusCode).toBe(404);
+    expect(again.json()).toEqual(NOT_FOUND);
+    const rebooked = await post(bookingBody(), await signIn("budi"));
+    expect(rebooked.statusCode).toBe(201);
+  });
+
+  it("answers 404 when the store finds the booking already gone", async () => {
+    const real = createBookingStore(db.pool);
+    const racing: BookingStore = {
+      ...real,
+      find: async (id) => {
+        const b = await real.find(id);
+        await db.pool.query("DELETE FROM booking WHERE id = $1", [id]);
+        return b;
+      },
+    };
+    const { signIn } = service(racing);
+    await seed(ID1, "ayu");
+    const res = await del(ID1, await signIn("ayu"));
+    expect(res.statusCode).toBe(404);
+    expect(res.json()).toEqual(NOT_FOUND);
+  });
+
+  it("answers an upper-case UUID with 404", async () => {
+    const { signIn } = service();
+    const LETTERS = "abcdefab-cdef-4abc-8def-abcdefabcdef";
+    await seed(LETTERS, "ayu");
+    const res = await del(LETTERS.toUpperCase(), await signIn("ayu"));
+    expect(res.statusCode).toBe(404);
+    expect(res.json()).toEqual(NOT_FOUND);
+  });
+
+  it.each([
+    ["GET /api/rooms?…", (a: FastifyInstance, h: Record<string, string>) => a.inject({ method: "GET", url: `/api/rooms?${DAY}`, headers: h })],
+    ["GET /api/me/bookings", (a: FastifyInstance, h: Record<string, string>) => a.inject({ method: "GET", url: "/api/me/bookings", headers: h })],
+    ["POST /api/bookings", (a: FastifyInstance, h: Record<string, string>) =>
+      a.inject({ method: "POST", url: "/api/bookings", headers: { ...h, "content-type": "application/json" }, payload: bookingBody() })],
+    ["DELETE /api/bookings/<uuid>", (a: FastifyInstance, h: Record<string, string>) => a.inject({ method: "DELETE", url: `/api/bookings/${ID1}`, headers: h })],
+  ])("%s answers a missing, an unknown and an expired token with GET /api/me's 401 body, byte for byte (G16)", async (_name, call) => {
+    const { app: a, signIn, setClock } = service();
+    const me = (h: Record<string, string>) => a.inject({ method: "GET", url: "/api/me", headers: h });
+    const expired = await signIn("ayu");
+    setClock("2026-11-04T12:30:01.000Z");
+    const cases: Record<string, string>[] = [{}, { authorization: "Bearer unknown-token" }, { authorization: `Bearer ${expired}` }];
+    for (const h of cases) {
+      const expected = await me(h);
+      const got = await call(a, h);
+      expect(expected.statusCode).toBe(401);
+      expect(got.statusCode).toBe(401);
+      expect(got.body).toBe(expected.body);
+    }
+  });
+});

@@ -1,5 +1,5 @@
 // The phase gate's contract replay: every fixture of auth-api@v1,
-// profile-api@v2 and the served booking-api@v1 endpoints, sent to the real routes, must reproduce.
+// profile-api@v2 and booking-api@v1, sent to the real routes, must reproduce.
 import { randomBytes } from "node:crypto";
 import { describe, expect, it } from "vitest";
 import { ACCOUNTS } from "../src/accounts.ts";
@@ -7,7 +7,7 @@ import { buildApp } from "../src/app.ts";
 import { createBookingStore } from "../src/booking-store.ts";
 import { SESSION_TTL_MS } from "../src/sessions.ts";
 import { testDatabase } from "./db.ts";
-import { type ContractSlug, type PlaceholderHooks, endpointDef, loadFixtures, replayFixture } from "./replay.ts";
+import { type ContractSlug, type PlaceholderHooks, loadFixtures, replayFixture } from "./replay.ts";
 
 const db = testDatabase();
 
@@ -46,13 +46,9 @@ function realService() {
 
 const SLUGS: ContractSlug[] = ["auth-api", "profile-api.v2", "booking-api"];
 
-/** The booking-api endpoints served so far; each route task adds its own. */
-const SERVED = new Set(["GetRoomsResponse", "GetMyBookingsResponse", "PostBookingResponse"]);
-
 describe("contract replay against the real routes", () => {
   for (const slug of SLUGS) {
     for (const fixture of loadFixtures(slug)) {
-      if (slug === "booking-api" && !SERVED.has(endpointDef(fixture.request.method, fixture.request.path)!)) continue;
       it(`${slug}/${fixture.name} (${fixture.replay})`, async () => {
         const { app, hooks } = realService();
         expect(await replayFixture(app, slug, fixture, hooks)).toEqual([]);
@@ -60,4 +56,8 @@ describe("contract replay against the real routes", () => {
       });
     }
   }
+
+  it("replays auth-api 5, profile-api.v2 5 and booking-api 35 fixtures", () => {
+    expect(SLUGS.map((slug) => [slug, loadFixtures(slug).length])).toEqual([["auth-api", 5], ["profile-api.v2", 5], ["booking-api", 35]]);
+  });
 });

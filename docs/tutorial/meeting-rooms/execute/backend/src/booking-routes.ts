@@ -1,5 +1,5 @@
-import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
-import { checkNewBooking, checkRoomsQuery, errorResponse, myBookingsView, roomsView, toWireBooking } from "./booking-rules.ts";
+import type { FastifyInstance } from "fastify";
+import { checkCancel, checkNewBooking, checkRoomsQuery, errorResponse, myBookingsView, roomsView, toWireBooking } from "./booking-rules.ts";
 import type { Account, BookingStore, Clock } from "./domain.ts";
 
 /** The route patterns of booking-api@v1, as Fastify names them. */
@@ -75,11 +75,22 @@ export function registerBookingRoutes(app: FastifyInstance, { clock, store, sign
     return reply.code(201).send(toWireBooking(stored.value));
   });
 
-  // Interim: Task 3 replaces this with the real handler. Until then the
-  // token check alone is served, which is what app.test.ts pins for this route.
-  const tokenOnly = async (request: FastifyRequest, reply: FastifyReply) =>
-    signedIn(request.headers.authorization) === undefined
-      ? reply.code(unauthorized.status).send(unauthorized.body)
-      : reply.code(501).send();
-  app.delete("/api/bookings/:id", tokenOnly);
+  app.delete<{ Params: { id: string } }>("/api/bookings/:id", async (request, reply) => {
+    const account = signedIn(request.headers.authorization);
+    if (account === undefined) {
+      return reply.code(unauthorized.status).send(unauthorized.body);
+    }
+    const { id } = request.params;
+    const checked = checkCancel({ id, accountId: account.id, now: clock(), booking: await store.find(id) });
+    if (!checked.ok) {
+      const { status, body } = errorResponse(checked.error);
+      return reply.code(status).send(body);
+    }
+    // False: another writer removed the row between find and remove.
+    if (!(await store.remove(checked.value))) {
+      const { status, body } = errorResponse({ code: "BOOKING_NOT_FOUND" });
+      return reply.code(status).send(body);
+    }
+    return reply.code(204).send();
+  });
 }
