@@ -1,0 +1,68 @@
+# npm --prefix backend run replay, HEAD fb8be52, 2026-10-31T21:19:04Z
+
+> @simple-login/backend@1.0.0 replay
+> npm run db:up && TZ=Asia/Kolkata vitest run test/contract.replay.test.ts --reporter=verbose
+
+
+> @simple-login/backend@1.0.0 db:up
+> node scripts/db-up.mjs up
+
+ Container meeting-rooms-postgres-1 Running 
+ Container meeting-rooms-postgres-1 Waiting 
+ Container meeting-rooms-postgres-1 Healthy 
+
+ RUN  v5.0.5 <repo>/backend
+
+ ✓ test/contract.replay.test.ts > contract replay against the real routes > auth-api/login-empty-username (exact) 32ms
+ ✓ test/contract.replay.test.ts > contract replay against the real routes > auth-api/login-missing-password (exact) 1ms
+ ✓ test/contract.replay.test.ts > contract replay against the real routes > auth-api/login-success (schema) 36ms
+ ✓ test/contract.replay.test.ts > contract replay against the real routes > auth-api/login-unknown-user (exact) 20ms
+ ✓ test/contract.replay.test.ts > contract replay against the real routes > auth-api/login-wrong-password (exact) 21ms
+ ✓ test/contract.replay.test.ts > contract replay against the real routes > profile-api.v2/me-ayu (exact) 19ms
+ ✓ test/contract.replay.test.ts > contract replay against the real routes > profile-api.v2/me-budi (exact) 19ms
+ ✓ test/contract.replay.test.ts > contract replay against the real routes > profile-api.v2/me-expired-token (exact) 19ms
+ ✓ test/contract.replay.test.ts > contract replay against the real routes > profile-api.v2/me-no-token (exact) 1ms
+ ✓ test/contract.replay.test.ts > contract replay against the real routes > profile-api.v2/me-unknown-token (exact) 1ms
+ ✓ test/contract.replay.test.ts > contract replay against the real routes > booking-api/book-365-days-ahead (exact) 41ms
+ ✓ test/contract.replay.test.ts > contract replay against the real routes > booking-api/book-a-room (exact) 23ms
+ ✓ test/contract.replay.test.ts > contract replay against the real routes > booking-api/book-eight-hours (exact) 22ms
+ ✓ test/contract.replay.test.ts > contract replay against the real routes > booking-api/book-end-not-after-start (exact) 20ms
+ ✓ test/contract.replay.test.ts > contract replay against the real routes > booking-api/book-in-the-repeated-hour (exact) 22ms
+ ✓ test/contract.replay.test.ts > contract replay against the real routes > booking-api/book-instant-with-offset (exact) 20ms
+ ✓ test/contract.replay.test.ts > contract replay against the real routes > booking-api/book-not-on-a-quarter-hour (exact) 19ms
+ ✓ test/contract.replay.test.ts > contract replay against the real routes > booking-api/book-overlap-several (exact) 22ms
+ ✓ test/contract.replay.test.ts > contract replay against the real routes > booking-api/book-overlap (exact) 22ms
+ ✓ test/contract.replay.test.ts > contract replay against the real routes > booking-api/book-same-time-other-room (exact) 22ms
+ ✓ test/contract.replay.test.ts > contract replay against the real routes > booking-api/book-started-and-overlapping (exact) 20ms
+ ✓ test/contract.replay.test.ts > contract replay against the real routes > booking-api/book-started (exact) 19ms
+ ✓ test/contract.replay.test.ts > contract replay against the real routes > booking-api/book-title-80-characters (exact) 22ms
+ ✓ test/contract.replay.test.ts > contract replay against the real routes > booking-api/book-title-blank (exact) 19ms
+ ✓ test/contract.replay.test.ts > contract replay against the real routes > booking-api/book-title-too-long (exact) 19ms
+ ✓ test/contract.replay.test.ts > contract replay against the real routes > booking-api/book-too-far-ahead (exact) 19ms
+ ✓ test/contract.replay.test.ts > contract replay against the real routes > booking-api/book-too-long (exact) 19ms
+ ✓ test/contract.replay.test.ts > contract replay against the real routes > booking-api/book-touching (exact) 22ms
+ ✓ test/contract.replay.test.ts > contract replay against the real routes > booking-api/book-unknown-room (exact) 21ms
+ ✓ test/contract.replay.test.ts > contract replay against the real routes > booking-api/book-unknown-token (exact) 1ms
+ ✓ test/contract.replay.test.ts > contract replay against the real routes > booking-api/cancel-malformed-id (exact) 21ms
+ ✓ test/contract.replay.test.ts > contract replay against the real routes > booking-api/cancel-my-booking (exact) 22ms
+ ✓ test/contract.replay.test.ts > contract replay against the real routes > booking-api/cancel-no-token (exact) 1ms
+ ✓ test/contract.replay.test.ts > contract replay against the real routes > booking-api/cancel-someone-elses (exact) 20ms
+ ✓ test/contract.replay.test.ts > contract replay against the real routes > booking-api/cancel-started (exact) 20ms
+ ✓ test/contract.replay.test.ts > contract replay against the real routes > booking-api/cancel-unknown (exact) 20ms
+ ✓ test/contract.replay.test.ts > contract replay against the real routes > booking-api/my-bookings-budi (exact) 24ms
+ ✓ test/contract.replay.test.ts > contract replay against the real routes > booking-api/my-bookings-expired-token (exact) 20ms
+ ✓ test/contract.replay.test.ts > contract replay against the real routes > booking-api/my-bookings-none (exact) 21ms
+ ✓ test/contract.replay.test.ts > contract replay against the real routes > booking-api/rooms-from-not-before-to (exact) 22ms
+ ✓ test/contract.replay.test.ts > contract replay against the real routes > booking-api/rooms-instant-without-milliseconds (exact) 19ms
+ ✓ test/contract.replay.test.ts > contract replay against the real routes > booking-api/rooms-no-token (exact) 1ms
+ ✓ test/contract.replay.test.ts > contract replay against the real routes > booking-api/rooms-on-a-clock-change-day (exact) 22ms
+ ✓ test/contract.replay.test.ts > contract replay against the real routes > booking-api/rooms-on-a-date (exact) 21ms
+ ✓ test/contract.replay.test.ts > contract replay against the real routes > booking-api/rooms-range-edges (exact) 23ms
+ ✓ test/contract.replay.test.ts > contract replay against the real routes > replays auth-api 5, profile-api.v2 5 and booking-api 35 fixtures 15ms
+
+ Test Files  1 passed (1)
+      Tests  46 passed (46)
+   Start at  02:49:05
+   Duration  1.15s (tests 87%, import 11%, transform 2%)
+
+# exit 0
