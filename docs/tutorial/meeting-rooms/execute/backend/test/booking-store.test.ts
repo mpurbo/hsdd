@@ -130,3 +130,74 @@ describe("zones", () => {
     }
   });
 });
+
+const D = "2026-11-05";
+const slot = (from: string, to: string, over: Partial<NewBooking> = {}): NewBooking =>
+  booking({ start: at(`${D}T${from}:00.000Z`), end: at(`${D}T${to}:00.000Z`), ...over });
+const stored = async (b: NewBooking) => {
+  const r = await store().insert(b);
+  if (!r.ok) throw new Error("insert refused");
+  return r.value;
+};
+
+describe("overlapping", () => {
+  it("lists every room's bookings that overlap [from, to), earliest start first (G13 input)", async () => {
+    const kew = await stored(slot("05:00", "06:00", { roomId: "kew" }));
+    const merapi = await stored(slot("03:00", "04:00"));
+    const thames = await stored(slot("01:00", "02:00", { roomId: "thames", accountId: "u_002" }));
+    await stored(slot("06:00", "07:00", { roomId: "bromo" }));
+    expect(await store().overlapping(at(`${D}T01:30:00.000Z`), at(`${D}T06:00:00.000Z`))).toEqual([thames, merapi, kew]);
+  });
+
+  it("excludes a booking that ends at from (half-open)", async () => {
+    await stored(slot("01:00", "02:00"));
+    expect(await store().overlapping(at(`${D}T02:00:00.000Z`), at(`${D}T03:00:00.000Z`))).toEqual([]);
+  });
+
+  it("answers a range from 0000-01-01T00:00:00.000Z like any range (D10)", async () => {
+    const it1 = await stored(slot("02:00", "03:00"));
+    expect(await store().overlapping(at("0000-01-01T00:00:00.000Z"), at("2026-11-05T02:15:00.000Z"))).toEqual([it1]);
+    expect(await store().overlapping(at("-000001-01-01T00:00:00.000Z"), at("2026-11-06T00:00:00.000Z"))).toEqual([it1]);
+  });
+
+  it("a range wholly before year 1 overlaps nothing", async () => {
+    await stored(slot("02:00", "03:00"));
+    expect(await store().overlapping(at("0000-01-01T00:00:00.000Z"), at("0000-06-01T00:00:00.000Z"))).toEqual([]);
+  });
+});
+
+describe("notEndedOf", () => {
+  it("notEndedOf lists the account's bookings whose end is after now (G14)", async () => {
+    await stored(slot("02:00", "03:00"));
+    const inProgress = await stored(slot("02:30", "03:30", { roomId: "bromo" }));
+    const ahead = await stored(slot("05:00", "06:00"));
+    await stored(slot("04:00", "05:00", { accountId: "u_002", roomId: "kew" }));
+    expect(await store().notEndedOf("u_001", at(`${D}T03:00:00.000Z`))).toEqual([inProgress, ahead]);
+  });
+});
+
+describe("restart", () => {
+  it("a second pool on the same database reads every booking with its id (G17)", async () => {
+    const first = new Pool({ connectionString: db.url });
+    const made = [];
+    try {
+      const s = createBookingStore(first);
+      for (const b of [slot("01:00", "02:00"), slot("01:00", "02:00", { roomId: "bromo", accountId: "u_002" }), slot("03:00", "04:00", { accountId: "u_002" })]) {
+        const r = await s.insert(b);
+        if (!r.ok) throw new Error("insert refused");
+        made.push(r.value);
+      }
+    } finally {
+      await first.end();
+    }
+    const second = new Pool({ connectionString: db.url });
+    try {
+      const s = createBookingStore(second);
+      const all = await s.overlapping(at("2026-11-01T00:00:00.000Z"), at("2026-11-10T00:00:00.000Z"));
+      expect([...all].sort((a, b) => a.id.localeCompare(b.id))).toEqual([...made].sort((a, b) => a.id.localeCompare(b.id)));
+      for (const m of made) expect(await s.find(m.id)).toEqual(m);
+    } finally {
+      await second.end();
+    }
+  });
+});

@@ -8,6 +8,11 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
 type Row = { id: string; room_id: string; account_id: string; title: string; start_at: Date; end_at: Date };
 
+// D10: PostgreSQL has no year 0 or earlier in ISO input (22008), so a bound before
+// year 1 goes as year 1. Stored instants are never earlier, so the answer is unchanged.
+const EARLIEST = new Date("0001-01-01T00:00:00.000Z");
+export const sqlInstant = (bound: Date): string => (bound < EARLIEST ? EARLIEST : bound).toISOString();
+
 const toStoredBooking = (row: Row): StoredBooking => ({
   id: row.id,
   roomId: row.room_id,
@@ -55,11 +60,21 @@ export function createBookingStore(pool: Pool): BookingStore {
         client.release(releaseWith);
       }
     },
-    async overlapping() {
-      throw new Error("not implemented");
+    async overlapping(from, to) {
+      const { rows } = await pool.query<Row>(
+        `SELECT ${COLUMNS} FROM booking
+         WHERE tstzrange(start_at, end_at, '[)') && tstzrange($1::timestamptz, $2::timestamptz, '[)')
+         ORDER BY start_at`,
+        [sqlInstant(from), sqlInstant(to)],
+      );
+      return rows.map(toStoredBooking);
     },
-    async notEndedOf() {
-      throw new Error("not implemented");
+    async notEndedOf(accountId, now) {
+      const { rows } = await pool.query<Row>(
+        `SELECT ${COLUMNS} FROM booking WHERE account_id = $1 AND end_at > $2::timestamptz ORDER BY start_at`,
+        [accountId, sqlInstant(now)],
+      );
+      return rows.map(toStoredBooking);
     },
     async find(id) {
       if (!UUID.test(id)) return undefined;
