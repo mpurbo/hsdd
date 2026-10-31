@@ -1,0 +1,6 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "hsdd-auto/owner-files/1",
+  "type": "object",
+  "additionalProperties": { "type": ["string", "null"], "pattern": "^[0-9a-f]{64}$" }
+}

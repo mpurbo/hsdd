@@ -1,0 +1,25 @@
+{
+  "permissions": {
+    "deny": [
+      "Read(~/.claude*/projects/*/memory/**)",
+      "Read(~/.claude*/projects/*/memory)",
+      "Read(~/git/hsdd/**)",
+      "Read(~/git/hsdd)",
+      "Edit(/hsdd/context/**)",
+      "Edit(/hsdd/context)"
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PROJECT_DIR}/hsdd/scripts/auto/hook-bash.mjs\""
+          }
+        ]
+      }
+    ]
+  }
+}

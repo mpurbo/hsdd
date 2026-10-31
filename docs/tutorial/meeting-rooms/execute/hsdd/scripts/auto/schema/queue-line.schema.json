@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "hsdd-auto/queue-line/1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "at", "status"],
+  "properties": {
+    "id": { "type": "string", "pattern": "^Q-[0-9]{3,}$" },
+    "at": { "type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$" },
+    "status": { "enum": ["open", "addressed", "explained", "accepted", "rejected"] },
+    "from": { "type": "string", "pattern": "^S[0-9]{2,}$" },
+    "target": { "type": "string", "minLength": 1 },
+    "kind": { "enum": ["must-address", "consider", "insert-step"] },
+    "text": { "type": "string", "minLength": 1 },
+    "step_kind": { "$ref": "run-line.schema.json#/$defs/insertableKind" },
+    "step_target": { "type": "string", "minLength": 1 },
+    "after": { "type": "string", "minLength": 1 },
+    "by": { "type": "string", "pattern": "^S[0-9]{2,}$" },
+    "note": { "type": "string", "minLength": 1 },
+    "decision": { "type": "string", "pattern": "^DEC-[0-9]{3,}$" }
+  }
+}
