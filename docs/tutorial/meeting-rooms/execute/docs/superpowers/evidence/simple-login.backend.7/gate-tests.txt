@@ -1,0 +1,324 @@
+# npm --prefix backend run gate -- --reporter=verbose (the same gate, every test named; JSON request-log lines from the start tests removed), HEAD fb8be52, 2026-10-31T21:19:51Z
+
+> @simple-login/backend@1.0.0 gate
+> npm run db:up && tsc --noEmit && TZ=Asia/Kolkata vitest run --reporter=verbose
+
+
+> @simple-login/backend@1.0.0 db:up
+> node scripts/db-up.mjs up
+
+ Container meeting-rooms-postgres-1 Running 
+ Container meeting-rooms-postgres-1 Waiting 
+ Container meeting-rooms-postgres-1 Healthy 
+
+ RUN  v5.0.5 <repo>/backend
+
+ ✓ test/domain.test.ts > booking-api@v1 error table > BOOKING_ERRORS holds booking-api@v1's eight codes 2ms
+ ✓ test/domain.test.ts > booking-api@v1 error table > each code's message is the one the schema fixes 0ms
+ ✓ test/domain.test.ts > booking-api@v1 error table > each code answers with the status every fixture gives it 0ms
+ ✓ test/domain.test.ts > booking-api@v1 error table > auth-api@v1's VALIDATION_FAILED body stays apart from booking-api@v1's 0ms
+ ✓ test/domain.test.ts > booking types > BookingStore's methods have the shapes the routes will call 0ms
+ ✓ test/booking-rules.test.ts > the rules module is pure (ADR-002 Decision 4) > imports only the domain types and the rooms 1ms
+ ✓ test/booking-rules.test.ts > the rules module is pure (ADR-002 Decision 4) > reads no clock and names no time zone 0ms
+ ✓ test/booking-rules.test.ts > instants (G1, G2) > G1: an instant is exactly the toISOString() form 2ms
+ ✓ test/booking-rules.test.ts > instants (G1, G2) > G1: a year that is not four digits is refused, though toISOString() writes it 0ms
+ ✓ test/booking-rules.test.ts > instants (G1, G2) > G1: only a string is an instant 0ms
+ ✓ test/booking-rules.test.ts > instants (G1, G2) > G2: a quarter-hour instant has UTC minutes 00, 15, 30 or 45 and zero seconds and milliseconds 0ms
+ ✓ test/booking-rules.test.ts > GET /api/rooms query (G1) > G1: from and to are instants, from before to 0ms
+ ✓ test/booking-rules.test.ts > GET /api/rooms query (G1) > G1: from not before to is refused 0ms
+ ✓ test/booking-rules.test.ts > GET /api/rooms query (G1) > G1: a missing, repeated, empty or non-instant parameter is refused 0ms
+ ✓ test/booking-rules.test.ts > GET /api/rooms query (G1) > no cap on the range, and other parameters are ignored 0ms
+ ✓ test/booking-rules.test.ts > POST /api/bookings request (G2, G8) > a valid body gives the new booking, owned by the caller 0ms
+ ✓ test/booking-rules.test.ts > POST /api/bookings request (G2, G8) > other fields are ignored 0ms
+ ✓ test/booking-rules.test.ts > POST /api/bookings request (G2, G8) > the content-type is application/json, as for sign-in 0ms
+ ✓ test/booking-rules.test.ts > POST /api/bookings request (G2, G8) > the body is a JSON object 0ms
+ ✓ test/booking-rules.test.ts > POST /api/bookings request (G2, G8) > a missing or mistyped field is refused 0ms
+ ✓ test/booking-rules.test.ts > POST /api/bookings request (G2, G8) > D3: roomId names one of the four rooms 0ms
+ ✓ test/booking-rules.test.ts > POST /api/bookings request (G2, G8) > G2: start and end are quarter-hour instants, end after start 0ms
+ ✓ test/booking-rules.test.ts > POST /api/bookings request (G2, G8) > G8: 80 emoji are accepted and 81 refused: characters are code points 0ms
+ ✓ test/booking-rules.test.ts > POST /api/bookings request (G2, G8) > G8: an empty title, or one of whitespace only, is refused 0ms
+ ✓ test/booking-rules.test.ts > POST /api/bookings request (G2, G8) > G8, D9: a title holding U+0000 or an unpaired surrogate is refused 0ms
+ ✓ test/booking-rules.test.ts > POST /api/bookings request (G2, G8) > G8: the title is kept exactly as sent, never trimmed 0ms
+ ✓ test/booking-rules.test.ts > POST /api/bookings limits, in order (G7, G9, G10, G15) > G9: exactly 8 hours is accepted, 8 hours 15 minutes refused 0ms
+ ✓ test/booking-rules.test.ts > POST /api/bookings limits, in order (G7, G9, G10, G15) > G9: length is elapsed time: London 00:00 to 08:00 on its 25-hour day is 9 hours 0ms
+ ✓ test/booking-rules.test.ts > POST /api/bookings limits, in order (G7, G9, G10, G15) > G7: a clock reading start, or later, has started; a millisecond before has not 0ms
+ ✓ test/booking-rules.test.ts > POST /api/bookings limits, in order (G7, G9, G10, G15) > G10: 8,760 hours ahead is accepted, 8,760 hours 15 minutes refused 0ms
+ ✓ test/booking-rules.test.ts > POST /api/bookings limits, in order (G7, G9, G10, G15) > G15: the first rule that applies answers 0ms
+ ✓ test/booking-rules.test.ts > views (G13, G14) > a stored booking on the wire gains roomName and carries no account 0ms
+ ✓ test/booking-rules.test.ts > views (G13, G14) > a booking of no known room is a defect, not a view 0ms
+ ✓ test/booking-rules.test.ts > views (G13, G14) > G13: every room in D3's order, each with its bookings earliest start first 0ms
+ ✓ test/booking-rules.test.ts > views (G13, G14) > G13: a room with no booking has bookings [] 0ms
+ ✓ test/booking-rules.test.ts > views (G13, G14) > G14: my bookings by start, ties in D3's room order 0ms
+ ✓ test/booking-rules.test.ts > DELETE /api/bookings/{id} (G11, G12) > my booking, before its start, may be cancelled 0ms
+ ✓ test/booking-rules.test.ts > DELETE /api/bookings/{id} (G11, G12) > an id that is not a lower-case UUID is BOOKING_NOT_FOUND, before anything else 0ms
+ ✓ test/booking-rules.test.ts > DELETE /api/bookings/{id} (G11, G12) > G15: a malformed id is BOOKING_NOT_FOUND even when the booking is another account's or has started 0ms
+ ✓ test/booking-rules.test.ts > DELETE /api/bookings/{id} (G11, G12) > an id that names no booking is BOOKING_NOT_FOUND 0ms
+ ✓ test/booking-rules.test.ts > DELETE /api/bookings/{id} (G11, G12) > G12: another account's booking is BOOKING_NOT_YOURS, whatever its timing 0ms
+ ✓ test/booking-rules.test.ts > DELETE /api/bookings/{id} (G11, G12) > G11: a booking whose start the clock has reached is BOOKING_STARTED 0ms
+ ✓ test/booking-rules.test.ts > error responses (booking-api@v1 Errors) > UNAUTHORIZED is 401 with its one message and no conflict 0ms
+ ✓ test/booking-rules.test.ts > error responses (booking-api@v1 Errors) > VALIDATION_FAILED is 400 with its one message and no conflict 0ms
+ ✓ test/booking-rules.test.ts > error responses (booking-api@v1 Errors) > BOOKING_TOO_LONG is 422 with its one message and no conflict 0ms
+ ✓ test/booking-rules.test.ts > error responses (booking-api@v1 Errors) > BOOKING_STARTED is 422 with its one message and no conflict 0ms
+ ✓ test/booking-rules.test.ts > error responses (booking-api@v1 Errors) > BOOKING_TOO_FAR_AHEAD is 422 with its one message and no conflict 0ms
+ ✓ test/booking-rules.test.ts > error responses (booking-api@v1 Errors) > BOOKING_NOT_FOUND is 404 with its one message and no conflict 0ms
+ ✓ test/booking-rules.test.ts > error responses (booking-api@v1 Errors) > BOOKING_NOT_YOURS is 403 with its one message and no conflict 0ms
+ ✓ test/booking-rules.test.ts > error responses (booking-api@v1 Errors) > G6: BOOKING_CONFLICT is 409 and carries error.conflict as a wire Booking 0ms
+ ✓ test/requests.test.ts > parseLoginRequest > accepts a JSON body with both fields 1ms
+ ✓ test/requests.test.ts > parseLoginRequest > accepts a charset parameter and ignores extra fields 0ms
+ ✓ test/requests.test.ts > parseLoginRequest > keeps the username exactly as sent 0ms
+ ✓ test/requests.test.ts > parseLoginRequest > rejects a missing password 0ms
+ ✓ test/requests.test.ts > parseLoginRequest > rejects an empty username 0ms
+ ✓ test/requests.test.ts > parseLoginRequest > rejects a 65-character username 0ms
+ ✓ test/requests.test.ts > parseLoginRequest > rejects a 129-character password 0ms
+ ✓ test/requests.test.ts > parseLoginRequest > rejects a number for a string 0ms
+ ✓ test/requests.test.ts > parseLoginRequest > rejects an array body 0ms
+ ✓ test/requests.test.ts > parseLoginRequest > rejects malformed JSON 0ms
+ ✓ test/requests.test.ts > parseLoginRequest > rejects an empty body 0ms
+ ✓ test/requests.test.ts > parseLoginRequest > rejects a text/plain body 0ms
+ ✓ test/requests.test.ts > parseLoginRequest > rejects no content type 0ms
+ ✓ test/requests.test.ts > parseLoginRequest > counts characters, not UTF-16 units: 40 emoji are 40 characters 0ms
+ ✓ test/requests.test.ts > parseLoginRequest > accepts the limits exactly: 64-character username, 128-character password 0ms
+ ✓ test/requests.test.ts > parseBearer > reads the token after the Bearer scheme, in any case 0ms
+ ✓ test/requests.test.ts > parseBearer > gives nothing for undefined 0ms
+ ✓ test/requests.test.ts > parseBearer > gives nothing for "" 0ms
+ ✓ test/requests.test.ts > parseBearer > gives nothing for "Bearer" 0ms
+ ✓ test/requests.test.ts > parseBearer > gives nothing for "Bearer " 0ms
+ ✓ test/requests.test.ts > parseBearer > gives nothing for "Basic abc" 0ms
+ ✓ test/requests.test.ts > parseBearer > gives nothing for "Bearer a b" 0ms
+ ✓ test/accounts.test.ts > built-in accounts > Ayu's profile equals the me-ayu fixture 2ms
+ ✓ test/accounts.test.ts > built-in accounts > Budi's profile equals the me-budi fixture 1ms
+ ✓ test/accounts.test.ts > built-in accounts > usernames are unique 0ms
+ ✓ test/accounts.test.ts > built-in accounts > stores a 16-byte salt and a 64-byte scrypt key, in hex 0ms
+ ✓ test/accounts.test.ts > built-in accounts > a profile never carries the password 0ms
+ ✓ test/accounts.test.ts > built-in accounts > a profile has exactly the seven profile-api@v2 fields 0ms
+ ✓ test/booking-rules.fixtures.test.ts > booking-api@v1 fixtures the rules decide > are these sixteen, each 400, 403, 404 and 422 1ms
+ ✓ test/booking-rules.fixtures.test.ts > booking-api@v1 fixtures the rules decide > book-end-not-after-start: the rules give its status and body 2ms
+ ✓ test/booking-rules.fixtures.test.ts > booking-api@v1 fixtures the rules decide > book-instant-with-offset: the rules give its status and body 0ms
+ ✓ test/booking-rules.fixtures.test.ts > booking-api@v1 fixtures the rules decide > book-not-on-a-quarter-hour: the rules give its status and body 0ms
+ ✓ test/booking-rules.fixtures.test.ts > booking-api@v1 fixtures the rules decide > book-started-and-overlapping: the rules give its status and body 0ms
+ ✓ test/booking-rules.fixtures.test.ts > booking-api@v1 fixtures the rules decide > book-started: the rules give its status and body 0ms
+ ✓ test/booking-rules.fixtures.test.ts > booking-api@v1 fixtures the rules decide > book-title-blank: the rules give its status and body 0ms
+ ✓ test/booking-rules.fixtures.test.ts > booking-api@v1 fixtures the rules decide > book-title-too-long: the rules give its status and body 0ms
+ ✓ test/booking-rules.fixtures.test.ts > booking-api@v1 fixtures the rules decide > book-too-far-ahead: the rules give its status and body 0ms
+ ✓ test/booking-rules.fixtures.test.ts > booking-api@v1 fixtures the rules decide > book-too-long: the rules give its status and body 0ms
+ ✓ test/booking-rules.fixtures.test.ts > booking-api@v1 fixtures the rules decide > book-unknown-room: the rules give its status and body 0ms
+ ✓ test/booking-rules.fixtures.test.ts > booking-api@v1 fixtures the rules decide > cancel-malformed-id: the rules give its status and body 1ms
+ ✓ test/booking-rules.fixtures.test.ts > booking-api@v1 fixtures the rules decide > cancel-someone-elses: the rules give its status and body 0ms
+ ✓ test/booking-rules.fixtures.test.ts > booking-api@v1 fixtures the rules decide > cancel-started: the rules give its status and body 0ms
+ ✓ test/booking-rules.fixtures.test.ts > booking-api@v1 fixtures the rules decide > cancel-unknown: the rules give its status and body 0ms
+ ✓ test/booking-rules.fixtures.test.ts > booking-api@v1 fixtures the rules decide > rooms-from-not-before-to: the rules give its status and body 0ms
+ ✓ test/booking-rules.fixtures.test.ts > booking-api@v1 fixtures the rules decide > rooms-instant-without-milliseconds: the rules give its status and body 0ms
+ ✓ test/booking-rules.fixtures.test.ts > booking-api@v1 fixtures the rules let through > rooms-on-a-clock-change-day passes its rule 0ms
+ ✓ test/booking-rules.fixtures.test.ts > booking-api@v1 fixtures the rules let through > rooms-on-a-date passes its rule 0ms
+ ✓ test/booking-rules.fixtures.test.ts > booking-api@v1 fixtures the rules let through > rooms-range-edges passes its rule 0ms
+ ✓ test/booking-rules.fixtures.test.ts > booking-api@v1 fixtures the rules let through > book-365-days-ahead passes its rule 0ms
+ ✓ test/booking-rules.fixtures.test.ts > booking-api@v1 fixtures the rules let through > book-a-room passes its rule 0ms
+ ✓ test/booking-rules.fixtures.test.ts > booking-api@v1 fixtures the rules let through > book-eight-hours passes its rule 0ms
+ ✓ test/booking-rules.fixtures.test.ts > booking-api@v1 fixtures the rules let through > book-in-the-repeated-hour passes its rule 0ms
+ ✓ test/booking-rules.fixtures.test.ts > booking-api@v1 fixtures the rules let through > book-overlap-several passes its rule 0ms
+ ✓ test/booking-rules.fixtures.test.ts > booking-api@v1 fixtures the rules let through > book-overlap passes its rule 0ms
+ ✓ test/booking-rules.fixtures.test.ts > booking-api@v1 fixtures the rules let through > book-same-time-other-room passes its rule 0ms
+ ✓ test/booking-rules.fixtures.test.ts > booking-api@v1 fixtures the rules let through > book-title-80-characters passes its rule 0ms
+ ✓ test/booking-rules.fixtures.test.ts > booking-api@v1 fixtures the rules let through > book-touching passes its rule 0ms
+ ✓ test/booking-rules.fixtures.test.ts > booking-api@v1 fixtures the rules let through > cancel-my-booking passes its rule 0ms
+ ✓ test/booking-rules.fixtures.test.ts > booking-api@v1 fixtures the rules let through > book-365-days-ahead: the new booking on the wire is the fixture's body 0ms
+ ✓ test/booking-rules.fixtures.test.ts > booking-api@v1 fixtures the rules let through > book-a-room: the new booking on the wire is the fixture's body 0ms
+ ✓ test/booking-rules.fixtures.test.ts > booking-api@v1 fixtures the rules let through > book-eight-hours: the new booking on the wire is the fixture's body 0ms
+ ✓ test/booking-rules.fixtures.test.ts > booking-api@v1 fixtures the rules let through > book-in-the-repeated-hour: the new booking on the wire is the fixture's body 0ms
+ ✓ test/booking-rules.fixtures.test.ts > booking-api@v1 fixtures the rules let through > book-same-time-other-room: the new booking on the wire is the fixture's body 0ms
+ ✓ test/booking-rules.fixtures.test.ts > booking-api@v1 fixtures the rules let through > book-title-80-characters: the new booking on the wire is the fixture's body 0ms
+ ✓ test/booking-rules.fixtures.test.ts > booking-api@v1 fixtures the rules let through > book-touching: the new booking on the wire is the fixture's body 0ms
+ ✓ test/booking-rules.fixtures.test.ts > booking-api@v1 fixtures the rules let through > book-overlap-several: the conflict body names the given booking 0ms
+ ✓ test/booking-rules.fixtures.test.ts > booking-api@v1 fixtures the rules let through > book-overlap: the conflict body names the given booking 0ms
+ ✓ test/zone.test.ts > ambient time zone > runs in Asia/Kolkata, neither account's zone nor UTC (ADR-002 Consequences) 12ms
+ ✓ test/sessions.test.ts > session store > issues a 43-character base64url token from 32 random bytes, expiring in exactly 30 minutes 2ms
+ ✓ test/sessions.test.ts > session store > resolves a token until just before expiresAt, and not at or after it 0ms
+ ✓ test/sessions.test.ts > session store > does not resolve a token it never issued 0ms
+ ✓ test/sessions.test.ts > session store > keeps both tokens when the same account signs in twice 0ms
+ ✓ test/sessions.test.ts > session store > isLive is a strict comparison against expiresAt 0ms
+ ✓ test/booking-store.test.ts > insert > stores touching bookings of one room (G3) 30ms
+ ✓ test/booking-store.test.ts > insert > returns the stored booking with a new lower-case UUID 9ms
+ ✓ test/booking-store.test.ts > insert > keeps a title exactly as sent, never trimmed 11ms
+ ✓ test/booking-store.test.ts > insert > a booking of another room never blocks (G4) 21ms
+ ✓ test/booking-store.test.ts > insert > refuses an overlap naming the earliest overlapping booking (G6) 28ms
+ ✓ test/booking-store.test.ts > insert > a booking of another account blocks and is named 19ms
+ ✓ test/rooms.test.ts > rooms (D3) > the rooms are booking-api@v1's four, in its order 1ms
+ ✓ test/rooms.test.ts > rooms (D3) > room ids are unique 0ms
+ ✓ test/passwords.test.ts > verifyPassword > accepts the right password 27ms
+ ✓ test/passwords.test.ts > verifyPassword > rejects a wrong password 27ms
+ ✓ test/passwords.test.ts > authenticate > returns the account for the right username and password 27ms
+ ✓ test/passwords.test.ts > authenticate > returns nothing for a wrong password 25ms
+ ✓ test/passwords.test.ts > authenticate > matches usernames exactly: case-sensitive, no trimming 47ms
+ ✓ test/passwords.test.ts > authenticate > still runs one comparison, against the dummy hash, for an unknown username 25ms
+ ✓ test/app.test.ts > buildApp > builds an app that serves the six API routes and nothing else 70ms
+ ✓ test/booking-store.test.ts > find > find reads one booking 8ms
+ ✓ test/booking-store.test.ts > find > find gives undefined for an id that names no booking 2ms
+ ✓ test/booking-store.test.ts > find > find gives undefined for an id that is not a lower-case UUID 12ms
+ ✓ test/booking-store.test.ts > find > find gives undefined for the upper-cased form of a stored id 5ms
+ ✓ test/booking-store.test.ts > remove > removes the booking, and the next insert books the same range (G11) 17ms
+ ✓ test/booking-store.test.ts > remove > gives false when the booking was already gone 18ms
+ ✓ test/booking-store.test.ts > remove > two removes of one booking at once give one true and one false 23ms
+ ✓ test/schema.test.ts > schema.sql > stores two touching bookings of one room 10ms
+ ✓ test/schema.test.ts > schema.sql > refuses an overlapping booking of the same room with SQLSTATE 23P01 20ms
+ ✓ test/schema.test.ts > schema.sql > stores the same range in another room 14ms
+ ✓ test/schema.test.ts > schema.sql > refuses a booking whose end is not after its start 3ms
+ ✓ test/schema.test.ts > schema.sql > gives a booking inserted without an id a random lower-case UUID 11ms
+ ✓ test/schema.test.ts > schema.sql > applying the schema again keeps the bookings 4ms
+ ✓ test/routes.test.ts > POST /api/login > issues a token that expires exactly 30 minutes after the clock 96ms
+ ✓ test/db.test.ts > seedBookings and resetBookings > seeds a fixture's given bookings with their ids and account ids 28ms
+ ✓ test/db.test.ts > seedBookings and resetBookings > keeps a title outside the Basic Multilingual Plane exactly 4ms
+ ✓ test/db.test.ts > seedBookings and resetBookings > resetBookings leaves no booking 15ms
+ ✓ test/replay.test.ts > contract fixtures and schemas > auth-api: loads one fixture per JSON file on disk 5ms
+ ✓ test/replay.test.ts > contract fixtures and schemas > auth-api: every fixture response validates against the schema 33ms
+ ✓ test/replay.test.ts > contract fixtures and schemas > profile-api.v2: loads one fixture per JSON file on disk 2ms
+ ✓ test/replay.test.ts > contract fixtures and schemas > profile-api.v2: every fixture response validates against the schema 14ms
+ ✓ test/replay.test.ts > contract fixtures and schemas > booking-api: loads one fixture per JSON file on disk 9ms
+ ✓ test/replay.test.ts > contract fixtures and schemas > booking-api: every fixture response validates against the schema 28ms
+ ✓ test/replay.test.ts > contract fixtures and schemas > rejects a response whose error code the contract does not allow 2ms
+ ✓ test/replay.test.ts > contract fixtures and schemas > booking-api: 35 fixtures, all exact 10ms
+ ✓ test/booking-store.test.ts > remove > waits for the room's lock, and deletes only under it (D7) 31ms
+ ✓ test/booking-store.test.ts > zones > instants read back unchanged under TZ=Asia/Kolkata with session TimeZone Europe/London (D5) 21ms
+ ✓ test/booking-store.test.ts > zones > instants read back unchanged under TZ=Asia/Kolkata with session TimeZone Asia/Jakarta (D5) 45ms
+ ✓ test/booking-store.test.ts > zones > no SQL in the store converts an instant to a zone (ADR-002 Decision 2) 2ms
+ ✓ test/booking-store.test.ts > overlapping > lists every room's bookings that overlap [from, to), earliest start first (G13 input) 25ms
+ ✓ test/contract.replay.test.ts > contract replay against the real routes > auth-api/login-empty-username (exact) 43ms
+ ✓ test/contract.replay.test.ts > contract replay against the real routes > auth-api/login-missing-password (exact) 2ms
+ ✓ test/contract.replay.test.ts > contract replay against the real routes > auth-api/login-success (schema) 48ms
+ ✓ test/routes.test.ts > POST /api/login > answers a wrong password and an unknown user with byte-identical bodies 51ms
+ ✓ test/routes.test.ts > POST /api/login > answers a body over the size limit with the contract's 400, not Fastify's 413 4ms
+ ✓ test/routes.test.ts > POST /api/login > answers a text/plain body with the contract's 400, not Fastify's 415 2ms
+ ✓ test/routes.test.ts > POST /api/login > answers a request with no body and no content type with the contract's 400 1ms
+ ✓ test/db.test.ts > seedBookings and resetBookings > refuses a given booking whose account is no built-in username 6ms
+ ✓ test/booking-routes.test.ts > GET /api/rooms > decodes percent-encoded colons like plain ones 127ms
+ ✓ test/booking-routes.test.ts > GET /api/rooms > refuses a repeated from with 400 28ms
+ ✓ test/booking-routes.test.ts > GET /api/rooms > answers a range from 0000-01-01T00:00:00.000Z with 200 and its bookings (D10) 27ms
+ ✓ test/booking-routes.test.ts > GET /api/rooms > answers 401 before 400 when both apply (G15) 2ms
+ ✓ test/routes.test.ts > GET /api/me > returns the profile of the account the token was issued for 49ms
+ ✓ test/routes.test.ts > GET /api/me > returns the stored phone byte for byte 24ms
+ ✓ test/routes.test.ts > GET /api/me > accepts the scheme in lower case 24ms
+ ✓ test/replay.test.ts > contract fixtures and schemas > booking-api: every fixture response validates against its endpoint's $defs 16ms
+ ✓ test/replay.test.ts > contract fixtures and schemas > chooses the endpoint's $defs by method and path 0ms
+ ✓ test/replay.test.ts > contract fixtures and schemas > skips files in a fixture directory that are not JSON 2ms
+ ✓ test/replay.test.ts > placeholders and replay modes > fills token and expired-token placeholders through the hooks 0ms
+ ✓ test/replay.test.ts > placeholders and replay modes > auth-api: every fixture reproduces against an app that returns it 49ms
+ ✓ test/replay.test.ts > placeholders and replay modes > profile-api.v2: every fixture reproduces against an app that returns it 5ms
+ ✓ test/replay.test.ts > placeholders and replay modes > booking-api: every fixture reproduces against an app that returns it 28ms
+ ✓ test/server.test.ts > log hygiene (RFC §9) > never writes the password or the token to a log line 126ms
+ ✓ test/server.test.ts > configFromEnv > defaults to port 3000 and the Compose database 0ms
+ ✓ test/server.test.ts > configFromEnv > reads PORT and DATABASE_URL 0ms
+ ✓ test/booking-store.test.ts > overlapping > excludes a booking that ends at from (half-open) 8ms
+ ✓ test/booking-store.test.ts > overlapping > answers a range from 0000-01-01T00:00:00.000Z like any range (D10) 7ms
+ ✓ test/booking-store.test.ts > overlapping > a range wholly before year 1 overlaps nothing 5ms
+ ✓ test/booking-store.test.ts > notEndedOf > notEndedOf lists the account's bookings whose end is after now (G14) 16ms
+ ✓ test/booking-store.test.ts > restart > a second pool on the same database reads every booking with its id (G17) 47ms
+ ✓ test/booking-store.test.ts > insert under contention > waits for the room's lock, then names the booking committed under it (D7) 20ms
+ ✓ test/replay.test.ts > placeholders and replay modes > reports an exact fixture whose real body differs, naming the fixture 2ms
+ ✓ test/replay.test.ts > placeholders and replay modes > issues {{token:u}} at the fixture's clock and {{expired-token:u}} 30 minutes and 1 second before it, then prepares, then sends 17ms
+ ✓ test/replay.test.ts > placeholders and replay modes > reports a fixture with a clock when the caller supplies no prepare hook 8ms
+ ✓ test/replay.test.ts > placeholders and replay modes > turns a placeholder the hooks cannot fill into a problem, without throwing 2ms
+ ✓ test/replay.test.ts > judging a booking-api response > passes a 201 whose id is a fresh lower-case UUID and whose other fields equal the fixture's 0ms
+ ✓ test/replay.test.ts > judging a booking-api response > reports a 201 carrying a given id 0ms
+ ✓ test/replay.test.ts > judging a booking-api response > reports a 201 carrying an id that is not a UUID 1ms
+ ✓ test/replay.test.ts > judging a booking-api response > reports a 201 carrying an upper-case UUID, which is not a BookingId 0ms
+ ✓ test/replay.test.ts > judging a booking-api response > reports a 201 whose other fields differ from the fixture's 0ms
+ ✓ test/replay.test.ts > judging a booking-api response > names an upper-case 201 id as the cause in a few lines 0ms
+ ✓ test/replay.test.ts > judging a booking-api response > names a schema failure by its cause in a few lines, beside the body difference 9ms
+ ✓ test/replay.test.ts > judging a booking-api response > reports a 204 that carries a body, and passes one that carries none 7ms
+ ✓ test/replay.test.ts > judging a booking-api response > reports an empty body where the fixture has one, without parsing it 7ms
+ ✓ test/contract.replay.test.ts > contract replay against the real routes > auth-api/login-unknown-user (exact) 24ms
+ ✓ test/contract.replay.test.ts > contract replay against the real routes > auth-api/login-wrong-password (exact) 26ms
+ ✓ test/contract.replay.test.ts > contract replay against the real routes > profile-api.v2/me-ayu (exact) 25ms
+ ✓ test/contract.replay.test.ts > contract replay against the real routes > profile-api.v2/me-budi (exact) 24ms
+ ✓ test/contract.replay.test.ts > contract replay against the real routes > profile-api.v2/me-expired-token (exact) 24ms
+ ✓ test/booking-routes.test.ts > GET /api/me/bookings > lists only the caller's bookings 28ms
+ ✓ test/booking-routes.test.ts > GET /api/me/bookings > answers 401 without a token 2ms
+ ✓ test/booking-routes.test.ts > POST /api/bookings > creates a booking, answers 201 with its wire form and stores it 32ms
+ ✓ test/booking-routes.test.ts > POST /api/bookings > answers 409 naming the overlapping booking 52ms
+ ✓ test/booking-routes.test.ts > POST /api/bookings > answers 401 without a token 2ms
+ ✓ test/server.test.ts > start > starts on an empty database, books, and after a second start keeps the booking and signs everyone out (G17) 195ms
+ ✓ test/server.test.ts > start when the database fails > rejects naming npm --prefix backend run db:up when the database cannot be reached, and never the URL 2ms
+ ✓ test/db.test.ts > createTestDatabase > two test databases created at once get different names, neither meeting_rooms nor meeting_rooms_e2e 268ms
+ ✓ test/booking-store.test.ts > insert under contention > never names a booking whose cancel holds the room's lock (D7) 24ms
+ ✓ test/booking-store.test.ts > insert under contention > answers a 23P01 by the re-read, naming the booking it met 21ms
+ ✓ test/contract.replay.test.ts > contract replay against the real routes > profile-api.v2/me-no-token (exact) 1ms
+ ✓ test/contract.replay.test.ts > contract replay against the real routes > profile-api.v2/me-unknown-token (exact) 1ms
+ ✓ test/contract.replay.test.ts > contract replay against the real routes > booking-api/book-365-days-ahead (exact) 47ms
+ ✓ test/contract.replay.test.ts > contract replay against the real routes > booking-api/book-a-room (exact) 29ms
+ ✓ test/contract.replay.test.ts > contract replay against the real routes > booking-api/book-eight-hours (exact) 25ms
+ ✓ test/booking-routes.test.ts > POST /api/bookings > answers a limit failure through the rules (started booking is 422) 23ms
+ ✓ test/booking-routes.test.ts > content type: POST /api/bookings answers as POST /api/login does (backend.5 Outstanding) > text/plain 24ms
+ ✓ test/booking-routes.test.ts > content type: POST /api/bookings answers as POST /api/login does (backend.5 Outstanding) > undefined 23ms
+stdout | test/booking-store.race.test.ts > 20 simultaneous inserts for one room and time store one booking and name it nineteen times, ten rounds (G5; PRD v2 Success)
+G5 rounds (ms): 109.9, 29.2, 23.2, 23.9, 23.8, 31.1, 21.2, 33.7, 21.9, 24.0
+
+ ✓ test/booking-store.race.test.ts > 20 simultaneous inserts for one room and time store one booking and name it nineteen times, ten rounds (G5; PRD v2 Success) 392ms
+ ✓ test/contract.replay.test.ts > contract replay against the real routes > booking-api/book-end-not-after-start (exact) 25ms
+ ✓ test/contract.replay.test.ts > contract replay against the real routes > booking-api/book-in-the-repeated-hour (exact) 26ms
+ ✓ test/contract.replay.test.ts > contract replay against the real routes > booking-api/book-instant-with-offset (exact) 24ms
+ ✓ test/contract.replay.test.ts > contract replay against the real routes > booking-api/book-not-on-a-quarter-hour (exact) 29ms
+ ✓ test/booking-routes.test.ts > content type: POST /api/bookings answers as POST /api/login does (backend.5 Outstanding) > application/json; charset=utf-8 48ms
+ ✓ test/booking-routes.test.ts > refuses a body that is not JSON, or JSON that is not an object, with 400 24ms
+ ✓ test/booking-routes.test.ts > answers 401 before 400 when both apply (G15) 1ms
+ ✓ test/server.test.ts > start when the database fails > names the refusal's code and the DATABASE_URL check when the database does not exist (3D000) 5ms
+ ✓ test/db.test.ts > createTestDatabase > drops the database it created when the schema cannot be applied 41ms
+ ✓ test/db.test.ts > createTestDatabase > createTestDatabase(async () => {}) gives a database without the booking table, and drop() removes it 55ms
+ ✓ test/db.test.ts > createTestDatabase > a dropped test database is gone from pg_database 98ms
+ ✓ test/contract.replay.test.ts > contract replay against the real routes > booking-api/book-overlap-several (exact) 30ms
+ ✓ test/contract.replay.test.ts > contract replay against the real routes > booking-api/book-overlap (exact) 27ms
+ ✓ test/contract.replay.test.ts > contract replay against the real routes > booking-api/book-same-time-other-room (exact) 28ms
+ ✓ test/server.test.ts > start when the database fails > npm start's entry exits non-zero with that message when the database cannot be reached 195ms
+ ✓ test/contract.replay.test.ts > contract replay against the real routes > booking-api/book-started-and-overlapping (exact) 24ms
+ ✓ test/contract.replay.test.ts > contract replay against the real routes > booking-api/book-started (exact) 23ms
+ ✓ test/contract.replay.test.ts > contract replay against the real routes > booking-api/book-title-80-characters (exact) 26ms
+ ✓ test/contract.replay.test.ts > contract replay against the real routes > booking-api/book-title-blank (exact) 23ms
+ ✓ test/contract.replay.test.ts > contract replay against the real routes > booking-api/book-title-too-long (exact) 22ms
+ ✓ test/server.test.ts > start when the database fails > keeps serving after the database ends its idle connections (backend.4 deferred minor) 113ms
+ ✓ test/server.test.ts > start when the database fails > answers 500 for the request whose connection is lost while it waits on the room lock, and keeps serving 102ms
+ ✓ test/server.test.ts > package > declares the Node version whose import.meta.main the server entry relies on 1ms
+ ✓ test/server.test.ts > package > the gate and the replay start PostgreSQL and run in Asia/Kolkata 1ms
+ ✓ test/contract.replay.test.ts > contract replay against the real routes > booking-api/book-too-far-ahead (exact) 22ms
+ ✓ test/contract.replay.test.ts > contract replay against the real routes > booking-api/book-too-long (exact) 23ms
+ ✓ test/contract.replay.test.ts > contract replay against the real routes > booking-api/book-touching (exact) 25ms
+ ✓ test/contract.replay.test.ts > contract replay against the real routes > booking-api/book-unknown-room (exact) 23ms
+ ✓ test/contract.replay.test.ts > contract replay against the real routes > booking-api/book-unknown-token (exact) 1ms
+ ✓ test/booking-routes.test.ts > 20 simultaneous POSTs for one room and time give one 201 and nineteen 409 naming it, ten rounds (G5) 286ms
+ ✓ test/booking-routes.test.ts > DELETE /api/bookings/{id} > after a 204 the booking is gone at once and the next request books the same range (G11) 60ms
+ ✓ test/booking-routes.test.ts > DELETE /api/bookings/{id} > answers 404 when the store finds the booking already gone 24ms
+ ✓ test/contract.replay.test.ts > contract replay against the real routes > booking-api/cancel-malformed-id (exact) 23ms
+ ✓ test/contract.replay.test.ts > contract replay against the real routes > booking-api/cancel-my-booking (exact) 24ms
+ ✓ test/contract.replay.test.ts > contract replay against the real routes > booking-api/cancel-no-token (exact) 1ms
+ ✓ test/contract.replay.test.ts > contract replay against the real routes > booking-api/cancel-someone-elses (exact) 22ms
+ ✓ test/contract.replay.test.ts > contract replay against the real routes > booking-api/cancel-started (exact) 22ms
+ ✓ test/contract.replay.test.ts > contract replay against the real routes > booking-api/cancel-unknown (exact) 21ms
+ ✓ test/booking-routes.test.ts > DELETE /api/bookings/{id} > answers an upper-case UUID with 404 21ms
+ ✓ test/booking-routes.test.ts > DELETE /api/bookings/{id} > GET /api/rooms?… answers a missing, an unknown and an expired token with GET /api/me's 401 body, byte for byte (G16) 22ms
+ ✓ test/booking-routes.test.ts > DELETE /api/bookings/{id} > GET /api/me/bookings answers a missing, an unknown and an expired token with GET /api/me's 401 body, byte for byte (G16) 21ms
+ ✓ test/booking-routes.test.ts > DELETE /api/bookings/{id} > POST /api/bookings answers a missing, an unknown and an expired token with GET /api/me's 401 body, byte for byte (G16) 21ms
+ ✓ test/booking-routes.test.ts > DELETE /api/bookings/{id} > DELETE /api/bookings/<uuid> answers a missing, an unknown and an expired token with GET /api/me's 401 body, byte for byte (G16) 21ms
+ ✓ test/contract.replay.test.ts > contract replay against the real routes > booking-api/my-bookings-budi (exact) 25ms
+ ✓ test/contract.replay.test.ts > contract replay against the real routes > booking-api/my-bookings-expired-token (exact) 21ms
+ ✓ test/contract.replay.test.ts > contract replay against the real routes > booking-api/my-bookings-none (exact) 22ms
+ ✓ test/contract.replay.test.ts > contract replay against the real routes > booking-api/rooms-from-not-before-to (exact) 22ms
+ ✓ test/booking-routes.test.ts > requests Fastify refuses before a handler (D-d) > POST /api/bookings over the size limit answers 400 with booking-api's body when the token is valid 21ms
+ ✓ test/booking-routes.test.ts > requests Fastify refuses before a handler (D-d) > POST /api/bookings over the size limit answers 401 when the token is missing or expired 22ms
+ ✓ test/booking-routes.test.ts > requests Fastify refuses before a handler (D-d) > DELETE /api/bookings/{id} with a body over the size limit answers 400, else 401 (Scope) 21ms
+ ✓ test/booking-routes.test.ts > requests Fastify refuses before a handler (D-d) > POST /api/login over the size limit keeps auth-api's 400 1ms
+ ✓ test/booking-routes.test.ts > requests Fastify refuses before a handler (D-d) > DELETE /api/bookings/%E0%A4%A answers 404 BOOKING_NOT_FOUND with a token, 401 without 21ms
+ ✓ test/booking-routes.test.ts > requests Fastify refuses before a handler (D-d) > DELETE /api/bookings/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa answers 404 BOOKING_NOT_FOUND with a token, 401 without 21ms
+ ✓ test/booking-routes.test.ts > requests Fastify refuses before a handler (D-d) > keeps Fastify's own body for a bad URL outside DELETE /api/bookings/ 1ms
+ ✓ test/booking-routes.test.ts > log hygiene on the booking routes (RFC §9) > never writes the password, the token or the authorization header while booking, listing and cancelling 43ms
+ ✓ test/contract.replay.test.ts > contract replay against the real routes > booking-api/rooms-instant-without-milliseconds (exact) 20ms
+ ✓ test/contract.replay.test.ts > contract replay against the real routes > booking-api/rooms-no-token (exact) 1ms
+ ✓ test/contract.replay.test.ts > contract replay against the real routes > booking-api/rooms-on-a-clock-change-day (exact) 24ms
+ ✓ test/contract.replay.test.ts > contract replay against the real routes > booking-api/rooms-on-a-date (exact) 22ms
+ ✓ test/contract.replay.test.ts > contract replay against the real routes > booking-api/rooms-range-edges (exact) 25ms
+ ✓ test/contract.replay.test.ts > contract replay against the real routes > replays auth-api 5, profile-api.v2 5 and booking-api 35 fixtures 15ms
+ ✓ test/booking-store.test.ts > insert under contention > answers a 40P01 by the re-read, naming the booking it met 1001ms
+ ✓ test/booking-store.test.ts > insert under contention > holds under a session default of SERIALIZABLE: one winner, the rest name it, none rejected 43ms
+
+ Test Files  19 passed (19)
+      Tests  299 passed (299)
+   Start at  02:49:41
+   Duration  1.76s (tests 86%, import 12%, transform 1%, worker 1%)
+
+# exit 0

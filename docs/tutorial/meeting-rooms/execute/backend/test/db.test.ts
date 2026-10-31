@@ -101,6 +101,19 @@ describe("createTestDatabase", () => {
     }
   });
 
+  it("createTestDatabase(async () => {}) gives a database without the booking table, and drop() removes it", async () => {
+    const empty = await createTestDatabase(async () => {});
+    expect((await empty.pool.query("SELECT to_regclass('public.booking') AS t")).rows[0].t).toBeNull();
+    await empty.drop();
+    const admin = createPool(maintenanceUrl());
+    try {
+      const { rows } = await admin.query("SELECT 1 FROM pg_database WHERE datname = $1", [empty.name]);
+      expect(rows).toEqual([]);
+    } finally {
+      await admin.end();
+    }
+  });
+
   it("a dropped test database is gone from pg_database", async () => {
     const db = await createTestDatabase();
     await db.drop();
