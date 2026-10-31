@@ -564,7 +564,7 @@ toolchain:
 stop_set: [axis, shape, promotion, breaking-amend, collision, external, gate-twice]
 stop_policy: stop
 predecided:
-  breaking-amend: { answer: "A breaking change to a stable contract takes the next version with a migration note.", decision: DEC-688 }
+  breaking-amend: { answer: "A breaking change to a stable contract takes the next version with a migration note, mode coexisting.", decision: DEC-688 }
 commit:
   trailers: ["Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"]
 segments:
@@ -2166,7 +2166,7 @@ and the new emission date line of the pending section names the rewrite."
 | A collision | return | `collision` |
 | An `amend` or a `request` answer that breaks a consumer of a `stable` contract under `compatibility: versioned` (`frozen` or `v0`: a run-stop candidate, §8.2) | return | `breaking-amend` |
 | The same for a `draft` contract | decide (the rule that it "goes to the human" gives way for drafts) | `judgement` |
-| The migration mode of the next version a breaking answer writes (step 5), `coexisting` or `lockstep` | decide, `would_have_asked: true`, unless the bump's answer (predecided, the orchestrator's or the owner's) names the mode | `breaking-amend`; `judgement` for a `draft` contract |
+| The migration mode, `coexisting` or `lockstep`, of the next version a breaking `request` answer (step 5) or `amend` (step 6) writes | decide, `would_have_asked: true`, unless the bump's answer (predecided, the orchestrator's or the owner's) names the mode | `breaking-amend`; `judgement` for a `draft` contract |
 | A `request` answer that breaks no consumer | decide (the rule "resolve `request` entries with the human" gives way) | `judgement` |
 | Step 5's cross-cutting answer for `hsdd-adr`; step 7's `hsdd-contract` step for a missing validation artifact | route an `insert-step` (`adr` or `adr-update`; `contract-touch`), and never write the ADR or the artifact yourself | none |
 
