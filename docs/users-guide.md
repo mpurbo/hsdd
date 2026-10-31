@@ -1141,8 +1141,9 @@ report. `/hsdd-auto status` shows where the run is and changes nothing.
 **An intake segment.** `/hsdd-auto intake {request path}` routes one change
 request: `hsdd-intake` writes the record, then one step per handoff the
 record names, then the consistency items, an align and the report.
-`--authority accepted-rfc|draft|ticket|incident|braindump` states how much
-the request binds (default `draft`). It never closes the intake record.
+`--authority accepted-rfc|approved-prd|draft|ticket|incident|braindump`
+states how much the request binds (default `draft`). It never closes the
+intake record.
 
 **The stop policy.** Per segment, `--stop-policy stop|decide-and-record`.
 Under `stop`, a stop-set condition (`axis`, `shape`, `promotion`,
@@ -1154,7 +1155,10 @@ and three other hard stops end the run with `STOP.md`. When a segment will
 meet one class many times (an intake that breaks several stable contracts),
 decide it once, under `decide-and-record` only: the decision goes into
 `predecided` in `run.yaml` and every later prompt carries it. A predecided
-answer never covers a breaking change to a `frozen` or `v0` contract.
+answer never covers a breaking change to a `frozen` or `v0` contract. A
+`breaking-amend` answer, predecided or given to `STOP.md`, names the
+migration mode, `coexisting` or `lockstep`; when it names none, the step
+decides the mode and records the decision for your review.
 
 **Answering `STOP.md`.** It holds the stopped step, the stop class, the
 question verbatim, the options with a recommendation, what the stop

@@ -41,8 +41,10 @@ answer you give on the owner's behalf is listed, never hidden.
 ```
 
 Flags: `--stop-policy stop|decide-and-record` sets the opening segment's
-policy; for an intake, `--authority accepted-rfc|draft|ticket|incident|braindump`
-gives the request's authority, default `draft`. `status` runs
+policy; for an intake,
+`--authority accepted-rfc|approved-prd|draft|ticket|incident|braindump`
+gives the request's authority, default `draft`; an approved amendment to a
+PRD is `approved-prd`. `status` runs
 `node hsdd/scripts/auto/state.mjs` and shows its output (with no
 `hsdd/auto/run.yaml`, say no run is configured).
 
@@ -504,8 +506,10 @@ tree. End (Every ending), showing the question.
 **Case B: answer and resume.** Record your answer in the step's sidecar
 (`decide.mjs --step {step} --by orchestrator --stdin`) with
 `would_have_asked: true`, the class, the subagent's options plus any you
-add, and a `why` naming the signal that would have changed it. Put the
-answer and the decision id in a message file, run
+add, and a `why` naming the signal that would have changed it. An answer
+to a `breaking-amend` stop names the migration mode, as a predecided one
+does (Deciding in advance). Put the answer and the decision id in a message
+file, run
 `node hsdd/scripts/auto/dispatch.mjs --resume {step} --reason answer --message-file {file}`,
 send what it prints to the same subagent, wait, and handle the next report.
 Nothing is committed in between. When the host cannot resume a subagent,
@@ -569,7 +573,10 @@ or when an owner fact already gives the answer. Record one decision with
 (`{class}: { answer: "...", decision: DEC-nnn }`), and add a change-log
 entry. `dispatch.mjs` puts it into every later prompt; a subagent that meets
 the class applies it and records its own decision citing yours. It never
-covers a breaking change under `compatibility: frozen` or at `v0`.
+covers a breaking change under `compatibility: frozen` or at `v0`. A
+predecided `breaking-amend` answer names the migration mode, `coexisting` or
+`lockstep`, because every bump it covers needs one; a step given an answer
+that names no mode decides the mode itself and records it with that class.
 
 ### Reviewing a step
 

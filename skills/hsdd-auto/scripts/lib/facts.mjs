@@ -4,7 +4,7 @@
 // paths exist: contract validation paths and the atlas) and `stepFiles` (names under hsdd/auto/steps).
 // Every line ends in ` ({path})`, the file it was read from (10.3 "Facts come from files").
 import { P } from "./paths.mjs";
-import { sourcesOf } from "./config.mjs";
+import { authorityText, sourcesOf } from "./config.mjs";
 import { contractRefs, leafParentsOf, phaseNodeOf, toLines } from "./tree.mjs";
 import { contractRoles, nodeFiles, specFilesInOrder } from "./order.mjs";
 import { contractAt, contractTarget, lowerVersions, refFile, splitRef, supersededVersions, targetVersions, versionsOf } from "./contracts.mjs";
@@ -58,7 +58,7 @@ const governingLines = (ctx, node) => node.governedBy.map((id) => {
 
 const fieldLine = (node, name) => cite(`${code(node.id)} **${name}:** ${node.fields[name] === undefined ? "(absent)" : node.fields[name] === "" ? "(empty)" : node.fields[name]}`, node.file);
 
-const sourceLine = (s) => cite(`Source ${code(s.path)}: ${s.role}, version ${s.version ?? "not given"}, authority ${s.authority ?? "absent"}`, P.runYaml);
+const sourceLine = (s) => cite(`Source ${code(s.path)}: ${s.role}, version ${s.version ?? "not given"}, authority ${authorityText(s.authority) ?? "absent"}`, P.runYaml);
 
 // Phase ids with a verification doc on the main line (the conventions' **Main line:**), by node (12.4).
 const verifiedLines = (ctx) => {
@@ -336,7 +336,7 @@ const intakeFacts = (ctx) => {
   const nodes = [...tree.nodes.values()];
   const upstream = ctx.decisions.filter((d) => d.would_upstream === true).length;
   return [
-    cite(`Request ${code(segment.request)}, authority ${segment.authority}`, P.runYaml),
+    cite(`Request ${code(segment.request)}, authority ${authorityText(segment.authority)}`, P.runYaml),
     ...(open.length > 0
       ? open.map((r) => cite(`Open intake record, lands on ${r.landsOn.length > 0 ? r.landsOn.join(", ") : "nothing"}${r.contracts.length > 0 ? `, contracts ${r.contracts.join(", ")}` : ""}`, r.path))
       : [cite("No open intake record", `${layout.management}/*-intake-*.md`)]),

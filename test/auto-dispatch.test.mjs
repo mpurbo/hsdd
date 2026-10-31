@@ -380,7 +380,7 @@ const EXPECTED_FACTS = {
     "No intake record: this plan segment's step comes from the insert-step item Q-001 (hsdd/auto/queue.jsonl)"],
   promote: ["`shop.api` has no `## Observed surface` section (hsdd/spec/shop.api.md)"],
   graft: ["Child `shop.web.app` of `shop.web`: leaf-parent, spec file hsdd/spec/shop.web.app.md (hsdd/spec/shop.web.md)"],
-  intake: ["Request `ref/spec-v2.md`, authority accepted-rfc (hsdd/auto/run.yaml)", "Node `shop.api`: leaf-parent, Order API (hsdd/spec/shop.api.md)",
+  intake: ["Request `ref/spec-v2.md`, authority accepted RFC (hsdd/auto/run.yaml)", "Node `shop.api`: leaf-parent, Order API (hsdd/spec/shop.api.md)",
     "0 earlier decisions carry would_upstream: true; `node hsdd/scripts/auto/state.mjs upstream` lists them (hsdd/judgement/decisions.jsonl)"],
 };
 
@@ -443,7 +443,42 @@ test("a default invocation renders the instruction slots", () => {
   assert.equal(inv("phase-plan-append"), "Append phases to `shop.web.app` per the insert-step item Q-001.");
   assert.equal(inv("citation-touch"), "Citation touch `hsdd/contract/order-api.md`: move its citations to the current versions.");
   assert.equal(inv("align"), "Align all after the consistency pass.");
-  assert.equal(inv("intake"), "Route `ref/spec-v2.md` (accepted-rfc) into the tree.");
+  assert.equal(inv("intake"), "Route `ref/spec-v2.md` (accepted RFC) into the tree.");
+});
+
+test("an authority reaches every prompt in hsdd-intake's words", () => {
+  // The intake invocation and facts: the segment's authority, which the step writes into the record's Request line.
+  const dir = makeRepo({ stage: "06-planned", files: { [REQUEST]: "# Spec v2\n" } });
+  addSegment(dir, intakeSegment(INTAKE, { authority: "approved-prd" }));
+  stepIn(INTAKE)(dir, 0, "setup");
+  stepIn(INTAKE)(dir, 1, "plan");
+  const ctx = dispatchContext(dir);
+  const next = selectNext(ctx).step;
+  assert.equal(next.kind, "intake");
+  assert.equal(instructionFills(ctx, next).authority, "approved PRD");
+  const out = run(dir, "dispatch.mjs", ["--next"]);
+  assert.equal(out.code, 0, out.stdout);
+  const text = read(dir, out.stdout.split("\n")[0]);
+  assert.equal(section(text, "### Invocation").trim(), "Route `ref/spec-v2.md` (approved PRD) into the tree.");
+  assert.ok(factsOf(text).includes("Request `ref/spec-v2.md`, authority approved PRD (hsdd/auto/run.yaml)"), factsOf(text).join("\n"));
+  // The sources: the preamble's list and the root-spec facts.
+  const sources = {
+    normative: [{ path: "ref/spec.md", cite: "Spec", version: "v1", authority: "accepted-rfc" }],
+    informative: [{ path: "ref/prd.md", cite: "PRD", version: "v3", authority: "approved-prd" }, { path: "ref/notes.md", cite: "Notes", authority: "braindump" }],
+  };
+  const root = makeRepo({ stage: "00-empty", config: baseConfig({ sources }), files: { "ref/prd.md": "# PRD\n", "ref/notes.md": "# Notes\n" } });
+  addSegment(root, planSegment());
+  step(root, 0, "setup");
+  step(root, 1, "plan");
+  const f = preambleFills(dispatchContext(root));
+  for (const want of ["cited as `Spec`, version v1, authority accepted RFC;", "cited as `PRD`, version v3, authority approved PRD;", "cited as `Notes`, version not given, authority braindump;"]) {
+    assert.ok(f.source_lines.includes(want), `${want}\n${f.source_lines}`);
+  }
+  const rootCtx = dispatchContext(root);
+  const facts = factLines(rootCtx, selectNext(rootCtx).step);
+  for (const want of ["`ref/spec.md`: normative, version v1, authority accepted RFC", "`ref/prd.md`: informative, version v3, authority approved PRD"]) {
+    assert.ok(facts.some((l) => l.includes(want)), `${want}\n${facts.join("\n")}`);
+  }
 });
 
 test("routed items are listed by id, and the step section names the skill mode", () => {

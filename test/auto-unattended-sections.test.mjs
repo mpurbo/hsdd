@@ -43,7 +43,7 @@ test("hsdd-spec carries Touch and Citation touch", () => {
   assert.ok(t.includes("**Touch.** Invoked as `touch {node}: {reason}`"));
   assert.ok(t.includes("Never edit the node's `## Phase Plan`, except under the Citation touch paragraph"));
   assert.ok(t.includes("**Citation touch.**") && t.includes("`citation touch {file}: move its citations to the current versions`"));
-  assert.ok(t.includes("ticket | incident)"));
+  assert.ok(t.includes("(accepted RFC | approved PRD | draft | braindump | ticket | incident)"));
   assert.ok(t.includes("Promote `{node}` from as-built to governed with this decomposition?"));
   assert.ok(t.includes("informative only, not decomposed"));
 });
@@ -83,7 +83,7 @@ test("hsdd-reconcile has align as the step after 13", () => {
   assert.ok(n.includes("/hsdd-reconcile align {node ids or all} after {what changed}"));
   for (const part of ["moves every live citation of a contract version", "re-derives each phase gate's contract and guarantee arguments", "checks that every phase id named in a contract's `produced_by`", "as a routed item for the owning skill, never rewriting a phase's scope itself", "It drains nothing and flips nothing unless the invocation also names those steps."]) assert.ok(n.includes(part), part);
   assert.ok(n.includes("- [ ] Every change align made is a citation or a gate argument."));
-  assert.ok(n.includes("No step kind invokes reconcile's grandfather marking, discharge or retirement (its steps 8 and 9)"));
+  assert.ok(n.includes("No step kind invokes reconcile's grandfather marking, discharge, the migrated-consumer move or retirement (its steps 8 and 9)"));
   assert.match(t.slice(0, t.indexOf("\n---\n", 4)), /align the plans after the contract moved/);
   assert.ok(n.includes("step 13's sweep of resolved open questions and its trigger words are unchanged"));
 });

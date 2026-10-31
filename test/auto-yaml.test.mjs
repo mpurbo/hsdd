@@ -37,7 +37,7 @@ toolchain:
 stop_set: [axis, shape, promotion, breaking-amend, collision, external, gate-twice]
 stop_policy: stop
 predecided:
-  breaking-amend: { answer: "A breaking change to a stable contract takes the next version with a migration note.", decision: DEC-688 }
+  breaking-amend: { answer: "A breaking change to a stable contract takes the next version with a migration note, mode coexisting.", decision: DEC-688 }
 commit:
   trailers: ["Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"]
 segments:

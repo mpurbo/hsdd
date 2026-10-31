@@ -510,6 +510,15 @@ test("an invalid --stop-policy, --authority or plan --request is a usage error b
   assert.equal(gitIn(dir, "status", "--porcelain"), "");
 });
 
+test("open-segment takes --authority approved-prd, the authority of an approved PRD amendment", () => {
+  const dir = makeRepo({ stage: "06-planned", config: cfg(), files: { [REQUEST]: "# Spec v2\n" } });
+  const r = run(dir, "state.mjs", ["open-segment", "--instruction-file", instruction(), "--mode", "intake", "--request", REQUEST, "--authority", "approved-prd"]);
+  assert.equal(r.code, 0, r.stderr);
+  const entry = loadConfig(dir).segments.at(-1);
+  assert.equal(entry.mode, "intake");
+  assert.equal(entry.authority, "approved-prd");
+});
+
 test("defaults proposes run, branch, base, skills_dir and owner files without run.yaml", () => {
   const dir = mkdtempSync(join(tmpdir(), "My Shop_App-"));
   gitIn(dir, "init", "-q", "-b", "trunk");

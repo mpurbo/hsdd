@@ -371,6 +371,9 @@ When your arguments contain `--unattended {step}`, you run as step
 | A breaking change to a `stable` contract under `compatibility: versioned` | return. The skill applies its versioning rule itself, so this stop is the section's own: `skill_rule` quotes its sentence "under an unattended run, a breaking change to a `stable` contract under `compatibility: versioned` is returned to the orchestrator" | `breaking-amend` |
 | A breaking change to a `frozen` contract, or to a `v0` contract | report it as a run-stop candidate; no predecided answer applies (a frozen contract takes a new contract, a `v0` one a redesign) | `breaking-amend` |
 | A breaking change to a `draft` contract | decide between `v{n+1}` with a migration note and a change in place with a `## Versioning` line (the rule "a breaking change creates `v{n+1}`" gives way for drafts) | `judgement` |
+| The migration mode of a breaking change, `coexisting` or `lockstep` | decide, `would_have_asked: true`, unless the bump's answer (predecided, the orchestrator's or the owner's) names the mode | `breaking-amend`; `judgement` for a `draft` contract |
+| Under `lockstep`, a consumer node of v{n} with no migration phase planned | route an `insert-step` of kind `phase-plan-append` on that node | none |
+| The ADR `affects` handoff of a bump | route an `insert-step` of kind `adr-update` on each such ADR, and never edit the ADR yourself | none |
 | Interface and guarantee choices the sources leave open | decide | `judgement` when a careful engineer would ask |
 
 Under an unattended run, a breaking change to a `stable` contract under

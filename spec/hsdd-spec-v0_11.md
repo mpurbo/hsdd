@@ -4,8 +4,8 @@
 > planning chain unattended: from an empty tree to reconciled phase plans, or
 > from an incoming change request through every handoff its intake record
 > names. Every decision a human would have taken is recorded in a ledger for
-> one review sitting afterwards. Read it against v0.10.0; only the changes are
-> stated here. Everything in v0.10.0 not touched below still stands.
+> one review sitting afterwards. Read it against v0.10.2; only the changes are
+> stated here. Everything in v0.10.2 not touched below still stands.
 
 **Version:** 0.11.0 (draft)
 **Status:** For review
@@ -13,7 +13,7 @@
 **Owner:** Purbo Mohamad
 **Drafted from:** FT-3, the first unattended planning run on a live project
 (two segments, 96 steps, 90 subagent dispatches, 1071 recorded decisions),
-summarized in chapter 14. This document and v0.10.0 are the whole input for
+summarized in chapter 14. This document and v0.10.2 are the whole input for
 implementing the release; nothing from the FT-3 repository is needed.
 **Supersedes (in part):** v0.10.0 §1.5's skill count and table (one row
 added), §14.1's layout tree (three directories added), §15.1's compatibility
@@ -114,7 +114,7 @@ emptied.
 
 ### 1.4 Versions
 
-v0.11.0 follows v0.10.0 as a minor release. The v1.0 release criterion
+v0.11.0 follows v0.10.2 as a minor release. The v1.0 release criterion
 (v0.10.0 chapter 17, the published case study) is unchanged.
 
 ### 1.5 How to read this document
@@ -126,7 +126,10 @@ acceptance criteria. **Must** and **never** are requirements; **should** is
 a default a project may override in its run configuration. A section number
 without a version prefix refers to this document; v0.10.0's sections are
 written "v0.10.0 §n", and a list that follows that prefix stays in v0.10.0
-("v0.10.0 §16.3, §18.1").
+("v0.10.0 §16.3, §18.1"). The prefix names the v0.10 document,
+`spec/hsdd-spec-v0_10.md`, as of 0.10.2: 0.10.1 and 0.10.2 edited it in
+place without renumbering a section, so "v0.10.0 §n" reads that section's
+0.10.2 text.
 
 ---
 
@@ -258,9 +261,14 @@ needs its own model call, which is building the judge first.
 
 Flags: `--stop-policy stop|decide-and-record` overrides the opening
 segment's policy; for an intake, `--authority
-accepted-rfc|draft|ticket|incident|braindump` gives the request's authority
-(default `draft`). Prompts render these in `hsdd-intake`'s words:
-`accepted-rfc` as "accepted RFC", the others unchanged.
+accepted-rfc|approved-prd|draft|ticket|incident|braindump` gives the
+request's authority (default `draft`), from v0.10.0 §11.2's list; an
+approved amendment to a PRD is `approved-prd`, as `hsdd-intake` says.
+Prompts and records render an authority in `hsdd-intake`'s words, through
+one map for every value: `accepted-rfc` as "accepted RFC", `approved-prd` as
+"approved PRD", the others as written. So the intake record's
+`**Request:**` line, and the root's `## Sources` entry that
+`hsdd-reconcile` copies from it, carry those words.
 
 The slash command is a one-line delegator, `commands/hsdd-auto.md`, like
 every other skill's (v0.10.0 §14.3).
@@ -451,7 +459,7 @@ JSON Schema is appendix A.1.
 | `owner_facts` | yes | Facts the owner states, one string each. Steps use them as given and never re-decide them. |
 | `preferences` | no | The owner's standing engineering preferences, one string each, passed to every step. |
 | `prose_rules` | no | `banned_chars` and `banned_phrases` (lists), `token_forms` (§7.6: `empty_cell`, `id_separator`, `reason_separator`, `source_separator`), and `level`: `warn` (default) or `error`, how the gate treats a violation. |
-| `sources` | yes | `normative`, `informative`, `baseline`: lists of `{path, cite, version, authority}`. `cite` is the short name prompts and artifacts use when citing it (`Spec`, `Guide`). `version` is the version string the document goes by (`v0.15.1`); it is required for every source of a segment that moves a version (§9.3), because §12.2's `cites-superseded` condition matches on it. `authority` is what the root spec's `## Sources` records for the document (`accepted-rfc`, `draft`, `ticket`, `incident` or `braindump`); when absent, the `root-spec` step decides it and records the decision. |
+| `sources` | yes | `normative`, `informative`, `baseline`: lists of `{path, cite, version, authority}`. `cite` is the short name prompts and artifacts use when citing it (`Spec`, `Guide`). `version` is the version string the document goes by (`v0.15.1`); it is required for every source of a segment that moves a version (§9.3), because §12.2's `cites-superseded` condition matches on it. `authority` is what the root spec's `## Sources` records for the document (`accepted-rfc`, `approved-prd`, `draft`, `ticket`, `incident` or `braindump`, rendered as §3.3 says); when absent, the `root-spec` step decides it and records the decision. |
 | `read_only` | yes | Paths no step may write. Always includes every source path. |
 | `out_of_bounds` | no | Paths no agent in the run may read, as the owner writes them (absolute, `~/`, or project-relative). |
 | `owner_files` | no | Paths no step may change, hashed at the start of each segment (§6.10). |
@@ -556,7 +564,7 @@ toolchain:
 stop_set: [axis, shape, promotion, breaking-amend, collision, external, gate-twice]
 stop_policy: stop
 predecided:
-  breaking-amend: { answer: "A breaking change to a stable contract takes the next version with a migration note.", decision: DEC-688 }
+  breaking-amend: { answer: "A breaking change to a stable contract takes the next version with a migration note, mode coexisting.", decision: DEC-688 }
 commit:
   trailers: ["Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"]
 segments:
@@ -1157,7 +1165,9 @@ orchestrator then:
   step's sidecar (`decide.mjs --step {step} --by orchestrator`, with
   `would_have_asked: true` and the class, the subagent's options plus any it
   adds, and a `why` for the owner reading cold that names the signal that
-  would have changed it). It resumes the same subagent with
+  would have changed it). An answer to a `breaking-amend` stop names the
+  migration mode, as a predecided one does (§8.4). It resumes the same
+  subagent with
   `dispatch.mjs --resume {step} --reason answer --message-file {file}`, whose
   message gives the answer and the decision id. The step continues; nothing is committed in between. When the
   host cannot resume a subagent, the orchestrator instead commits the step as
@@ -1213,6 +1223,11 @@ that meets that class applies the answer, records its own decision with
 `would_have_asked: true`, the class, and the predecided decision's id in its
 evidence, and does not stop. Each such decision is therefore still listed
 for review.
+
+A predecided `breaking-amend` answer names the migration mode, `coexisting`
+or `lockstep` (v0.10.0 §3.5), because every bump it covers needs one. A step
+whose answer names no mode decides it and records that decision with the
+class `breaking-amend` (§12.1).
 
 ### 8.5 Reviewing a step
 
@@ -1445,7 +1460,8 @@ final` (§9.1); the
 registries regenerate clean;
 every cited id resolves; the ledger validates; and the working tree is clean
 apart from `owner_files`. The intake record stays `**Status:** open` until
-its phases ship (v0.10.0 §11.5); `hsdd-auto` never closes it.
+`hsdd-checkpoint` counts its phases done (v0.10.0 §11.5); `hsdd-auto` never
+closes it.
 
 ### 9.3 When the request is a new version of a source
 
@@ -2104,7 +2120,8 @@ section order; record each change as a decision." The `spec-touch` kind
 (§7.1) invokes it.
 
 Three more lines for `hsdd-spec`: its `## Sources` authority list gains
-`incident`; promotion mode's confirmation stop asks one fixed question,
+`approved PRD`, which v0.10.0 §2.6 already lists, and `incident`; promotion
+mode's confirmation stop asks one fixed question,
 "Promote `{node}` from as-built to governed with this decomposition?", which
 an unattended run returns verbatim; and its gate phrase "informative only,
 not decomposed" is matched on its words, whatever separator the project's
@@ -2132,6 +2149,9 @@ items are unchanged. A changed decision supersedes instead." The
 | A breaking change to a `stable` contract under `compatibility: versioned` | return. The skill applies its versioning rule itself, so this stop is the section's own: `skill_rule` quotes its sentence "under an unattended run, a breaking change to a `stable` contract under `compatibility: versioned` is returned to the orchestrator" | `breaking-amend` |
 | A breaking change to a `frozen` contract, or to a `v0` contract | report it as a run-stop candidate; no predecided answer applies (a frozen contract takes a new contract, a `v0` one a redesign) | `breaking-amend` |
 | A breaking change to a `draft` contract | decide between `v{n+1}` with a migration note and a change in place with a `## Versioning` line (the rule "a breaking change creates `v{n+1}`" gives way for drafts) | `judgement` |
+| The migration mode of a breaking change, `coexisting` or `lockstep` | decide, `would_have_asked: true`, unless the bump's answer (predecided, the orchestrator's or the owner's) names the mode | `breaking-amend`; `judgement` for a `draft` contract |
+| Under `lockstep`, a consumer node of v{n} with no migration phase planned | route an `insert-step` of kind `phase-plan-append` on that node | none |
+| The ADR `affects` handoff of a bump | route an `insert-step` of kind `adr-update` on each such ADR, and never edit the ADR yourself | none |
 | Interface and guarantee choices the sources leave open | decide | `judgement` when a careful engineer would ask |
 
 `hsdd-contract`'s template gains: the front-matter field `governed_by`
@@ -2162,11 +2182,13 @@ and the new emission date line of the pending section names the rewrite."
 | A collision | return | `collision` |
 | An `amend` or a `request` answer that breaks a consumer of a `stable` contract under `compatibility: versioned` (`frozen` or `v0`: a run-stop candidate, §8.2) | return | `breaking-amend` |
 | The same for a `draft` contract | decide (the rule that it "goes to the human" gives way for drafts) | `judgement` |
+| The migration mode, `coexisting` or `lockstep`, of the next version a breaking `request` answer (step 5) or `amend` (step 6) writes | decide, `would_have_asked: true`, unless the bump's answer (predecided, the orchestrator's or the owner's) names the mode | `breaking-amend`; `judgement` for a `draft` contract |
 | A `request` answer that breaks no consumer | decide (the rule "resolve `request` entries with the human" gives way) | `judgement` |
 | Step 5's cross-cutting answer for `hsdd-adr`; step 7's `hsdd-contract` step for a missing validation artifact | route an `insert-step` (`adr` or `adr-update`; `contract-touch`), and never write the ADR or the artifact yourself | none |
 
-No step kind invokes reconcile's grandfather marking, discharge or retirement
-(its steps 8 and 9), so their inputs never arise in a run.
+No step kind invokes reconcile's grandfather marking, discharge, the
+migrated-consumer move or retirement (its steps 8 and 9), so their inputs
+never arise in a run.
 
 **`hsdd-intake`**
 
@@ -2575,6 +2597,7 @@ without the packaging.
 | Stop policy | Per segment: `stop` or `decide-and-record`; a hard stop for needs outside the repository (§8.2). | field-tested for `decide-and-record`; the `stop` path is reasoned-only |
 | Stopped steps | Committed as `stopped`, then continued by a new step once the stop is resolved; an answered stop resumes the same subagent instead (§8.3). | reasoned-only |
 | Answering stops in advance | Predecided answers per stop class (§8.4). | field-tested |
+| A bump's migration mode | Part of the `breaking-amend` answer, so a bump costs one stop and one predecided answer; a step whose answer names no mode decides it, recorded with that class (§8.4, §12.1). A separate stop class would keep a `stop`-policy run asking the owner about the mode, at a second stop per bump. | reasoned-only |
 | Rework | Resume the same subagent first, within a limit (§8.6). | field-tested (once) |
 | Waiting | For the hand-back, never polling (§8.8). | field-tested |
 | Owner files | Hash snapshot per segment, checked by the gate (§6.10). | field-tested |
@@ -2837,7 +2860,7 @@ checks them in code.
           "stop_policy": { "$ref": "#/$defs/stopPolicy" },
           "first_step": { "$ref": "#/$defs/stepRef" },
           "request": { "type": "string", "minLength": 1 },
-          "authority": { "enum": ["accepted-rfc", "draft", "ticket", "incident", "braindump"] }
+          "authority": { "enum": ["accepted-rfc", "approved-prd", "draft", "ticket", "incident", "braindump"] }
         }
       }
     }
@@ -2854,7 +2877,7 @@ checks them in code.
           "path": { "type": "string", "minLength": 1 },
           "cite": { "type": "string", "minLength": 1 },
           "version": { "type": "string", "minLength": 1 },
-          "authority": { "enum": ["accepted-rfc", "draft", "ticket", "incident", "braindump"] }
+          "authority": { "enum": ["accepted-rfc", "approved-prd", "draft", "ticket", "incident", "braindump"] }
         }
       }
     },
@@ -3692,8 +3715,11 @@ when: the file and its validation paths exist.
 contract's own `## Versioning`. A breaking change to a `stable` contract is a
 `breaking-amend` stop unless a predecided answer covers it; then apply the
 answer; under `compatibility: frozen` or at `v0` it is a run-stop candidate
-whatever the predecided answers say (§8.2). Update the fixtures with the
-text. Done when: the change is in
+whatever the predecided answers say (§8.2). The answer names the migration
+mode, `coexisting` or `lockstep`; when it names none, decide the mode and
+record it (§12.1). Update the fixtures of the version you change; a new
+version writes its own schema and fixtures beside the old ones. Done when:
+the change is in
 place, classified and recorded.
 
 **`citation-touch`** (`hsdd-contract`, `hsdd-adr` or `hsdd-spec`). Default
@@ -3772,4 +3798,4 @@ block, and the two agree.
 | `{proposing_spec}` | The first spec file, in the root spec's order, that cites the ADR. |
 | `{reason}` | The text of the `insert-step` item the step executes, or of the routed items it closes, joined; or for an `align` from a stage rule, `the consistency pass` in plan mode and `the segment's handoffs` in intake mode. |
 | `{record}` | The path of the segment's intake record; in a plan segment, `the insert-step item {id}` that ordered the step. |
-| `{request}`, `{authority}` | The segment entry. |
+| `{request}`, `{authority}` | The segment entry; `{authority}` in `hsdd-intake`'s words (§3.3). |

@@ -97,7 +97,7 @@
           "stop_policy": { "$ref": "#/$defs/stopPolicy" },
           "first_step": { "$ref": "#/$defs/stepRef" },
           "request": { "type": "string", "minLength": 1 },
-          "authority": { "enum": ["accepted-rfc", "draft", "ticket", "incident", "braindump"] }
+          "authority": { "enum": ["accepted-rfc", "approved-prd", "draft", "ticket", "incident", "braindump"] }
         }
       }
     }
@@ -114,7 +114,7 @@
           "path": { "type": "string", "minLength": 1 },
           "cite": { "type": "string", "minLength": 1 },
           "version": { "type": "string", "minLength": 1 },
-          "authority": { "enum": ["accepted-rfc", "draft", "ticket", "incident", "braindump"] }
+          "authority": { "enum": ["accepted-rfc", "approved-prd", "draft", "ticket", "incident", "braindump"] }
         }
       }
     },
