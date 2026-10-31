@@ -4,7 +4,7 @@
 - **Purpose:** let a user sign in, see their profile and time zone, find a free meeting room on a date and book it, see and cancel their own bookings, and sign out in the browser, showing every time in the user's own time zone
 - **Owns:** the Login screen, the Home screen with the user's time zone and their bookings with Cancel, the Rooms screen with its date and its booking form, the API client, token storage in the browser, turning instants into dates and times in the user's time zone and back, and their display format (ADR-002), the Vite dev proxy, the `web/` directory
 - **Does not own:** accounts, password checks, sessions on the server
-- **Consumes:** [auth-api@v1, profile-api@v1, profile-api@v2]
+- **Consumes:** [auth-api@v1, profile-api@v1, profile-api@v2, booking-api@v1]
 - **Produces:** none
 - **Governed by:** [ADR-001, ADR-002]
 - **Sources:** hsdd/context/prd-simple-login.v2.md (US-1, US-2, US-3, US-4, US-5, US-6, Screens, Demo accounts, Rooms, Scope, Team and delivery), hsdd/context/rfc-simple-login.md (§1 Summary, §2 API, §6 Frontend stack, §7 Testing)
@@ -356,16 +356,4 @@ flowchart TD
 
 > Reconciled 2026-10-30 by hsdd-reconcile. Drained entries are in git history.
 
-> Emitted by hsdd-phase-plan on 2026-11-01 (append: simple-login.web.5
-> to simple-login.web.9, per
-> hsdd/management/2026-10-31-intake-prd-simple-login-v2.md; D1 and D4
-> revised, D6 to D11 added). Drained by hsdd-reconcile; do not apply by
-> hand.
-
-- confirm `booking-api@v1` consumers: [simple-login.web.5, simple-login.web.7, simple-login.web.8, simple-login.web.9]
-  - Replaces this node's provisional `simple-login.web.5` with the four phases whose tests stub `fetch` with booking-api@v1's fixtures: web.5 builds the client against all 35, and web.7 to web.9 drive the screens with them. web.6 reads no fixture. simple-login.integration confirms its own consumer phases (H18).
-  - With this node's side confirmed, the contract's `phase_ids` and `status` still wait on simple-login.integration's plan (H18, H19).
-- confirm `profile-api@v2` consumers: [simple-login.web.4, simple-login.web.5, simple-login.web.7, simple-login.web.8]
-  - web.5 decodes `timeZone` and runs all five fixtures through the client; web.7's Home and App tests and web.8's App walk read `me-ayu` and `me-budi`, which carry `timeZone` since 2026-10-31. simple-login.web.4 stays: it shipped against v2.
-- confirm `auth-api@v1` consumers: [simple-login.web.1, simple-login.web.2, simple-login.web.3, simple-login.web.4, simple-login.web.8]
-  - web.8's App walk signs in through `login-success`, as web.3's and web.4's App tests do (auth-api@v1 Versioning, 2026-10-31). No other appended phase reads an auth-api@v1 fixture.
+> Reconciled 2026-11-01 by hsdd-reconcile. Drained entries are in git history.

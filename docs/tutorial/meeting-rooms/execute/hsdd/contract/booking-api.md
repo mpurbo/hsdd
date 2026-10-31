@@ -7,7 +7,7 @@ owner: simple-login.backend
 governed_by: [ADR-001, ADR-002]
 compatibility: versioned
 produced_by: [simple-login.backend.7]
-consumers: [simple-login.web.5, simple-login.integration.3]
+consumers: [simple-login.web.5, simple-login.web.7, simple-login.web.8, simple-login.web.9, simple-login.integration.3]
 phase_ids: provisional
 ---
 

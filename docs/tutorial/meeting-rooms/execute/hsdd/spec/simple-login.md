@@ -76,7 +76,7 @@ proves the real pieces work together.
 | Node | Kind | Purpose | Consumes | Produces |
 |------|------|---------|----------|----------|
 | simple-login.backend | leaf-parent | authenticate built-in users and serve the signed-in user's profile over HTTP | none | auth-api@v1, profile-api@v1, profile-api@v2, booking-api@v1 |
-| simple-login.web | leaf-parent | the Login and Home screens in the browser | auth-api@v1, profile-api@v1, profile-api@v2 | none |
+| simple-login.web | leaf-parent | the Login and Home screens in the browser | auth-api@v1, profile-api@v1, profile-api@v2, booking-api@v1 | none |
 | simple-login.integration | leaf-parent | prove the real service and the real web app work together, end to end | auth-api@v1, profile-api@v1, profile-api@v2 | none |
 
 ### simple-login.backend: Backend service
@@ -98,10 +98,10 @@ proves the real pieces work together.
 - **Purpose:** let a user sign in, see their profile and time zone, find a free meeting room on a date and book it, see and cancel their own bookings, and sign out in the browser, showing every time in the user's own time zone
 - **Owns:** the Login screen, the Home screen with the user's time zone and their bookings with Cancel, the Rooms screen with its date and its booking form, the API client, token storage in the browser, turning instants into dates and times in the user's time zone and back, and their display format (ADR-002), the Vite dev proxy, the `web/` directory
 - **Does not own:** accounts, password checks, sessions on the server
-- **Consumes:** [auth-api@v1, profile-api@v1, profile-api@v2]
+- **Consumes:** [auth-api@v1, profile-api@v1, profile-api@v2, booking-api@v1]
 - **Produces:** none
 - **Governed by:** [ADR-001, ADR-002]
-- **Sources:** hsdd/context/prd-simple-login.v2.md (US-1, US-2, US-3, Screens, Scope), hsdd/context/rfc-simple-login.md (§1 Summary, §2 API, §6 Frontend stack, §7 Testing)
+- **Sources:** hsdd/context/prd-simple-login.v2.md (US-1, US-2, US-3, US-4, US-5, US-6, Screens, Demo accounts, Rooms, Scope, Team and delivery), hsdd/context/rfc-simple-login.md (§1 Summary, §2 API, §6 Frontend stack, §7 Testing)
 - **Decomposes into:** phases (see hsdd-phase-plan)
 - **Isolation strategy:** `fetch` is stubbed with the auth-api, profile-api and booking-api fixtures; the backend never needs to run; the time functions are tested on their own on London's clock-change days, and every test runs with `TZ` set to a zone that is neither account's nor UTC (ADR-002)
 
