@@ -1,25 +1,42 @@
 # simple-login.backend: Backend service
 
 - **Kind:** leaf-parent
-- **Purpose:** authenticate built-in users and serve the signed-in user's profile over HTTP
-- **Owns:** the built-in accounts, password verification, the session store, `POST /api/login`, `GET /api/me`, the `backend/` directory
+- **Purpose:** authenticate built-in users and serve over HTTP the signed-in user's profile with their time zone and the bookings of the pre-loaded meeting rooms (each room's bookings in a time range, booking a room, the user's own bookings, cancelling one), keeping the bookings in PostgreSQL 17
+- **Owns:** the built-in accounts with their time zones, password verification, the session store, the pre-loaded rooms, the bookings, the PostgreSQL 17 database that keeps them, its Docker Compose service and that service's Compose file, `POST /api/login`, `GET /api/me`, `GET /api/rooms`, `GET /api/me/bookings`, `POST /api/bookings`, `DELETE /api/bookings/{id}`, the `backend/` directory
 - **Does not own:** screens, where the browser keeps the token, the dev proxy
 - **Consumes:** none
 - **Produces:** [auth-api@v1, profile-api@v1, profile-api@v2]
 - **Governed by:** [ADR-001, ADR-002]
 - **Sources:** hsdd/context/prd-simple-login.md (US-1, US-2, Demo accounts, Scope), hsdd/context/rfc-simple-login.md (§2 API, §3 Session model, §4 Passwords, §5 Backend stack, §7 Testing, §9 Security notes), hsdd/context/update-1-add-phone.md (Change: AC-2.1 amended, AC-2.4; Demo accounts; Scope)
 - **Decomposes into:** phases (see hsdd-phase-plan)
-- **Isolation strategy:** Fastify `app.inject()` with an injected clock and random source; the gate replays the auth-api and profile-api fixtures against the real routes; no browser and no open port needed
+- **Isolation strategy:** Fastify `app.inject()` with an injected clock and random source; tests that read or write bookings run against a real PostgreSQL 17, never a mock or an in-memory stand-in (PRD v2 Constraints); the gate replays the auth-api, profile-api and booking-api fixtures against the real routes, the injected clock reading each booking-api fixture's `clock` and the database holding exactly its `given` bookings; no browser, and the service itself opens no port
 
 ## Overview
 
-A Fastify service on Node.js 24, written in TypeScript. It holds the two
-demo accounts from the PRD in memory, checks passwords against scrypt
-hashes, issues opaque bearer tokens with a fixed 30-minute lifetime
-(ADR-001), and answers exactly two endpoints. Everything it promises the
-web app is in auth-api@v1 and profile-api@v1, which simple-login.backend.3
-replaces with profile-api@v2; nothing else about it is
-visible outside this node.
+A Fastify service on Node.js 24, written in TypeScript, with the
+PostgreSQL 17 database that keeps its bookings. This node owns the
+database and runs it on the laptop as a Docker Compose service, through
+Colima on macOS (PRD v2 Constraints, Team and delivery). The service holds
+the two built-in accounts in memory, each with its time zone as an IANA
+name (PRD v2 Demo accounts), checks passwords against scrypt hashes, and
+issues opaque bearer tokens with a fixed 30-minute lifetime from an
+in-memory session store (ADR-001). It serves the signed-in user's profile,
+time zone included (PRD v2 AC-2.1, AC-2.5). The four pre-loaded rooms of
+the Jakarta and London offices each carry their office and its time zone
+(PRD v2 Rooms). The booking endpoints list every room with its bookings in
+a requested range, book a room, list the user's bookings that have not
+ended, and cancel one of them (PRD v2 US-4 to US-6).
+
+A booking's start and end are instants: the service applies no time zone,
+and its injected clock decides whether a booking has started or ended
+(ADR-002). No two bookings of one room overlap, not even when two
+overlapping requests arrive at the same moment (PRD v2 AC-5.3, AC-5.4);
+how the database holds that is this node's decision, taken in its phase
+plan. Bookings survive a restart of the service, which still signs every
+user out (PRD v2 Constraints, ADR-001). Everything it promises the web app
+is in auth-api@v1 and profile-api@v1, which simple-login.backend.3
+replaces with profile-api@v2, and in booking-api@v1; nothing else about it
+is visible outside this node.
 
 ## Phase Plan
 
