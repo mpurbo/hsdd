@@ -4,9 +4,10 @@
 // or Rooms lives in that state, in memory only (D4); storage holds only the
 // session (D2). The flow lands on Home after a sign-in or the load check, so a
 // reload shows Home. An expiry is bound to the token of the session it
-// renders for: App removes the stored session only while storage holds that
-// token, and the reducer ignores an expiry for any other token, so a late 401
-// from an earlier session cannot end a newer one (D1).
+// renders for (D1). App removes the stored session only while storage holds
+// that token, which keeps a newer sign-in's stored session; the reducer ignores
+// an expiry for any other token, which keeps the newer session on screen. A
+// late 401 from an earlier session needs both to leave a newer one intact.
 import { useCallback, useEffect, useReducer } from 'react'
 import { fetchProfile } from './api/client'
 import type { Session } from './api/types'
@@ -58,9 +59,10 @@ export default function App() {
   // D1: a 401 from any booking-api@v1 call ends the session as GET /api/me's does.
   // Bound to the token of the session it renders for, so a screen left over
   // from an earlier session can report only that earlier token. The
-  // compare-and-clear here and the reducer's token check each alone keep a
-  // late 401 from ending a newer session. It changes identity only when that
-  // token does.
+  // compare-and-clear here keeps the stored session of a newer sign-in; the
+  // reducer's token check keeps that session on screen. Both are needed when a
+  // leftover screen's answer gets through; the screens also drop answers after
+  // unmount. It changes identity only when that token does.
   const signedInToken = state.kind === 'signed-in' ? state.session.token : null
   const onSessionExpired = useCallback((): void => {
     if (signedInToken === null) return
