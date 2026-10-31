@@ -43,6 +43,12 @@ describe('session flow', () => {
       checking,
     ],
     ['signing out shows Login without a notice', signedIn, { type: 'signed-out' }, signedOut],
+    [
+      'a 401 on a signed-in screen shows Login with the expiry notice (D1)',
+      signedIn,
+      { type: 'session-expired' },
+      { kind: 'signed-out', notice: 'session-expired' },
+    ],
   ])('%s', (_name, from, event, to) => {
     expect(next(from, event)).toEqual(to)
   })
@@ -52,6 +58,8 @@ describe('session flow', () => {
     ['a stale rejection on Home', signedIn, { type: 'profile-rejected' }],
     ['a second sign-in while checking', checking, { type: 'signed-in', session }],
     ['a sign-out while signed out', signedOut, { type: 'signed-out' }],
+    ['a stale expiry while signed out', signedOut, { type: 'session-expired' }],
+    ['an expiry while checking', checking, { type: 'session-expired' }],
   ])('ignores an event that does not apply: %s', (_name, from, event) => {
     expect(next(from, event)).toBe(from)
   })

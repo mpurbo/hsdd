@@ -1,5 +1,5 @@
 // The session flow as a pure state machine (D4: the screen is a function of
-// the session value). App is the shell: it runs the effects and dispatches
+// the app state). App is the shell: it runs the effects and dispatches
 // these events. An event that does not apply to the current state returns
 // the state unchanged, so a stale response can never show someone's Home.
 import type { Profile, Session } from '../api/types'
@@ -18,6 +18,7 @@ export type AppEvent =
   | { readonly type: 'profile-rejected' }
   | { readonly type: 'profile-unavailable' }
   | { readonly type: 'signed-out' }
+  | { readonly type: 'session-expired' }
 
 /** A stored session is checked with GET /api/me before Home shows (AC-2.2, D1). */
 export function initialState(stored: Session | null): AppState {
@@ -40,6 +41,13 @@ export function next(state: AppState, event: AppEvent): AppState {
     case 'signed-out':
       return event.type === 'signed-in' ? { kind: 'checking', session: event.session } : state
     case 'signed-in':
-      return event.type === 'signed-out' ? { kind: 'signed-out' } : state
+      switch (event.type) {
+        case 'signed-out':
+          return { kind: 'signed-out' }
+        case 'session-expired':
+          return { kind: 'signed-out', notice: 'session-expired' }
+        default:
+          return state
+      }
   }
 }

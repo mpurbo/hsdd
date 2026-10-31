@@ -18,10 +18,10 @@ describe('App: the load check (AC-2.2, AC-2.3, D1)', () => {
 
   it('checks a stored session and shows Home (AC-2.2)', async () => {
     store()
-    const stub = stubFetch(loadFixture('profile-api.v2', 'me-ayu'))
+    const stub = stubFetch(loadFixture('profile-api.v2', 'me-ayu'), loadFixture('booking-api', 'my-bookings-none'))
     render(<App />)
     expect(await screen.findByRole('heading', { name: 'Hello, Ayu Lestari' })).toBeInTheDocument()
-    expect(stub.calls.map((c) => c.headers.authorization)).toEqual([`Bearer ${TOKEN}`])
+    expect(stub.calls.map((c) => c.headers.authorization)).toEqual([`Bearer ${TOKEN}`, `Bearer ${TOKEN}`])
   })
 
   it('sends an expired session to Login with the expiry message and clears it (AC-2.3, D1)', async () => {
@@ -59,7 +59,7 @@ describe('App: the load check (AC-2.2, AC-2.3, D1)', () => {
     ['me-budi', 'Hello, Budi Santoso', '+62 813 9876 5432'],
   ])('%s: Home shows the phone number from GET /api/me, character for character (AC-2.4)', async (name, heading, phone) => {
     store()
-    stubFetch(loadFixture('profile-api.v2', name))
+    stubFetch(loadFixture('profile-api.v2', name), loadFixture('booking-api', 'my-bookings-none'))
     render(<App />)
     expect(await screen.findByRole('heading', { name: heading })).toBeInTheDocument()
     expect(screen.getByText('Phone').nextElementSibling?.textContent).toBe(phone)
@@ -82,7 +82,7 @@ describe('App: the walk (AC-1.1, AC-2.2, AC-3.1, D2)', () => {
       writes.push([key, value])
       realSetItem.call(this, key, value)
     })
-    const stub = stubFetch(loadFixture('auth-api', 'login-success'), loadFixture('profile-api.v2', 'me-ayu'))
+    const stub = stubFetch(loadFixture('auth-api', 'login-success'), loadFixture('profile-api.v2', 'me-ayu'), loadFixture('booking-api', 'my-bookings-none'))
     const user = userEvent.setup()
 
     const first = render(<App />)
@@ -109,6 +109,72 @@ describe('App: the walk (AC-1.1, AC-2.2, AC-3.1, D2)', () => {
     expect(localStorage.length).toBe(0)
     expect(document.cookie).toBe('')
     // ADR-001: Sign out sends no request.
-    expect(stub.calls.map((c) => `${c.method} ${c.path}`)).toEqual(['POST /api/login', 'GET /api/me', 'GET /api/me'])
+    expect(stub.calls.map((c) => `${c.method} ${c.path}`)).toEqual([
+      'POST /api/login',
+      'GET /api/me',
+      'GET /api/me/bookings',
+      'GET /api/me',
+      'GET /api/me/bookings',
+    ])
+  })
+})
+
+const lines = () =>
+  screen.queryAllByRole('listitem').map((li) => {
+    const [first, second] = Array.from(li.querySelectorAll('p'))
+    return [first?.textContent, second?.querySelector('span')?.textContent]
+  })
+const rowValues = () => screen.getAllByRole('term').map((dt) => [dt.textContent, dt.nextElementSibling?.textContent])
+
+describe('App: Home with the time zone and My bookings (AC-2.1, AC-2.5, D1, D7)', () => {
+  it("shows Budi's zone between Phone and Member since, then his four bookings, each with Cancel", async () => {
+    store()
+    stubFetch(loadFixture('profile-api.v2', 'me-budi'), loadFixture('booking-api', 'my-bookings-budi'))
+    render(<App />)
+    expect(await screen.findByRole('heading', { name: 'My bookings' })).toBeInTheDocument()
+    expect(rowValues().map(([k]) => k)).toEqual(['Username', 'Email', 'Phone', 'Time zone', 'Member since'])
+    expect(rowValues()[3]).toEqual(['Time zone', 'Europe/London'])
+    await screen.findAllByRole('listitem')
+    expect(lines()).toEqual([
+      ['Thu 5 Nov  09:00 to 10:00', 'Merapi · Ongoing sync'],
+      ['Thu 5 Nov  10:00 to 11:00', 'Thames · Design review'],
+      ['Thu 5 Nov  10:00 to 10:30', 'Kew · Quick check'],
+      ['Thu 12 Nov  10:00 to 11:00', 'Merapi · Next week'],
+    ])
+    expect(screen.getAllByRole('button', { name: 'Cancel' })).toHaveLength(4)
+  })
+
+  it("shows Ayu's zone and (no bookings)", async () => {
+    store()
+    stubFetch(loadFixture('profile-api.v2', 'me-ayu'), loadFixture('booking-api', 'my-bookings-none'))
+    render(<App />)
+    expect(await screen.findByText('(no bookings)')).toBeInTheDocument()
+    expect(rowValues()).toContainEqual(['Time zone', 'Asia/Jakarta'])
+  })
+
+  it('a 401 on the list sends Home to Login with the expiry message and clears the session (D1)', async () => {
+    store()
+    stubFetch(loadFixture('profile-api.v2', 'me-budi'), loadFixture('booking-api', 'my-bookings-expired-token'))
+    render(<App />)
+    expect(await screen.findByRole('status')).toHaveTextContent('Your session has expired. Please sign in again.')
+    expect(screen.getByRole('heading', { name: 'Sign in' })).toBeInTheDocument()
+    expect(sessionStorage.getItem('simple-login.session')).toBeNull()
+  })
+
+  it.each([
+    ['no timeZone', undefined],
+    ['a name Intl refuses', 'Mars/Olympus'],
+  ])('with %s: Not available, the D7 line, and only GET /api/me is sent', async (_label, timeZone) => {
+    store()
+    const ayu = loadFixture('profile-api.v2', 'me-ayu')
+    const { timeZone: _dropped, ...rest } = ayu.response.body as Record<string, unknown>
+    const body = timeZone === undefined ? rest : { ...rest, timeZone }
+    const stub = stubFetch({ ...ayu, response: { status: 200, body } }, loadFixture('booking-api', 'my-bookings-none'))
+    render(<App />)
+    expect(await screen.findByRole('heading', { name: 'Hello, Ayu Lestari' })).toBeInTheDocument()
+    expect(rowValues()).toContainEqual(['Time zone', 'Not available'])
+    expect(screen.getByText('Bookings need your time zone, which is not available.')).toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: 'My bookings' })).toBeNull()
+    expect(stub.calls.map((c) => `${c.method} ${c.path}`)).toEqual(['GET /api/me'])
   })
 })
