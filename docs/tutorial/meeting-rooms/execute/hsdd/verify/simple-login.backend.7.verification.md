@@ -277,12 +277,10 @@ with its cost if wrong):
   and this document.
 
 ## Sign-off
-- Reviewer / date:
-- Review tier applied:
-- Disposition of each Outstanding item: verified | waived (reason) |
-  deferred to {phase-id}
-- Disposition of each Learning: spec-updated | contract-bumped (id@v) |
-  adr-proposed (ADR-nnn) | dropped (reason)
+- Reviewer / date: Claude for Purbo Mohamad (owner proxy, delegated by the owner before the run), 2026-11-01
+- Review tier applied: full-review: per-task reviewers and a final whole-branch reviewer read (final: 1 Important reproduced by the reviewer, a connection dropped mid-request crashed the process, fixed with a per-connection error listener and re-reviewed 5 of 5 addressed); the committed evidence under docs/superpowers/evidence/simple-login.backend.7/ read; the gate rerun green by the orchestrator (19 files, 299 tests; replay 46 including all 45 fixtures)
+- Disposition of each Outstanding item: a PostgreSQL restart while the service runs: verified by the orchestrator at sign-off with npm start on port 3999, db:down then db:up: 200 before, 500 during the outage with the process alive, 200 on the first and second request after db:up
+- Disposition of each Learning: each dropped with the reason recorded above; the template and Gate-backtick findings are carried to the checkpoint
 
 > The review gate is not passed while an Outstanding item or a Learning
 > lacks a disposition. Dispositions execute at the root through the owning
