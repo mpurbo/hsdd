@@ -15,9 +15,13 @@ export interface HomeScreenProps {
 }
 
 /**
- * The PRD's Home wireframe with update 1's Phone row (AC-2.1 amended, AC-2.4).
- * `phone` is shown exactly as received, never reformatted (profile-api@v2).
- * Presentational: the parent owns the session.
+ * Home as PRD v2 Screens draws it (AC-2.1, AC-2.5): the user's details in the
+ * Screen's order, `phone` exactly as received, never reformatted (AC-2.4,
+ * profile-api@v2), and a Time zone row showing the zone exactly as received,
+ * or `Not available` without a usable one. With a zone, `MyBookings` follows,
+ * given the token, the zone and `onSessionExpired`. Without one, D7's line
+ * takes the place of My bookings and no booking request is sent. The parent
+ * owns the session.
  */
 export function HomeScreen({ profile, token, zone, onSignOut, onSessionExpired }: HomeScreenProps) {
   return (

@@ -20,7 +20,8 @@ export default function App() {
   const [state, dispatch] = useReducer(next, null, () => initialState(loadSession()))
   const checkingToken = state.kind === 'checking' ? state.session.token : null
 
-  // D1: expiry is noticed only here, when GET /api/me answers 401.
+  // D1: a 401 from GET /api/me ends the session here; a 401 from a
+  // booking-api@v1 call ends it through `onSessionExpired` below.
   useEffect(() => {
     if (checkingToken === null) return
     let cancelled = false
@@ -47,7 +48,7 @@ export default function App() {
     dispatch({ type: 'signed-in', session })
   }
 
-  // D1: a 401 on the bookings list ends the session as GET /api/me's does.
+  // D1: a 401 from any booking-api@v1 call ends the session as GET /api/me's does.
   // Stable, so Home never sees a new callback identity.
   const onSessionExpired = useCallback((): void => {
     clearSession()
