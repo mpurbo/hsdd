@@ -2,7 +2,7 @@
 import { readFileSync } from "node:fs";
 import { Pool, type PoolClient } from "pg";
 import { beforeEach, describe, expect, it } from "vitest";
-import type { NewBooking } from "../src/domain.ts";
+import type { BookingStore, NewBooking } from "../src/domain.ts";
 import { createBookingStore } from "../src/booking-store.ts";
 import { testDatabase } from "./db.ts";
 
@@ -283,7 +283,7 @@ describe("insert under contention", () => {
     return { id: rows[0].id, ...X };
   };
 
-  it("reads the room's bookings only once it holds the room's lock (D7)", async () => {
+  it("waits for the room's lock, then names the booking committed under it (D7)", async () => {
     const other = await db.pool.connect();
     let open = false;
     try {
@@ -304,6 +304,35 @@ describe("insert under contention", () => {
       }
     }
   });
+
+  it("never names a booking whose cancel holds the room's lock (D7)", async () => {
+    // Y overlaps later and is committed; `other` cancels it under merapi's lock. A read
+    // taken before the lock still sees Y and names it without ever waiting.
+    const y = await stored(slot("03:00", "04:00", { accountId: "u_002" }));
+    const other = await db.pool.connect();
+    let open = false;
+    let inserting: ReturnType<BookingStore["insert"]> | undefined;
+    try {
+      await other.query("BEGIN");
+      open = true;
+      await other.query("SELECT pg_advisory_xact_lock(hashtext('merapi'))");
+      await other.query("DELETE FROM booking WHERE id = $1", [y.id]);
+      inserting = store().insert(later);
+      await blockedOn("advisory");
+      await other.query("COMMIT");
+      open = false;
+      expect(await inserting).toEqual({ ok: true, value: { id: expect.stringMatching(UUID), ...later } });
+      expect(await count()).toBe(1);
+    } finally {
+      try {
+        if (open) await other.query("ROLLBACK");
+      } finally {
+        other.release();
+        // The store's attempt settles inside this test, so a failure never commits into the next one.
+        await inserting?.catch(() => undefined);
+      }
+    }
+  }, 10_000);
 
   it("answers a 23P01 by the re-read, naming the booking it met", async () => {
     const other = await db.pool.connect();
