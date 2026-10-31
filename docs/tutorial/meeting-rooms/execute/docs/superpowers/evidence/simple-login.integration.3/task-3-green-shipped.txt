@@ -1,0 +1,32 @@
+
+> @simple-login/backend@1.0.0 db:up
+> node scripts/db-up.mjs up
+
+ Container meeting-rooms-postgres-1 Running 
+ Container meeting-rooms-postgres-1 Waiting 
+ Container meeting-rooms-postgres-1 Healthy 
+
+Running 20 tests using 1 worker
+
+  ✓   1 e2e/home.spec.ts:9:1 › AC-2.1: Home shows the signed-in user's details (396ms)
+  ✓   2 e2e/home.spec.ts:19:1 › AC-2.4: Home shows each account's phone number exactly as stored (481ms)
+  ✓   3 e2e/home.spec.ts:28:1 › Budi sees Budi's profile, not Ayu's (338ms)
+  ✓   4 e2e/home.spec.ts:38:1 › AC-2.2: reloading keeps the user signed in (358ms)
+  ✓   5 e2e/home.spec.ts:46:1 › AC-3.1: Sign out returns to Login, and a reload stays there (357ms)
+  ✓   6 e2e/home.spec.ts:56:1 › AC-2.3: a session the backend no longer knows returns to Login with the expiry message (993ms)
+  ✓   7 e2e/login.spec.ts:4:1 › AC-1.1: the right password reaches Home within 3 seconds (324ms)
+  ✓   8 e2e/login.spec.ts:12:1 › AC-1.2: a wrong password shows the message and stays on Login (281ms)
+  ✓   9 e2e/login.spec.ts:19:1 › AC-1.2: an unknown user gets the same message (330ms)
+  ✓  10 e2e/login.spec.ts:25:1 › AC-1.3: Sign in is disabled while either field is empty (222ms)
+  ✓  11 e2e/proxy-replay.spec.ts:9:1 › replays nine exact fixtures, none of profile-api@v1 (3ms)
+  ✓  12 e2e/proxy-replay.spec.ts:17:3 › replay through the proxy: auth-api/login-empty-username (80ms)
+  ✓  13 e2e/proxy-replay.spec.ts:17:3 › replay through the proxy: auth-api/login-missing-password (3ms)
+  ✓  14 e2e/proxy-replay.spec.ts:17:3 › replay through the proxy: auth-api/login-unknown-user (24ms)
+  ✓  15 e2e/proxy-replay.spec.ts:17:3 › replay through the proxy: auth-api/login-wrong-password (20ms)
+  ✓  16 e2e/proxy-replay.spec.ts:17:3 › replay through the proxy: profile-api.v2/me-ayu (22ms)
+  ✓  17 e2e/proxy-replay.spec.ts:17:3 › replay through the proxy: profile-api.v2/me-budi (22ms)
+  ✓  18 e2e/proxy-replay.spec.ts:17:3 › replay through the proxy: profile-api.v2/me-expired-token (641ms)
+  ✓  19 e2e/proxy-replay.spec.ts:17:3 › replay through the proxy: profile-api.v2/me-no-token (3ms)
+  ✓  20 e2e/proxy-replay.spec.ts:17:3 › replay through the proxy: profile-api.v2/me-unknown-token (3ms)
+
+  20 passed (8.2s)

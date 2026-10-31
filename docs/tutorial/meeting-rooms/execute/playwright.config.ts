@@ -5,11 +5,13 @@ import { defineConfig } from "@playwright/test";
 // the service they start inherit it.
 process.env.TZ = "Asia/Kolkata";
 
-// The browser suite: the real backend (a worker fixture in e2e/fixtures.ts,
-// so a test can restart it) and the real web dev server (below), driven
-// through the installed Chrome.
+// The browser suite: PostgreSQL through the backend's db:up and a database of
+// its own, re-created every run (globalSetup); the real service on it (a worker
+// fixture in e2e/fixtures.ts, so a test can restart it); and the real web dev
+// server (below), driven through the installed Chrome.
 export default defineConfig({
   testDir: "e2e",
+  globalSetup: "./e2e/global-setup.ts",
   workers: 1,
   fullyParallel: false,
   reporter: [["list"]],

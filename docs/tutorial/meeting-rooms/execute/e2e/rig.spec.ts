@@ -1,6 +1,6 @@
 // The rig's own properties: the run's time zone, the database of its own,
 // the service's start and stop, and the helpers in e2e/api.ts.
-import { expect, test } from "./fixtures.ts";
+import { SERVICE_PORT, expect, startService, test } from "./fixtures.ts";
 import { currentQuarterHour, deleteBooking, getMyBookings, getRooms, instant, login, postBooking, tokenFor, utcDay, type Booking } from "./api.ts";
 
 // ICU reports a link's canonical name (Asia/Kolkata is Asia/Calcutta on some
@@ -39,4 +39,23 @@ test("api.ts: sign in, book, list, cancel against the service", async () => {
   expect(((await getMyBookings(ayu)).body as { bookings: Booking[] }).bookings).toContainEqual(booking);
   expect(await deleteBooking(ayu, booking.id)).toEqual({ status: 204, body: null });
   expect(((await getMyBookings(ayu)).body as { bookings: Booking[] }).bookings).not.toContainEqual(booking);
+});
+
+test("a run starts with no bookings: a slot only this test books is free", async () => {
+  const ayu = await tokenFor("ayu");
+  const day = utcDay(39);
+  const reply = await postBooking(ayu, { roomId: "bromo", start: instant(day, 0), end: instant(day, 0, 15), title: "Rig sentinel" });
+  expect(reply.status, JSON.stringify(reply.body)).toBe(201);
+});
+
+test("startService refuses a port already in use", async () => {
+  await expect(startService([process.execPath, "-e", ""], process.env, SERVICE_PORT)).rejects.toThrow(/already in use/);
+});
+
+test("startService fails at once, with the service's words, when the service exits before it listens", async () => {
+  const started = Date.now();
+  // 3999 is only probed, never bound: the stand-in exits before it could listen.
+  await expect(startService([process.execPath, "-e", "console.error('no database here'); process.exit(3)"], process.env, 3999))
+    .rejects.toThrow(/exited with code 3[\s\S]*no database here/);
+  expect(Date.now() - started).toBeLessThan(5_000);
 });
