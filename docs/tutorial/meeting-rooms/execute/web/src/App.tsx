@@ -1,12 +1,13 @@
 // The imperative shell around the session flow (session/flow.ts): it holds
 // the state, runs GET /api/me while checking, and writes or clears storage in
 // its handlers. The screen is a function of the state (D4: no router).
-import { useEffect, useReducer } from 'react'
+import { useCallback, useEffect, useReducer } from 'react'
 import { fetchProfile } from './api/client'
 import type { Session } from './api/types'
 import { HomeScreen } from './home/HomeScreen'
 import { LoginScreen } from './login/LoginScreen'
 import { MESSAGES } from './messages'
+import { asTimeZone } from './time/time'
 import { initialState, next, type Notice } from './session/flow'
 import { clearSession, loadSession, saveSession } from './session/store'
 
@@ -46,6 +47,13 @@ export default function App() {
     dispatch({ type: 'signed-in', session })
   }
 
+  // D1: a 401 on the bookings list ends the session as GET /api/me's does.
+  // Stable, so Home never sees a new callback identity.
+  const onSessionExpired = useCallback((): void => {
+    clearSession()
+    dispatch({ type: 'session-expired' })
+  }, [])
+
   // ADR-001: sign-out is client-side; there is no logout endpoint.
   const onSignOut = (): void => {
     clearSession()
@@ -60,7 +68,15 @@ export default function App() {
         </main>
       )
     case 'signed-in':
-      return <HomeScreen profile={state.profile} onSignOut={onSignOut} />
+      return (
+        <HomeScreen
+          profile={state.profile}
+          token={state.session.token}
+          zone={state.profile.timeZone === undefined ? undefined : asTimeZone(state.profile.timeZone)}
+          onSignOut={onSignOut}
+          onSessionExpired={onSessionExpired}
+        />
+      )
     case 'signed-out':
       return (
         <LoginScreen

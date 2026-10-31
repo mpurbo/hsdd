@@ -14,4 +14,8 @@ export const MESSAGES = {
   cancelNotFound: 'That booking was already cancelled.',
   /** D10: a Cancel answered 403 `BOOKING_NOT_YOURS`. */
   cancelNotYours: 'You can cancel only your own bookings.',
+  /** D7: the profile has no usable time zone. */
+  timeZoneNotAvailable: 'Not available',
+  /** D7: shown in place of the bookings list. */
+  bookingsNeedTimeZone: 'Bookings need your time zone, which is not available.',
 } as const
