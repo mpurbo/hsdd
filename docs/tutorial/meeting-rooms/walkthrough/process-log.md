@@ -377,3 +377,212 @@ The first step on a `{id}.v{n}` target, which the gap fixes made possible.
 
 The first phase plan of the run, carrying the many items routed to H14
 since S02.
+
+- **Four backend phases appended**, interfaces first: backend.4
+  (gate-only: `timeZone` in the accounts, which turns the gate green
+  again; booking types, the store interface, rooms as data,
+  `backend/compose.yaml`, a test database per test file, the replay rig
+  for `clock`, `given`, DELETE and 204), backend.5 (spot-check: the
+  booking rules as pure functions), backend.6 (full-review: the store on
+  PostgreSQL) and backend.7 (full-review: the four endpoints, producing
+  booking-api@v1). Phases 5 and 6 can run in parallel.
+- **The experiment that decided D7** (DEC-149), against a real
+  PostgreSQL 17 in Colima with 20 simultaneous attempts per round: a
+  per-room advisory lock (lock, read the earliest overlap, insert) gave
+  exactly one 201 and nineteen 409s in 60 of 60 rounds, the slowest
+  71 ms. The exclusion constraint alone settled only through deadlocks,
+  up to 19 s a round. "Re-read and retry", which S05 had suggested,
+  livelocked: 18 attempts unbooked after ten retries, 219 deadlocks.
+- Edge values PostgreSQL refuses, each now a plan decision: a title with
+  U+0000 (refused with 400, plus an `amend` on booking-api@v1 for
+  reconcile), year 0000 as `timestamptz` (the range bound is clamped),
+  non-UUID text for a uuid column (404 before any query).
+- `db:up` picks `docker compose` or `docker-compose`, since this laptop
+  has only the standalone binary.
+- DEC-149's prose says 90 rounds; the experiment says 60. Decisions are
+  never edited, so the correction is its own decision (DEC-150).
+
+### 00:13 (1 November) · S17 reconcile simple-login.backend (H15)
+
+- Two confirms: `profile-api@v2` is produced by backend.3 and backend.4;
+  `booking-api@v1` by backend.7, replacing S05's guess of backend.4. The
+  version ripple added `booking-api@v1` to the backend's Produces and to
+  the root's child table, DAG and matrix.
+- The U+0000 title `amend` applied in place on draft `booking-api@v1`,
+  schema included, with a recorded judgement (DEC-154, `would_have_asked`);
+  an experiment checked the new pattern on all 35 fixtures and 200,000
+  random strings.
+- The Compose `note` became a `## Local database` section in
+  `hsdd/conventions.md`, since other nodes' planners read conventions but
+  not the backend's plan (DEC-156, `would_have_asked`).
+- `booking-api@v1` stays `draft` and provisional until the web and
+  integration plans name their consumer phases.
+
+### 00:23 · S18 phase-plan-append simple-login.web (H16)
+
+- **Five web phases appended**: web.5 (spot-check: booking-api client,
+  `Profile.timeZone`, a fixture stub that answers a bodiless 204, Vitest
+  under `TZ=Asia/Kolkata` with a guard test), web.6 (full-review: pure
+  `Intl` time functions pinned to London's 92-quarter-hour and
+  100-quarter-hour days), web.7 (Home: time zone, my bookings, Cancel,
+  the session ending on a 401 from any call), web.8 (Rooms and
+  navigation; a reload shows Home), web.9 (the booking form and the
+  AC-5.3 message from `error.conflict`). D1 and D4 revised in place with
+  dated markers; D6 to D11 new.
+- The experiment reproduced, with `Intl` alone, the exact query paths of
+  the three rooms fixtures and the Rooms lines PRD v2 draws, and found
+  that the 80-character title fixture is 80 code points but 81 UTF-16
+  units, which a naive `maxLength` would refuse.
+- **For the owner:** ADR-002's date-mark rule, applied literally, repeats
+  the date in some room-local lines, `(Wed 4 Nov 16:30 to Wed 4 Nov 17:30
+  in London)` (DEC-170); shortening it needs an ADR-002 amendment.
+- **Two protocol slips, recorded (DEC-176):** the planner read the
+  backend's phase plan for its append format, which planner isolation
+  forbids (declared, and the web plan depends on contracts only); and it
+  edited one word of a minted decision to remove an em dash it had quoted
+  from a skill template. **Finding (HSDD):** the prose rules collide with
+  verbatim quotes of skill text that itself holds the banned character;
+  S05 met the same.
+
+### 00:45 · S19 reconcile simple-login.web (H17)
+
+- Three confirms drained: `booking-api@v1` consumers now web.5, web.7,
+  web.8, web.9 (integration.3 still a guess until H18); `profile-api@v2`
+  and `auth-api@v1` gain their web consumers and stay `stable`. The ripple
+  added `booking-api@v1` to the web's Consumes and the root's copies.
+
+### 00:49 · S20 phase-plan-append simple-login.integration (H18)
+
+- **Three integration phases appended**: integration.3 (full-review: the
+  rig onto PostgreSQL with its own `meeting_rooms_e2e` database per run,
+  the service and `db:up` started through the backend's scripts, the
+  browser in Asia/Kolkata, the proxy replay grown by the 15 booking-api
+  fixtures that hold under any clock, and PRD v2's two Success tests
+  against the service: 20 simultaneous attempts over five rounds, and a
+  restart that keeps every booking), integration.4 (spot-check: Home
+  browser tests and a pure `Intl` helper pinned to ADR-002's examples),
+  integration.5 (full-review: Rooms browser tests, AC-5.4 with two
+  browsers, AC-4.4 on the next last Sunday of March and October).
+- A `request` on booking-api@v1 for reconcile: does the service create its
+  tables in an empty database at start-up? Either answer keeps the phase
+  set.
+- DEC-187 (`would_have_asked`): criteria that need a booking already
+  started are covered by the backend's replay under its injected clock,
+  not by a browser test that waits.
+- integration.4 removes the shipped 3-second check, following PRD v2;
+  review flagged it for the owner as the PRD author's omission
+  (DEC-195, `would_have_asked`, `would_upstream`).
+
+### 01:10 · S21 reconcile simple-login.integration (H19)
+
+- S21 drained the last pending entries: integration's three confirms
+  made `booking-api@v1`'s consumers final, so it flipped from `draft` to
+  `stable` (any breaking change now needs v2); the request was answered
+  yes (the service creates its tables in an empty database at start-up),
+  written into the contract's Development address as a compatible
+  clarification (DEC-198, `would_have_asked`); `meeting_rooms_e2e` was
+  reserved in the conventions' Local database section.
+
+### 01:18 · consistency stage
+
+All nineteen handoffs executed. Seven `consider` items were still open.
+S22, a plan step, routed the three on `run` (stale Purpose cells in the
+root's child table; the web Overview's citation) to the nodes whose text
+they are (DEC-203). The stage then dispatches one spec-touch per node with
+open items: S23 on the backend (three items from the integration plan
+about starting the service on an empty database).
+
+- **S23, backend**: no change to the header for the three items (the
+  start behavior lives in D3, D6 and backend.7, and the contract now
+  promises it), but it routed an insert-step: rewrite the unshipped
+  backend.7 in place so its own gate proves the start-on-an-empty-database
+  promise the integration rig relies on (DEC-205). The integration's
+  "shipped rig breaks while the backend needs PostgreSQL" item was
+  explained: the root `npm test` runs the backend gate first, which
+  starts the database itself (DEC-206).
+- **First rework of the run.** S23 reported, and left unchanged, that the
+  backend's Isolation strategy says "the service itself opens no port"
+  while the shipped start test listens on an ephemeral port (S09 wrote
+  it). A false sentence in the step's own target goes back to the step:
+  resumed once with the finding (DEC-207).
+- The rework corrected the clause to "no fixed port: only the `start`
+  test listens, on 127.0.0.1 at a port the system picks" (DEC-208).
+- **Inserted steps** (DEC-209): the intake record's insert rule covers
+  exactly this case (a request answered at reconcile after the node's
+  append, changing what an unshipped phase should prove), so a
+  phase-plan-append rewriting backend.7 in place (Q-084) and a reconcile
+  on the backend after it (Q-085) join the path, each with a change-log
+  entry in `hsdd/auto/plan.md`.
+
+### 01:28 · S24 phase-plan-append simple-login.backend (inserted, Q-084)
+
+- backend.7 rewritten in place: `start` takes the database URL and
+  applies the schema before it listens; its test starts the service on a
+  database created empty, lists the four rooms, books Merapi, starts again
+  on the same database and finds the booking with its id while the old
+  token gets 401. The old restart test folds into it, keeping the phase
+  at about 400 lines (DEC-211, DEC-212). The experiment showed why the
+  test closes its apps rather than force-dropping the database.
+- **Finding (hsdd-auto).** An inserted phase-plan-append renders the
+  template's default "Append phases to ..." and carries none of the queue
+  item's text; the step had to read its `queue_item` to learn that it
+  should rewrite backend.7 (DEC-210).
+- **Finding (hsdd-auto).** The rewrite emitted no pending entry, so the
+  inserted reconcile has nothing to drain, but `routed.mjs` cannot
+  withdraw an accepted insert-step (DEC-215, DEC-216). It runs anyway.
+
+### 01:38 · S25 reconcile simple-login.backend (inserted, Q-085)
+- S25 drained nothing, as expected, and stamped the section a second
+  time the same day.
+- **S26, integration**: no header change; the stale text (integration.3's
+  Scope still offered a "separate command" fallback and said the service
+  creates "the four pre-loaded rooms" in the database, which the contract
+  contradicts: rooms are data in the service) sits inside the Phase Plan,
+  which a spec-touch may not edit. It routed an insert-step to rewrite
+  that unshipped Scope in place; accepted without a reconcile (DEC-222),
+  since a false sentence in a Scope reaches the implementer through the
+  phase context.
+
+### 01:46 · S27 phase-plan-append simple-login.integration (inserted, Q-086)
+- S27 rewrote that one Scope sentence (the rig runs no schema or seeding
+  step; the service creates its tables in the empty `meeting_rooms_e2e`;
+  the rooms are part of the service). The same default-invocation gap as
+  S24, and a second planner-isolation slip (it checked the rooms claim
+  against the backend's D3), recorded (DEC-226).
+- S28, the root: the child table's two stale Purpose cells now copy the
+  embedded summaries verbatim. Each child's Purpose now lives in three
+  places (child file, embedded summary, child table), which is how it
+  went stale.
+
+### 01:52 · S29 spec-touch simple-login.web (the Screens citation)
+- S29, the web: one citation now reads `(PRD v2 US-1, Screens)`.
+
+### 01:54 · S30 report: DONE
+
+- The final gate gave no F2 line: no live text cites a superseded
+  contract version (the narrowed rule, gap fix G-9: `profile-api@v1`'s ten
+  citations are a live earlier version under `coexisting`). Prose slots
+  filled: outcome, what changed, earlier proposals, assumptions, record
+  gaps.
+- `state.mjs done` printed `DONE 2026-10-31-intake-prd-simple-login-v2`;
+  `ledger.mjs validate` 0 errors, 0 warnings.
+- **Numbers:** 31 steps (S00 to S30): 27 by subagents, 4 by the
+  orchestrator; 65 commits on `auto/meeting-rooms`; 231 decisions; 12
+  experiments, three of them against a real PostgreSQL 17 in Colima and
+  one in the installed Chrome; one rework; three inserted steps; no stop.
+- **Finding (hsdd-auto).** The report step's `## Produced` append lists
+  "ADRs amended: ADR-001, ADR-002", though ADR-002 is new, and omits the
+  new `booking-api@v1`; its "none yet" placeholder line also stays.
+
+### 01:58 · the owner's review sitting [owner proxy]
+
+`hsdd/judgement/decision-reviews.jsonl`, one line per decision the
+report lists first, reviewer "Claude for Purbo Mohamad (owner proxy)", the
+named-delegate form v0.10.2 admits: 32 agree, 1 disagree. The disagreement
+is DEC-032: ADR-002's date-mark rule, applied literally, repeats a date in
+a room-local range (`Wed 4 Nov 16:30 to Wed 4 Nov 17:30 in London`); the
+preferred form shows it once. It is left for the owner as a follow-up (an
+ADR-002 amendment through a later intake), not acted on in this run, so
+the build follows ADR-002 as written.
+
+`auto/meeting-rooms` merged into the sandbox's `main` (2e9ef03).
