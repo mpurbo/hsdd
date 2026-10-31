@@ -43,7 +43,8 @@ classify the change against the contract's own `## Versioning`. A breaking
 change to a `stable` contract is a `breaking-amend` stop unless a predecided
 answer covers it; then apply the answer; under `compatibility: frozen` or at
 `v0` it is a run-stop candidate whatever the predecided answers say (§8.2).
-Update the fixtures with the text.
+Update the fixtures of the version you change; a new version writes its own
+schema and fixtures beside the old ones.
 
 ### Done when
 
