@@ -1,16 +1,20 @@
 import { randomBytes } from "node:crypto";
+import { spawnSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import type { AddressInfo } from "node:net";
 import { Writable } from "node:stream";
+import { fileURLToPath } from "node:url";
 import type { FastifyInstance } from "fastify";
 import { afterEach, describe, expect, it } from "vitest";
 import { ACCOUNTS } from "../src/accounts.ts";
 import { buildApp } from "../src/app.ts";
 import { DEFAULT_DATABASE_URL } from "../src/db.ts";
 import { configFromEnv, start } from "../src/server.ts";
-import { testDatabase } from "./db.ts";
+import { createTestDatabase, testDatabase } from "./db.ts";
 import { NO_STORE } from "./no-store.ts";
 
+const BACKEND_DIR = fileURLToPath(new URL("..", import.meta.url));
+const UNREACHABLE = "postgres://meeting_rooms:not-the-password@127.0.0.1:1/meeting_rooms";
 const AYU = JSON.stringify({ username: "ayu", password: "sunrise-42" });
 
 describe("log hygiene (RFC §9)", () => {
@@ -95,6 +99,44 @@ describe("start", () => {
     expect(again.rooms.find((r) => r.id === "merapi")!.bookings).toEqual([created]);
     const mine = await fetch(`${baseOf(second)}/api/me/bookings`, { headers: auth(token2) });
     expect(await mine.json()).toEqual({ bookings: [created] });
+  });
+});
+
+describe("start when the database fails", () => {
+  it("rejects naming npm --prefix backend run db:up when the database cannot be reached, and never the URL", async () => {
+    const error = await start(0, UNREACHABLE).then(() => undefined, (e: Error) => e);
+    expect(error?.message).toContain("npm --prefix backend run db:up");
+    expect(error?.message).not.toContain("not-the-password");
+  });
+
+  it("npm start's entry exits non-zero with that message when the database cannot be reached", () => {
+    const run = spawnSync(process.execPath, ["src/server.ts"], {
+      cwd: BACKEND_DIR,
+      env: { ...process.env, PORT: "0", DATABASE_URL: UNREACHABLE },
+      encoding: "utf8",
+      timeout: 15_000,
+    });
+    expect(run.status).toBe(1);
+    expect(run.stderr).toContain("npm --prefix backend run db:up");
+    expect(run.stdout + run.stderr).not.toContain("not-the-password");
+  });
+
+  it("keeps serving after the database ends its idle connections (backend.4 deferred minor)", async () => {
+    const own = await createTestDatabase();
+    let app: FastifyInstance | undefined;
+    try {
+      app = await start(0, `${own.url}?application_name=b7_lost_connection`);
+      const base = baseOf(app);
+      const token = ((await (await fetch(`${base}/api/login`, { method: "POST", headers: JSON_HEADERS, body: AYU })).json()) as { token: string }).token;
+      const rooms = () => fetch(`${base}/api/rooms?from=2026-11-05T00%3A00%3A00.000Z&to=2026-11-06T00%3A00%3A00.000Z`, { headers: { authorization: `Bearer ${token}` } });
+      expect((await rooms()).status).toBe(200);
+      await own.pool.query("SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE application_name = 'b7_lost_connection'");
+      await new Promise((resolve) => setTimeout(resolve, 500));
+      expect((await rooms()).status).toBe(200);
+    } finally {
+      await app?.close();
+      await own.drop();
+    }
   });
 });
 

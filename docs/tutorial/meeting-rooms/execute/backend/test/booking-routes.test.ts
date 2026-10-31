@@ -1,5 +1,6 @@
 // The booking endpoints against a real PostgreSQL database (D8).
 import { randomBytes } from "node:crypto";
+import { Writable } from "node:stream";
 import { Pool } from "pg";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import type { FastifyInstance } from "fastify";
@@ -358,5 +359,36 @@ describe("requests Fastify refuses before a handler (D-d)", () => {
     const res = await a.inject({ method: "GET", url: "/api/rooms/%E0%A4%A" });
     expect(res.statusCode).toBe(400);
     expect(res.json().code).toBe("FST_ERR_BAD_URL");
+  });
+});
+
+describe("log hygiene on the booking routes (RFC §9)", () => {
+  it("never writes the password, the token or the authorization header while booking, listing and cancelling", async () => {
+    const lines: string[] = [];
+    const stream = new Writable({ write: (chunk, _enc, done) => (lines.push(String(chunk)), done()) });
+    app = buildApp({
+      clock: () => new Date(NOW),
+      randomBytes,
+      accounts: ACCOUNTS,
+      store: createBookingStore(db.pool),
+      logger: { level: "info", stream },
+    });
+    const json = { "content-type": "application/json" };
+    const login = await app.inject({ method: "POST", url: "/api/login", headers: json, payload: JSON.stringify({ username: "ayu", password: "sunrise-42" }) });
+    const token = login.json().token as string;
+    const auth = { authorization: `Bearer ${token}` };
+    const made = await app.inject({
+      method: "POST",
+      url: "/api/bookings",
+      headers: { ...json, ...auth },
+      payload: JSON.stringify({ roomId: MERAPI, start: "2026-11-05T02:00:00.000Z", end: "2026-11-05T03:00:00.000Z", title: "Standup" }),
+    });
+    expect(made.statusCode).toBe(201);
+    const range = "from=2026-11-05T00%3A00%3A00.000Z&to=2026-11-06T00%3A00%3A00.000Z";
+    expect((await app.inject({ method: "GET", url: `/api/rooms?${range}`, headers: auth })).statusCode).toBe(200);
+    expect((await app.inject({ method: "GET", url: "/api/me/bookings", headers: auth })).statusCode).toBe(200);
+    expect((await app.inject({ method: "DELETE", url: `/api/bookings/${made.json().id}`, headers: auth })).statusCode).toBe(204);
+    expect(lines.length).toBeGreaterThan(0);
+    expect(lines.filter((l) => l.includes("sunrise-42") || l.includes(token) || /authorization/i.test(l))).toEqual([]);
   });
 });
