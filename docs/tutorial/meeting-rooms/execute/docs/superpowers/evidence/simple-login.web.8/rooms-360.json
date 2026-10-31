@@ -1,0 +1,198 @@
+[
+  {
+    "scenario": "budi-rooms-on-a-date",
+    "clock": "2026-11-05T09:30:00.000Z",
+    "headerTops": [
+      41,
+      41
+    ],
+    "viewport": 360,
+    "scrollWidth": 360,
+    "lines": [
+      {
+        "text": "Merapi · Jakarta · 8 seats",
+        "rendered": "Merapi · Jakarta · 8 seats",
+        "top": 153.78125,
+        "bottom": 174.78125,
+        "left": 41,
+        "right": 319,
+        "rows": 1
+      },
+      {
+        "text": "02:00 to 03:00  Sprint planning",
+        "rendered": "02:00 to 03:00  Sprint planning",
+        "top": 176.78125,
+        "bottom": 197.78125,
+        "left": 41,
+        "right": 319,
+        "rows": 1
+      },
+      {
+        "text": "(09:00 to 10:00 in Jakarta)",
+        "rendered": "(09:00 to 10:00 in Jakarta)",
+        "top": 199.78125,
+        "bottom": 220.78125,
+        "left": 41,
+        "right": 319,
+        "rows": 1
+      },
+      {
+        "text": "Bromo · Jakarta · 4 seats",
+        "rendered": "Bromo · Jakarta · 4 seats",
+        "top": 232.78125,
+        "bottom": 253.78125,
+        "left": 41,
+        "right": 319,
+        "rows": 1
+      },
+      {
+        "text": "(no bookings)",
+        "rendered": "(no bookings)",
+        "top": 255.78125,
+        "bottom": 276.78125,
+        "left": 41,
+        "right": 319,
+        "rows": 1
+      },
+      {
+        "text": "Thames · London · 10 seats",
+        "rendered": "Thames · London · 10 seats",
+        "top": 288.78125,
+        "bottom": 309.78125,
+        "left": 41,
+        "right": 319,
+        "rows": 1
+      },
+      {
+        "text": "10:00 to 11:00  Design review",
+        "rendered": "10:00 to 11:00  Design review",
+        "top": 311.78125,
+        "bottom": 332.78125,
+        "left": 41,
+        "right": 319,
+        "rows": 1
+      },
+      {
+        "text": "Kew · London · 4 seats",
+        "rendered": "Kew · London · 4 seats",
+        "top": 344.78125,
+        "bottom": 365.78125,
+        "left": 41,
+        "right": 319,
+        "rows": 1
+      },
+      {
+        "text": "(no bookings)",
+        "rendered": "(no bookings)",
+        "top": 367.78125,
+        "bottom": 388.78125,
+        "left": 41,
+        "right": 319,
+        "rows": 1
+      }
+    ],
+    "failures": []
+  },
+  {
+    "scenario": "ayu-rooms-range-edges",
+    "clock": "2026-11-04T18:00:00.000Z",
+    "headerTops": [
+      41
+    ],
+    "viewport": 360,
+    "scrollWidth": 360,
+    "lines": [
+      {
+        "text": "Merapi · Jakarta · 8 seats",
+        "rendered": "Merapi · Jakarta · 8 seats",
+        "top": 153.78125,
+        "bottom": 174.78125,
+        "left": 41,
+        "right": 319,
+        "rows": 1
+      },
+      {
+        "text": "06:00 to 07:00  Planning",
+        "rendered": "06:00 to 07:00  Planning",
+        "top": 176.78125,
+        "bottom": 197.78125,
+        "left": 41,
+        "right": 319,
+        "rows": 1
+      },
+      {
+        "text": "08:00 to 08:30  Standup",
+        "rendered": "08:00 to 08:30  Standup",
+        "top": 199.78125,
+        "bottom": 220.78125,
+        "left": 41,
+        "right": 319,
+        "rows": 1
+      },
+      {
+        "text": "Bromo · Jakarta · 4 seats",
+        "rendered": "Bromo · Jakarta · 4 seats",
+        "top": 232.78125,
+        "bottom": 253.78125,
+        "left": 41,
+        "right": 319,
+        "rows": 1
+      },
+      {
+        "text": "23:45 to Fri 6 Nov 00:15  Wrap-up",
+        "rendered": "23:45 to Fri 6 Nov 00:15  Wrap-up",
+        "top": 255.78125,
+        "bottom": 276.78125,
+        "left": 41,
+        "right": 319,
+        "rows": 1
+      },
+      {
+        "text": "Thames · London · 10 seats",
+        "rendered": "Thames · London · 10 seats",
+        "top": 288.78125,
+        "bottom": 309.78125,
+        "left": 41,
+        "right": 319,
+        "rows": 1
+      },
+      {
+        "text": "(no bookings)",
+        "rendered": "(no bookings)",
+        "top": 311.78125,
+        "bottom": 332.78125,
+        "left": 41,
+        "right": 319,
+        "rows": 1
+      },
+      {
+        "text": "Kew · London · 4 seats",
+        "rendered": "Kew · London · 4 seats",
+        "top": 344.78125,
+        "bottom": 365.78125,
+        "left": 41,
+        "right": 319,
+        "rows": 1
+      },
+      {
+        "text": "Wed 4 Nov 23:30 to 00:30  Handover",
+        "rendered": "Wed 4 Nov 23:30 to 00:30  Handover",
+        "top": 367.78125,
+        "bottom": 388.78125,
+        "left": 41,
+        "right": 319,
+        "rows": 1
+      },
+      {
+        "text": "(Wed 4 Nov 16:30 to Wed 4 Nov 17:30 in London)",
+        "rendered": "(Wed 4 Nov 16:30 to Wed 4 Nov 17:30 in London)",
+        "top": 390.78125,
+        "bottom": 432.78125,
+        "left": 41,
+        "right": 319,
+        "rows": 2
+      }
+    ],
+    "failures": []
+  }
+]
