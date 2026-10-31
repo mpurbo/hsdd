@@ -9,6 +9,8 @@ import type { GivenBooking } from "./replay.ts";
 
 export type TestDatabase = {
   readonly name: string;
+  /** The connection URL of this database. */
+  readonly url: string;
   readonly pool: Pool;
   /** Deletes every booking. */
   resetBookings(): Promise<void>;
@@ -57,6 +59,7 @@ export async function createTestDatabase(apply: (pool: Pool) => Promise<void> = 
   }
   return {
     name,
+    url: urlFor(name),
     pool,
     async resetBookings() {
       await pool.query("DELETE FROM booking");
@@ -92,6 +95,9 @@ export function testDatabase(): Omit<TestDatabase, "drop"> {
   return {
     get name() {
       return current().name;
+    },
+    get url() {
+      return current().url;
     },
     get pool() {
       return current().pool;
