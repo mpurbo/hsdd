@@ -6,9 +6,9 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "test": "vitest run",
+    "test": "TZ=Asia/Kolkata vitest run",
     "typecheck": "tsc --noEmit",
-    "gate": "tsc --noEmit && vitest run && vite build"
+    "gate": "tsc --noEmit && TZ=Asia/Kolkata vitest run && vite build"
   },
   "dependencies": {
     "react": "^19.3.1",
