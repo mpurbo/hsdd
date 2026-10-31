@@ -232,6 +232,10 @@ describe('any ambient zone (ADR-002 Consequences)', () => {
   })
   it.each(AMBIENT)('gives the same answers under TZ=%s', (tz) => {
     process.env.TZ = tz
+    // TZ took effect: both sides canonical (Node reports Asia/Calcutta for Asia/Kolkata)
+    expect(Intl.DateTimeFormat().resolvedOptions().timeZone).toBe(
+      new Intl.DateTimeFormat('en', { timeZone: tz }).resolvedOptions().timeZone,
+    )
     expect(dayRange('2027-10-31', LONDON)).toEqual({ start: '2027-10-30T23:00:00.000Z', end: '2027-11-01T00:00:00.000Z' })
     expect(todayIn('2026-11-04T17:00:00.000Z', JAKARTA)).toBe('2026-11-05')
     expect(startOptions('2026-11-05', JAKARTA, '2026-11-05T02:00:00.000Z')).toHaveLength(59)
@@ -255,18 +259,33 @@ describe('module boundary (D6, the phase Verification line)', () => {
   it('scans the files it is meant to cover', () => {
     expect(source.map((p) => relative(SRC, p))).toContain('time/time.ts')
   })
+  const timeSource = source.filter(inTime)
   it('web/src/time/ imports nothing', () => {
-    const offenders = source.filter(inTime).filter((p) => /^\s*import\b/m.test(readFileSync(p, 'utf8')))
+    const importing = /^\s*import\b|^\s*export\b[^;\n]*\bfrom\b|\brequire\s*\(/m
+    const offenders = timeSource.filter((p) => importing.test(readFileSync(p, 'utf8')))
     expect(offenders).toEqual([])
   })
-  it('web/src/time/ names no zone outside its tests', () => {
-    const zone = /['"`][A-Z][A-Za-z_]+\/[A-Za-z_+-]+['"`]/
-    const offenders = source.filter(inTime).filter((p) => zone.test(readFileSync(p, 'utf8')))
-    expect(offenders).toEqual([])
+  it("web/src/time/ names no zone outside its tests, except the one 'UTC' of formatDate (design note 4)", () => {
+    const literals = timeSource.flatMap((p) =>
+      [...readFileSync(p, 'utf8').matchAll(/(['"`])((?:(?!\1)[^\\\n])*)\1/g)].map((m) => m[2]),
+    )
+    const accepted = literals.filter((l) => {
+      try {
+        new Intl.DateTimeFormat('en-GB', { timeZone: l })
+        return true
+      } catch {
+        return false
+      }
+    })
+    expect([...new Set(accepted)].filter((l) => l !== 'UTC')).toEqual([])
   })
-  it('nowhere in web/src outside web/src/time/ calls getHours, getDate, a toLocale method or Intl.DateTimeFormat', () => {
-    const banned = /\.getHours\(|\.getDate\(|\.toLocale\w*\(|Intl\.DateTimeFormat/
-    const offenders = source.filter((p) => !inTime(p)).filter((p) => banned.test(readFileSync(p, 'utf8'))).map((p) => relative(SRC, p))
+  it('nowhere in web/src calls a local Date getter or setter, and nowhere outside web/src/time/ a toLocale method or Intl.DateTimeFormat', () => {
+    const localDate = /\.(get|set)(FullYear|Year|Month|Date|Day|Hours|Minutes|Seconds|Milliseconds|TimezoneOffset)\(/
+    const locale = /\.toLocale\w*\(|Intl\.DateTimeFormat/
+    const read = (p: string) => readFileSync(p, 'utf8')
+    const offenders = source
+      .filter((p) => localDate.test(read(p)) || (!inTime(p) && locale.test(read(p))))
+      .map((p) => relative(SRC, p))
     expect(offenders).toEqual([])
   })
 })
