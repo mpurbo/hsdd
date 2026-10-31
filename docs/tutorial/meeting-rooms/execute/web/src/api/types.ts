@@ -51,6 +51,22 @@ export type RoomsFailure = 'unauthorized' | 'unavailable'
 
 export type MyBookingsFailure = 'unauthorized' | 'unavailable'
 
+/** The body of POST /api/bookings: exactly these four fields. */
+export interface BookingRequest {
+  readonly roomId: string
+  readonly start: string
+  readonly end: string
+  readonly title: string
+}
+
+export type BookFailure = 'unauthorized' | 'invalid' | 'too-long' | 'started' | 'too-far-ahead' | 'conflict' | 'unavailable'
+
+/** A `conflict` carries the booking the request overlaps (`error.conflict`, G6). */
+export type BookResult =
+  | { readonly ok: true; readonly value: Booking }
+  | { readonly ok: false; readonly reason: Exclude<BookFailure, 'conflict'> }
+  | { readonly ok: false; readonly reason: 'conflict'; readonly conflict: Booking }
+
 export type Result<T, F> =
   | { readonly ok: true; readonly value: T }
   | { readonly ok: false; readonly reason: F }

@@ -1,8 +1,10 @@
 import { describe, expect, it, vi } from 'vitest'
 import { listFixtures, loadFixture, stubFetch, stubFetchHanging, stubFetchUnreachable, type Fixture } from '../test/fetchStub'
-import { REQUEST_TIMEOUT_MS, fetchMyBookings, fetchProfile, fetchRooms, signIn } from './client'
+import { REQUEST_TIMEOUT_MS, bookRoom, fetchMyBookings, fetchProfile, fetchRooms, signIn } from './client'
 import type {
+  BookResult,
   Booking,
+  BookingRequest,
   MyBookingsFailure,
   Profile,
   ProfileFailure,
@@ -188,6 +190,39 @@ const myBookingsCases: Record<string, Result<readonly Booking[], MyBookingsFailu
   'my-bookings-none': { ok: true, value: [] },
 }
 
+const booked = (name: string): BookResult => ({ ok: true, value: bodyOf(name) as Booking })
+const conflictOf = (name: string): BookResult => ({ ok: false, reason: 'conflict', conflict: bodyOf(name).error.conflict as Booking })
+
+const bookCases: Record<string, BookResult> = {
+  'book-365-days-ahead': booked('book-365-days-ahead'),
+  'book-a-room': booked('book-a-room'),
+  'book-eight-hours': booked('book-eight-hours'),
+  'book-end-not-after-start': { ok: false, reason: 'invalid' },
+  'book-in-the-repeated-hour': booked('book-in-the-repeated-hour'),
+  'book-instant-with-offset': { ok: false, reason: 'invalid' },
+  'book-not-on-a-quarter-hour': { ok: false, reason: 'invalid' },
+  'book-overlap': conflictOf('book-overlap'),
+  'book-overlap-several': conflictOf('book-overlap-several'),
+  'book-same-time-other-room': booked('book-same-time-other-room'),
+  'book-started': { ok: false, reason: 'started' },
+  'book-started-and-overlapping': { ok: false, reason: 'started' },
+  'book-title-80-characters': booked('book-title-80-characters'),
+  'book-title-blank': { ok: false, reason: 'invalid' },
+  'book-title-too-long': { ok: false, reason: 'invalid' },
+  'book-too-far-ahead': { ok: false, reason: 'too-far-ahead' },
+  'book-too-long': { ok: false, reason: 'too-long' },
+  'book-touching': booked('book-touching'),
+  'book-unknown-room': { ok: false, reason: 'invalid' },
+  'book-unknown-token': { ok: false, reason: 'unauthorized' },
+}
+
+const sprintPlanning: BookingRequest = {
+  roomId: 'merapi',
+  start: '2026-11-05T02:00:00.000Z',
+  end: '2026-11-05T03:00:00.000Z',
+  title: 'Sprint planning',
+}
+
 describe('API client: booking-api@v1', () => {
   it.each(Object.entries(roomsCases))('fetchRooms: %s', async (name, expected) => {
     const fixture = bookingFixture(name)
@@ -202,6 +237,66 @@ describe('API client: booking-api@v1', () => {
     const stub = stubFetch(fixture)
     expect(await fetchMyBookings(TOKEN)).toEqual(expected)
     expect(stub.calls).toEqual(bearerGet('/api/me/bookings'))
+  })
+
+  it.each(Object.entries(bookCases))('bookRoom: %s', async (name, expected) => {
+    const fixture = bookingFixture(name)
+    const stub = stubFetch(fixture)
+    expect(await bookRoom(TOKEN, fixture.request.body as BookingRequest)).toEqual(expected)
+    expect(stub.calls).toEqual([
+      {
+        method: 'POST',
+        path: '/api/bookings',
+        headers: { authorization: `Bearer ${TOKEN}`, 'content-type': 'application/json' },
+        body: fixture.request.body,
+      },
+    ])
+  })
+
+  it('bookRoom: the conflict names the other booking (G6, G18)', async () => {
+    stubFetch(bookingFixture('book-overlap'))
+    const result = await bookRoom(TOKEN, { ...sprintPlanning, start: '2026-11-05T02:30:00.000Z', end: '2026-11-05T03:30:00.000Z' })
+    expect(result.ok === false && result.reason === 'conflict' && result.conflict).toMatchObject({
+      roomName: 'Merapi',
+      start: '2026-11-05T02:00:00.000Z',
+      end: '2026-11-05T03:00:00.000Z',
+    })
+  })
+
+  it('bookRoom sends exactly the four fields, the title as typed', async () => {
+    const stub = stubFetch(bookingFixture('book-a-room'))
+    const request = { ...sprintPlanning, title: '  Retro  ', note: 'x' }
+    await bookRoom(TOKEN, request)
+    expect(stub.calls[0]?.body).toStrictEqual({
+      roomId: 'merapi',
+      start: '2026-11-05T02:00:00.000Z',
+      end: '2026-11-05T03:00:00.000Z',
+      title: '  Retro  ',
+    })
+  })
+
+  it.each<[string, (body: Json) => void]>([
+    ['without a conflict', (body) => delete body.error.conflict],
+    ['with a conflict without roomName', (body) => delete body.error.conflict.roomName],
+    ['with a conflict start with an offset', (body) => (body.error.conflict.start = '2026-11-05T09:30:00.000+07:00')],
+  ])('bookRoom: a 409 %s is unavailable (G6)', async (_name, edit) => {
+    stubFetch(editBody('book-overlap', edit))
+    expect(await bookRoom(TOKEN, sprintPlanning)).toEqual({ ok: false, reason: 'unavailable' })
+  })
+
+  it.each<[string, (body: Json) => void]>([
+    ['an end on a date that does not exist', (body) => (body.end = '2026-02-30T00:00:00.000Z')],
+    ['no id', (body) => delete body.id],
+  ])('bookRoom: a 201 with %s is unavailable', async (_name, edit) => {
+    stubFetch(editBody('book-a-room', edit))
+    expect(await bookRoom(TOKEN, sprintPlanning)).toEqual({ ok: false, reason: 'unavailable' })
+  })
+
+  it('bookRoom drops fields it does not know in a 201 and in a conflict (G18)', async () => {
+    stubFetch(editBody('book-a-room', (body) => (body.owner = 'ayu')))
+    expect(await bookRoom(TOKEN, sprintPlanning)).toEqual(booked('book-a-room'))
+    stubFetch(editBody('book-overlap', (body) => (body.error.conflict.owner = 'budi')))
+    expect(await bookRoom(TOKEN, sprintPlanning)).toEqual(conflictOf('book-overlap'))
   })
 
   it("fetchRooms keeps the rooms' order (G13)", async () => {

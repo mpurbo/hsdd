@@ -4,7 +4,9 @@
 // `unavailable` (D3); fields a contract does not name are ignored, and the
 // decoders rebuild each value from the fields its type names (G18).
 import type {
+  BookResult,
   Booking,
+  BookingRequest,
   MyBookingsFailure,
   Profile,
   ProfileFailure,
@@ -176,6 +178,29 @@ function decideList<T>(
   return fail('unavailable')
 }
 
+const BOOK_REFUSALS: Readonly<Record<string, BookResult>> = {
+  '401 UNAUTHORIZED': fail('unauthorized'),
+  '400 VALIDATION_FAILED': fail('invalid'),
+  '422 BOOKING_TOO_LONG': fail('too-long'),
+  '422 BOOKING_STARTED': fail('started'),
+  '422 BOOKING_TOO_FAR_AHEAD': fail('too-far-ahead'),
+}
+
+function decideBook(answer: Answer | null): BookResult {
+  if (answer === null) return fail('unavailable')
+  const { status, body } = answer
+  if (status === 201) {
+    const booking = decodeBooking(body)
+    return booking === undefined ? fail('unavailable') : ok(booking)
+  }
+  const code = errorCode(body)
+  if (status === 409 && code === 'BOOKING_CONFLICT') {
+    const conflict = decodeBooking(isRecord(body) && isRecord(body.error) ? body.error.conflict : undefined)
+    return conflict === undefined ? fail('unavailable') : { ok: false, reason: 'conflict', conflict }
+  }
+  return BOOK_REFUSALS[`${status} ${code}`] ?? fail('unavailable')
+}
+
 /** POST /api/login. The username is sent exactly as typed (auth-api@v1 matches it exactly). */
 export async function signIn(username: string, password: string): Promise<Result<Session, SignInFailure>> {
   return decideSignIn(
@@ -204,4 +229,16 @@ export async function fetchRooms(token: string, from: string, to: string): Promi
 /** GET /api/me/bookings: the user's bookings that have not ended, in the order received (G14), never sorted here. */
 export async function fetchMyBookings(token: string): Promise<Result<readonly Booking[], MyBookingsFailure>> {
   return decideList(await send('/api/me/bookings', { method: 'GET', headers: bearer(token) }), 'bookings', decodeBooking)
+}
+
+/** POST /api/bookings with exactly the four fields, the title as typed. */
+export async function bookRoom(token: string, request: BookingRequest): Promise<BookResult> {
+  const { roomId, start, end, title } = request
+  return decideBook(
+    await send('/api/bookings', {
+      method: 'POST',
+      headers: { ...bearer(token), 'Content-Type': 'application/json' },
+      body: JSON.stringify({ roomId, start, end, title }),
+    }),
+  )
 }
