@@ -7,7 +7,11 @@ export interface Session {
   readonly expiresAt: string
 }
 
-/** The six fields of a 200 from GET /api/me (profile-api@v2). `phone` is shown as given, never reformatted. */
+/**
+ * A 200 from GET /api/me (profile-api@v2). `phone` is shown as given, never
+ * reformatted. `timeZone` is the IANA name as received, absent when the
+ * profile has none (a backend that predates the field, G5; D7).
+ */
 export interface Profile {
   readonly id: string
   readonly username: string
@@ -15,6 +19,7 @@ export interface Profile {
   readonly email: string
   readonly phone: string
   readonly memberSince: string
+  readonly timeZone?: string
 }
 
 export type SignInFailure = 'invalid-credentials' | 'invalid-input' | 'unavailable'

@@ -23,6 +23,7 @@ const profileCases: Record<string, Result<Profile, ProfileFailure>> = {
       email: 'ayu@example.com',
       phone: '+62 812 3456 7890',
       memberSince: '2024-03-14',
+      timeZone: 'Asia/Jakarta',
     },
   },
   'me-budi': {
@@ -34,6 +35,7 @@ const profileCases: Record<string, Result<Profile, ProfileFailure>> = {
       email: 'budi@example.com',
       phone: '+62 813 9876 5432',
       memberSince: '2025-01-09',
+      timeZone: 'Europe/London',
     },
   },
   'me-expired-token': { ok: false, reason: 'unauthorized' },
@@ -42,7 +44,9 @@ const profileCases: Record<string, Result<Profile, ProfileFailure>> = {
 }
 
 const ayuBody = loadFixture('profile-api.v2', 'me-ayu').response.body as Record<string, unknown>
-const withoutPhone = Object.fromEntries(Object.entries(ayuBody).filter(([key]) => key !== 'phone'))
+const without = (key: string): Record<string, unknown> =>
+  Object.fromEntries(Object.entries(ayuBody).filter(([k]) => k !== key))
+const withoutPhone = without('phone')
 /** me-ayu's 200 with `body` in place of the fixture's profile. */
 const answering = (body: unknown): Fixture => ({ ...loadFixture('profile-api.v2', 'me-ayu'), response: { status: 200, body } })
 
@@ -69,9 +73,28 @@ describe('API client', () => {
     ['without a phone (a profile-api@v1 answer)', withoutPhone],
     ['with a null phone', { ...ayuBody, phone: null }],
     ['with a numeric phone', { ...ayuBody, phone: 6281234567890 }],
+    ['with a numeric timeZone', { ...ayuBody, timeZone: 7 }],
+    ['with a null timeZone', { ...ayuBody, timeZone: null }],
   ])('fetchProfile: a 200 %s is unavailable', async (_name, body) => {
     stubFetch(answering(body))
     expect(await fetchProfile(TOKEN)).toEqual({ ok: false, reason: 'unavailable' })
+  })
+
+  it('fetchProfile: a 200 without timeZone decodes with none (D7)', async () => {
+    stubFetch(answering(without('timeZone')))
+    const result = await fetchProfile(TOKEN)
+    expect(result).toEqual({
+      ok: true,
+      value: {
+        id: 'u_001',
+        username: 'ayu',
+        displayName: 'Ayu Lestari',
+        email: 'ayu@example.com',
+        phone: '+62 812 3456 7890',
+        memberSince: '2024-03-14',
+      },
+    })
+    expect(result.ok && 'timeZone' in result.value).toBe(false)
   })
 
   it('fetchProfile ignores fields it does not know (profile-api@v2)', async () => {

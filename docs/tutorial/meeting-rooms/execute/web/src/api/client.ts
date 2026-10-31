@@ -63,14 +63,20 @@ function decideProfile(answer: Answer | null): Result<Profile, ProfileFailure> {
   const { status, body } = answer
   if (status === 200) {
     const [id, username, displayName, email, phone, memberSince] = PROFILE_FIELDS.map((key) => stringField(body, key))
-    return id !== undefined &&
-      username !== undefined &&
-      displayName !== undefined &&
-      email !== undefined &&
-      phone !== undefined &&
-      memberSince !== undefined
-      ? ok({ id, username, displayName, email, phone, memberSince })
-      : fail('unavailable')
+    if (
+      id === undefined ||
+      username === undefined ||
+      displayName === undefined ||
+      email === undefined ||
+      phone === undefined ||
+      memberSince === undefined
+    )
+      return fail('unavailable')
+    const profile: Profile = { id, username, displayName, email, phone, memberSince }
+    // D7: absent is none; present and not a string makes the 200 malformed.
+    if (!isRecord(body) || !('timeZone' in body)) return ok(profile)
+    const timeZone = stringField(body, 'timeZone')
+    return timeZone === undefined ? fail('unavailable') : ok({ ...profile, timeZone })
   }
   if (status === 401 && errorCode(body) === 'UNAUTHORIZED') return fail('unauthorized')
   return fail('unavailable')
