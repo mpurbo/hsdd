@@ -112,3 +112,15 @@ describe('endOptions', () => {
     expect(e.at(-1)).toBe('2027-10-31T08:30:00.000Z')
   })
 })
+
+describe('an unparsable instant', () => {
+  it('makes startOptions throw RangeError for the now "not an instant"', () => {
+    expect(() => startOptions('2026-11-05', JAKARTA, 'not an instant')).toThrow(RangeError)
+  })
+  it('makes endOptions throw RangeError for the start "not an instant"', () => {
+    expect(() => endOptions('not an instant', '2026-11-05', JAKARTA)).toThrow(RangeError)
+  })
+  it('makes todayIn throw RangeError for the instant "not an instant"', () => {
+    expect(() => todayIn('not an instant', JAKARTA)).toThrow(RangeError)
+  })
+})

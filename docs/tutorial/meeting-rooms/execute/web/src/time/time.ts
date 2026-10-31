@@ -17,6 +17,13 @@ function fail(type: string): never {
   throw new RangeError(`Intl gave no ${type} part`)
 }
 
+// Design note 5: the one place an Instant is parsed; NaN never travels on.
+function parseInstant(instant: Instant): number {
+  const ms = Date.parse(instant)
+  if (Number.isNaN(ms)) throw new RangeError(`Not an instant: ${JSON.stringify(instant)}`)
+  return ms
+}
+
 // The one wall-clock reader: a single formatToParts call per instant.
 function wallClock(ms: number, zone: ZoneName): WallClock {
   const parts = new Intl.DateTimeFormat('en-GB', {
@@ -68,7 +75,7 @@ export function sameZone(a: ZoneName, b: ZoneName): boolean {
 }
 
 export function todayIn(now: Instant, zone: ZoneName): IsoDate {
-  return wallClock(Date.parse(now), zone).date
+  return wallClock(parseInstant(now), zone).date
 }
 
 const QUARTER_MS = 15 * 60_000
@@ -116,7 +123,7 @@ export function dayRange(date: IsoDate, zone: ZoneName): DayRange {
 export function startOptions(date: IsoDate, zone: ZoneName, now: Instant): readonly Instant[] {
   const start = startOf(date, zone)
   const end = startOf(nextDate(date), zone)
-  const nowMs = Date.parse(now)
+  const nowMs = parseInstant(now)
   const out: Instant[] = []
   for (let ms = start; ms < end; ms += QUARTER_MS) {
     if (ms > nowMs) out.push(new Date(ms).toISOString())
@@ -125,7 +132,7 @@ export function startOptions(date: IsoDate, zone: ZoneName, now: Instant): reado
 }
 
 export function endOptions(start: Instant, date: IsoDate, zone: ZoneName): readonly Instant[] {
-  const startMs = Date.parse(start)
+  const startMs = parseInstant(start)
   const limit = Math.min(startMs + MAX_BOOKING_MS, startOf(nextDate(date), zone))
   const out: Instant[] = []
   for (let ms = startMs + QUARTER_MS; ms <= limit; ms += QUARTER_MS) {
