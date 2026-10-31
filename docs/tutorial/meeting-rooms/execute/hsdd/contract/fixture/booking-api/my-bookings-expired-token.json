@@ -1,0 +1,23 @@
+{
+  "name": "my-bookings-expired-token",
+  "description": "A token past its expiresAt gets the same 401 as no token.",
+  "clock": "2026-11-05T09:30:00.000Z",
+  "given": [],
+  "request": {
+    "method": "GET",
+    "path": "/api/me/bookings",
+    "headers": {
+      "authorization": "Bearer {{expired-token:budi}}"
+    }
+  },
+  "response": {
+    "status": 401,
+    "body": {
+      "error": {
+        "code": "UNAUTHORIZED",
+        "message": "Sign in to continue."
+      }
+    }
+  },
+  "replay": "exact"
+}

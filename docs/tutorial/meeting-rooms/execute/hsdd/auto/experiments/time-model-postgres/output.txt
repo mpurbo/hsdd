@@ -1,0 +1,65 @@
+sh: locale: not found
+2026-10-31 14:53:12.211 UTC [11] WARNING:  no usable system locales were found
+1. server version
+                                            version                                             
+------------------------------------------------------------------------------------------------
+ PostgreSQL 17.11 on aarch64-unknown-linux-musl, compiled by gcc (Alpine 15.2.0) 15.2.0, 64-bit
+
+2. timestamptz keeps the instant whatever the session TimeZone; timestamp drops the Z
+SET
+CREATE TABLE
+INSERT 0 1
+SET
+INSERT 0 1
+SET
+            label            |     at_tz_as_utc     |      at_naive       |     tz_epoch      
+-----------------------------+----------------------+---------------------+-------------------
+ written under Asia/Jakarta  | 2026-11-05T02:00:00Z | 2026-11-05 02:00:00 | 1793844000.000000
+ written under Europe/London | 2026-11-05T02:00:00Z | 2026-11-05 02:00:00 | 1793844000.000000
+
+   the same naive value read back as an instant under two session zones:
+SET
+         session         |    naive_epoch    
+-------------------------+-------------------
+ read under Asia/Jakarta | 1793818800.000000
+
+SET
+         session          |    naive_epoch    
+--------------------------+-------------------
+ read under Europe/London | 1793844000.000000
+
+SET
+3. half-open ranges: touching bookings do not overlap, overlapping ones do
+ touching_overlap | overlapping_overlap | touching_by_comparison 
+------------------+---------------------+------------------------
+ f                | t                   | f
+
+4. an exclusion constraint on the half-open range, per room
+CREATE EXTENSION
+CREATE TABLE
+INSERT 0 1
+   touching (03:00 to 04:00), same room:
+INSERT 0 1
+   overlapping (02:45 to 03:15), other room:
+INSERT 0 1
+   overlapping (02:45 to 03:15), same room (expect 23P01):
+psql:<stdin>:47: ERROR:  23P01: conflicting key value violates exclusion constraint "booking_room_tstzrange_excl"
+DETAIL:  Key (room, tstzrange(start_at, end_at, '[)'::text))=(Merapi, ["2026-11-05 02:45:00+00","2026-11-05 03:15:00+00")) conflicts with existing key (room, tstzrange(start_at, end_at, '[)'::text))=(Merapi, ["2026-11-05 02:00:00+00","2026-11-05 03:00:00+00")).
+SCHEMA NAME:  public
+TABLE NAME:  booking
+CONSTRAINT NAME:  booking_room_tstzrange_excl
+LOCATION:  check_exclusion_or_unique_constraint, execIndexing.c:879
+  room  | start_utc | end_utc 
+--------+-----------+---------
+ Bromo  | 02:45     | 03:15
+ Merapi | 02:00     | 03:00
+ Merapi | 03:00     | 04:00
+
+5. a London clock-change day as an instant range: bookings overlapping [2027-10-30T23:00Z, 2027-11-01T00:00Z)
+INSERT 0 4
+     start_at      |      end_at       
+-------------------+-------------------
+ 2027-10-30T23:00Z | 2027-10-31T00:30Z
+ 2027-10-31T01:00Z | 2027-10-31T01:30Z
+ 2027-10-31T23:30Z | 2027-11-01T00:00Z
+

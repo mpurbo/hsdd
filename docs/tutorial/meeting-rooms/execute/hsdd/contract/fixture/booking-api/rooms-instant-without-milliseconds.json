@@ -1,0 +1,23 @@
+{
+  "name": "rooms-instant-without-milliseconds",
+  "description": "from is a UTC time without milliseconds, which is not the toISOString form.",
+  "clock": "2026-11-04T12:00:00.000Z",
+  "given": [],
+  "request": {
+    "method": "GET",
+    "path": "/api/rooms?from=2026-11-05T00:00:00Z&to=2026-11-06T00:00:00.000Z",
+    "headers": {
+      "authorization": "Bearer {{token:ayu}}"
+    }
+  },
+  "response": {
+    "status": 400,
+    "body": {
+      "error": {
+        "code": "VALIDATION_FAILED",
+        "message": "The request is not valid."
+      }
+    }
+  },
+  "replay": "exact"
+}

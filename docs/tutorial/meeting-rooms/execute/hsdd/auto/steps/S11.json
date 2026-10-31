@@ -1,0 +1,222 @@
+{
+  "step_ref": "S11",
+  "skill": "hsdd-spec",
+  "target": "simple-login.integration",
+  "status": "completed",
+  "stop": null,
+  "artifacts": [
+    "hsdd/spec/simple-login.integration.md",
+    "hsdd/spec/simple-login.md"
+  ],
+  "experiments": [],
+  "self_check": [
+    {
+      "gate": "The spec stays high-level; it is not an implementation plan.",
+      "status": "pass",
+      "note": "Owns, the Isolation strategy and the Overview name the three PRD v2 Success tests and restate only what PRD v2 Constraints and Success, ADR-001 and ADR-002 Consequences, auth-api@v1 G3 and booking-api@v1 G5, G10, G17 and Validation already state. The mechanics (the third zone's name, the next change day's date, the strings to assert, how a test run gets its database, which scripted test covers a started booking, the 3-second assertion) stay with the H18 plan (DEC-101, DEC-102)."
+    },
+    {
+      "gate": "Every node has explicit consumed/produced contract ids.",
+      "status": "pass",
+      "note": "Consumes stays [auth-api@v1, profile-api@v1, profile-api@v2] and Produces none in both files. booking-api@v1 joins Consumes through hsdd-reconcile (H19), which the intake record leaves header versions to (DEC-014); the Overview already names it."
+    },
+    {
+      "gate": "Every node is testable in isolation (fixtures, mocks, schemas).",
+      "status": "pass",
+      "note": "This node's isolation is none by design (hard edges), as the skill's integration-node rule makes it; the line now says it runs the real service on its real PostgreSQL 17, never a mock or an in-memory stand-in, beside the real web app, with the browser in a zone that is neither account's nor UTC and the service on the real clock (DEC-100)."
+    },
+    {
+      "gate": "Every dependency edge is typed; parallel lanes are called out.",
+      "status": "n/a",
+      "note": "not exercised by this step"
+    },
+    {
+      "gate": "Each child is marked internal or leaf-parent.",
+      "status": "n/a",
+      "note": "not exercised by this step"
+    },
+    {
+      "gate": "Mermaid DAG matches the dependency table.",
+      "status": "n/a",
+      "note": "not exercised by this step"
+    },
+    {
+      "gate": "`conventions.md` exists/updated at the root.",
+      "status": "pass",
+      "note": "hsdd/conventions.md exists; the touch adds no layout, naming or protocol convention, so it is unchanged."
+    },
+    {
+      "gate": "The decomposition axis at each level matches ownership stated by the human, not assumed <U+2014 EM DASH> no node is owned by two teams.",
+      "status": "pass",
+      "note": "The axis is unchanged. Owns gains starting the stack and the Success tests; the database, its Docker Compose service and its Compose file stay simple-login.backend's (PRD v2 Team and delivery, DEC-081), and the Owns line names that service as the backend's so a root-level Compose file keeps one owner (DEC-099). The gate's dash is written as <U+2014 EM DASH> because the run's prose rules ban the character."
+    },
+    {
+      "gate": "Every child node has its own `hsdd/spec/{child-id}.md` file.",
+      "status": "n/a",
+      "note": "not exercised by this step"
+    },
+    {
+      "gate": "Every input source appears in the Sources of at least one node, or is marked in the root `## Sources` as \"informative only <U+2014 EM DASH> not decomposed\", with a reason.",
+      "status": "n/a",
+      "note": "not exercised by this step: the Sources field is left to the citation touch (H13), which moves the PRD 1 and Update 1 entries to PRD v2 (intake record, Sources and Scope; DEC-098). The gate's dash is written as <U+2014 EM DASH>."
+    },
+    {
+      "gate": "No node's Sources lists a document that does not govern it.",
+      "status": "n/a",
+      "note": "not exercised by this step: the Sources field in this file and in the embedded summary is unchanged and still names PRD 1 and Update 1, which H13 moves (DEC-098)."
+    },
+    {
+      "gate": "Field blocks are bullet lists and empty lists say \"none\".",
+      "status": "pass",
+      "note": "Both header blocks stay bullet lists; Produces says none."
+    },
+    {
+      "gate": "Every open question is defined once, in its owning spec, with a table row and a `### {ID}` detail subsection; child views carry `[inherits …]`; no cited ID lacks a definition.",
+      "status": "n/a",
+      "note": "not exercised by this step: the touched text cites and defines no OQ, and simple-login.integration.md has no Open questions section."
+    },
+    {
+      "gate": "OQ prefixes used by node specs are declared in `conventions.md`.",
+      "status": "n/a",
+      "note": "not exercised by this step"
+    },
+    {
+      "gate": "Under `multi-team`, every node whose team differs from its parent's carries `- **Team:**`; no node is owned by two teams.",
+      "status": "n/a",
+      "note": "not exercised by this step: conventions.md says single-team."
+    },
+    {
+      "gate": "Where children exchange contracts, an integration node exists or the decision not to add one is stated in the parent (one line).",
+      "status": "n/a",
+      "note": "not exercised by this step"
+    },
+    {
+      "gate": "A graft kept every existing child id and touched only the new child's file, the parent's summaries and the parent's DAG.",
+      "status": "n/a",
+      "note": "not exercised by this step"
+    },
+    {
+      "gate": "A retired node's file is kept; its contracts' retirement went through `hsdd-reconcile`.",
+      "status": "n/a",
+      "note": "not exercised by this step"
+    },
+    {
+      "gate": "Promotion: the human confirmed before `- **Adopted:** promoted` was written; `## Observed surface` kept; `v0` contracts unchanged unless redesigned.",
+      "status": "n/a",
+      "note": "not exercised by this step"
+    }
+  ],
+  "routed": [
+    {
+      "target": "H18",
+      "kind": "consider",
+      "text": "Carried from Q-008 (from S03), which matched S11 by its node and was closed there as explained, unaddressed, because a spec touch may not write the Phase Plan (DEC-103). Original text: ADR-001 keeps sessions in memory (DEC-018), so simple-login.integration.2's restart stays a valid expired-token stand-in for AC-2.3 and the intake record's 'revisited if ADR-001's update makes sessions survive a restart' does not fire. The PRD v2 Success test that a restart keeps every booking must sign in again after the restart, since the same restart signs every user out (ADR-001 Consequences)."
+    },
+    {
+      "target": "H18",
+      "kind": "consider",
+      "text": "Carried from Q-015 (from S04), which matched S11 by its node and was closed there as explained, unaddressed, because a spec touch may not write the Phase Plan (DEC-103). Original text: ADR-002 for the integration plan: the browser tests run with the browser's time zone set to a zone that is neither account's nor UTC (for example Asia/Kolkata, +05:30); the change-day tests take the next last Sunday of March and of October after the real clock, never a fixed date (2026-10-25 has passed; the next is 2027-03-28), and booking-api@v1's how-far-ahead limit decides whether that day is bookable through the API; the backend's clock decides 'started', which an end-to-end test cannot set, so the plan says which scripted test covers AC-5.5 and AC-6.2's started case (PRD v2 Success); the strings to assert are ADR-002 item 7's, including '23:00 to Fri 6 Nov 02:00' and '01:30 BST' / '01:30 GMT'."
+    },
+    {
+      "target": "H18",
+      "kind": "consider",
+      "text": "Carried from Q-020 (from S05), which matched S11 by its node and was closed there as explained, unaddressed, because a spec touch may not write the Phase Plan (DEC-103). Original text: booking-api@v1 for the integration plan: the 365-day horizon keeps the next London clock-change day bookable through the API under the real clock (at most 217 days ahead from any moment, hsdd/auto/experiments/booking-api-fixtures/). PRD v2 Success's 20 simultaneous attempts must give exactly one 201 and nineteen 409 BOOKING_CONFLICT naming the winner (G5, G6); a restart keeps every booking and id but drops tokens, so the test signs in again (G17). The fixtures carry a fixed clock and seeded state that the real service under the real clock cannot reproduce: only the 14 that depend on neither (the eight 400s, the four 401s, cancel-unknown and cancel-malformed-id) can be replayed exactly through the proxy; the stateful criteria are this node's own tests. consumers names simple-login.integration.3 provisionally (DEC-053)."
+    },
+    {
+      "target": "H18",
+      "kind": "consider",
+      "text": "Carried from Q-021 (from S06), which matched S11 by its node and was closed there as explained, unaddressed, because a spec touch may not write the Phase Plan (DEC-103). Original text: auth-api@v1 now states the restart in the contract: G3, a restart of the service ends every token issued before it, and each is then rejected exactly as an expired token is (ADR-001, sessions kept in memory by DEC-018). The AC-2.3 expired-token stand-in (a backend restart) therefore stays valid and can cite auth-api@v1 G3 with profile-api@v2's same-401 guarantee; PRD v2 Success's restart test signs in again after the restart and finds every booking (booking-api@v1 G17). G2 now names booking-api@v1: a token from POST /api/login works at its four endpoints until expiresAt. G4: there is no logout endpoint; sign-out discards the token on the client."
+    },
+    {
+      "target": "H18",
+      "kind": "consider",
+      "text": "Carried from Q-024 (from S07), which matched S11 by its node and was closed there as explained, unaddressed, because a spec touch may not write the Phase Plan (DEC-103). Original text: e2e/proxy-replay.spec.ts and e2e/fixtures.ts profileFixture replay profile-api@v2's exact me-ayu and me-budi through the proxy; they now expect timeZone (Asia/Jakarta, Europe/London) and pass only against a backend that serves it (G4). AC-2.5's browser test can read the expected zone from profileFixture."
+    },
+    {
+      "target": "H18",
+      "kind": "consider",
+      "text": "Carried from Q-025 (from S08), which matched S11 by its node and was closed there as explained, unaddressed, because a spec touch may not write the Phase Plan (DEC-103). Original text: The root's success criteria now follow PRD v2 Success only (DEC-073): 20 simultaneous attempts give one booking; every acceptance criterion passes in a scripted test, London's clock-change days included; a restart keeps every booking. PRD 1's 'Home within 3 seconds of Sign in' is gone. It is still asserted by the shipped simple-login.integration.1 (its Scope names 'the PRD's success metric') in e2e/login.spec.ts ('AC-1.1: the right password reaches Home within 3 seconds'). That phase is history; the integration node's touch (H9) should not name the 3-second check as a PRD criterion, and its appended plan decides whether a new phase keeps the assertion as a regression check or drops it."
+    },
+    {
+      "target": "H18",
+      "kind": "consider",
+      "text": "From S11's touch (DEC-099 to DEC-102). Owns now says the root package.json scripts run the real service with its PostgreSQL 17, started through simple-login.backend's Docker Compose service, beside the real web app; the database, the Compose service and its Compose file stay the backend's (DEC-081), and where the file lives is H14's choice (Q-031). The shipped rig starts no database: scripts/dev.mjs and e2e/fixtures.ts spawn backend/src/server.ts directly, and the README's run instructions name no Docker or Colima. Bookings now persist across runs of the suite, so a test that books a slot computed from the clock can meet an earlier run's booking (a second run's 20 simultaneous attempts would then all get 409); the plan decides how a test run gets a database of its own or clean slots, through the backend's Compose service or booking-api@v1; writing the backend's tables directly would tie this node to a schema simple-login.backend owns. The Isolation strategy now runs the browser in a time zone that is neither account's nor UTC (ADR-002), which the plan's Playwright configuration sets, and says the service runs on the real clock. The Overview leaves to this plan which scripted test covers a booking that has started (PRD v2 AC-5.5, AC-6.2; DEC-102): asking for a started time works through the API under the real clock, but a booking of one's own that has started appears only by waiting for its start."
+    },
+    {
+      "target": "H13",
+      "kind": "consider",
+      "text": "S11 restated Owns and Isolation strategy (in hsdd/spec/simple-login.integration.md and the embedded summary in hsdd/spec/simple-login.md) and the Overview, citing PRD v2 by section (Success, Constraints, Team and delivery, AC-2.3, AC-4.4, AC-5.5, AC-6.2), ADR-001, ADR-002 Consequences, auth-api@v1 G3 and booking-api@v1 G5, G10, G17 and Validation (DEC-098). The citations it left for H13: the Sources field in both places (PRD 1 and Update 1 paths). Every other PRD 1 or Update 1 reference in the file sits in the Phase Plan (simple-login.integration.1 and .2, both with verification docs on main, and the 2026-10-30 append), which is history."
+    }
+  ],
+  "closes": [
+    {
+      "id": "Q-008",
+      "outcome": "explained",
+      "note": "Targets H18, the integration plan, which this spec touch may not edit. The Overview now states its spec-level clauses: a restart stays the expired-token stand-in for PRD v2 AC-2.3 (auth-api@v1 G3), and the restart test signs in again before it lists the bookings (booking-api@v1 G17, ADR-001), so the intake record's revisit clause does not fire. Carried to H18 with the full text (DEC-103)."
+    },
+    {
+      "id": "Q-015",
+      "outcome": "explained",
+      "note": "Targets H18. The Isolation strategy now runs the browser in a zone that is neither account's nor UTC and the service on the real clock (DEC-100); the Overview says a clock-change test takes the next last Sunday of March or October after the real clock, never a fixed date, booking-api@v1 G10 keeping it bookable, and that the plan names the scripted test covering a started booking (AC-5.5, AC-6.2; DEC-102). Asia/Kolkata, 2027-03-28 and the strings to assert are plan content, carried to H18 with the full text (DEC-103)."
+    },
+    {
+      "id": "Q-020",
+      "outcome": "explained",
+      "note": "Targets H18. The Overview now states the 20 attempts as one 201 and nineteen 409 BOOKING_CONFLICT (booking-api@v1 G5), the 365-day limit keeping the next change day bookable (G10), the restart keeping every booking and id with a fresh sign-in (G17), and that the proxy replay leaves out booking-api@v1 fixtures needing a set clock or seeded bookings (Validation). The fourteen replayable fixtures and the provisional consumers id are plan content, carried to H18 with the full text (DEC-103)."
+    },
+    {
+      "id": "Q-021",
+      "outcome": "explained",
+      "note": "Targets H18. The Overview now cites auth-api@v1 G3 for the AC-2.3 stand-in and for the restart test signing in again, with booking-api@v1 G17. G2 and G4 bear on the plan's tests, not the header; carried to H18 with the full text (DEC-103)."
+    },
+    {
+      "id": "Q-024",
+      "outcome": "explained",
+      "note": "Targets H18. It is plan content only (e2e/proxy-replay.spec.ts and e2e/fixtures.ts profileFixture now expecting timeZone, AC-2.5's test reading it); nothing in Owns, the Isolation strategy or the Overview changes for it. Carried to H18 with the full text (DEC-103)."
+    },
+    {
+      "id": "Q-025",
+      "outcome": "explained",
+      "note": "Targets H18 and asks H9 one thing: the touched Owns and Overview name PRD v2 Success's three tests only and never the 3-second check as a PRD criterion (DEC-101). Whether a new phase keeps e2e/login.spec.ts's 3-second assertion as a regression check or drops it is the plan's; carried to H18 with the full text (DEC-103)."
+    }
+  ],
+  "reads_outside": [
+    {
+      "path": "hsdd/auto/steps/S09.json, S09.decisions.jsonl, S10.json, S10.decisions.jsonl, git show 663d5d2 and 8938b23",
+      "why": "How the sibling spec touches restated their headers, cited PRD v2 and closed items routed to their phase plans, and how the orchestrator ingested that (DEC-087, DEC-096, DEC-097), so this touch follows the same rules."
+    },
+    {
+      "path": "hsdd/auto/queue.jsonl",
+      "why": "The full text and targets of Q-008, Q-015, Q-020, Q-021, Q-024 and Q-025 to carry verbatim, and Q-031 and Q-033 on the Compose file and the child table."
+    },
+    {
+      "path": "hsdd/adr/001-session-tokens.md, hsdd/adr/002-time-model.md, hsdd/contract/auth-api.md, hsdd/contract/booking-api.md",
+      "why": "The consequences and guarantees the Owns, Isolation strategy and Overview restate (ADR-001 Consequences and affects; ADR-002 Decision 5 and Consequences; auth-api@v1 G2 to G4; booking-api@v1 G5, G7, G10, G11, G17, Validation)."
+    },
+    {
+      "path": "package.json, playwright.config.ts, e2e/fixtures.ts, grep over e2e/*.spec.ts",
+      "why": "What the shipped rig starts (no database), that it can restart the backend, and where the 3-second assertion lives, for the H18 item."
+    },
+    {
+      "path": "hsdd/verify/ and git ls-tree main -- hsdd/verify",
+      "why": "Whether simple-login.integration.1 and .2 have shipped, for the H13 item's account of what is history."
+    },
+    {
+      "path": "hsdd/conventions.md (Teams, Main line)",
+      "why": "single-team, for the Team gate."
+    },
+    {
+      "path": "hsdd/scripts/auto/gate.mjs, hsdd/scripts/auto/schema/step-report.schema.json",
+      "why": "What the gate checks and the report shape."
+    }
+  ],
+  "notes": [
+    "Decisions DEC-098 to DEC-103. Changed: hsdd/spec/simple-login.integration.md (Owns, Isolation strategy, Overview) and hsdd/spec/simple-login.md (the same two header lines of the integration node's embedded summary, which has no Overview). Kind, Purpose, Does not own, Consumes, Produces, Governed by, Sources and Decomposes into are untouched in both; the Phase Plan was diffed against HEAD and is identical.",
+    "Purpose was not named by H9 and still reads 'prove the real service and the real web app work together, end to end', which stays true with the database behind the service. The root's child-node table repeats it word for word, so Q-033's integration row needs nothing; only the backend and web rows differ from their summaries.",
+    "Does not own still reads 'any code under backend/ or web/'. A Compose file at the repository root would fall outside it; the Owns line names the Compose service as simple-login.backend's, which with the backend's Owns (DEC-081) keeps one owner wherever H14 puts the file (DEC-099).",
+    "Governed by stays [ADR-002] and ADR-001's affects does not name simple-login.integration. The Overview cites ADR-001 only beside auth-api@v1 G3 and booking-api@v1 G17, which carry its restart behaviour to this consumer; if the owner wants this node governed by ADR-001 directly, that is an hsdd-adr update, not a spec touch.",
+    "Routing mechanics, as in S09 and S10 (DEC-085, DEC-095): routed.mjs matches an item on a handoff to every step on that handoff's target, so the six H18 items reached this spec touch, and the carried copies will reach H13, the citation touch on the same node, before H18. If the orchestrator re-opens the originals instead, the six carried entries duplicate them and can be dropped before ingest.",
+    "Until hsdd-reconcile runs for this node (H19), the header's Consumes lacks booking-api@v1 while Owns and the Overview name its tests. The shipped phases (integration.1, integration.2) start no database and test no booking; the header and Overview describe the node as PRD v2 requires it, and the appended plan (H18) delivers it."
+  ],
+  "read_check": "bc232dde"
+}

@@ -1,0 +1,62 @@
+plain: ["hsdd/context/prd-simple-login.md","hsdd/context/update-1-add-phone.md"]
+refs: (?<![A-Za-z0-9_.@-])1(?![A-Za-z0-9_-]|\.\d) | (?<![A-Za-z0-9_-])auth-api@v0(?![A-Za-z0-9_-]) | (?<![A-Za-z0-9_-])profile-api@v0(?![A-Za-z0-9_-])
+
+simple-login: cites-superseded HOLDS over 1 file(s)
+  hsdd/spec/simple-login.md:10 [hsdd/context/prd-simple-login.md, hsdd/context/update-1-add-phone.md] - **Sources:** hsdd/context/prd-simple-login.md, hsdd/context/rfc-simple-login.md, hsdd/context/upda
+  hsdd/spec/simple-login.md:17 [version 1 token] display name, username, email, phone number (update 1) and join date, and
+  hsdd/spec/simple-login.md:35 [hsdd/context/prd-simple-login.md] - `hsdd/context/prd-simple-login.md` · PRD (approved) · product scope, user
+  hsdd/spec/simple-login.md:71 [hsdd/context/prd-simple-login.md, hsdd/context/update-1-add-phone.md] - **Sources:** hsdd/context/prd-simple-login.md (US-1, US-2, Demo accounts, Scope), hsdd/context/rfc
+  hsdd/spec/simple-login.md:84 [hsdd/context/prd-simple-login.md, hsdd/context/update-1-add-phone.md, version 1 token] - **Sources:** hsdd/context/prd-simple-login.md (US-1, US-2, US-3, Screens), hsdd/context/rfc-simple
+  hsdd/spec/simple-login.md:96 [hsdd/context/prd-simple-login.md, hsdd/context/update-1-add-phone.md, version 1 token] - **Sources:** hsdd/context/prd-simple-login.md (Success, Team and delivery, Demo accounts), hsdd/co
+  hsdd/spec/simple-login.md:130 [version 1 token] - **Lane 1 (backend developer):** simple-login.backend, from the moment the
+  hsdd/spec/simple-login.md:133 [version 1 token] 1. Its edges are `contract`, so it builds against the fixtures and never
+
+simple-login.backend: cites-superseded HOLDS over 1 file(s)
+  hsdd/spec/simple-login.backend.md:10 [hsdd/context/prd-simple-login.md, hsdd/context/update-1-add-phone.md] - **Sources:** hsdd/context/prd-simple-login.md (US-1, US-2, Demo accounts, Scope), hsdd/context/rfc
+  hsdd/spec/simple-login.backend.md:31 [version 1 token] | simple-login.backend.2 | Sign-in, sessions and the two endpoints | full-review | ~9 files (~380 li
+  hsdd/spec/simple-login.backend.md:34 [version 1 token] Ordering policy: `interfaces-first` (from `hsdd/conventions.md`). Phase 1
+  hsdd/spec/simple-login.backend.md:43 [version 1 token] they merged into phase 2. Phases 1 and 2 stay separate on a tier boundary:
+  hsdd/spec/simple-login.backend.md:47 [version 1 token] Append, 2026-10-30 (update 1, per
+  hsdd/spec/simple-login.backend.md:68 [version 1 token] - **D2. The service listens on `127.0.0.1`, port `PORT` or 3000** (RFC §1).
+  hsdd/spec/simple-login.backend.md:89 [version 1 token] - **Scope:** password verification with scrypt and `timingSafeEqual`, running one comparison against
+  hsdd/spec/simple-login.backend.md:101 [version 1 token] - **Scope:** per hsdd/management/2026-10-30-intake-add-phone.md. `GET /api/me` moves from profile-ap
+  hsdd/spec/simple-login.backend.md:106 [version 1 token] - **Dependencies:** simple-login.backend.2 (shipped: `Account`, `toProfile`, `GET /api/me`, the repl
+
+simple-login.web: cites-superseded HOLDS over 1 file(s)
+  hsdd/spec/simple-login.web.md:10 [hsdd/context/prd-simple-login.md, hsdd/context/update-1-add-phone.md, version 1 token] - **Sources:** hsdd/context/prd-simple-login.md (US-1, US-2, US-3, Screens), hsdd/context/rfc-simple
+  hsdd/spec/simple-login.web.md:32 [version 1 token] | simple-login.web.2 | Login screen | spot-check | ~4 files (~220 lines), ≤5 tasks | 1 |
+  hsdd/spec/simple-login.web.md:33 [version 1 token] | simple-login.web.3 | Home screen and the session flow | full-review | ~5 files (~300 lines), ≤6 ta
+  hsdd/spec/simple-login.web.md:34 [version 1 token] | simple-login.web.4 | Phone number on Home | spot-check | ~9 files (~70 lines), ≤4 tasks | 1, 3 |
+  hsdd/spec/simple-login.web.md:36 [version 1 token] Ordering policy: `interfaces-first` (from `hsdd/conventions.md`). Phase 1
+
+simple-login.integration: cites-superseded HOLDS over 1 file(s)
+  hsdd/spec/simple-login.integration.md:9 [hsdd/context/prd-simple-login.md, hsdd/context/update-1-add-phone.md, version 1 token] - **Sources:** hsdd/context/prd-simple-login.md (Success, Team and delivery, Demo accounts), hsdd/co
+  hsdd/spec/simple-login.integration.md:33 [version 1 token] Update 1 (2026-10-30, `hsdd/management/2026-10-30-intake-add-phone.md`)
+  hsdd/spec/simple-login.integration.md:68 [version 1 token] - **Verification:** signed in as `ayu`, Home shows `+62 812 3456 7890` with the other details, and a
+
+ADR-001: cites-superseded does not hold over 1 file(s)
+
+auth-api: cites-superseded HOLDS over 7 file(s)
+  hsdd/contract/auth-api.md:25 [version 1 token] - `username`: string, 1 to 64 characters.
+  hsdd/contract/auth-api.md:26 [version 1 token] - `password`: string, 1 to 128 characters.
+  hsdd/contract/schema/auth-api.schema.json:63 [version 1 token] "minLength": 1,
+  hsdd/contract/schema/auth-api.schema.json:68 [version 1 token] "minLength": 1,
+  hsdd/contract/schema/auth-api.schema.json:113 [version 1 token] "minLength": 1
+
+profile-api: cites-superseded HOLDS over 14 file(s)
+  hsdd/contract/schema/profile-api.schema.json:55 [version 1 token] "minLength": 1
+  hsdd/contract/schema/profile-api.schema.json:59 [version 1 token] "minLength": 1,
+  hsdd/contract/schema/profile-api.schema.json:64 [version 1 token] "minLength": 1
+  hsdd/contract/schema/profile-api.schema.json:95 [version 1 token] "minLength": 1
+  hsdd/contract/schema/profile-api.v2.schema.json:56 [version 1 token] "minLength": 1
+  hsdd/contract/schema/profile-api.v2.schema.json:60 [version 1 token] "minLength": 1,
+  hsdd/contract/schema/profile-api.v2.schema.json:65 [version 1 token] "minLength": 1
+  hsdd/contract/schema/profile-api.v2.schema.json:73 [version 1 token] "pattern": "^\\+[0-9]{1,3}( [0-9]{1,4})+$"
+  hsdd/contract/schema/profile-api.v2.schema.json:100 [version 1 token] "minLength": 1
+
+profile-api.v2: cites-superseded HOLDS over 7 file(s)
+  hsdd/contract/schema/profile-api.v2.schema.json:56 [version 1 token] "minLength": 1
+  hsdd/contract/schema/profile-api.v2.schema.json:60 [version 1 token] "minLength": 1,
+  hsdd/contract/schema/profile-api.v2.schema.json:65 [version 1 token] "minLength": 1
+  hsdd/contract/schema/profile-api.v2.schema.json:73 [version 1 token] "pattern": "^\\+[0-9]{1,3}( [0-9]{1,4})+$"
+  hsdd/contract/schema/profile-api.v2.schema.json:100 [version 1 token] "minLength": 1

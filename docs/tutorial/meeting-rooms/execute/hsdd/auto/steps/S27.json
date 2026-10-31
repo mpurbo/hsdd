@@ -1,0 +1,48 @@
+{
+  "step_ref": "S27",
+  "skill": "hsdd-phase-plan",
+  "target": "simple-login.integration",
+  "status": "completed",
+  "stop": null,
+  "artifacts": ["hsdd/spec/simple-login.integration.md"],
+  "experiments": [],
+  "self_check": [
+    { "gate": "Phase 1 defines all shared types and contract-bounded interfaces.", "status": "n/a", "note": "not exercised by this step" },
+    { "gate": "Phases 2..N-1 are maximally independent (parallelizable where possible).", "status": "n/a", "note": "not exercised by this step" },
+    { "gate": "Each phase has <= 8 OpenSpec tasks (split if more).", "status": "pass", "note": "The rewritten simple-login.integration.3 keeps <= 7 tasks; one sentence of Scope (b) changed and no work was added." },
+    { "gate": "Adjacent same-tier phases were checked against the sizing floor; every merge candidate kept separate names its reason (tier boundary, parallel lane, isolated risk).", "status": "pass", "note": "No phase is appended, so the floor has nothing new to run over; the rewrite paragraph under the summary table says so (DEC-224)." },
+    { "gate": "Contract ids are defined before the phase that implements them.", "status": "pass", "note": "booking-api@v1 is stable with phase_ids final and integration.3 among its consumers; the rewrite changes no contract." },
+    { "gate": "Phase N is testable against contract fixtures even if Phase N-1 is not implemented.", "status": "n/a", "note": "not exercised by this step" },
+    { "gate": "No phase couples to another phase's internals.", "status": "pass", "note": "The new sentence rests on booking-api@v1's Development address, the phase's own consumed contract, and on no backend phase's code: no schema step, no seeding, the database created by the rig's own global setup." },
+    { "gate": "Each phase has a concrete gate, a verification description, and a review tier.", "status": "pass", "note": "integration.3 keeps `npm test`, its Verification line and full-review." },
+    { "gate": "The phase dependency graph is included as a Mermaid flowchart and matches the Dependencies fields.", "status": "pass", "note": "Unchanged: integration.3 still depends on integration.2, simple-login.backend.4 and simple-login.backend.7, matching the I2, B4 and B7 edges into I3." },
+    { "gate": "Summary table opens the section and matches the phase sections.", "status": "pass", "note": "Row 3 unchanged (~8 files, ~340 lines, <= 7 tasks, full-review), matching the unchanged section fields." },
+    { "gate": "Field blocks are bullet lists; empty lists say \"none\".", "status": "pass", "note": "integration.3's fields stay a bullet list; Produces reads none." },
+    { "gate": "Every contingent phase names the OQ id it waits on; no contingency without a minted OQ.", "status": "pass", "note": "The rewrite removes the phase's one conditional branch (the separate-command fallback); integration.3 is contingent on no question." },
+    { "gate": "The plan names the ordering policy it followed, matching the conventions line (or `interfaces-first` when absent, `fp-progression` when only the pre-v0.10 `FP ordering:` bullet is present).", "status": "pass", "note": "interfaces-first, as hsdd/conventions.md says; the rewrite changes no order." },
+    { "gate": "Every producing phase's Gate includes the contract replay for each contract it produces.", "status": "n/a", "note": "not exercised by this step: no phase of simple-login.integration produces a contract." },
+    { "gate": "In append mode: no existing id changed, no shipped phase edited, numbering continued from the highest existing id, the node header untouched, the floor run over the appended phases only.", "status": "pass", "note": "Only the unshipped simple-login.integration.3 was rewritten, keeping its id (DEC-223); integration.1 and .2 (verification docs on main), .4 and .5 untouched; no phase appended; header, Sources and graph untouched; the pending section gained an emission line naming the rewrite, with no entry (DEC-225)." },
+    { "gate": "No Scope or Verification line leans on a pointer to text the phase context does not carry (a source's section, another phase's text); the binding detail is in the line itself.", "status": "pass", "note": "The new sentence writes the promise itself (tables created before the service listens in an existing empty database, kept at restart; the four rooms by name with no bookings; the rig creates the database) and cites booking-api@v1's Development address, a contract the phase consumes, as provenance." }
+  ],
+  "routed": [],
+  "closes": [],
+  "reads_outside": [
+    { "path": "hsdd/auto/queue.jsonl", "why": "Q-086, the insert-step this step was inserted for (front matter queue_item), and Q-081 behind it" },
+    { "path": "hsdd/auto/plan.md", "why": "the step log and DEC-222 in the change log, which accepted Q-086 as an in-place rewrite with no reconcile" },
+    { "path": "hsdd/auto/run.yaml", "why": "the segment's sources and request path, to confirm the Sources entry" },
+    { "path": "hsdd/judgement/decisions.jsonl", "why": "DEC-198, DEC-199, DEC-221 and DEC-222, the decisions that led to this step" },
+    { "path": "hsdd/auto/steps/S24.json, hsdd/auto/steps/S24.decisions.jsonl", "why": "precedent: the same in-place rewrite on simple-login.backend.7 under a default invocation (DEC-210, DEC-214) and its report shape" },
+    { "path": "hsdd/auto/steps/S26.json", "why": "the report that routed Q-086 and its note on the rooms clause" },
+    { "path": "git show 14073d3 -- hsdd/spec/simple-login.backend.md", "why": "the form of S24's rewrite paragraph and emission line, to keep the two plans alike (DEC-224); this is a sibling's phase-plan section, read for format only, and nothing in integration.3 rests on it" },
+    { "path": "hsdd/spec/simple-login.backend.md (D3, lines 130 to 133)", "why": "to check the rooms claim DEC-222 cites; D3 sits in the sibling's Phase Plan section, and the rewritten sentence cites only booking-api@v1's Development address" },
+    { "path": "hsdd/scripts/auto/gate.mjs", "why": "the check list and the closes rule" }
+  ],
+  "notes": [
+    "The invocation rendered as the phase-plan-append template's default ('Append phases to `simple-login.integration` per ...'), which carries none of Q-086's text; DEC-223 reads Q-086, named in the dispatch's front matter and accepted by DEC-222, as the instruction naming simple-login.integration.3, as DEC-210 did for S24. This is the second time; the template could render an inserted step's queue-item text as its invocation.",
+    "Only one sentence of integration.3's Scope (b) changed (git diff --word-diff shows nothing else in the line). It now states that the rig runs no schema or seeding step, that the service creates its tables in the existing empty meeting_rooms_e2e before it listens and keeps them at restart(), that the rooms are part of the service so the new database lists Merapi, Bromo, Thames and Kew with no bookings, and that the global setup creates the database before any worker starts the service.",
+    "Sources unchanged: the PRD v2 sections behind the sentence (Rooms, Constraints, Success) are already in the node's Sources entry for hsdd/context/prd-simple-login.v2.md.",
+    "The pending section carries only an emission line with no entry (DEC-225). DEC-222 inserted no reconcile, so the line stays until the next hsdd-reconcile on this node stamps it; it gives that reconcile nothing to apply. The rewrite itself is recorded lastingly in a paragraph under the summary table (DEC-224).",
+    "The emission and rewrite dates read 2026-11-01, as S24's and the latest Reconciled stamps do; the decide command's UTC stamps read 2026-10-31T18:4xZ."
+  ],
+  "read_check": "c837f801"
+}

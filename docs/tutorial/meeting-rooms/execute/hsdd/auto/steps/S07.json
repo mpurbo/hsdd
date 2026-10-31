@@ -1,0 +1,88 @@
+{
+  "step_ref": "S07",
+  "skill": "hsdd-contract",
+  "target": "profile-api.v2",
+  "status": "completed",
+  "stop": null,
+  "artifacts": [
+    "hsdd/contract/profile-api.v2.md",
+    "hsdd/contract/schema/profile-api.v2.schema.json",
+    "hsdd/contract/fixture/profile-api.v2/me-ayu.json",
+    "hsdd/contract/fixture/profile-api.v2/me-budi.json"
+  ],
+  "experiments": [
+    {
+      "path": "hsdd/auto/experiments/profile-api-v2-timezone/",
+      "question": "Does adding timeZone to profile-api@v2 meet the additive-only condition (the pre-touch fixtures still validate against the changed schema), what would a required field cost, and is the chosen value pattern tight enough?",
+      "finding": "All five fixtures as they stood at de2e86a validate against the schema with an optional timeZone, and the live schema equals that candidate; the same field made required rejects the pre-touch me-ayu and me-budi. The new me-ayu and me-budi fail the pre-touch schema, so the shipped producer's replay fails until it serves timeZone. Both zones match PRD v2 Demo accounts, resolve in Intl to their own names and are booking-api@v1's room zones; the pattern rejects a number, null, an offset, a bare city, an abbreviation and an empty string (Node.js 24.18, tz 2026b, Ajv2020 strict as the backend's replay rig)."
+    }
+  ],
+  "self_check": [
+    { "gate": "Frontmatter has id, version, status, kind, owner, compatibility, produced_by, consumers; external_consumers and former_consumers when any exist.", "status": "pass", "note": "Unchanged: id profile-api, version v2, status stable, kind api, owner simple-login.backend, governed_by [ADR-001, ADR-002], compatibility additive-only, produced_by [simple-login.backend.3], consumers [simple-login.web.4, simple-login.integration.2], phase_ids final. No external or former consumers exist." },
+    { "gate": "`consumers` lists phase ids that consume this version now; migrated ones are under `former_consumers`, never deleted.", "status": "pass", "note": "Unchanged. No later profile-api version exists, so no phase has migrated. The phases this segment plans reach produced_by and consumers through their confirm entries and hsdd-reconcile (H15, H17, H19)." },
+    { "gate": "The Interface section is concrete enough to mock against.", "status": "pass", "note": "The profile example and field list gain timeZone (an IANA name, optional in the schema, present per G4); consumers stub with the me-ayu and me-budi fixtures, which now carry Asia/Jakarta and Europe/London." },
+    { "gate": "At least one guarantee/invariant is stated.", "status": "pass", "note": "G1 to G8 (DEC-064). G4: every 200 profile carries timeZone; G5: a consumer never substitutes another zone and shows no time without it (DEC-063)." },
+    { "gate": "A breaking change bumped the version in a new file beside the old one (`{slug}.v{n}.md`, its schema and fixtures likewise), and its migration note names the mode; under `lockstep` the old version is `deprecated` in the same run, with its sunset named.", "status": "n/a", "note": "not exercised by this step: the addition is compatible under additive-only and v2 stays (DEC-065)." },
+    { "gate": "The registry was regenerated.", "status": "pass", "note": "node hsdd/scripts/gen-registry.mjs, byte-identical to hsdd-contract's bundled copy (cmp). No front matter changed, so hsdd/contract/INDEX.md and hsdd/adr/INDEX.md came out unchanged." },
+    { "gate": "`phase_ids` is present (`provisional` until `hsdd-reconcile` finalizes it).", "status": "pass", "note": "phase_ids: final, unchanged; no phase id was added or removed." },
+    { "gate": "Every code-level artifact both sides consume (types file, fixtures, shared package) names its canonical path and its owner in the Interface or Validation section: the owning phase for code, `hsdd-contract` for validation artifacts.", "status": "pass", "note": "Validation still names hsdd/contract/schema/profile-api.v2.schema.json and hsdd/contract/fixture/profile-api.v2/, owned by hsdd-contract, and states there is no shared code package." },
+    { "gate": "A contract or version created by this run has its schema and its kind's fixtures written at the canonical paths.", "status": "n/a", "note": "not exercised by this step: no contract or version was created. The existing schema gained the optional timeZone property in the same edit, and me-ayu and me-budi carry it, as the contract's Validation section requires of an additive-only amendment." },
+    { "gate": "Open questions are cited by ID only <U+2014 EM DASH> never defined here; prose justifying behavior as \"pending OQ-x\" is swept when the OQ resolves (hsdd-reconcile).", "status": "pass", "note": "The contract cites no open question and defines none. The gate's dash is written as <U+2014 EM DASH> because the run's prose rules ban the character." },
+    { "gate": "A `stable` contract names a schema or a fixtures directory at the canonical paths and the artifact exists, or it carries `validation: grandfathered` (never on a contract authored after the upgrade).", "status": "pass", "note": "profile-api@v2 is stable; its Validation names the schema and the fixture directory (five files), both present." },
+    { "gate": "No version is `retired` while a consumer or an external consumer still names it.", "status": "n/a", "note": "not exercised by this step" },
+    { "gate": "A `v0` contract carries `## Observed completeness`, and the block changed in any commit that added fixtures to it.", "status": "n/a", "note": "not exercised by this step" }
+  ],
+  "routed": [
+    {
+      "target": "H14",
+      "kind": "consider",
+      "text": "profile-api@v2 now carries timeZone (G4: every 200 profile; ayu Asia/Jakarta, budi Europe/London), optional in the schema, and the me-ayu and me-budi fixtures carry it with replay exact. Read from the code, not run: backend/test/accounts.test.ts ('profile equals the me-ayu/me-budi fixture', 'exactly the six profile-api@v2 fields') and the exact replay in backend/test/contract.replay.test.ts now fail against the shipped account data until the phase that adds timeZone to the accounts lands; that phase's gate replays both fixtures. simple-login.backend.3's Verification line ('the six profile-api@v2 fields') is shipped history."
+    },
+    {
+      "target": "H16",
+      "kind": "consider",
+      "text": "profile-api@v2 G4 promises timeZone in every 200 profile; G5 says the web takes the user's zone from it only, never the browser's, and shows no time rather than guess one when a profile lacks it (a backend that predates the field; backend and web ship separately, PRD v2 Team and delivery). Read from the code, not run: decideProfile ignores unknown fields, so the shipped web reads the new fixtures unchanged. The appended plan adds timeZone to the web's own Profile type and to Home (AC-2.1, AC-2.5) and decides absence: today a missing field makes the whole profile 'unavailable', which would also hide Home's other rows."
+    },
+    {
+      "target": "H18",
+      "kind": "consider",
+      "text": "e2e/proxy-replay.spec.ts and e2e/fixtures.ts profileFixture replay profile-api@v2's exact me-ayu and me-budi through the proxy; they now expect timeZone (Asia/Jakarta, Europe/London) and pass only against a backend that serves it (G4). AC-2.5's browser test can read the expected zone from profileFixture."
+    }
+  ],
+  "closes": [
+    { "id": "Q-004", "outcome": "addressed", "note": "profile-api@v1 (hsdd/contract/profile-api.md, its schema and fixtures) is untouched; this touch changes profile-api@v2 only and deprecates nothing. C-1 of hsdd/management/2026-10-30-execution-plan.md stays with the owner's Sync A answer to A-1 (DEC-016)." },
+    { "id": "Q-011", "outcome": "addressed", "note": "G4 states that every 200 profile carries timeZone, checked for both built-in accounts (all accounts there are, PRD v2 Users) by exact fixtures; G5 states the consumer side of ADR-002 item 3: no substitute zone, and no time shown for a profile without it (DEC-063). The classification weighed the presence promise and found it compatible under additive-only, since the schema keeps the field optional and the pre-touch fixtures still validate (DEC-065, experiment). governed_by and the body's Governed by line already read [ADR-001, ADR-002] and were not changed (DEC-036)." }
+  ],
+  "reads_outside": [
+    { "path": "hsdd/auto/steps/", "why": "DEC-007, DEC-015, DEC-016, DEC-027, DEC-036, DEC-059 and DEC-060, which the routed items and this step's decisions rest on." },
+    { "path": "hsdd/auto/steps/S06.json", "why": "The report shape, the handoff-id form of routed targets, and how the em dash in a quoted gate was written." },
+    { "path": "hsdd/adr/002-time-model.md", "why": "ADR-002 Decision item 3 (timeZone in the profile), items 4 and 7, and Consequences, which the invocation and Q-011 name." },
+    { "path": "hsdd/contract/booking-api.md", "why": "How booking-api@v1 describes a room's timeZone and cites PRD v2, for consistent wording (DEC-062)." },
+    { "path": "hsdd/contract/schema/booking-api.schema.json", "why": "The room timeZone pattern reused by DEC-062; the experiment reads it." },
+    { "path": "hsdd/contract/fixture/booking-api/", "why": "The room zones the experiment compares the profile's zones with." },
+    { "path": "hsdd/auto/experiments/booking-api-fixtures/", "why": "The earlier experiment's package.json and Ajv setup, copied for this experiment." },
+    { "path": "hsdd/auto/experiments/time-model-intl/README.md", "why": "The runtime facts ADR-002 rests on." },
+    { "path": "hsdd/conventions.md", "why": "Layout and coding method." },
+    { "path": ".gitignore", "why": "That the experiment's node_modules and package-lock.json stay out of git." },
+    { "path": "hsdd/spec, hsdd/verify, hsdd/management, hsdd/adr, backend, web/src, e2e", "why": "A search for citations of profile-api@v2 guarantees by id (none, DEC-064) and for 'six fields' statements." },
+    { "path": "backend/package.json", "why": "The Ajv versions the backend's replay rig uses, matched by the experiment." },
+    { "path": "backend/test/replay.ts", "why": "The replay rig's Ajv settings and exact-replay rule, mirrored by the experiment." },
+    { "path": "backend/test/accounts.test.ts", "why": "That the backend compares its account data with the me-ayu and me-budi fixtures (routed to H14)." },
+    { "path": "web/src/api/client.ts", "why": "That decideProfile ignores unknown fields and fails a profile with a missing field (DEC-065 evidence, routed to H16)." },
+    { "path": "web/src/api/client.test.ts", "why": "That the web's profile cases are literals the new fixtures still meet (routed to H16)." },
+    { "path": "web/src/home/HomeScreen.test.tsx", "why": "That Home's rows tests read the fixtures (routed to H16)." },
+    { "path": "e2e/proxy-replay.spec.ts", "why": "That the integration replays the exact profile fixtures through the proxy (routed to H18)." },
+    { "path": "e2e/fixtures.ts", "why": "profileFixture reads the me-ayu and me-budi bodies (routed to H18)." },
+    { "path": "hsdd/scripts/auto/routed.mjs", "why": "How a routed target matches later steps." },
+    { "path": "hsdd/scripts/auto/lib/checks.mjs", "why": "Gate checks C4, C5 and C7 on contract front matter (stable needs phase_ids final)." },
+    { "path": "hsdd/scripts/auto/lib/report-rules.mjs", "why": "The report's code rules." }
+  ],
+  "notes": [
+    "Classification: compatible under additive-only, v2 stays (DEC-065). No new version, no migration mode, no deprecation, no ADR affects handoff and no citation touch, because no contract version is superseded.",
+    "The predictions about consumer and producer tests in the routed items are read from the code, not run: running backend and web tests needs npm installs in backend/ and web/, outside this step's write set.",
+    "The Validation sentence 'matches the change request' (Update 1) now reads 'matches PRD v2 Demo accounts', the prose rewrite DEC-015 assigned to H5. The 2026-10-30 Versioning entries are history and keep their text, including v1's 'exactly the five fields'.",
+    "profile-api@v2's Versioning has no Breaking: line, which hsdd-contract's template expects; G1 already states the additive-only boundary (never loses, retypes or repurposes a field). As in S06, this touch did not write a breaking policy beyond what the contract declares.",
+    "Front matter is unchanged: gate check C4 requires phase_ids final for a stable contract, and the producer and consumer phases that implement timeZone do not exist yet; their confirm entries carry them into produced_by and consumers at reconcile."
+  ],
+  "read_check": "56c99a08"
+}

@@ -1,0 +1,23 @@
+{
+  "name": "rooms-from-not-before-to",
+  "description": "from equals to: an empty range is refused.",
+  "clock": "2026-11-04T12:00:00.000Z",
+  "given": [],
+  "request": {
+    "method": "GET",
+    "path": "/api/rooms?from=2026-11-05T00:00:00.000Z&to=2026-11-05T00:00:00.000Z",
+    "headers": {
+      "authorization": "Bearer {{token:ayu}}"
+    }
+  },
+  "response": {
+    "status": 400,
+    "body": {
+      "error": {
+        "code": "VALIDATION_FAILED",
+        "message": "The request is not valid."
+      }
+    }
+  },
+  "replay": "exact"
+}

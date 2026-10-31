@@ -1,0 +1,32 @@
+{
+  "name": "cancel-started",
+  "description": "The backend's clock reads the booking's start: it can no longer be cancelled (AC-6.2).",
+  "clock": "2026-11-05T10:00:00.000Z",
+  "given": [
+    {
+      "id": "00000000-0000-4000-8000-000000000033",
+      "account": "budi",
+      "roomId": "thames",
+      "title": "Design review",
+      "start": "2026-11-05T10:00:00.000Z",
+      "end": "2026-11-05T11:00:00.000Z"
+    }
+  ],
+  "request": {
+    "method": "DELETE",
+    "path": "/api/bookings/00000000-0000-4000-8000-000000000033",
+    "headers": {
+      "authorization": "Bearer {{token:budi}}"
+    }
+  },
+  "response": {
+    "status": 422,
+    "body": {
+      "error": {
+        "code": "BOOKING_STARTED",
+        "message": "That time has already started."
+      }
+    }
+  },
+  "replay": "exact"
+}

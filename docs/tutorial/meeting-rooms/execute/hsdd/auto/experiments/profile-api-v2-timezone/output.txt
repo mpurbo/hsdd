@@ -1,0 +1,52 @@
+Node.js v24.18.0, tz 2026b
+
+1. The additive-only claim: baseline fixtures against each candidate
+PASS baseline me-ayu.json vs OPTIONAL: valid
+PASS baseline me-budi.json vs OPTIONAL: valid
+PASS baseline me-expired-token.json vs OPTIONAL: valid
+PASS baseline me-no-token.json vs OPTIONAL: valid
+PASS baseline me-unknown-token.json vs OPTIONAL: valid
+PASS baseline me-ayu.json vs REQUIRED is rejected (a required field breaks the version): / must have required property 'timeZone'
+PASS baseline me-budi.json vs REQUIRED is rejected (a required field breaks the version): / must have required property 'timeZone'
+
+2. The live schema and fixtures after the touch
+PASS live schema equals the OPTIONAL candidate
+PASS baseline me-ayu.json vs live schema: valid
+PASS baseline me-budi.json vs live schema: valid
+PASS baseline me-expired-token.json vs live schema: valid
+PASS baseline me-no-token.json vs live schema: valid
+PASS baseline me-unknown-token.json vs live schema: valid
+PASS live me-ayu.json vs live schema: valid
+PASS live me-budi.json vs live schema: valid
+PASS live me-expired-token.json vs live schema: valid
+PASS live me-no-token.json vs live schema: valid
+PASS live me-unknown-token.json vs live schema: valid
+PASS the same five fixture files
+PASS me-ayu.json differs from baseline only by timeZone (and description): timeZone "Asia/Jakarta"
+PASS me-budi.json differs from baseline only by timeZone (and description): timeZone "Europe/London"
+PASS me-expired-token.json differs from baseline only by timeZone (and description): 401 unchanged
+PASS me-no-token.json differs from baseline only by timeZone (and description): 401 unchanged
+PASS me-unknown-token.json differs from baseline only by timeZone (and description): 401 unchanged
+PASS live me-ayu.json vs baseline schema is rejected (closed profile: the shipped replay sees a new field): / must NOT have additional properties
+PASS live me-budi.json vs baseline schema is rejected (closed profile: the shipped replay sees a new field): / must NOT have additional properties
+
+3. The zone values
+PASS ayu's timeZone is PRD v2 Demo accounts' Asia/Jakarta: Asia/Jakarta
+PASS Intl resolves Asia/Jakarta to the same name: Asia/Jakarta
+PASS Asia/Jakarta is a zone booking-api@v1's room fixtures use: Asia/Jakarta, Europe/London
+PASS budi's timeZone is PRD v2 Demo accounts' Europe/London: Europe/London
+PASS Intl resolves Europe/London to the same name: Europe/London
+PASS Europe/London is a zone booking-api@v1's room fixtures use: Asia/Jakarta, Europe/London
+
+4. Negative controls: each must be rejected by the OPTIONAL candidate and the live schema
+PASS rejects timeZone as a number: /timeZone must be string
+PASS rejects timeZone as an offset: /timeZone must match pattern "^[A-Za-z_]+(/[A-Za-z0-9_+-]+)+$"
+PASS rejects timeZone as a city alone: /timeZone must match pattern "^[A-Za-z_]+(/[A-Za-z0-9_+-]+)+$"
+PASS rejects timeZone as an abbreviation: /timeZone must match pattern "^[A-Za-z_]+(/[A-Za-z0-9_+-]+)+$"
+PASS rejects timeZone empty: /timeZone must match pattern "^[A-Za-z_]+(/[A-Za-z0-9_+-]+)+$"
+PASS rejects timeZone null: /timeZone must be string
+PASS rejects a leaked field beside timeZone: / must NOT have additional properties
+PASS accepts the same profile with a valid timeZone
+PASS accepts a profile without timeZone (optional in the schema)
+
+ALL PASS

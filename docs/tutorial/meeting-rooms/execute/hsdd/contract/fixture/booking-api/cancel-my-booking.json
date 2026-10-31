@@ -1,0 +1,27 @@
+{
+  "name": "cancel-my-booking",
+  "description": "Ayu cancels her booking before it starts (AC-6.2).",
+  "clock": "2026-11-04T12:00:00.000Z",
+  "given": [
+    {
+      "id": "00000000-0000-4000-8000-000000000031",
+      "account": "ayu",
+      "roomId": "merapi",
+      "title": "Sprint planning",
+      "start": "2026-11-05T02:00:00.000Z",
+      "end": "2026-11-05T03:00:00.000Z"
+    }
+  ],
+  "request": {
+    "method": "DELETE",
+    "path": "/api/bookings/00000000-0000-4000-8000-000000000031",
+    "headers": {
+      "authorization": "Bearer {{token:ayu}}"
+    }
+  },
+  "response": {
+    "status": 204,
+    "body": null
+  },
+  "replay": "exact"
+}

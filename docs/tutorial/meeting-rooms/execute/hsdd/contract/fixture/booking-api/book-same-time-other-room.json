@@ -1,0 +1,41 @@
+{
+  "name": "book-same-time-other-room",
+  "description": "Bromo is free while Merapi is booked at the same time: overlap is per room.",
+  "clock": "2026-11-04T12:00:00.000Z",
+  "given": [
+    {
+      "id": "00000000-0000-4000-8000-000000000026",
+      "account": "budi",
+      "roomId": "merapi",
+      "title": "Sprint planning",
+      "start": "2026-11-05T02:00:00.000Z",
+      "end": "2026-11-05T03:00:00.000Z"
+    }
+  ],
+  "request": {
+    "method": "POST",
+    "path": "/api/bookings",
+    "headers": {
+      "authorization": "Bearer {{token:ayu}}",
+      "content-type": "application/json"
+    },
+    "body": {
+      "roomId": "bromo",
+      "start": "2026-11-05T02:00:00.000Z",
+      "end": "2026-11-05T03:00:00.000Z",
+      "title": "Retro"
+    }
+  },
+  "response": {
+    "status": 201,
+    "body": {
+      "id": "10000000-0000-4000-8000-000000000003",
+      "roomId": "bromo",
+      "roomName": "Bromo",
+      "title": "Retro",
+      "start": "2026-11-05T02:00:00.000Z",
+      "end": "2026-11-05T03:00:00.000Z"
+    }
+  },
+  "replay": "exact"
+}

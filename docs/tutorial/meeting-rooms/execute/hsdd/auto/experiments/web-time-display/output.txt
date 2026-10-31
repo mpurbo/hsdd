@@ -1,0 +1,98 @@
+node v24.18.0, tz 2026b; TZ=Asia/Kolkata; ambient Asia/Calcutta; new Date('2026-11-05T02:00:00.000Z').getHours() = 7
+
+1. dayRange(date, zone): from, to, hours
+   2026-11-05 Europe/London: 2026-11-05T00:00:00.000Z .. 2026-11-06T00:00:00.000Z (24 h)
+   2026-11-05 Asia/Jakarta: 2026-11-04T17:00:00.000Z .. 2026-11-05T17:00:00.000Z (24 h)
+   2027-03-28 Europe/London: 2027-03-28T00:00:00.000Z .. 2027-03-28T23:00:00.000Z (23 h)
+   2027-10-31 Europe/London: 2027-10-30T23:00:00.000Z .. 2027-11-01T00:00:00.000Z (25 h)
+   2026-10-25 Europe/London: 2026-10-24T23:00:00.000Z .. 2026-10-26T00:00:00.000Z (25 h)
+   fixture rooms-on-a-date: /api/rooms?from=2026-11-05T00:00:00.000Z&to=2026-11-06T00:00:00.000Z
+   fixture rooms-range-edges: /api/rooms?from=2026-11-04T17:00:00.000Z&to=2026-11-05T17:00:00.000Z
+   fixture rooms-on-a-clock-change-day: /api/rooms?from=2027-10-30T23:00:00.000Z&to=2027-11-01T00:00:00.000Z
+
+2. quarter-hour instants of a date, labelled with the date as line date
+   2027-03-28 Europe/London: 92 instants; any 01:xx label: false
+     00:30 to 02:30 labels: 00:30, 00:45, 02:00, 02:15, 02:30, 02:45
+   2027-10-31 Europe/London: 100 instants; any 01:xx label: true
+     00:45 to 02:00 labels: 00:45, 01:00 BST, 01:15 BST, 01:30 BST, 01:45 BST, 01:00 GMT, 01:15 GMT, 01:30 GMT, 01:45 GMT, 02:00
+   2026-11-05 Asia/Jakarta: 96 instants; any 01:xx label: true
+
+3. todayIn(now, zone) and startOptions(date, zone, now)
+   now 2026-11-04T12:00:00.000Z in Asia/Jakarta: today 2026-11-04
+   now 2026-11-04T17:00:00.000Z in Asia/Jakarta: today 2026-11-05
+   now 2026-11-04T16:59:59.999Z in Asia/Jakarta: today 2026-11-04
+   now 2026-11-04T12:00:00.000Z in Europe/London: today 2026-11-04
+   now 2027-10-01T09:00:00.000Z in Europe/London: today 2027-10-01
+   2026-11-05 Asia/Jakarta, now 2026-11-05T02:00:00.000Z (09:00): 59 starts, first 09:15
+   2026-11-04 Asia/Jakarta, same now: 0 starts
+
+4. endOptions(start, date, zone)
+   start 2026-11-05T02:00:00.000Z (09:00) Asia/Jakarta: 32 ends, 09:15, 09:30, 09:45, 10:00, 10:15 ... 17:00
+   start 2026-11-05T15:00:00.000Z (22:00) Asia/Jakarta: 8 ends, 22:15, 22:30, 22:45, 23:00, 23:15 ... Fri 6 Nov 00:00
+   start 2027-10-31T00:30:00.000Z (01:30 BST) Europe/London: 32 ends, 01:45 BST, 01:00 GMT, 01:15 GMT, 01:30 GMT, 01:45 GMT ... 08:30
+
+5. rooms-on-a-date for a user in Europe/London, picked date 2026-11-05
+   Merapi · Jakarta · 8 seats
+     02:00 to 03:00  Sprint planning
+       (09:00 to 10:00 in Jakarta)
+   Bromo · Jakarta · 4 seats
+     (no bookings)
+   Thames · London · 10 seats
+     10:00 to 11:00  Design review
+   Kew · London · 4 seats
+     (no bookings)
+
+5. rooms-range-edges for a user in Asia/Jakarta, picked date 2026-11-05
+   Merapi · Jakarta · 8 seats
+     06:00 to 07:00  Planning
+     08:00 to 08:30  Standup
+   Bromo · Jakarta · 4 seats
+     23:45 to Fri 6 Nov 00:15  Wrap-up
+   Thames · London · 10 seats
+     (no bookings)
+   Kew · London · 4 seats
+     Wed 4 Nov 23:30 to 00:30  Handover
+       (Wed 4 Nov 16:30 to Wed 4 Nov 17:30 in London)
+
+5. rooms-on-a-clock-change-day for a user in Europe/London, picked date 2027-10-31
+   Merapi · Jakarta · 8 seats
+     (no bookings)
+   Bromo · Jakarta · 4 seats
+     (no bookings)
+   Thames · London · 10 seats
+     00:00 to 01:30 BST  Midnight launch
+     01:00 GMT to 01:30 GMT  After the change
+     23:30 to Mon 1 Nov 00:00  Last slot
+   Kew · London · 4 seats
+     (no bookings)
+
+6. my-bookings-budi on Home, Europe/London (line date: the start's date)
+   Thu 5 Nov  09:00 to 10:00 | Merapi · Ongoing sync
+   Thu 5 Nov  10:00 to 11:00 | Thames · Design review
+   Thu 5 Nov  10:00 to 10:30 | Kew · Quick check
+   Thu 12 Nov  10:00 to 11:00 | Merapi · Next week
+   ADR-002 example, London 16:00 to 19:00 on 5 Nov for Jakarta: Thu 5 Nov  23:00 to Fri 6 Nov 02:00
+
+7. AC-5.3 message from error.conflict, the picked date as line date
+   book-overlap, Asia/Jakarta: Merapi is already booked from 09:00 to 10:00.
+   book-overlap-several, Asia/Jakarta: Merapi is already booked from 09:00 to 10:00.
+   book-overlap, Europe/London: Merapi is already booked from 02:00 to 03:00.
+
+8. the start and end labels that reproduce each 201 fixture's request body
+   book-a-room (Asia/Jakarta, clock 2026-11-04T12:00:00.000Z): date 2026-11-05, start 09:00, end 10:00; start offered by the clock: true; end offered: true; today 2026-11-04
+   book-in-the-repeated-hour (Europe/London, clock 2027-10-01T09:00:00.000Z): date 2027-10-31, start 01:30 BST, end 01:30 GMT; start offered by the clock: true; end offered: true; today 2027-10-01
+   book-365-days-ahead (Europe/London, clock 2026-11-04T00:00:00.000Z): date 2027-11-04, start 00:00, end 01:00; start offered by the clock: true; end offered: true; today 2026-11-04
+   book-too-far-ahead (Europe/London, clock 2026-11-04T00:00:00.000Z): date 2027-11-04, start 00:15, end 01:15; start offered by the clock: true; end offered: true; today 2026-11-04
+   book-started (Asia/Jakarta, clock 2026-11-05T02:00:00.000Z): date 2026-11-05, start 09:00, end 10:00; start offered by the clock: false; end offered: true; today 2026-11-05
+   book-eight-hours (Asia/Jakarta, clock 2026-11-04T12:00:00.000Z): date 2026-11-05, start 08:00, end 16:00; start offered by the clock: true; end offered: true; today 2026-11-04
+
+9. title lengths: code points vs UTF-16 units
+   book-title-80-characters: [...title].length 80, .length 81
+   book-title-too-long: [...title].length 81, .length 81
+
+10. asTimeZone
+   "Asia/Jakarta" -> "Asia/Jakarta"
+   "Europe/London" -> "Europe/London"
+   "Mars/Olympus" -> null
+   "GMT+7" -> null
+   "+07:00" -> "+07:00"

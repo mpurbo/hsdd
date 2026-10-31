@@ -1,0 +1,25 @@
+schema: the file on disk, whose Title equals the candidate
+compiled under Ajv2020 { strict: true, allErrors: true } + ajv-formats: yes
+fixtures: 35 of 35 validate (response at top level and its endpoint's $defs; a 201's request body; every given title)
+  ok   Title("Sprint planning") = true, expected true
+  ok   Title("\ud83d\ude00\ud83d\ude00\ud83d\ude00\ud...) = true, expected true
+  ok   Title(" x ") = true, expected true
+  ok   Title("a\nb") = true, expected true
+  ok   Title("�") = true, expected true
+  ok   Title("\udbff\udfff") = true, expected true
+  ok   Title("Rapat \ud83d\udcc5 besok") = true, expected true
+  ok   Title("") = false, expected false
+  ok   Title("   ") = false, expected false
+  ok   Title("\ud83d\ude00\ud83d\ude00\ud83d\ude00\ud...) = false, expected false
+  ok   Title("\u0000") = false, expected false
+  ok   Title("a\u0000b") = false, expected false
+  ok   Title("\ud800") = false, expected false
+  ok   Title("a\udc00") = false, expected false
+  ok   Title("x\ud83d") = false, expected false
+  ok   Title("\ude00\ud83d") = false, expected false
+  ok   Title("ok\ud83d\ude00\ude00") = false, expected false
+Title cases: 17 of 17 as expected
+PostBookingRequest: "Sprint planning" valid true; "a\u0000b" valid false; "\ud800" valid false
+Booking with title "\u0000": valid false
+fuzz: 200000 random strings of 0 to 6 code units; the pattern with "u", the pattern without "u" and (isWellFormed() && no U+0000) disagree on 0
+RESULT: pass

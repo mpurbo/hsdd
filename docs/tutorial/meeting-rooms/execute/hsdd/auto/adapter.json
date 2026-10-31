@@ -1,0 +1,52 @@
+{
+  "version": 1,
+  "added": [
+    {
+      "file": ".claude/settings.json",
+      "pointer": "/permissions/deny",
+      "value": "Read(~/.claude*/projects/*/memory/**)"
+    },
+    {
+      "file": ".claude/settings.json",
+      "pointer": "/permissions/deny",
+      "value": "Read(~/.claude*/projects/*/memory)"
+    },
+    {
+      "file": ".claude/settings.json",
+      "pointer": "/permissions/deny",
+      "value": "Read(~/git/hsdd/**)"
+    },
+    {
+      "file": ".claude/settings.json",
+      "pointer": "/permissions/deny",
+      "value": "Read(~/git/hsdd)"
+    },
+    {
+      "file": ".claude/settings.json",
+      "pointer": "/permissions/deny",
+      "value": "Edit(/hsdd/context/**)"
+    },
+    {
+      "file": ".claude/settings.json",
+      "pointer": "/permissions/deny",
+      "value": "Edit(/hsdd/context)"
+    },
+    {
+      "file": ".claude/settings.json",
+      "pointer": "/hooks/PreToolUse",
+      "value": {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PROJECT_DIR}/hsdd/scripts/auto/hook-bash.mjs\""
+          }
+        ]
+      }
+    }
+  ],
+  "created": [
+    ".claude/settings.json",
+    ".claude/agents/hsdd-auto-step.md"
+  ]
+}

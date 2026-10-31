@@ -1,0 +1,32 @@
+{
+  "name": "book-365-days-ahead",
+  "description": "A start exactly 365 days (8,760 hours) after the backend's clock is the farthest allowed.",
+  "clock": "2026-11-04T00:00:00.000Z",
+  "given": [],
+  "request": {
+    "method": "POST",
+    "path": "/api/bookings",
+    "headers": {
+      "authorization": "Bearer {{token:budi}}",
+      "content-type": "application/json"
+    },
+    "body": {
+      "roomId": "thames",
+      "start": "2027-11-04T00:00:00.000Z",
+      "end": "2027-11-04T01:00:00.000Z",
+      "title": "Annual planning"
+    }
+  },
+  "response": {
+    "status": 201,
+    "body": {
+      "id": "10000000-0000-4000-8000-000000000006",
+      "roomId": "thames",
+      "roomName": "Thames",
+      "title": "Annual planning",
+      "start": "2027-11-04T00:00:00.000Z",
+      "end": "2027-11-04T01:00:00.000Z"
+    }
+  },
+  "replay": "exact"
+}

@@ -1,0 +1,6 @@
+0. compose command: docker-compose (Docker Compose version 5.6.1)
+   up -d --wait returned once the healthcheck passed
+1. PostgreSQL 17.11 on aarch64-unknown-linux-musl, compiled by gcc (Alpine 15.2.0) 15.2.0, 64-bit
+   node v24.18.0, pg loaded, process TZ=Asia/Kolkata, Intl zone Asia/Calcutta
+2. 20 simultaneous requests for the same room and time (PRD v2 Success; booking-api@v1 G5, G6)
+  A  plain INSERT, the constraint alone: 30 rounds of 20; outcomes 201=30 error 23P01=494 error 40P01=76; rounds failing the check 0; retries 0; slowest round 19097 ms

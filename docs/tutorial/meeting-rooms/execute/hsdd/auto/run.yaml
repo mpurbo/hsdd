@@ -1,0 +1,36 @@
+# hsdd-auto run configuration. First run's answers given by Claude as owner proxy.
+version: 1
+run: meeting-rooms
+root: simple-login
+branch: auto/meeting-rooms
+base: main
+skills_dir: .claude/skills
+owner_facts:
+  - "Who builds what: the backend developer builds the service and owns the database; the frontend developer builds the web app; they work in parallel and ship separately (PRD version 2, Team and delivery). The integration node stays the place where both run together."
+  - "Coding method: superpowers, as hsdd/conventions.md says. The run plans; it never implements a phase."
+  - "Toolchain: Node.js 24 and npm, project-local packages only; PostgreSQL 17 runs in Docker Compose (Colima on macOS). Nothing is installed globally."
+preferences:
+  - "Functional-first: pure core, imperative shell. Immutability, composition, algebraic data types, declarative over imperative."
+sources:
+  normative:
+    - { path: hsdd/context/prd-simple-login.v2.md, cite: PRD v2, version: "2", authority: approved-prd }
+    - { path: hsdd/context/rfc-simple-login.md, cite: RFC-001, version: "1", authority: accepted-rfc }
+  baseline:
+    - { path: hsdd/context/prd-simple-login.md, cite: PRD, version: "1", authority: approved-prd }
+    - { path: hsdd/context/update-1-add-phone.md, cite: Update 1, version: "1", authority: approved-prd }
+read_only: [hsdd/context/]
+out_of_bounds: ["~/.claude*/projects/*/memory", "~/git/hsdd"]
+owner_files: []
+toolchain:
+  rules:
+    - "Never install anything globally; npm packages are installed per package directory."
+prose_rules:
+  banned_chars: ["—"]
+  banned_phrases: [load-bearing]
+  level: error
+stop_set: [axis, shape, promotion, breaking-amend, collision, external, gate-twice]
+stop_policy: decide-and-record
+commit:
+  trailers: ["Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"]
+segments:
+  - { id: 2026-10-31-intake-prd-simple-login-v2, mode: intake, opened_at: 2026-10-31T14:18:12Z, instruction: "/hsdd-auto intake hsdd/context/prd-simple-login.v2.md --authority approved-prd\nVersion 2 of the PRD supersedes version 1 together with update 1; take it in end to end, through every handoff the intake record names. Decide and record every question; I review the decisions afterwards in one sitting.", stop_policy: decide-and-record, first_step: S00, request: hsdd/context/prd-simple-login.v2.md, authority: approved-prd }

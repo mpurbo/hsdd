@@ -1,0 +1,10 @@
+{
+  "name": "experiment-profile-api-v2-timezone",
+  "private": true,
+  "type": "module",
+  "description": "Throwaway: does adding timeZone keep profile-api@v2 under its additive-only rule? Not part of any build.",
+  "devDependencies": {
+    "ajv": "^8.20.0",
+    "ajv-formats": "^3.0.1"
+  }
+}

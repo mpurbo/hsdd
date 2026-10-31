@@ -1,0 +1,39 @@
+{
+  "name": "book-started-and-overlapping",
+  "description": "A start already passed that also overlaps a booking: the started rule comes before the overlap.",
+  "clock": "2026-11-05T02:30:00.000Z",
+  "given": [
+    {
+      "id": "00000000-0000-4000-8000-000000000027",
+      "account": "budi",
+      "roomId": "merapi",
+      "title": "Sprint planning",
+      "start": "2026-11-05T02:00:00.000Z",
+      "end": "2026-11-05T03:00:00.000Z"
+    }
+  ],
+  "request": {
+    "method": "POST",
+    "path": "/api/bookings",
+    "headers": {
+      "authorization": "Bearer {{token:ayu}}",
+      "content-type": "application/json"
+    },
+    "body": {
+      "roomId": "merapi",
+      "start": "2026-11-05T02:15:00.000Z",
+      "end": "2026-11-05T03:15:00.000Z",
+      "title": "Retro"
+    }
+  },
+  "response": {
+    "status": 422,
+    "body": {
+      "error": {
+        "code": "BOOKING_STARTED",
+        "message": "That time has already started."
+      }
+    }
+  },
+  "replay": "exact"
+}

@@ -1,0 +1,106 @@
+{
+  "step_ref": "S04",
+  "skill": "hsdd-adr",
+  "target": "ADR-002",
+  "status": "completed",
+  "stop": null,
+  "artifacts": [
+    "hsdd/adr/002-time-model.md",
+    "hsdd/adr/INDEX.md",
+    "hsdd/spec/simple-login.md",
+    "hsdd/spec/simple-login.backend.md",
+    "hsdd/spec/simple-login.web.md",
+    "hsdd/spec/simple-login.integration.md",
+    "hsdd/contract/profile-api.v2.md"
+  ],
+  "experiments": [
+    {
+      "path": "hsdd/auto/experiments/time-model-intl/",
+      "question": "Which runtime facts about time zones can ADR-002 rely on in Node.js 24, and so in the web app's Vitest runs: Temporal, London's clock-change days, quarter-hour offsets, en-GB formats, the ambient zone under TZ, the instant string form?",
+      "finding": "Node.js 24.18 (tz 2026b) has no global Temporal. London's 2026-10-25 and 2027-10-31 are 25 hours and 2027-03-28 is 23 hours; quarter-hour instants of those days give 100 slots with 01:00 to 01:45 twice (BST, then GMT) and 92 slots with no 01:xx. No zone among 418 has an offset that is not a multiple of 15 minutes in 2026 to 2028. en-GB writes '02:00 to 03:00 (09:00 to 10:00 in Jakarta)', 'Thu 5 Nov', GMT and BST (en-US gives GMT+1). TZ=Asia/Kolkata sets the ambient zone and resolves as 'Asia/Calcutta'. toISOString writes 2026-11-05T02:00:00.000Z; a string without a zone parses as local time. London's changes are 147 to 217 days apart; the next after 2026-10-31 is 2027-03-28, 148 days ahead."
+    },
+    {
+      "path": "hsdd/auto/experiments/time-model-postgres/",
+      "question": "Does storing booking times as instants in PostgreSQL 17 hold PRD v2 AC-5.3's touching rule and AC-4.2's day query with no zone in SQL?",
+      "finding": "PostgreSQL 17.11: timestamptz reads back the same epoch whatever the session TimeZone, while a timestamp column given '...Z' reads back 7 hours apart under Asia/Jakarta and Europe/London sessions. tstzrange '[)' ranges that touch do not overlap; an EXCLUDE USING gist (room WITH =, tstzrange(start_at, end_at, '[)') WITH &&) constraint (btree_gist ships in postgres:17-alpine) refuses an overlap with 23P01 whose DETAIL names one conflicting row. London's 25-hour 2027-10-31 queried as two instants returns the bookings at both ends of the local day."
+    }
+  ],
+  "self_check": [
+    { "gate": "Frontmatter has `id`, `status`, `affects`, `date`.", "status": "pass", "note": "id ADR-002, status accepted, affects six targets, date 2026-10-31." },
+    { "gate": "The decision is genuinely cross-cutting; a node-local one stayed a `D{n}`.", "status": "pass", "note": "It binds simple-login.backend (storage, the clock, the quarter-hour check), simple-login.web (every conversion and format), simple-login.integration (strings it asserts, test zones, clock-change days), profile-api@v2 (timeZone) and booking-api@v1 (instants, the two-instant query, the overlap refusal's body). Left as D{n}: the backend's AC-5.4 mechanism (DEC-010), the web app's time library, the integration node's third zone and how it reaches a clock-change day." },
+    { "gate": "`## Decision` and `## Consequences` are self-contained (no reliance on Context).", "status": "pass", "note": "Both sections read without Context and name no contract, ADR, OQ, DEC, D{n}, US or AC id (checked by grep), so hsdd-config inlines nothing extra into the phases ADR-002 governs; the profile and the booking API are named in words." },
+    { "gate": "Every id in `affects` carries a matching `Governed by: [ADR-NNN]`.", "status": "pass", "note": "simple-login, simple-login.backend and simple-login.web read [ADR-001, ADR-002]; simple-login.integration gained [ADR-002]; the root's three embedded summaries match; profile-api@v2's governed_by and body line read [ADR-001, ADR-002] (DEC-035, DEC-036). booking-api@v1 has no file yet: its id in affects is the forward reference until H3 drafts it (gate C3 warns), routed to H3 as must-address." },
+    { "gate": "A superseding ADR set both `supersedes` and the old ADR's `superseded_by`.", "status": "n/a", "note": "not exercised by this step" },
+    { "gate": "No invented decision was written as `accepted`; an unknown decision is `proposed` with a TODO.", "status": "n/a", "note": "The Unattended runs table's give-way rule overrides this gate for an ADR whose decision no human stated: DEC-037 applied it, wrote ADR-002 accepted and is cited in its Context, with each choice recorded as DEC-025 to DEC-036 for the owner's review." },
+    { "gate": "The registry was regenerated.", "status": "pass", "note": "node hsdd/scripts/gen-registry.mjs (byte-identical to hsdd-contract's copy): hsdd/adr/INDEX.md gains the ADR-002 row; hsdd/contract/INDEX.md is unchanged, since governed_by projects nothing." },
+    { "gate": "Open questions are cited by ID only; an ADR that resolves one names the ID in its Decision, and the owning spec's OQ row is updated to point at this ADR (RESOLVED (date)).", "status": "n/a", "note": "not exercised by this step" }
+  ],
+  "routed": [
+    {
+      "target": "H3",
+      "kind": "must-address",
+      "text": "booking-api@v1 is in ADR-002's affects: its front matter needs governed_by: [ADR-001, ADR-002] (and the body's Governed by line), or gate C3 errors once the file exists. ADR-002 fixes for it: every instant, request and response, is a UTC string in toISOString form (2026-11-05T02:00:00.000Z), never a local time or another offset; the rooms-on-a-date query takes the day as two instants and returns each room's bookings overlapping that half-open range, earliest first; each room carries timeZone (IANA) and its office's name; a booking occupies [start, end), so touching bookings do not overlap; start and end must have UTC minutes a multiple of 15 and zero seconds and milliseconds, end after start; 'started' means the backend's clock reads the start or later (refused for booking, and a booking can be cancelled only while the clock is before its start); my bookings are those whose end is after the backend's clock, soonest first; the overlap refusal carries the room's name and the other booking's start and end as instants, so the web app writes AC-5.3's message."
+    },
+    {
+      "target": "H3",
+      "kind": "consider",
+      "text": "Two choices ADR-002 leaves to the draft. (1) How far ahead: London's clock changes are 147 to 217 days apart and the next after 2026-10-31 is 2027-03-28 (148 days); with a smaller limit, the integration node cannot always book on the next change day through the API under the real clock (ADR-002 Consequences), so state the limit with that in view, or say how the change-day criteria are reached. (2) Which other booking the overlap refusal names when a request overlaps several: an exclusion constraint's 23P01 DETAIL names one conflicting row (hsdd/auto/experiments/time-model-postgres/), so the contract should pick a rule, for example the earliest, and the producer re-reads it."
+    },
+    {
+      "target": "H5",
+      "kind": "consider",
+      "text": "ADR-002 item 3: the profile serves the account's zone as timeZone, an IANA name (ayu Asia/Jakarta, budi Europe/London), and the web app may use no other zone, so it shows no booking time without it. An optional field under additive-only leaves a consumer nothing to fall back on; the touch should state that the producer always sends it for the built-in accounts, or weigh that in its classification (DEC-007 anticipated this). profile-api@v2's governed_by and body line already read [ADR-001, ADR-002] (DEC-036); the touch need not add them."
+    },
+    {
+      "target": "H6",
+      "kind": "consider",
+      "text": "ADR-002's affects names simple-login (DEC-035), and the root header and its three embedded summaries now carry ADR-002 under Governed by (simple-login.integration's for the first time); keep those lines when restating the header, or gate C3 errors. A Decisions bullet for ADR-002 can say: instants on the wire and in PostgreSQL, the account's IANA zone, the web app converts and formats, the backend's clock decides."
+    },
+    {
+      "target": "H14",
+      "kind": "consider",
+      "text": "ADR-002 for the backend's plan: start and end as timestamptz with the half-open overlap rule; an exclusion constraint on tstzrange(start_at, end_at, '[)') with btree_gist is one way to hold AC-5.4, but its 23P01 DETAIL names one row, so the AC-5.3 body needs a re-read (hsdd/auto/experiments/time-model-postgres/); no zone arithmetic in the service; the quarter-hour check on the UTC instant; the injected clock decides started and ended (start equal to now is started); the account data gains timeZone; the gate's tests run with TZ set to a zone that is neither account's nor UTC."
+    },
+    {
+      "target": "H16",
+      "kind": "consider",
+      "text": "ADR-002 for the web app's plan: one module of pure functions taking the zone as an argument (instant to wall time, a date to [start of date, start of next date), the form's quarter-hour instants, the repeated-hour and other-date marks), tested in isolation on 2027-03-28 (23 hours, 92 slots, no 01:xx) and 2027-10-31 (25 hours, 100 slots, 01:00 to 01:45 twice as BST then GMT) per hsdd/auto/experiments/time-model-intl/; Node.js 24 has no global Temporal, so use Intl or a library on it, or a polyfill; en-GB gives 'Thu 5 Nov', HH:mm with hourCycle h23, GMT and BST (en-US gives GMT+1); Vitest runs with TZ set to a third zone; the browser's clock only picks the Rooms screen's opening date; the overlap message is built from the refusal's instants, not from error.message."
+    },
+    {
+      "target": "H18",
+      "kind": "consider",
+      "text": "ADR-002 for the integration plan: the browser tests run with the browser's time zone set to a zone that is neither account's nor UTC (for example Asia/Kolkata, +05:30); the change-day tests take the next last Sunday of March and of October after the real clock, never a fixed date (2026-10-25 has passed; the next is 2027-03-28), and booking-api@v1's how-far-ahead limit decides whether that day is bookable through the API; the backend's clock decides 'started', which an end-to-end test cannot set, so the plan says which scripted test covers AC-5.5 and AC-6.2's started case (PRD v2 Success); the strings to assert are ADR-002 item 7's, including '23:00 to Fri 6 Nov 02:00' and '01:30 BST' / '01:30 GMT'."
+    }
+  ],
+  "closes": [],
+  "reads_outside": [
+    { "path": "hsdd/management/2026-10-30-execution-plan.md", "why": "C-2 and finding F-3, the precedent for naming the root in an ADR's affects (DEC-035)." },
+    { "path": "hsdd/judgement/decisions.jsonl", "why": "DEC-006, DEC-007, DEC-009, DEC-010, DEC-011, DEC-022 and DEC-023, which the invocation and DEC-025 to DEC-036 rest on." },
+    { "path": "hsdd/auto/steps/S03.json", "why": "The report shape and the handoff-id target form for routed items." },
+    { "path": "hsdd/conventions.md", "why": "Planners read contracts, not sibling plans (DEC-032, DEC-034); OQ rules." },
+    { "path": ".claude/skills/hsdd-config/SKILL.md", "why": "Which ADR sections are injected and which ids get inlined, to keep ids out of Decision and Consequences." },
+    { "path": "hsdd/contract/auth-api.md", "why": "grep for expiresAt: the existing instant form on the wire (DEC-025)." },
+    { "path": "hsdd/contract/fixture/auth-api/login-success.json", "why": "grep for expiresAt: the exact instant string (DEC-025)." },
+    { "path": "hsdd/contract/schema/auth-api.schema.json", "why": "grep for expiresAt: how the schema types an instant." },
+    { "path": "package.json", "why": "The toolchain as installed (Node engines, Playwright)." },
+    { "path": "backend/package.json", "why": "The backend's test runner and gate script, for the test-zone consequence." },
+    { "path": "web/package.json", "why": "The web app's test runner and gate script, for the test-zone consequence." },
+    { "path": "hsdd/scripts/auto/templates/steps/adr.md", "why": "The step template behind this dispatch." },
+    { "path": "hsdd/scripts/auto/schema/step-report.schema.json", "why": "This report's schema." },
+    { "path": "hsdd/scripts/auto/routed.mjs", "why": "grep: how routed targets match steps." },
+    { "path": "hsdd/scripts/auto/decide.mjs", "why": "grep: the rules the decide command enforces." },
+    { "path": "hsdd/scripts/auto/gate.mjs", "why": "The checks the step gate runs (first 80 lines)." },
+    { "path": "hsdd/scripts/auto/lib/checks.mjs", "why": "grep: C3's Governed by rule for nodes and contracts." },
+    { "path": "hsdd/scripts/auto/lib/tree.mjs", "why": "How a node header's and a phase's Governed by are parsed (lines 200 to 300)." }
+  ],
+  "notes": [
+    "Outcome: ADR-002 (hsdd/adr/002-time-model.md) accepted under DEC-037. Instants on the wire in toISOString form (DEC-025) and timestamptz in PostgreSQL with half-open intervals (DEC-026); the account's IANA zone served in the profile (DEC-027); the web app does every conversion and format, the backend works in instants only (DEC-028); the backend's injected clock decides started and ended, equality counts as started (DEC-029); the quarter-hour rule is checked on the UTC instant (DEC-030); the form offers a day's quarter-hour instants, so skipped times never appear and repeated ones appear twice (DEC-031); other-date times carry their date and repeated-hour times carry BST or GMT (DEC-032); the room's local times appear on the Rooms screen when zone names differ (DEC-033); every node's tests run in a third ambient zone (DEC-034).",
+    "affects adds simple-login beyond the five targets the intake record lists (DEC-035), following ADR-001's C-2 precedent, because H6 makes ADR-002 one of the root's Decisions. simple-login.integration had no Governed by line before; it now carries [ADR-002] in its own header and in its embedded summary.",
+    "No shipped phase header was touched (DEC-036). profile-api@v2's Governed by change is metadata; its version, Interface, Guarantees, schema and fixtures are unchanged.",
+    "DEC-028 is the choice the owner is most likely to revisit: the alternative (the backend turns a date into a range from the account's zone) keeps the same nodes and contracts, so it is not a shape stop.",
+    "For the intake record's Produced section: ADR-002 accepted 2026-10-31 (time model).",
+    "The PostgreSQL experiment ran in a throwaway postgres:17-alpine container (no port, no volume, removed on exit); nothing was installed.",
+    "Gate before this report: only the missing report (B1, B5) and the C3/C5 warnings that booking-api@v1 has no file yet."
+  ],
+  "read_check": "3fc02545"
+}

@@ -1,0 +1,5 @@
+D6's schema applied at a start on a database created empty makes the `booking` table; applied again at a second start it raises only notices (42710, 42P07) and the booking keeps its id; a test database a pool still holds cannot be dropped (55006) until the pool ends.
+Question: can simple-login.backend.7's `start` test run the service on a test database created without the schema, start it twice on that database, and still leave no database behind (S24)?
+Run from the repository root: `npm --prefix hsdd/auto/experiments/backend-start-empty-database install`, then `sh hsdd/auto/experiments/backend-start-empty-database/run.sh` (Compose: `docker compose` if present, else `docker-compose`; port 127.0.0.1:55498; removed after). Output in output.txt.
+Each "start" is a new `pg.Pool` that sends D6's statements as one query, as `start` would before it listens; the second start finds the first one's booking.
+`DROP DATABASE ... WITH (FORCE)` drops it with the pool open, but the pool's idle client then emits 57P01 as an `error` event, which ends a process that has no listener: the test closes each app, and with it its pool, instead.

@@ -1,0 +1,119 @@
+{
+  "name": "rooms-on-a-clock-change-day",
+  "description": "Budi asks for London's 31 October 2027, a 25-hour day: [2027-10-30T23:00Z, 2027-11-01T00:00Z). Midnight launch runs 00:00 to 01:30 BST, After the change 01:00 to 01:30 GMT, Last slot 23:30 to 00:00 GMT; the bookings just outside the day are left out (PRD v2 AC-4.4).",
+  "clock": "2027-10-01T09:00:00.000Z",
+  "given": [
+    {
+      "id": "00000000-0000-4000-8000-000000000009",
+      "account": "budi",
+      "roomId": "thames",
+      "title": "Midnight launch",
+      "start": "2027-10-30T23:00:00.000Z",
+      "end": "2027-10-31T00:30:00.000Z"
+    },
+    {
+      "id": "00000000-0000-4000-8000-00000000000a",
+      "account": "ayu",
+      "roomId": "thames",
+      "title": "After the change",
+      "start": "2027-10-31T01:00:00.000Z",
+      "end": "2027-10-31T01:30:00.000Z"
+    },
+    {
+      "id": "00000000-0000-4000-8000-00000000000b",
+      "account": "budi",
+      "roomId": "thames",
+      "title": "Last slot",
+      "start": "2027-10-31T23:30:00.000Z",
+      "end": "2027-11-01T00:00:00.000Z"
+    },
+    {
+      "id": "00000000-0000-4000-8000-00000000000c",
+      "account": "budi",
+      "roomId": "thames",
+      "title": "Next day",
+      "start": "2027-11-01T00:00:00.000Z",
+      "end": "2027-11-01T01:00:00.000Z"
+    },
+    {
+      "id": "00000000-0000-4000-8000-00000000000d",
+      "account": "ayu",
+      "roomId": "kew",
+      "title": "Before the day",
+      "start": "2027-10-30T22:00:00.000Z",
+      "end": "2027-10-30T23:00:00.000Z"
+    }
+  ],
+  "request": {
+    "method": "GET",
+    "path": "/api/rooms?from=2027-10-30T23:00:00.000Z&to=2027-11-01T00:00:00.000Z",
+    "headers": {
+      "authorization": "Bearer {{token:budi}}"
+    }
+  },
+  "response": {
+    "status": 200,
+    "body": {
+      "rooms": [
+        {
+          "id": "merapi",
+          "name": "Merapi",
+          "office": "Jakarta",
+          "timeZone": "Asia/Jakarta",
+          "seats": 8,
+          "bookings": []
+        },
+        {
+          "id": "bromo",
+          "name": "Bromo",
+          "office": "Jakarta",
+          "timeZone": "Asia/Jakarta",
+          "seats": 4,
+          "bookings": []
+        },
+        {
+          "id": "thames",
+          "name": "Thames",
+          "office": "London",
+          "timeZone": "Europe/London",
+          "seats": 10,
+          "bookings": [
+            {
+              "id": "00000000-0000-4000-8000-000000000009",
+              "roomId": "thames",
+              "roomName": "Thames",
+              "title": "Midnight launch",
+              "start": "2027-10-30T23:00:00.000Z",
+              "end": "2027-10-31T00:30:00.000Z"
+            },
+            {
+              "id": "00000000-0000-4000-8000-00000000000a",
+              "roomId": "thames",
+              "roomName": "Thames",
+              "title": "After the change",
+              "start": "2027-10-31T01:00:00.000Z",
+              "end": "2027-10-31T01:30:00.000Z"
+            },
+            {
+              "id": "00000000-0000-4000-8000-00000000000b",
+              "roomId": "thames",
+              "roomName": "Thames",
+              "title": "Last slot",
+              "start": "2027-10-31T23:30:00.000Z",
+              "end": "2027-11-01T00:00:00.000Z"
+            }
+          ]
+        },
+        {
+          "id": "kew",
+          "name": "Kew",
+          "office": "London",
+          "timeZone": "Europe/London",
+          "seats": 4,
+          "bookings": []
+        }
+      ]
+    }
+  },
+  "replay": "exact"
+}

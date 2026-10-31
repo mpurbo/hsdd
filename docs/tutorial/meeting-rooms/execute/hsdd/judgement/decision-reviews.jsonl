@@ -1,0 +1,33 @@
+{"decision": "DEC-013", "at": "2026-10-31T18:56:10Z", "review": "agree", "reviewer": "Claude for Purbo Mohamad (owner proxy)", "reason": "Resolved locally and flagged; an RFC for version 2 is the team's to write."}
+{"decision": "DEC-037", "at": "2026-10-31T18:56:10Z", "review": "agree", "reviewer": "Claude for Purbo Mohamad (owner proxy)", "reason": "Accepted is right for an unattended run; this review is the acceptance the rule gives way to."}
+{"decision": "DEC-046", "at": "2026-10-31T18:56:10Z", "review": "agree", "reviewer": "Claude for Purbo Mohamad (owner proxy)", "reason": "8 hours covers a working day of meetings; all-day events are out of scope in PRD v2."}
+{"decision": "DEC-047", "at": "2026-10-31T18:56:10Z", "review": "agree", "reviewer": "Claude for Purbo Mohamad (owner proxy)", "reason": "365 days is generous and, as the experiment shows, keeps London's next clock-change day bookable for the integration tests."}
+{"decision": "DEC-154", "at": "2026-10-31T18:56:10Z", "review": "agree", "reviewer": "Claude for Purbo Mohamad (owner proxy)"}
+{"decision": "DEC-156", "at": "2026-10-31T18:56:10Z", "review": "agree", "reviewer": "Claude for Purbo Mohamad (owner proxy)"}
+{"decision": "DEC-187", "at": "2026-10-31T18:56:10Z", "review": "agree", "reviewer": "Claude for Purbo Mohamad (owner proxy)"}
+{"decision": "DEC-195", "at": "2026-10-31T18:56:10Z", "review": "agree", "reviewer": "Claude for Purbo Mohamad (owner proxy)", "reason": "Right by the sources. The PRD author (Claude, writing as product) did not mean to drop version 1's 3-second target; whether PRD v2 gains it back is product's call, carried as an open item."}
+{"decision": "DEC-198", "at": "2026-10-31T18:56:10Z", "review": "agree", "reviewer": "Claude for Purbo Mohamad (owner proxy)"}
+{"decision": "DEC-001", "at": "2026-10-31T18:56:10Z", "review": "agree", "reviewer": "Claude for Purbo Mohamad (owner proxy)"}
+{"decision": "DEC-002", "at": "2026-10-31T18:56:10Z", "review": "agree", "reviewer": "Claude for Purbo Mohamad (owner proxy)"}
+{"decision": "DEC-003", "at": "2026-10-31T18:56:10Z", "review": "agree", "reviewer": "Claude for Purbo Mohamad (owner proxy)"}
+{"decision": "DEC-004", "at": "2026-10-31T18:56:10Z", "review": "agree", "reviewer": "Claude for Purbo Mohamad (owner proxy)"}
+{"decision": "DEC-005", "at": "2026-10-31T18:56:10Z", "review": "agree", "reviewer": "Claude for Purbo Mohamad (owner proxy)"}
+{"decision": "DEC-008", "at": "2026-10-31T18:56:10Z", "review": "agree", "reviewer": "Claude for Purbo Mohamad (owner proxy)"}
+{"decision": "DEC-009", "at": "2026-10-31T18:56:10Z", "review": "agree", "reviewer": "Claude for Purbo Mohamad (owner proxy)"}
+{"decision": "DEC-010", "at": "2026-10-31T18:56:10Z", "review": "agree", "reviewer": "Claude for Purbo Mohamad (owner proxy)"}
+{"decision": "DEC-014", "at": "2026-10-31T18:56:10Z", "review": "agree", "reviewer": "Claude for Purbo Mohamad (owner proxy)"}
+{"decision": "DEC-015", "at": "2026-10-31T18:56:10Z", "review": "agree", "reviewer": "Claude for Purbo Mohamad (owner proxy)"}
+{"decision": "DEC-018", "at": "2026-10-31T18:56:10Z", "review": "agree", "reviewer": "Claude for Purbo Mohamad (owner proxy)", "reason": "Keeping sessions in memory changes no shipped code or guarantee and keeps the restart stand-in for AC-2.3."}
+{"decision": "DEC-019", "at": "2026-10-31T18:56:10Z", "review": "agree", "reviewer": "Claude for Purbo Mohamad (owner proxy)"}
+{"decision": "DEC-020", "at": "2026-10-31T18:56:10Z", "review": "agree", "reviewer": "Claude for Purbo Mohamad (owner proxy)"}
+{"decision": "DEC-028", "at": "2026-10-31T18:56:10Z", "review": "agree", "reviewer": "Claude for Purbo Mohamad (owner proxy)", "reason": "One place converts, in pure functions with the zone as an argument; the backend stays zone-free."}
+{"decision": "DEC-031", "at": "2026-10-31T18:56:10Z", "review": "agree", "reviewer": "Claude for Purbo Mohamad (owner proxy)"}
+{"decision": "DEC-032", "at": "2026-10-31T18:56:10Z", "review": "disagree", "reviewer": "Claude for Purbo Mohamad (owner proxy)", "reason": "Applied literally the rule repeats the date in a room-local range whose two ends fall on the same other date, '(Wed 4 Nov 16:30 to Wed 4 Nov 17:30 in London)' (S18, DEC-170). Show that date once per range.", "preferred": "other: a range whose two ends fall on the same other date shows that date once, '(Wed 4 Nov 16:30 to 17:30 in London)'", "impact": "node-local"}
+{"decision": "DEC-033", "at": "2026-10-31T18:56:10Z", "review": "agree", "reviewer": "Claude for Purbo Mohamad (owner proxy)"}
+{"decision": "DEC-034", "at": "2026-10-31T18:56:10Z", "review": "agree", "reviewer": "Claude for Purbo Mohamad (owner proxy)"}
+{"decision": "DEC-141", "at": "2026-10-31T18:56:10Z", "review": "agree", "reviewer": "Claude for Purbo Mohamad (owner proxy)"}
+{"decision": "DEC-144", "at": "2026-10-31T18:56:10Z", "review": "agree", "reviewer": "Claude for Purbo Mohamad (owner proxy)"}
+{"decision": "DEC-152", "at": "2026-10-31T18:56:10Z", "review": "agree", "reviewer": "Claude for Purbo Mohamad (owner proxy)"}
+{"decision": "DEC-197", "at": "2026-10-31T18:56:10Z", "review": "agree", "reviewer": "Claude for Purbo Mohamad (owner proxy)"}
+{"decision": "DEC-200", "at": "2026-10-31T18:56:10Z", "review": "agree", "reviewer": "Claude for Purbo Mohamad (owner proxy)"}
+{"decision": "DEC-201", "at": "2026-10-31T18:56:10Z", "review": "agree", "reviewer": "Claude for Purbo Mohamad (owner proxy)"}

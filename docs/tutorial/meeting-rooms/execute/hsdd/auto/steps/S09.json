@@ -1,0 +1,218 @@
+{
+  "step_ref": "S09",
+  "skill": "hsdd-spec",
+  "target": "simple-login.backend",
+  "status": "completed",
+  "stop": null,
+  "artifacts": [
+    "hsdd/spec/simple-login.backend.md",
+    "hsdd/spec/simple-login.md"
+  ],
+  "experiments": [],
+  "self_check": [
+    {
+      "gate": "The spec stays high-level; it is not an implementation plan.",
+      "status": "pass",
+      "note": "The header and Overview name what the node owns and the rules it holds: instants with no zone in the service, the injected clock deciding started and ended (ADR-002), no two bookings of one room overlapping even at the same moment. The mechanisms (how the database enforces exactly one winner, where the rooms live, which database the tests use, where the Compose file sits) are left to the phase plan (DEC-081, DEC-082, DEC-083)."
+    },
+    {
+      "gate": "Every node has explicit consumed/produced contract ids.",
+      "status": "pass",
+      "note": "Consumes stays none and Produces stays [auth-api@v1, profile-api@v1, profile-api@v2] in both files. booking-api@v1 joins Produces through hsdd-reconcile (H15), which the intake record leaves header versions to (DEC-014); the Overview's closing sentence already names it."
+    },
+    {
+      "gate": "Every node is testable in isolation (fixtures, mocks, schemas).",
+      "status": "pass",
+      "note": "The Isolation strategy keeps app.inject() with an injected clock and random source, runs the tests that read or write bookings against a real PostgreSQL 17 that this node owns, and replays the auth-api, profile-api and booking-api fixtures with each booking-api fixture's clock and given bookings (DEC-082). The node consumes no contract, so no sibling has to run."
+    },
+    {
+      "gate": "Every dependency edge is typed; parallel lanes are called out.",
+      "status": "n/a",
+      "note": "not exercised by this step"
+    },
+    {
+      "gate": "Each child is marked internal or leaf-parent.",
+      "status": "n/a",
+      "note": "not exercised by this step"
+    },
+    {
+      "gate": "Mermaid DAG matches the dependency table.",
+      "status": "n/a",
+      "note": "not exercised by this step"
+    },
+    {
+      "gate": "`conventions.md` exists/updated at the root.",
+      "status": "pass",
+      "note": "hsdd/conventions.md exists; the touch adds no layout, naming or protocol convention (the Compose file's location is the plan's D{n}), so it is unchanged."
+    },
+    {
+      "gate": "The decomposition axis at each level matches ownership stated by the human, not assumed <U+2014 EM DASH> no node is owned by two teams.",
+      "status": "pass",
+      "note": "The axis is unchanged. PRD v2 Team and delivery and the owner's facts give the service and the database to the backend developer, which Owns now states; naming the Compose file as owned keeps a root-level file from a second owner, since simple-login.integration owns the root package.json scripts (DEC-081). The gate's dash is written as <U+2014 EM DASH> because the run's prose rules ban the character."
+    },
+    {
+      "gate": "Every child node has its own `hsdd/spec/{child-id}.md` file.",
+      "status": "n/a",
+      "note": "not exercised by this step"
+    },
+    {
+      "gate": "Every input source appears in the Sources of at least one node, or is marked in the root `## Sources` as \"informative only <U+2014 EM DASH> not decomposed\", with a reason.",
+      "status": "n/a",
+      "note": "not exercised by this step: the Sources field is left to the citation touch (H11), which moves the PRD 1 and Update 1 entries to PRD v2 (intake record, Sources and Scope). The gate's dash is written as <U+2014 EM DASH>."
+    },
+    {
+      "gate": "No node's Sources lists a document that does not govern it.",
+      "status": "n/a",
+      "note": "not exercised by this step: the Sources field in this file and in the embedded summary is unchanged and still names PRD 1 and Update 1, which H11 moves (DEC-079)."
+    },
+    {
+      "gate": "Field blocks are bullet lists and empty lists say \"none\".",
+      "status": "pass",
+      "note": "Both header blocks stay bullet lists; Consumes says none."
+    },
+    {
+      "gate": "Every open question is defined once, in its owning spec, with a table row and a `### {ID}` detail subsection; child views carry `[inherits …]`; no cited ID lacks a definition.",
+      "status": "n/a",
+      "note": "not exercised by this step: the touched text cites and defines no OQ, and simple-login.backend.md has no Open questions section."
+    },
+    {
+      "gate": "OQ prefixes used by node specs are declared in `conventions.md`.",
+      "status": "n/a",
+      "note": "not exercised by this step"
+    },
+    {
+      "gate": "Under `multi-team`, every node whose team differs from its parent's carries `- **Team:**`; no node is owned by two teams.",
+      "status": "n/a",
+      "note": "not exercised by this step: conventions.md says single-team."
+    },
+    {
+      "gate": "Where children exchange contracts, an integration node exists or the decision not to add one is stated in the parent (one line).",
+      "status": "n/a",
+      "note": "not exercised by this step"
+    },
+    {
+      "gate": "A graft kept every existing child id and touched only the new child's file, the parent's summaries and the parent's DAG.",
+      "status": "n/a",
+      "note": "not exercised by this step"
+    },
+    {
+      "gate": "A retired node's file is kept; its contracts' retirement went through `hsdd-reconcile`.",
+      "status": "n/a",
+      "note": "not exercised by this step"
+    },
+    {
+      "gate": "Promotion: the human confirmed before `- **Adopted:** promoted` was written; `## Observed surface` kept; `v0` contracts unchanged unless redesigned.",
+      "status": "n/a",
+      "note": "not exercised by this step"
+    }
+  ],
+  "routed": [
+    {
+      "target": "H14",
+      "kind": "consider",
+      "text": "Carried from Q-013 (from S04), which matched S09 by its node and was closed there as explained, unaddressed, because a spec touch may not write the Phase Plan (DEC-085). Original text: ADR-002 for the backend's plan: start and end as timestamptz with the half-open overlap rule; an exclusion constraint on tstzrange(start_at, end_at, '[)') with btree_gist is one way to hold AC-5.4, but its 23P01 DETAIL names one row, so the AC-5.3 body needs a re-read (hsdd/auto/experiments/time-model-postgres/); no zone arithmetic in the service; the quarter-hour check on the UTC instant; the injected clock decides started and ended (start equal to now is started); the account data gains timeZone; the gate's tests run with TZ set to a zone that is neither account's nor UTC."
+    },
+    {
+      "target": "H14",
+      "kind": "must-address",
+      "text": "Carried from Q-017 (from S05), which matched S09 by its node and was closed there as explained, unaddressed, because a spec touch may not write the Phase Plan (DEC-085). Original text: booking-api@v1's fixtures (hsdd/contract/fixture/booking-api/, 35, all replay exact) add two fields the current rig (backend/test/replay.ts) cannot replay: clock, the instant the injected clock reads for the whole fixture, tokens included ({{expired-token:u}} is a token whose expiresAt is before clock); and given, bookings to create before the request, directly and with the fixture's UUIDs (some lie before the clock, which POST refuses), starting each fixture from no bookings. The rig also meets DELETE, and a 204 whose fixture body is null while the real response has no body (res.json() throws on an empty body), and a 201 whose id is checked against the schema and must differ from every given id. Each fixture's response validates against the top-level schema; $defs.GetRoomsResponse, GetMyBookingsResponse, PostBookingResponse and DeleteBookingResponse are per endpoint. Booking ids are lower-case UUIDs (gen_random_uuid in PostgreSQL 17), never reused."
+    },
+    {
+      "target": "H14",
+      "kind": "consider",
+      "text": "Carried from Q-018 (from S05), which matched S09 by its node and was closed there as explained, unaddressed, because a spec touch may not write the Phase Plan (DEC-085). Original text: booking-api@v1 for the backend's plan: G6 needs a re-read after an exclusion refusal (23P01 DETAIL names one row): the room's overlapping bookings ordered by start, the first one; if none remains because it was cancelled meanwhile, try the insert again, never a 409 without error.conflict and never a 5xx from contention (G5; PRD v2 Success, 20 simultaneous attempts). G1: accept an instant only when new Date(s).toISOString() === s; query values percent-decoded. The limits are instant arithmetic: end - start <= 8 h (G9), start - now <= 8,760 h (G10), started when now >= start (G7). The title counts code points (Ajv's maxLength does, JavaScript's .length does not), needs one non-whitespace character and is stored as sent (G8). The check orders of POST and DELETE are part of the contract (G15); a DELETE id that is not a UUID answers 404. Rooms come back in PRD v2 Rooms' order with ids merapi, bromo, thames, kew; lists sort by start, ties by that order (G13, G14). produced_by is the provisional guess simple-login.backend.4 (DEC-053)."
+    },
+    {
+      "target": "H14",
+      "kind": "consider",
+      "text": "Carried from Q-022 (from S07), which matched S09 by its node and was closed there as explained, unaddressed, because a spec touch may not write the Phase Plan (DEC-085). Original text: profile-api@v2 now carries timeZone (G4: every 200 profile; ayu Asia/Jakarta, budi Europe/London), optional in the schema, and the me-ayu and me-budi fixtures carry it with replay exact. Read from the code, not run: backend/test/accounts.test.ts ('profile equals the me-ayu/me-budi fixture', 'exactly the six profile-api@v2 fields') and the exact replay in backend/test/contract.replay.test.ts now fail against the shipped account data until the phase that adds timeZone to the accounts lands; that phase's gate replays both fixtures. simple-login.backend.3's Verification line ('the six profile-api@v2 fields') is shipped history."
+    },
+    {
+      "target": "H14",
+      "kind": "consider",
+      "text": "From S09's touch of the header (DEC-081, DEC-082). Owns now names the PostgreSQL 17 database, its Docker Compose service and that service's Compose file, wherever the file lives; the plan's D{n} places it. simple-login.integration owns the root package.json scripts and will start the database from them (intake record H18): a Compose file under backend/ stays inside this node's `backend/` directory, one at the repository root keeps its single owner only through this Owns line. The Isolation strategy says tests that read or write bookings run against a real PostgreSQL 17 but not which one. A booking-api replay starts each fixture from no bookings (booking-api@v1 Validation), so tests run against the database `npm --prefix backend start` uses would erase a developer's bookings: a separate test database in the same Compose service, or a throwaway container, is the plan's choice, and the gate's command says how the database is up before vitest runs."
+    },
+    {
+      "target": "H11",
+      "kind": "consider",
+      "text": "S09 restated Purpose, Owns and Isolation strategy (in hsdd/spec/simple-login.backend.md and the embedded summary in hsdd/spec/simple-login.md) and the Overview, citing PRD v2 by section: Constraints, Team and delivery, Demo accounts, Rooms, AC-2.1, AC-2.5, AC-5.3, AC-5.4, US-4 to US-6 (DEC-079). The citations it left for H11: the Sources field in both places (PRD 1 and Update 1 paths). Every other PRD or update 1 reference in the file sits in the Phase Plan's shipped phases 1 to 3 and its 2026-10-30 append, which are history."
+    },
+    {
+      "target": "run",
+      "kind": "consider",
+      "text": "hsdd/spec/simple-login.md's Child nodes table still gives simple-login.backend the Purpose 'authenticate built-in users and serve the signed-in user's profile over HTTP', while its embedded summary now names the time zone and the room bookings kept in PostgreSQL 17 (S09, DEC-084). The invocation named only the embedded summary, and hsdd-reconcile's version ripple writes only Produces, Consumes and Sources in that table. H8 and H9 meet the same choice for the web and integration rows; one decision (a touch on simple-login after H9, or the align) can refresh the three Purpose cells together."
+    }
+  ],
+  "closes": [
+    {
+      "id": "Q-013",
+      "outcome": "explained",
+      "note": "Targets H14, the backend's phase plan, which this spec touch may not edit. The header and Overview now state three of its clauses at spec level: each built-in account's time zone (Owns, Overview; DEC-081, DEC-083), no zone arithmetic in the service, and the injected clock deciding started and ended (Overview, ADR-002; DEC-083). Its plan content (timestamptz, the exclusion constraint and the 23P01 re-read, the quarter-hour check, TZ for the gate's tests) is carried to H14 with the full text in this report's routed entries (DEC-085)."
+    },
+    {
+      "id": "Q-017",
+      "outcome": "explained",
+      "note": "Targets H14; the replay rig's changes are plan content this touch may not write. The Isolation strategy now says the gate replays the booking-api fixtures with the injected clock reading each fixture's clock and the database holding exactly its given bookings (DEC-082). The rest (DELETE, the 204 with no body, the 201 id check, the per-endpoint $defs, lower-case UUIDs never reused) is carried to H14 with the full text as a must-address (DEC-085)."
+    },
+    {
+      "id": "Q-018",
+      "outcome": "explained",
+      "note": "Targets H14; every clause is plan content (G6's re-read, G1's instant check, the limits as instant arithmetic, the title's code points, the check orders, the rooms' order, produced_by). The Overview names only the rule it serves, no two bookings of one room overlapping even at the same moment, and leaves the mechanism to the plan (DEC-083). Carried to H14 with the full text (DEC-085)."
+    },
+    {
+      "id": "Q-022",
+      "outcome": "explained",
+      "note": "Targets H14; the shipped tests that now fail and the phase that adds timeZone to the account data are plan content. Owns and the Overview now give each built-in account its time zone and say the profile serves it (DEC-081, DEC-083). Carried to H14 with the full text (DEC-085)."
+    }
+  ],
+  "reads_outside": [
+    {
+      "path": "hsdd/auto/steps/S08.json, hsdd/auto/steps/S08.decisions.jsonl",
+      "why": "The report shape, how S08 cited restated text (DEC-067) and wrote an em dash in a quoted gate, and DEC-077, which put the exactly-one mechanism in this node's D{n}."
+    },
+    {
+      "path": "hsdd/auto/queue.jsonl (through routed.mjs list)",
+      "why": "The full text and status of Q-013, Q-017, Q-018 and Q-022, and which items earlier steps closed."
+    },
+    {
+      "path": "hsdd/scripts/auto/routed.mjs, hsdd/scripts/auto/gate.mjs, hsdd/scripts/auto/dispatch.mjs, hsdd/scripts/auto/lib/checks.mjs, hsdd/scripts/auto/lib/report-rules.mjs, hsdd/scripts/auto/schema/step-report.schema.json, hsdd/scripts/auto/templates/steps/spec-touch.md, hsdd/auto/run.yaml",
+      "why": "Why four H14 items reached a spec touch (B-10 matching), what closing them does to H14, what B3 and the C checks require, and the report shape (DEC-085)."
+    },
+    {
+      "path": ".claude/skills/hsdd-auto/SKILL.md (Answering a stop, Reviewing a step)",
+      "why": "How the orchestrator ingests closes and routed entries, to carry the H14 items without losing them."
+    },
+    {
+      "path": ".claude/skills/hsdd-reconcile/SKILL.md (step 4, the version ripple)",
+      "why": "Which columns of the root's child-node table reconcile writes, for DEC-084."
+    },
+    {
+      "path": "hsdd/judgement/decisions.jsonl",
+      "why": "A search for an earlier decision on items routed to a later handoff on the same node; none was found."
+    },
+    {
+      "path": "hsdd/contract/booking-api.md, hsdd/contract/profile-api.v2.md, hsdd/contract/profile-api.md",
+      "why": "The booking endpoints' paths for Owns, the replay's clock and given for the Isolation strategy, G4 and G5 for the Overview, and profile-api@v1's status."
+    },
+    {
+      "path": "hsdd/spec/simple-login.integration.md, hsdd/spec/simple-login.web.md",
+      "why": "The siblings' Owns lines, so the Compose file and the database get one owner (DEC-081), and the web row of the child table (DEC-084)."
+    },
+    {
+      "path": "backend/src/accounts.ts, backend/package.json, package.json",
+      "why": "Whether the accounts are held in memory and what the root scripts own, before the Overview kept 'in memory'."
+    },
+    {
+      "path": "hsdd/auto/experiments/*/README.md",
+      "why": "The runtime facts behind ADR-002 and booking-api@v1 that the Overview summarizes."
+    }
+  ],
+  "notes": [
+    "Decisions DEC-079 to DEC-086. Changed: hsdd/spec/simple-login.backend.md (Purpose, Owns, Isolation strategy, Overview) and hsdd/spec/simple-login.md (the same three header lines of the embedded summary only). The Phase Plan, Does not own, Consumes, Produces, Governed by, Sources and Decomposes into are untouched in both.",
+    "DEC-086 corrects DEC-080's wording: Purpose says 'each room's bookings in a time range', not 'on a date', since ADR-002 Decision 4 gives the date-to-range conversion to the web app.",
+    "Routing mechanics (DEC-085): routed.mjs matches an item on a handoff to every step on that handoff's target, so the four H14 items reached this spec touch, and the carried copies will reach H11, the citation touch on the same node, before H14. The orchestrator may prefer to keep them for H14 itself; if it re-opens them, the four carried entries in routed duplicate them and can be dropped before ingest.",
+    "Until hsdd-reconcile runs for this node (H15), the header's Produces lacks booking-api@v1 while Owns names its four paths and the Isolation strategy and Overview name its fixtures and contract.",
+    "The shipped backend does not yet hold time zones or bookings; the header and Overview describe the node as PRD v2 requires it, and the appended plan (H14) delivers it. Per Q-022, the shipped accounts test and the profile replay fail until that phase lands."
+  ],
+  "read_check": "d7964bca"
+}
