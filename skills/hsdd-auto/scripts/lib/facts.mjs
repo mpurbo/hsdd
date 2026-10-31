@@ -7,7 +7,7 @@ import { P } from "./paths.mjs";
 import { sourcesOf } from "./config.mjs";
 import { contractRefs, leafParentsOf, phaseNodeOf, toLines } from "./tree.mjs";
 import { contractRoles, nodeFiles, specFilesInOrder } from "./order.mjs";
-import { lowerVersions, supersededVersions, versionsOf } from "./contracts.mjs";
+import { contractAt, contractTarget, lowerVersions, refFile, splitRef, supersededVersions, targetVersions, versionsOf } from "./contracts.mjs";
 
 const unique = (xs) => [...new Set(xs)];
 const code = (s) => `\`${s}\``;
@@ -19,20 +19,31 @@ const verifyRef = (ctx) => `${ctx.defaultBranch}:${ctx.layout.verify}`;
 
 // ---------- shared lines ----------
 
-const contractState = (c) => `version ${c.version ?? "missing"}, status ${c.status ?? "missing"}, phase_ids ${c.phaseIds ?? "missing"}`;
+const fileState = (c) => `status ${c.status ?? "missing"}, phase_ids ${c.phaseIds ?? "missing"}`;
+const contractState = (c) => `version ${c.version ?? "missing"}, ${fileState(c)}`;
 
 const validationText = (c) => (c.validationPaths.length === 0
   ? "no validation path"
   : `validation ${c.validationPaths.map((v) => `${v.kind} ${v.path}`).join(", ")}`);
 
+// A reference `{id}@v{n}` and the state of the file that holds that version (v0.10.0 §3.1): the
+// current version's, a lower version's own, or, with no file at that version, the current one's.
+const versionStateLine = (tree, id, version, { validation = false } = {}) => {
+  const entry = tree.contracts.get(id);
+  const c = contractAt(tree, id, version);
+  const v = (x) => (validation ? `, ${validationText(x)}` : "");
+  if (c === null) return { text: `contract ${code(id)} is at ${contractState(entry)}${v(entry)}; no file holds ${version}`, file: entry.file };
+  if (c.version === entry.version) return { text: `contract ${code(id)} is at ${contractState(c)}${v(c)}`, file: c.file };
+  return { text: `contract ${code(id)} is at ${entry.version}; its ${version} file has ${fileState(c)}${v(c)}`, file: c.file };
+};
+
 // One line per contract reference of a node: the reference cites the node file it was read from,
-// and the contract's state the contract file (or that the contract has no file).
+// and the contract's state the file of the cited version (or that the contract has no file).
 const refLines = (ctx, node, role, refs, { validation = false } = {}) => refs.map((r) => {
-  const c = ctx.tree.contracts.get(r.slug);
   const ref = `${role} ${code(`${r.slug}@${r.version}`)}`;
-  return c
-    ? cite(`${cite(ref, node.file)}; contract ${code(r.slug)} is at ${contractState(c)}${validation ? `, ${validationText(c)}` : ""}`, c.file)
-    : cite(`${ref}, which has no contract file yet`, node.file);
+  if (!ctx.tree.contracts.has(r.slug)) return cite(`${ref}, which has no contract file yet`, node.file);
+  const state = versionStateLine(ctx.tree, r.slug, r.version, { validation });
+  return cite(`${cite(ref, node.file)}; ${state.text}`, state.file);
 });
 
 const nodeContractLines = (ctx, node, opts) => [
@@ -112,10 +123,11 @@ const frontMatterLines = (id, front, file) => Object.entries(front ?? {}).map(([
 
 const affectsLine = (ctx, adr, ref) => {
   const { tree } = ctx;
-  const target = stripVersion(ref);
+  const { name: target, version } = splitRef(ref);
   const node = tree.nodes.get(target) ?? tree.nodes.get(phaseNodeOf(target));
-  const contract = tree.contracts.get(target);
+  const contract = refFile(tree, target, version);
   if (contract) return cite(`${code(adr.id)} affects ${code(ref)}: contract ${contractState(contract)}, governed_by ${fmt(contract.governedBy)}`, contract.file);
+  if (tree.contracts.has(target)) return cite(`${code(adr.id)} affects ${code(ref)}, which no file of ${code(target)} holds yet`, tree.contracts.get(target).file);
   if (node) return cite(`${code(adr.id)} affects ${code(ref)}, whose node ${code(node.id)} has **Governed by:** ${node.fields["Governed by"] ?? "(absent)"}`, node.file);
   return cite(`${code(adr.id)} affects ${code(ref)}, which has no file yet`, adr.file);
 };
@@ -150,16 +162,21 @@ const roleLines = (ctx, ids, field, missing) => (ids.length === 0
     return n ? fieldLine(n, field) : noFileLine(ctx, id);
   }));
 
-// A contract's own `owner` and `consumers` that name no node in the tree (a phase id counts as its node's).
-const unresolvedRoleLines = (ctx, c) => [["owner", c.owner], ...c.consumers.map((x) => ["consumer", x])]
+// A contract file's own `owner` and `consumers` that name no node in the tree (a phase id counts as its node's).
+const unresolvedRoleLines = (ctx, c, label) => [["owner", c.owner], ...c.consumers.map((x) => ["consumer", x])]
   .filter(([, name]) => name && !ctx.tree.nodes.has(name) && !ctx.tree.nodes.has(phaseNodeOf(name)))
-  .map(([role, name]) => cite(`${code(c.slug)} names ${code(name)} as its ${role}, which has no spec file`, c.file));
+  .map(([role, name]) => cite(`${code(label)} names ${code(name)} as its ${role}, which has no spec file`, c.file));
 
-// contract, contract-touch.
+// contract, contract-touch. The target is an id, whose every version file is listed, or `{id}.v{n}`, one
+// version (v0.10.0 §3.1); each version file is labelled `{id}@v{n}` once the id has more than one.
 const contractFacts = (ctx, step) => {
   const { tree, layout } = ctx;
-  const slug = step.target;
-  const c = tree.contracts.get(slug);
+  const named = contractTarget(tree, step.target);
+  const slug = named?.id ?? step.target;
+  const all = versionsOf(tree.contracts.get(slug));
+  const files = targetVersions(tree, step.target);
+  const label = (c) => (all.length > 1 ? `${slug}@${c.version}` : slug);
+  const own = named?.version ? step.target : slug;
   const { producers, consumers } = contractRoles(tree);
   const producedBy = [...(producers.get(slug) ?? [])];
   const adrs = [...tree.adrs.values()].filter((a) => a.affects.some((x) => stripVersion(x) === slug));
@@ -170,7 +187,8 @@ const contractFacts = (ctx, step) => {
   return [
     ...roleLines(ctx, producedBy, "Produces", `No node produces ${code(slug)}`),
     ...roleLines(ctx, [...(consumers.get(slug) ?? [])], "Consumes", `No node consumes ${code(slug)}`),
-    ...(c ? unresolvedRoleLines(ctx, c) : []),
+    ...(all.length > 1 || named?.version ? all.map((c) => cite(`${code(`${slug}@${c.version}`)}: ${contractState(c)}`, c.file)) : []),
+    ...files.flatMap((c) => unresolvedRoleLines(ctx, c, label(c))),
     ...(adrs.length > 0
       ? adrs.flatMap((a) => a.affects.filter((x) => stripVersion(x) === slug).map((x) => cite(`${code(a.id)} (${a.status ?? "no status"}) affects ${code(x)}`, a.file)))
       : [cite(`No ADR's affects names ${code(slug)}`, `${layout.adr}/*.md`)]),
@@ -180,17 +198,17 @@ const contractFacts = (ctx, step) => {
         return b ? cite(`${code(slug)} builds on ${code(s)}: ${contractState(b)}`, b.file) : cite(`${code(slug)} builds on ${code(s)}, which has no contract file yet`, `${layout.contract}/${s}.md`);
       })
       : [cite(`${code(slug)} builds on no other contract: its producers consume none`, nodeFiles(tree, producedBy)[0] ?? `${layout.spec}/*.md`)]),
-    ...(step.kind === "contract-touch" && c ? [
-      ...frontMatterLines(slug, c.front, c.file),
+    ...(step.kind === "contract-touch" ? files.flatMap((c) => [
+      ...frontMatterLines(label(c), c.front, c.file),
       ...(c.versioningText === null
-        ? [cite(`${code(slug)} has no \`## Versioning\` section`, c.file)]
-        : versioningItems(c.versioningText).map((v) => cite(`${code(slug)} \`## Versioning\`: ${v}`, c.file))),
-    ] : []),
-    ...(c
-      ? (c.validationPaths.length === 0
-        ? [cite(`${code(slug)} names no validation path in \`## Validation\``, c.file)]
-        : c.validationPaths.map((v) => cite(`${code(slug)} validation ${v.kind} ${code(v.path)} ${ctx.reads.existing.has(v.path) ? "exists" : "does not exist"}`, c.file)))
-      : [cite(`${code(slug)} has no contract file yet, so no validation path`, `${layout.contract}/${slug}.md`)]),
+        ? [cite(`${code(label(c))} has no \`## Versioning\` section`, c.file)]
+        : versioningItems(c.versioningText).map((v) => cite(`${code(label(c))} \`## Versioning\`: ${v}`, c.file))),
+    ]) : []),
+    ...(files.length > 0
+      ? files.flatMap((c) => (c.validationPaths.length === 0
+        ? [cite(`${code(label(c))} names no validation path in \`## Validation\``, c.file)]
+        : c.validationPaths.map((v) => cite(`${code(label(c))} validation ${v.kind} ${code(v.path)} ${ctx.reads.existing.has(v.path) ? "exists" : "does not exist"}`, c.file))))
+      : [cite(`${code(own)} has no contract file yet, so no validation path`, `${layout.contract}/${own}.md`)]),
   ];
 };
 
@@ -280,10 +298,14 @@ const reconcileFacts = (ctx, step) => {
     return [cite(`${code(id)} pending section: ${countsText(n.pendingEntries)}`, n.file)];
   });
   const refs = order.flatMap((id) => (tree.nodes.get(id)?.pendingEntries ?? []).flatMap((e) => contractRefs(e.text).map((r) => ({ ...r, node: tree.nodes.get(id) }))));
-  const contracts = refs.filter((r, i) => refs.findIndex((x) => x.slug === r.slug) === i).map((r) => {
-    const c = tree.contracts.get(r.slug);
-    return c ? cite(`Pending entries name ${code(r.slug)}: ${contractState(c)}`, c.file)
-      : cite(`Pending entries name ${code(`${r.slug}@${r.version}`)}, which has no contract file`, r.node.file);
+  // One line per version an entry names, from the file that holds that version (v0.10.0 §3.1).
+  const contracts = refs.filter((r, i) => refs.findIndex((x) => x.slug === r.slug && x.version === r.version) === i).map((r) => {
+    const ref = code(`${r.slug}@${r.version}`);
+    if (!tree.contracts.has(r.slug)) return cite(`Pending entries name ${ref}, which has no contract file`, r.node.file);
+    const c = contractAt(tree, r.slug, r.version);
+    const entry = tree.contracts.get(r.slug);
+    return c ? cite(`Pending entries name ${ref}: ${contractState(c)}`, c.file)
+      : cite(`Pending entries name ${ref}, which no file of ${code(r.slug)} holds; it is at ${contractState(entry)}`, entry.file);
   });
   return [
     ...sections,

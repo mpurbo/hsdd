@@ -720,7 +720,9 @@ from, target, kind, text}`, with `step_kind` and `step_target` for an
   with a `plan` decision (§8.7).
 
 **Targets** are written as: a node id (`acme.backend.auth`), a contract slug
-without version (`auth-token`), an ADR id (`ADR-003`), an intake handoff id
+without version (`auth-token`, the contract's `id`, which stands for every
+version file of it), the file name of one later version without `.md`
+(`auth-token.v2`, v0.10.0 §3.1), an ADR id (`ADR-003`), an intake handoff id
 (`H7a`), or `run` (the run itself). A step's target string is its node id,
 contract slug or ADR id; for `citation-touch`, the touched file's node id,
 slug or ADR id; for `reconcile` and `align`, a comma-separated list of node
@@ -2194,7 +2196,7 @@ A.7):
   |------|-------|--------|
   | `mid-level-spec`, `graft`, `promote`, `spec-touch` | `hsdd-spec` | a node id |
   | `adr`, `adr-update` | `hsdd-adr` | an ADR id |
-  | `contract`, `contract-touch` | `hsdd-contract` | a contract slug |
+  | `contract`, `contract-touch` | `hsdd-contract` | a contract slug (its `id`; `{id}.v{n}` names one later version, v0.10.0 §3.1) |
   | `citation-touch` | by the file: `hsdd-spec`, `hsdd-adr` or `hsdd-contract` | a node id, ADR id or contract slug |
   | `phase-plan`, `phase-plan-append` | `hsdd-phase-plan` | a leaf-parent's node id |
   | `reconcile`, `align` | `hsdd-reconcile` | node ids, comma-separated, or `all` |
@@ -3575,12 +3577,12 @@ Each line names its file; check it there before relying on it.
 | Kind | `{fact_lines}` holds |
 |------|----------------------|
 | `root-spec` | Each source's path, role, version and authority (or `absent`); whether `hsdd/` and `hsdd/conventions.md` exist. The owner facts are already in the preamble. |
-| `mid-level-spec`, `graft`, `promote`, `spec-touch` | The target's header fields and `Decomposes into`; each contract it produces or consumes with `version`, `status`, `phase_ids`; each ADR that governs it with `status`; the parent's embedded summary of it; for a graft, the parent's children.; for a promotion, the node's `Adopted` line and its `## Observed surface` heading. |
+| `mid-level-spec`, `graft`, `promote`, `spec-touch` | The target's header fields and `Decomposes into`; each contract version it produces or consumes with `version`, `status`, `phase_ids`, read from the file that holds that version (v0.10.0 §3.1); each ADR that governs it with `status`; the parent's embedded summary of it; for a graft, the parent's children.; for a promotion, the node's `Adopted` line and its `## Observed surface` heading. |
 | `adr`, `adr-update` | The spec lines that propose or cite the ADR; its current front matter (update); the specs and contracts it `affects`. |
-| `contract`, `contract-touch` | The producing node's `Produces` line and each consuming node's `Consumes` line; each ADR whose `affects` names this contract; the contracts it builds on, with versions and statuses; its current front matter and `## Versioning` (touch); its validation paths and whether they exist. |
-| `citation-touch` | Every contract's current `version`; every source's citation name and version, with the baseline sources marked; the superseded strings of §12.2; every phase id with a verification doc on the default branch, by node (§12.4). |
-| `phase-plan`, `phase-plan-append` | The node's `Purpose`, `Owns`, `Produces` and `Consumes`; each consumed and produced contract with `version`, `status`, `phase_ids` and validation paths; the governing ADRs; `conventions.md`'s ordering policy, coding method and teams lines; for append, the existing phase ids, which of them have a verification doc on the repository's default branch, and the intake record's path. |
-| `reconcile`, `align` | Every pending section in the tree with its entry counts, the named nodes first; every contract those entries name with `version`, `status`, `phase_ids`; for align, every phase id with a verification doc on the default branch, by node (§12.4). |
+| `contract`, `contract-touch` | The producing node's `Produces` line and each consuming node's `Consumes` line; each ADR whose `affects` names this contract; the contracts it builds on, with versions and statuses; for an `id` with more than one version file, or a `{id}.v{n}` target, each version's `version`, `status` and `phase_ids`; the front matter and `## Versioning` of each file the target resolves to (touch); their validation paths and whether they exist. |
+| `citation-touch` | Every contract's current `version`, and each lower version that stays live (a file of its own, neither `deprecated` nor `retired`); every source's citation name and version, with the baseline sources marked; the superseded strings of §12.2; every phase id with a verification doc on the default branch, by node (§12.4). |
+| `phase-plan`, `phase-plan-append` | The node's `Purpose`, `Owns`, `Produces` and `Consumes`; each consumed and produced contract version with `version`, `status`, `phase_ids` and validation paths, read from the file that holds that version; the governing ADRs; `conventions.md`'s ordering policy, coding method and teams lines; for append, the existing phase ids, which of them have a verification doc on the repository's default branch, and the intake record's path. |
+| `reconcile`, `align` | Every pending section in the tree with its entry counts, the named nodes first; every contract version those entries name with `version`, `status`, `phase_ids`, from the file that holds it; for align, every phase id with a verification doc on the default branch, by node (§12.4). |
 | `intake` | The request's path and authority; every open intake record's path and landings; the atlas's path, or the tree's node list; for a new source version, the old and new paths and versions; the number of earlier `would_upstream` decisions, and `node hsdd/scripts/auto/state.mjs upstream`, which lists them. |
 
 ### C.3 Instructions per kind
@@ -3661,7 +3663,7 @@ text. Done when: the change is in
 place, classified and recorded.
 
 **`citation-touch`** (`hsdd-contract`, `hsdd-adr` or `hsdd-spec`). Default
-invocation: "Citation touch `{target_file}`: move its citations to the
+invocation: "Citation touch {target_file}: move its citations to the
 current versions." What to do: apply §12.4's citation-touch rule exactly; report the
 counts moved and kept in `notes`. Done when: no live citation in the files
 names a superseded string, and every sentence that restates another artifact
@@ -3725,8 +3727,8 @@ block, and the two agree.
 | Slot | Filled from |
 |------|-------------|
 | `{target}` | The step's target (§6.5). |
-| `{target_file}` | The file the target resolves to: `H/contract/{slug}.md`, the ADR's file, or `H/spec/{node}.md`. |
-| `{target_version}` | The version the specs cite for the contract (`v1` when none). |
+| `{target_file}` | The files the target resolves to, each in backticks, comma-separated: for a contract `id`, every version's file (`H/contract/{slug}.md`, then each later version's, v0.10.0 §3.1), for `{id}.v{n}` that version's file (`H/contract/{id}.v{n}.md` before it exists); the ADR's file; or `H/spec/{node}.md`. |
+| `{target_version}` | For `{id}.v{n}`, `v{n}`; for a contract `id`, the highest version the specs cite for it (`v1` when none). |
 | `{proposing_spec}` | The first spec file, in the root spec's order, that cites the ADR. |
 | `{reason}` | The text of the `insert-step` item the step executes, or of the routed items it closes, joined; or for an `align` from a stage rule, `the consistency pass` in plan mode and `the segment's handoffs` in intake mode. |
 | `{record}` | The path of the segment's intake record; in a plan segment, `the insert-step item {id}` that ordered the step. |

@@ -180,6 +180,20 @@ test("C3 reads the contract side of Governed by from governed_by", () => {
   assert.deepEqual(fs.map((f) => [f.level, f.file]), [["error", CONTRACT]]);
 });
 
+test("C3 resolves {id}@v{n} to that version's file", () => {
+  // v2's governed_by names ADR-001: an ADR that affects v2 passes on v2's file.
+  const dir = makeRepo({ stage: "06-planned", files: v2Files() });
+  edit(dir, ADR, "affects: [shop.api, order-api@v1]", "affects: [shop.api, order-api@v1, order-api@v2]");
+  assert.deepEqual(c3(treeOf(dir), {}), []);
+  // v2 without it fails on v2's file, whatever v1 says.
+  edit(dir, V2, "governed_by: [ADR-001]", "governed_by: []");
+  assert.deepEqual(c3(treeOf(dir), {}).map((f) => [f.level, f.file]), [["error", V2]]);
+  // A later version with no file yet is hsdd-adr's forward reference.
+  const ahead = repo("06-planned");
+  edit(ahead, ADR, "affects: [shop.api, order-api@v1]", "affects: [shop.api, order-api@v1, order-api@v2]");
+  assert.deepEqual(c3(treeOf(ahead), {}).map((f) => [f.level, f.message]), [["warn", "ADR-001 affects order-api@v2, which has no file yet"]]);
+});
+
 test("C3 warns on an affects target with no file", () => {
   const dir = repo("06-planned");
   edit(dir, ADR, "affects: [shop.api, order-api@v1]", "affects: [shop.api, order-api@v1, shop.missing]");

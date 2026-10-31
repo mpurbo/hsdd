@@ -1,6 +1,7 @@
 // Step kinds (spec 7.1), write sets and the never list (7.3), target types,
 // stop classes and their "Raised when" text (8.2). The single definition of the 7.3 table (A-8).
 import { P, ownerPath } from "./paths.mjs";
+import { contractTarget, targetVersions } from "./contracts.mjs";
 
 const k = (skill, mode, type, orchestrator = false) => ({
   skill, mode, type, orchestrator, template: null,
@@ -62,14 +63,15 @@ export const RAISED_WHEN = Object.freeze({
 const DOC_EXTENSION = /\.(?:md|mdx|markdown|txt|text|pdf|doc|docx|odt|rtf|html|htm|json|yaml|yml|xml|csv|rst|adoc|org|tex)$/i;
 const isRequestFile = (target) => DOC_EXTENSION.test(target.slice(target.lastIndexOf("/") + 1));
 
-// tree needs only nodes.has(id) and contracts.has(slug).
+// tree needs only nodes.has(id) and contracts.has(slug). A contract target is an id, or `{id}.v{n}`
+// for one version of it (v0.10.0 §3.1).
 export const targetType = (target, tree) => {
   if (/^ADR-\d+$/.test(target)) return "adr";
   if (/^H\d+[a-z]?$/.test(target)) return "handoff";
   if (target === "run") return "run";
   if (target === "all") return "all";
   if (tree.nodes.has(target)) return "node";
-  if (tree.contracts.has(target)) return "contract";
+  if (contractTarget(tree, target) !== null) return "contract";
   if (isRequestFile(target)) return "request";
   if (target.includes(",")) return "list";
   if (target.includes("/")) return "request";
@@ -119,9 +121,13 @@ export const writeSet = (kind, target, { layout, config, segmentId, record = nul
       return [`${contract}/**`, `${adr}/INDEX.md`, P.genRegistry];
     case "citation-touch": {
       const t = targetType(target, tree);
+      // A contract version's file, schema and fixtures, by its file name: every version of an id, or
+      // the one version `{id}.v{n}` names; the target's own name when it has no file yet.
+      const versionFiles = (stem, file = `${contract}/${stem}.md`) => [file, `${contract}/fixture/${stem}/**`, `${contract}/schema/${stem}.schema.json`];
+      const versions = t === "contract" ? targetVersions(tree, target).filter((c) => c.file) : [];
       // An existing ADR's parsed file (its name need not be `{nnn}-*.md`); the glob only without one.
       const own = t === "adr" ? [tree?.adrs?.get(target)?.file ?? `${adr}/${target.slice(4)}-*.md`]
-        : t === "contract" ? [`${contract}/${target}.md`, `${contract}/fixture/${target}/**`, `${contract}/schema/${target}.schema.json`]
+        : t === "contract" ? (versions.length > 0 ? versions.flatMap((c) => versionFiles(c.stem, c.file)) : versionFiles(target))
         : [`${spec}/${target}.md`];
       return dedupe([...own, ...registries]);
     }

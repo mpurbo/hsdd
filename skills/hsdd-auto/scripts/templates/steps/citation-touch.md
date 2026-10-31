@@ -1,4 +1,4 @@
-<!-- default_invocation: Citation touch `{target_file}`: move its citations to the current versions. -->
+<!-- default_invocation: Citation touch {target_file}: move its citations to the current versions. -->
 ## Your step: {step} ({kind}{handoff_suffix})
 
 - **step_ref:** {step}

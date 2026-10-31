@@ -18,6 +18,23 @@ export const versionName = (name) => {
   return m ? { id: m[1], version: `v${Number(m[2])}` } : null;
 };
 
+// The file a citation `{id}@{version}` resolves to: that version's file; for a version below the current
+// one that no file holds, the current file, where it is history (a bump in place, before 0.10.2); the
+// current file when `version` is null. Null when the tree has no such id, or the version is later than
+// any file holds.
+export const refFile = (tree, id, version = null) => {
+  const entry = tree.contracts.get(id);
+  if (!entry) return null;
+  if (version === null) return entry;
+  return contractAt(tree, id, version) ?? (versionNumber(version) < versionNumber(entry.version) ? entry : null);
+};
+
+// `{name}@v{n}` as { name, version }; version null without the suffix.
+export const splitRef = (ref) => {
+  const m = /^(.*)@(v\d+)$/.exec(ref);
+  return m ? { name: m[1], version: m[2] } : { name: ref, version: null };
+};
+
 // A target that names a contract: its id, or `{id}.v{n}` for one version of it. { id, version }, the
 // version null for the id; null when the target names no contract id the tree has.
 export const contractTarget = (tree, target) => {

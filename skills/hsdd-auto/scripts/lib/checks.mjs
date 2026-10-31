@@ -7,7 +7,7 @@ import { existsSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { blockErrors } from "./intake.mjs";
 import { phaseNodeOf } from "./tree.mjs";
-import { versionName, versionNumber, versionsOf } from "./contracts.mjs";
+import { refFile, splitRef, versionName, versionNumber, versionsOf } from "./contracts.mjs";
 
 const finding = (id, level, message, file, related = []) => ({
   id, level, message, file: file ?? null, ...(related.length > 0 ? { related } : {}),
@@ -38,17 +38,18 @@ export const c2 = (tree) => [...tree.nodes.values()].flatMap((n) => {
 
 const ADR_FIELDS = ["id", "status", "affects", "date"];
 
-const stripVersion = (target) => target.replace(/@v\d+$/, "");
-
-// An affects target's file and whether its Governed by names the ADR; null when it has no file.
+// An affects target's file and whether its Governed by names the ADR; null when it has no file. A
+// contract target `{id}@v{n}` resolves to that version's file (lib/contracts.mjs refFile).
 const governance = (tree, target, adrId) => {
-  const name = stripVersion(target);
+  const { name, version } = splitRef(target);
   const node = tree.nodes.get(name);
   if (node) {
     return { file: node.file, governed: node.governedBy.includes(adrId) || node.phases.some((p) => p.governedBy.includes(adrId)), where: "its header" };
   }
-  const contract = tree.contracts.get(name);
-  if (contract) return { file: contract.file, governed: contract.governedBy.includes(adrId), where: "its governed_by front matter" };
+  if (tree.contracts.has(name)) {
+    const contract = refFile(tree, name, version);
+    return contract ? { file: contract.file, governed: contract.governedBy.includes(adrId), where: "its governed_by front matter" } : null;
+  }
   const owner = tree.nodes.get(phaseNodeOf(name));
   const phase = owner?.phases.find((p) => p.id === name || p.short === name);
   if (phase) return { file: owner.file, governed: phase.governedBy.includes(adrId), where: "its phase header" };

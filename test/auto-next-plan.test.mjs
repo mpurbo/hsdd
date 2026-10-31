@@ -10,6 +10,7 @@ import { loadContext } from "../skills/hsdd-auto/scripts/lib/context.mjs";
 import { appendJsonl, readJsonl } from "../skills/hsdd-auto/scripts/lib/records.mjs";
 import { P } from "../skills/hsdd-auto/scripts/lib/paths.mjs";
 import { nowStamp } from "../skills/hsdd-auto/scripts/lib/time.mjs";
+import { V1, V2, v2Files } from "./helpers/auto-contract-v2.mjs";
 import { addSegment, baseConfig, fakeStep, gitIn, makeRepo, openStep, run } from "./helpers/auto-repo.mjs";
 
 const SEG = "2026-10-22-plan";
@@ -28,8 +29,8 @@ const edit = (dir, rel, from, to) => {
 const commitAll = (dir, msg = "owner edit") => { gitIn(dir, "add", "-A"); gitIn(dir, "commit", "-q", "-m", msg); };
 
 // A repository at a fixture stage with one plan segment opened.
-const opened = (stage, { prepare } = {}) => {
-  const dir = makeRepo({ stage });
+const opened = (stage, { prepare, files } = {}) => {
+  const dir = makeRepo({ stage, files });
   if (prepare) { prepare(dir); commitAll(dir); }
   addSegment(dir, segment());
   return dir;
@@ -747,4 +748,19 @@ test("the CLI prints one JSON document and refuses unknown arguments", () => {
   assert.equal(b.code, 1);
   assert.equal(b.stdout, "");
   assert.doesNotMatch(b.stderr, /at .*\.mjs:\d+/, "no stack trace");
+});
+
+test("a contract step's inputs name every version's file of its id, or the one version's", () => {
+  const dir = begun("06-planned", { files: v2Files() });
+  queue(dir, insert("Q-001", "S01", "contract-touch", "order-api"), accepted("Q-001"), insert("Q-002", "S01", "contract-touch", "order-api.v2"), accepted("Q-002"));
+  const s = stepOf(dir);
+  assert.deepEqual(s.inputs.slice(0, 2), [V1, V2]);
+  assert.ok(s.inputs.includes("hsdd/spec/shop.api.md") && s.inputs.includes("hsdd/adr/001-order-ids.md"), s.inputs.join(", "));
+  step(dir, 2, "contract-touch", "order-api", { queue_item: "Q-001" });
+  queue(dir, addressed("Q-001", "S02"));
+  const v = stepOf(dir);
+  assert.deepEqual([v.kind, v.target, v.skill], ["contract-touch", "order-api.v2", "hsdd-contract"]);
+  assert.equal(v.inputs[0], V2);
+  assert.ok(!v.inputs.includes(V1), v.inputs.join(", "));
+  assert.ok(v.write_set.includes("hsdd/contract/**"));
 });

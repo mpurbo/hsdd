@@ -157,7 +157,7 @@ whenever it runs with `--unattended`, and may write it otherwise.
   |------|-------|--------|
   | `root-spec`, `mid-level-spec`, `graft`, `promote`, `spec-touch` | `hsdd-spec` | a node id |
   | `adr`, `adr-update` | `hsdd-adr` | an ADR id |
-  | `contract`, `contract-touch` | `hsdd-contract` | a contract slug |
+  | `contract`, `contract-touch` | `hsdd-contract` | a contract slug (its `id`; `{id}.v{n}` names one later version) |
   | `citation-touch` | by the file: `hsdd-spec`, `hsdd-adr` or `hsdd-contract` | a node id, ADR id or contract slug |
   | `phase-plan`, `phase-plan-append` | `hsdd-phase-plan` | a leaf-parent's node id |
   | `reconcile`, `align` | `hsdd-reconcile` | node ids, comma-separated, or `all` |

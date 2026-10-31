@@ -213,3 +213,25 @@ test("RAISED_WHEN quotes 8.2", () => {
   assert.ok(RAISED_WHEN["breaking-amend"].endsWith("(`hsdd-contract`'s versioning policy)."));
   assert.ok(validate("run-config", baseConfig()).length === 0);
 });
+
+// ---------- contract versions (v0.10.0 §3.1) ----------
+
+test("targetType: `{id}.v{n}` names one version of a contract id; a dotted id that is not one stays a node", () => {
+  assert.equal(targetType("order-api.v2", tree), "contract");
+  assert.equal(targetType("order-api.v12", tree), "contract");
+  assert.equal(targetType("pay-api.v2", tree), "node");
+  assert.equal(targetType("order-api.vx", tree), "node");
+  assert.equal(skillFor("citation-touch", "order-api.v2", tree), "hsdd-contract");
+  assert.equal(decisionTypeFor("citation-touch", "order-api.v2", tree, "shop"), "contract");
+});
+
+test("a contract citation touch writes every version's files of the id, or the one version's", () => {
+  const v1 = { slug: "order-api", stem: "order-api", file: "hsdd/contract/order-api.md", version: "v1" };
+  const v2 = { slug: "order-api", stem: "order-api.v2", file: "hsdd/contract/order-api.v2.md", version: "v2" };
+  const versioned = { ...ctx, tree: { ...tree, contracts: new Map([["order-api", { ...v2, versions: [v1, v2] }]]) } };
+  const all = writeSet("citation-touch", "order-api", versioned);
+  for (const p of ["hsdd/contract/order-api.md", "hsdd/contract/fixture/order-api/**", "hsdd/contract/schema/order-api.schema.json",
+    "hsdd/contract/order-api.v2.md", "hsdd/contract/fixture/order-api.v2/**", "hsdd/contract/schema/order-api.v2.schema.json"]) assert.ok(all.includes(p), p);
+  const one = writeSet("citation-touch", "order-api.v2", versioned);
+  assert.ok(one.includes("hsdd/contract/order-api.v2.md") && !one.includes("hsdd/contract/order-api.md"), one.join(", "));
+});
