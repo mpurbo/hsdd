@@ -177,12 +177,10 @@ the laptop's own zone `Asia/Jakarta`.
 - Escaped defects: none known yet.
 
 ## Sign-off
-- Reviewer / date:
-- Review tier applied:
-- Disposition of each Outstanding item: verified | waived (reason) |
-  deferred to {phase-id}
-- Disposition of each Learning: spec-updated | contract-bumped (id@v) |
-  adr-proposed (ADR-nnn) | dropped (reason)
+- Reviewer / date: Claude for Purbo Mohamad (owner proxy, delegated by the owner before the run), 2026-11-01
+- Review tier applied: spot-check: the diff read by file list and size (8 files under web/, 675 lines added), the gate rerun green by the orchestrator (10 files, 199 tests), the fresh reviewer's report read (0 Critical, 1 Important and 1 raised Minor, both fixed with failing-mutant evidence)
+- Disposition of each Outstanding item: none outstanding
+- Disposition of each Learning: all five dropped, each with the reason recorded above; the stale project verification template is noted for the owner
 
 > The review gate is not passed while an Outstanding item or a Learning
 > lacks a disposition. Dispositions execute at the root through the owning
