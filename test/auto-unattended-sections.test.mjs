@@ -43,7 +43,7 @@ test("hsdd-spec carries Touch and Citation touch", () => {
   assert.ok(t.includes("**Touch.** Invoked as `touch {node}: {reason}`"));
   assert.ok(t.includes("Never edit the node's `## Phase Plan`, except under the Citation touch paragraph"));
   assert.ok(t.includes("**Citation touch.**") && t.includes("`citation touch {file}: move its citations to the current versions`"));
-  assert.ok(t.includes("ticket | incident)"));
+  assert.ok(t.includes("(accepted RFC | approved PRD | draft | braindump | ticket | incident)"));
   assert.ok(t.includes("Promote `{node}` from as-built to governed with this decomposition?"));
   assert.ok(t.includes("informative only, not decomposed"));
 });

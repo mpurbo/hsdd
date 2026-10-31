@@ -83,7 +83,8 @@ intermediate internal node (a "feature") rather than forcing a fixed tier.
    **Inventory the sources.** When the input includes or references
    documents (PRD, RFC, design doc, ticket), list each in a `## Sources`
    section of the root spec — path or URL, its authority (accepted RFC |
-   draft | braindump | ticket | incident), and one line on what it governs:
+   approved PRD | draft | braindump | ticket | incident), and one line on
+   what it governs:
 
    ```markdown
    ## Sources

@@ -2104,7 +2104,8 @@ section order; record each change as a decision." The `spec-touch` kind
 (§7.1) invokes it.
 
 Three more lines for `hsdd-spec`: its `## Sources` authority list gains
-`incident`; promotion mode's confirmation stop asks one fixed question,
+`approved PRD`, which v0.10.0 §2.6 already lists, and `incident`; promotion
+mode's confirmation stop asks one fixed question,
 "Promote `{node}` from as-built to governed with this decomposition?", which
 an unattended run returns verbatim; and its gate phrase "informative only,
 not decomposed" is matched on its words, whatever separator the project's
