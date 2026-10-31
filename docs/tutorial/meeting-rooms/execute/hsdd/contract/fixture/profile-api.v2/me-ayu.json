@@ -1,6 +1,6 @@
 {
   "name": "me-ayu",
-  "description": "Ayu's token returns Ayu's profile, phone number included.",
+  "description": "Ayu's token returns Ayu's profile, phone number and time zone included.",
   "request": {
     "method": "GET",
     "path": "/api/me",
@@ -14,7 +14,8 @@
       "displayName": "Ayu Lestari",
       "email": "ayu@example.com",
       "phone": "+62 812 3456 7890",
-      "memberSince": "2024-03-14"
+      "memberSince": "2024-03-14",
+      "timeZone": "Asia/Jakarta"
     }
   },
   "replay": "exact"

@@ -75,6 +75,10 @@
         "memberSince": {
           "type": "string",
           "format": "date"
+        },
+        "timeZone": {
+          "type": "string",
+          "pattern": "^[A-Za-z_]+(/[A-Za-z0-9_+-]+)+$"
         }
       },
       "additionalProperties": false

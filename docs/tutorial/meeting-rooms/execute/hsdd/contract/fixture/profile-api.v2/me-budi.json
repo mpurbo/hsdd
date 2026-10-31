@@ -1,6 +1,6 @@
 {
   "name": "me-budi",
-  "description": "Budi's token returns Budi's profile, not anyone else's.",
+  "description": "Budi's token returns Budi's profile, not anyone else's, with Budi's own time zone.",
   "request": {
     "method": "GET",
     "path": "/api/me",
@@ -14,7 +14,8 @@
       "displayName": "Budi Santoso",
       "email": "budi@example.com",
       "phone": "+62 813 9876 5432",
-      "memberSince": "2025-01-09"
+      "memberSince": "2025-01-09",
+      "timeZone": "Europe/London"
     }
   },
   "replay": "exact"
