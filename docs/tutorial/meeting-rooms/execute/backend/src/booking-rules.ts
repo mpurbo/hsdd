@@ -1,7 +1,7 @@
 // booking-api@v1's rules as pure functions: no I/O, no framework, no clock read
 // (the time arrives as an argument) and no time zone, because the backend
 // works in instants only (ADR-002 Decision 4).
-import type { NewBooking, Result } from "./domain.ts";
+import type { Booking, NewBooking, Result, Room, StoredBooking } from "./domain.ts";
 import { ROOMS } from "./rooms.ts";
 
 /** G1: a string in exactly the form toISOString() writes, with a four-digit year. */
@@ -76,4 +76,35 @@ export function checkNewBooking(request: NewBookingRequest): Result<NewBooking, 
   if (nowMs >= startMs) return fail("BOOKING_STARTED");
   if (startMs - nowMs > MAX_AHEAD_MS) return fail("BOOKING_TOO_FAR_AHEAD");
   return { ok: true, value: booking };
+}
+
+export type RoomWithBookings = Room & { bookings: Booking[] };
+
+const roomIndex = (roomId: string): number => {
+  const index = ROOMS.findIndex((room) => room.id === roomId);
+  // The rules refuse an unknown room before any write (D3): reaching one here is a defect.
+  if (index < 0) throw new Error(`no pre-loaded room has the id ${roomId}`);
+  return index;
+};
+
+/** booking-api@v1's Booking: the room's name added, the instants as toISOString(), no account. */
+export function toWireBooking(booking: StoredBooking): Booking {
+  const { id, roomId, title, start, end } = booking;
+  return { id, roomId, roomName: ROOMS[roomIndex(roomId)]!.name, title, start: start.toISOString(), end: end.toISOString() };
+}
+
+const byStart = (a: StoredBooking, b: StoredBooking): number => a.start.getTime() - b.start.getTime();
+
+/** G13: every room in D3's order, each with its bookings earliest start first, [] for none. */
+export function roomsView(bookings: readonly StoredBooking[]): { rooms: RoomWithBookings[] } {
+  const sorted = bookings.toSorted(byStart);
+  return {
+    rooms: ROOMS.map((room) => ({ ...room, bookings: sorted.filter((b) => b.roomId === room.id).map(toWireBooking) })),
+  };
+}
+
+/** G14: the caller's bookings by start, ties in D3's room order. */
+export function myBookingsView(bookings: readonly StoredBooking[]): { bookings: Booking[] } {
+  const ordered = bookings.toSorted((a, b) => byStart(a, b) || roomIndex(a.roomId) - roomIndex(b.roomId));
+  return { bookings: ordered.map(toWireBooking) };
 }

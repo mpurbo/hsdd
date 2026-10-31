@@ -1,6 +1,15 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { checkNewBooking, checkRoomsQuery, isInstant, isQuarterHourInstant } from "../src/booking-rules.ts";
+import {
+  checkNewBooking,
+  checkRoomsQuery,
+  isInstant,
+  isQuarterHourInstant,
+  myBookingsView,
+  roomsView,
+  toWireBooking,
+} from "../src/booking-rules.ts";
+import type { StoredBooking } from "../src/domain.ts";
 
 const refused = { ok: false, error: { code: "VALIDATION_FAILED" } };
 
@@ -182,5 +191,47 @@ describe("POST /api/bookings limits, in order (G7, G9, G10, G15)", () => {
     expect(at("2028-01-01T00:00:00.000Z", "2028-01-01T09:00:00.000Z")).toBe("BOOKING_TOO_LONG");
     const invalidAndLong = book({ ...valid, start: "2026-11-05T01:00:00.000Z", end: "2026-11-05T09:15:00.000Z", title: "" }, "application/json", new Date("2026-11-05T02:00:00.000Z"));
     expect(invalidAndLong).toStrictEqual(refused);
+  });
+});
+
+const stored = (id: string, roomId: string, start: string, end: string, accountId = "u_001"): StoredBooking => ({
+  id, roomId, accountId, title: `Title ${id}`, start: new Date(start), end: new Date(end),
+});
+
+describe("views (G13, G14)", () => {
+  it("a stored booking on the wire gains roomName and carries no account", () => {
+    expect(toWireBooking(stored("b1", "thames", "2026-11-05T10:00:00.000Z", "2026-11-05T11:00:00.000Z"))).toStrictEqual({
+      id: "b1", roomId: "thames", roomName: "Thames", title: "Title b1", start: "2026-11-05T10:00:00.000Z", end: "2026-11-05T11:00:00.000Z",
+    });
+  });
+
+  it("a booking of no known room is a defect, not a view", () => {
+    expect(() => toWireBooking(stored("x", "everest", "2026-11-05T10:00:00.000Z", "2026-11-05T11:00:00.000Z"))).toThrow(/everest/);
+  });
+
+  it("G13: every room in D3's order, each with its bookings earliest start first", () => {
+    const late = stored("late", "thames", "2026-11-05T12:00:00.000Z", "2026-11-05T13:00:00.000Z");
+    const early = stored("early", "thames", "2026-11-05T09:00:00.000Z", "2026-11-05T10:00:00.000Z", "u_002");
+    const merapi = stored("m", "merapi", "2026-11-05T02:00:00.000Z", "2026-11-05T03:00:00.000Z");
+    const input = [late, early, merapi];
+    const { rooms } = roomsView(input);
+    expect(rooms.map((r) => r.id)).toStrictEqual(["merapi", "bromo", "thames", "kew"]);
+    expect(rooms[0]).toStrictEqual({ id: "merapi", name: "Merapi", office: "Jakarta", timeZone: "Asia/Jakarta", seats: 8, bookings: [toWireBooking(merapi)] });
+    expect(rooms[2]!.bookings.map((b) => b.id)).toStrictEqual(["early", "late"]);
+    expect(input).toStrictEqual([late, early, merapi]);
+  });
+
+  it("G13: a room with no booking has bookings []", () => {
+    expect(roomsView([]).rooms.map((r) => r.bookings)).toStrictEqual([[], [], [], []]);
+  });
+
+  it("G14: my bookings by start, ties in D3's room order", () => {
+    const kew = stored("k", "kew", "2026-11-05T09:00:00.000Z", "2026-11-05T10:00:00.000Z");
+    const merapi = stored("m", "merapi", "2026-11-05T09:00:00.000Z", "2026-11-05T10:00:00.000Z");
+    const thames = stored("t", "thames", "2026-11-05T08:00:00.000Z", "2026-11-05T09:00:00.000Z");
+    const bromo = stored("b", "bromo", "2026-11-05T09:00:00.000Z", "2026-11-05T09:30:00.000Z");
+    const input = [kew, merapi, thames, bromo];
+    expect(myBookingsView(input).bookings.map((b) => b.id)).toStrictEqual(["t", "m", "b", "k"]);
+    expect(input).toStrictEqual([kew, merapi, thames, bromo]);
   });
 });
