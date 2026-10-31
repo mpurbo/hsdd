@@ -52,7 +52,8 @@
   cursor: pointer;
 }
 
-.home-card button:hover {
+/* A disabled button (a busy Cancel) keeps its look under the pointer. */
+.home-card button:hover:not(:disabled) {
   background: #f1f5f9;
 }
 
@@ -99,11 +100,27 @@
 .home-booking-what span {
   min-width: 0;
   overflow-wrap: anywhere;
+  /* The title is shown as received, its spaces included. */
+  white-space: pre-wrap;
 }
 
 .home-booking-what button {
   flex: none;
+  /* Wide enough for "Cancelling…", so the label change does not move the row. */
+  min-width: 8em;
   padding: 6px 10px;
+}
+
+.home-booking-what button:disabled {
+  color: #94a3b8;
+  border-color: #e2e8f0;
+  cursor: default;
+}
+
+/* A Cancel's refusal or failure, coloured as Login's failure message is. */
+.home-bookings-notice {
+  font-size: 0.875rem;
+  color: #b91c1c;
 }
 
 .home-bookings-unavailable {

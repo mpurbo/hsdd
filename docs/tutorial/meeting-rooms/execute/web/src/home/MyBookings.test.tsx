@@ -1,4 +1,4 @@
-import { act, render, screen, within } from '@testing-library/react'
+import { act, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import {
@@ -159,6 +159,8 @@ describe('MyBookings: Cancel (AC-6.2, D9, D10)', () => {
     expect(await screen.findByText('(no bookings)')).toBeInTheDocument()
     expect(stub.calls[1]).toMatchObject({ method: 'DELETE', path: DESIGN, headers: { authorization: `Bearer ${TOKEN}` } })
     expect(routes(stub.calls)).toEqual([LIST, `DELETE ${DESIGN}`, LIST])
+    // The pressed button left with its booking, so focus fell to the body: it moves to the section's heading.
+    await waitFor(() => expect(screen.getByRole('heading', { level: 2, name: 'My bookings' })).toHaveFocus())
   })
 
   it.each([
@@ -170,11 +172,11 @@ describe('MyBookings: Cancel (AC-6.2, D9, D10)', () => {
     const { user } = renderList()
     await screen.findAllByRole('listitem')
     await user.click(cancelOf('Design review'))
-    const status = await screen.findByRole('status')
-    expect(status.textContent).toBe(message)
+    const notice = await screen.findByRole('alert')
+    expect(notice.textContent).toBe(message)
     // Settled: the pressed Cancel is back once the refetch has answered (design note 2).
     await vi.waitFor(() => expect(within(itemOf('Design review')).getByRole('button', { name: 'Cancel' })).toBeEnabled())
-    expect(follows(status, screen.getByRole('list'))).toBe(true)
+    expect(follows(notice, screen.getByRole('list'))).toBe(true)
     expect(screen.getAllByRole('listitem')).toHaveLength(4)
     expect(routes(stub.calls)).toEqual([LIST, `DELETE ${DESIGN}`, LIST])
   })
@@ -189,7 +191,7 @@ describe('MyBookings: Cancel (AC-6.2, D9, D10)', () => {
     const { user } = renderList()
     await screen.findAllByRole('listitem')
     await user.click(cancelOf('Design review'))
-    expect((await screen.findByRole('status')).textContent).toBe('You can cancel only your own bookings.')
+    expect((await screen.findByRole('alert')).textContent).toBe('You can cancel only your own bookings.')
     await vi.waitFor(() => expect(within(itemOf('Design review')).getByRole('button', { name: 'Cancel' })).toBeEnabled())
   })
 
@@ -213,9 +215,9 @@ describe('MyBookings: Cancel (AC-6.2, D9, D10)', () => {
     const { user, onSessionExpired } = renderList()
     await screen.findAllByRole('listitem')
     await user.click(cancelOf('Design review'))
-    const status = await screen.findByRole('status')
-    expect(status.textContent).toBe('Could not reach the server. Please try again.')
-    expect(follows(status, screen.getByRole('list'))).toBe(true)
+    const notice = await screen.findByRole('alert')
+    expect(notice.textContent).toBe('Could not reach the server. Please try again.')
+    expect(follows(notice, screen.getByRole('list'))).toBe(true)
     expect(screen.getAllByRole('listitem')).toHaveLength(4)
     expect(within(itemOf('Design review')).getByRole('button', { name: 'Cancel' })).toBeEnabled()
     expect(routes(stub.calls)).toEqual([LIST, `DELETE ${DESIGN}`])
@@ -232,10 +234,10 @@ describe('MyBookings: Cancel (AC-6.2, D9, D10)', () => {
     await screen.findAllByRole('listitem')
     await user.click(cancelOf('Design review'))
     await vi.waitFor(() => expect(within(itemOf('Design review')).getByRole('button', { name: 'Cancel' })).toBeEnabled())
-    expect(screen.getByRole('status')).toBeInTheDocument()
+    expect(screen.getByRole('alert')).toBeInTheDocument()
     await user.click(cancelOf('Quick check'))
     await vi.waitFor(() => expect(within(itemOf('Quick check')).getByRole('button', { name: 'Cancel' })).toBeEnabled())
-    expect(screen.queryByRole('status')).not.toBeInTheDocument()
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
     expect(routes(stub.calls)).toEqual([LIST, `DELETE ${DESIGN}`, LIST, `DELETE ${QUICK}`, LIST])
   })
 
@@ -301,5 +303,36 @@ describe('MyBookings: Cancel (AC-6.2, D9, D10)', () => {
     await stub.answer(4, 200, bodyOf('my-bookings-none'))
     expect(screen.getByRole('region', { name: 'My bookings' })).toHaveTextContent('(no bookings)')
     expect(screen.queryAllByRole('listitem')).toHaveLength(0)
+  })
+
+  it('leaves focus where the user moved it while the Cancel was in flight', async () => {
+    const stub = stubFetchDeferred()
+    const { user } = renderList()
+    await stub.answer(0, 200, bodyOf('my-bookings-budi'))
+    await user.click(cancelOf('Design review'))
+    const quick = cancelOf('Quick check')
+    quick.focus()
+    await stub.answer(1, 422, bodyOf('cancel-started'))
+    await stub.answer(2, 200, bodyOf('my-bookings-budi'))
+    // Settled: the notice shows and the pressed Cancel is back.
+    expect(screen.getByRole('alert')).toHaveTextContent('That booking has already started, so it cannot be cancelled.')
+    expect(within(itemOf('Design review')).getByRole('button', { name: 'Cancel' })).toBeEnabled()
+    expect(quick).toHaveFocus()
+  })
+
+  it("describes each Cancel by its booking's two lines, keeping the name Cancel", async () => {
+    stubFetch(fixture('my-bookings-budi'))
+    renderList()
+    await screen.findAllByRole('listitem')
+    const buttons = screen.getAllByRole('button', { name: 'Cancel' })
+    expect(buttons).toHaveLength(4)
+    // The accessible description flattens whitespace, so the line's two spaces read as one.
+    const descriptions = [
+      'Thu 5 Nov 09:00 to 10:00 Merapi · Ongoing sync',
+      'Thu 5 Nov 10:00 to 11:00 Thames · Design review',
+      'Thu 5 Nov 10:00 to 10:30 Kew · Quick check',
+      'Thu 12 Nov 10:00 to 11:00 Merapi · Next week',
+    ]
+    buttons.forEach((button, i) => expect(button).toHaveAccessibleDescription(descriptions[i]))
   })
 })

@@ -42,11 +42,15 @@ const excluding = (ids: ReadonlySet<string>, id: string): ReadonlySet<string> =>
  */
 export function MyBookings({ token, zone, onSessionExpired }: MyBookingsProps) {
   const headingId = useId()
+  const linesId = useId()
+  const headingRef = useRef<HTMLHeadingElement>(null)
   const [list, setList] = useState<ListState>({ kind: 'loading' })
   const [notice, setNotice] = useState<string | undefined>(undefined)
   // Ids whose Cancel is in flight. Each stays busy until its DELETE and the
   // refetch it triggers have settled (design note 2).
   const [cancelling, setCancelling] = useState<ReadonlySet<string>>(() => new Set())
+  // Counts the Cancels that have settled on screen; each one triggers the focus check below.
+  const [cancelsSettled, setCancelsSettled] = useState(0)
   const alive = useRef(false)
   const newest = useRef(0)
   // Design note 4: read through a ref, so a new callback identity never
@@ -88,6 +92,16 @@ export function MyBookings({ token, zone, onSessionExpired }: MyBookingsProps) {
     }
   }, [load])
 
+  // After a Cancel settles, focus that fell to the body (its button removed
+  // with the booking, or disabled while busy) moves to the section's heading.
+  // Focus the user has put anywhere else stays there. Runs after the commit,
+  // so a removed button is already gone.
+  useLayoutEffect(() => {
+    if (cancelsSettled === 0) return
+    const active = document.activeElement
+    if (active === null || active === document.body) headingRef.current?.focus()
+  }, [cancelsSettled])
+
   const cancel = async (id: string): Promise<void> => {
     setNotice(undefined)
     setCancelling((ids) => including(ids, id))
@@ -104,12 +118,20 @@ export function MyBookings({ token, zone, onSessionExpired }: MyBookingsProps) {
       if (result.reason !== 'unavailable') await load()
     }
     setCancelling((ids) => excluding(ids, id))
+    setCancelsSettled((n) => n + 1)
   }
 
   return (
     <section className="home-bookings" aria-labelledby={headingId}>
-      <h2 id={headingId}>My bookings</h2>
-      {notice === undefined ? null : <p role="status">{notice}</p>}
+      <h2 id={headingId} ref={headingRef} tabIndex={-1}>
+        My bookings
+      </h2>
+      {/* The outcome of the user's own action, so an alert, as Login's failure is. */}
+      {notice === undefined ? null : (
+        <p className="home-bookings-notice" role="alert">
+          {notice}
+        </p>
+      )}
       {list.kind === 'loading' ? (
         <p>Loading…</p>
       ) : list.kind === 'unavailable' ? (
@@ -118,15 +140,25 @@ export function MyBookings({ token, zone, onSessionExpired }: MyBookingsProps) {
         <p>{MESSAGES.noBookings}</p>
       ) : (
         <ul className="home-booking-list">
-          {list.bookings.map((booking) => {
+          {list.bookings.map((booking, index) => {
             const line = bookingLine(booking, zone)
             const busy = cancelling.has(booking.id)
+            // Ids from the position, not the booking id: an IDREF list cannot hold a space.
+            const whenId = `${linesId}-${index}-when`
+            const whatId = `${linesId}-${index}-what`
             return (
               <li key={line.id}>
-                <p className="home-booking-when">{line.when}</p>
+                <p className="home-booking-when" id={whenId}>
+                  {line.when}
+                </p>
                 <p className="home-booking-what">
-                  <span>{line.what}</span>
-                  <button type="button" disabled={busy} onClick={() => void cancel(booking.id)}>
+                  <span id={whatId}>{line.what}</span>
+                  <button
+                    type="button"
+                    aria-describedby={`${whenId} ${whatId}`}
+                    disabled={busy}
+                    onClick={() => void cancel(booking.id)}
+                  >
                     {busy ? 'Cancelling…' : 'Cancel'}
                   </button>
                 </p>
