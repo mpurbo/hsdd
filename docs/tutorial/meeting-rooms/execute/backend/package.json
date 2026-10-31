@@ -10,8 +10,8 @@
   "scripts": {
     "start": "node src/server.ts",
     "test": "vitest run",
-    "gate": "tsc --noEmit && vitest run",
-    "replay": "vitest run test/contract.replay.test.ts",
+    "gate": "npm run db:up && tsc --noEmit && TZ=Asia/Kolkata vitest run",
+    "replay": "npm run db:up && TZ=Asia/Kolkata vitest run test/contract.replay.test.ts",
     "db:up": "node scripts/db-up.mjs up",
     "db:down": "node scripts/db-up.mjs down"
   },

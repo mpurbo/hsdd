@@ -43,4 +43,10 @@ describe("package", () => {
     const pkg = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8"));
     expect(pkg.engines.node).toBe(">=24.2");
   });
+
+  it("the gate and the replay start PostgreSQL and run in Asia/Kolkata", () => {
+    const pkg = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8"));
+    expect(pkg.scripts.gate).toBe("npm run db:up && tsc --noEmit && TZ=Asia/Kolkata vitest run");
+    expect(pkg.scripts.replay).toBe("npm run db:up && TZ=Asia/Kolkata vitest run test/contract.replay.test.ts");
+  });
 });
