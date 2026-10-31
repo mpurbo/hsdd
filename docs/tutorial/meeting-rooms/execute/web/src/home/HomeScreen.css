@@ -60,3 +60,48 @@
   outline: 2px solid #2563eb;
   outline-offset: 1px;
 }
+
+.home-bookings {
+  display: grid;
+  gap: 8px;
+}
+
+.home-bookings h2 {
+  margin: 0;
+  font-size: 1.0625rem;
+}
+
+.home-bookings p {
+  margin: 0;
+}
+
+.home-booking-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 12px;
+  font-size: 0.9375rem;
+}
+
+.home-booking-when {
+  white-space: pre-wrap;
+  color: #64748b;
+}
+
+.home-booking-what {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.home-booking-what span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.home-booking-what button {
+  flex: none;
+  padding: 6px 10px;
+}

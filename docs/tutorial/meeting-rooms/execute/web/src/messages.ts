@@ -6,4 +6,6 @@ export const MESSAGES = {
   unavailable: 'Could not reach the server. Please try again.',
   /** AC-2.3, D1: GET /api/me answered 401. */
   sessionExpired: 'Your session has expired. Please sign in again.',
+  /** AC-6.1: the list is empty. */
+  noBookings: '(no bookings)',
 } as const
