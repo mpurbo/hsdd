@@ -210,6 +210,8 @@ Handoff prompts, in order:
 ## Produced
 - none yet: grafts, bumps and ADRs are appended as the handoffs land;
   `hsdd-checkpoint` appends phases from their Scope citations
+- ADRs amended: ADR-001, ADR-002
 
 ## Change log
 - 2026-10-31: created, routed cross-node (S02; DEC-005 to DEC-016)
+- 2026-10-31: hsdd-auto segment 2026-10-31-intake-prd-simple-login-v2: ADRs amended ADR-001, ADR-002
