@@ -1457,7 +1457,8 @@ final` (§9.1); the
 registries regenerate clean;
 every cited id resolves; the ledger validates; and the working tree is clean
 apart from `owner_files`. The intake record stays `**Status:** open` until
-its phases ship (v0.10.0 §11.5); `hsdd-auto` never closes it.
+`hsdd-checkpoint` counts its phases done (v0.10.0 §11.5); `hsdd-auto` never
+closes it.
 
 ### 9.3 When the request is a new version of a source
 
