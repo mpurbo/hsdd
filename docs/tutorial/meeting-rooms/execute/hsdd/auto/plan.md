@@ -39,8 +39,10 @@ Decisions expected: the request's class and landing (the tree's backend, web and
 | S23 | 2026-10-31-intake-prd-simple-login-v2 | spec-touch | hsdd-spec | simple-login.backend | completed | eee2b6d |
 | S24 | 2026-10-31-intake-prd-simple-login-v2 | phase-plan-append | hsdd-phase-plan | simple-login.backend | completed | 14073d3 |
 | S25 | 2026-10-31-intake-prd-simple-login-v2 | reconcile | hsdd-reconcile | simple-login.backend | completed | 2d79322 |
+| S26 | 2026-10-31-intake-prd-simple-login-v2 | spec-touch | hsdd-spec | simple-login.integration | completed | 10b8e59 |
 
 ## Change log
 
 - DEC-001: `sources` in `hsdd/auto/run.yaml`: PRD v2 (`hsdd/context/prd-simple-login.v2.md`, version 2) joins the normative sources; PRD v1 and update 1 move to baseline with their versions; RFC-001 stays normative.
 - DEC-209: inserted a phase-plan-append on simple-login.backend (Q-084, rewriting the unshipped simple-login.backend.7 in place) and a reconcile on simple-login.backend after it (Q-085), per the intake record's insert rule.
+- DEC-222: inserted a phase-plan-append on simple-login.integration (Q-086) rewriting the unshipped simple-login.integration.3's Scope (b) in place; no reconcile after it.
