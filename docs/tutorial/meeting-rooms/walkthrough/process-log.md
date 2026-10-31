@@ -785,3 +785,25 @@ outage with the process alive, 200 right after `db:up`.
   Constraints; the phase agent shared a common-context file instead.
 
 ### 04:44 · integration.3 (full-review), after the backend lane
+
+**web.8, 04:08 to 05:00 (agent), signed 05:03.** Rooms on a date with
+each booking's lines in the user's zone and the office's, Book a room on
+Home, and App moving between the two. The item web.7's sign-off left for
+it is closed: an expiry now carries the token of the request that got the
+401, and App clears storage only while storage still holds that token;
+single-guard mutants show each check is needed. Gate 296 to 331. Full
+review: a comment claiming either guard alone was enough (Important,
+from the agent's own plan); the final reviewer found the Rooms header
+jumping about 107 px on every date change and `Loading…` not pinned after
+one (both fixed). 360 px screenshots committed as evidence. Owner-proxy
+rulings at sign-off: focus on a screen change and a retry on Rooms are
+product improvements for a later intake.
+
+### 05:04 · web.9 (full-review), with integration.3 still running
+
+### 05:30 to 06:50 · paused on the account's usage limit
+
+Both running phase agents (integration.3 and web.9) stopped on the
+account's five-hour usage limit. Their work was committed or left in their
+worktrees; after the reset each was resumed with a message telling it to
+read `git log` and `git status` first and carry on. Nothing was lost.
