@@ -258,6 +258,15 @@ describe("DELETE /api/bookings/{id} (G11, G12)", () => {
     }
   });
 
+  it("G15: a malformed id is BOOKING_NOT_FOUND even when the booking is another account's or has started", () => {
+    // An upper-case id can still find its lower-case row in a uuid column; the id's form must answer first.
+    const hex = stored("00000000-0000-4000-8000-0000000000ff", "merapi", "2026-11-05T02:00:00.000Z", "2026-11-05T03:00:00.000Z");
+    const upper = "00000000-0000-4000-8000-0000000000FF";
+    expect(cancel(upper, hex, NOW, "u_002")).toBe("BOOKING_NOT_FOUND");
+    expect(cancel(upper, hex, hex.start)).toBe("BOOKING_NOT_FOUND");
+    expect(cancel(upper, hex, hex.start, "u_002")).toBe("BOOKING_NOT_FOUND");
+  });
+
   it("an id that names no booking is BOOKING_NOT_FOUND", () => {
     expect(cancel("00000000-0000-4000-8000-0000000000ff", undefined)).toBe("BOOKING_NOT_FOUND");
   });
