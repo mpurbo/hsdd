@@ -100,12 +100,25 @@ describe('startOptions', () => {
     expect(s).toHaveLength(59)
     expect(s[0]).toBe('2026-11-05T02:15:00.000Z') // 09:15 in Jakarta: now itself (09:00) is not later than now
   })
+  it('2011-12-30 in Pacific/Apia, a date the zone skipped, has 0 quarter-hour instants', () => {
+    expect(startOptions('2011-12-30', 'Pacific/Apia', EARLY)).toEqual([])
+  })
   it('gives none for 2026-11-04 in Jakarta with now at 2026-11-05T02:00:00.000Z', () => {
     expect(startOptions('2026-11-04', JAKARTA, '2026-11-05T02:00:00.000Z')).toEqual([])
   })
 })
 
+describe('a malformed date', () => {
+  it.each(['', '2026-11-5', '2026-02-30'])('makes startOptions and endOptions throw RangeError for %j', (bad) => {
+    expect(() => startOptions(bad, JAKARTA, EARLY)).toThrow(RangeError)
+    expect(() => endOptions('2026-11-05T02:00:00.000Z', bad, JAKARTA)).toThrow(RangeError)
+  })
+})
+
 describe('endOptions', () => {
+  it('gives 0 ends from the start of the next date: 2026-11-06 00:00 in Jakarta on the line of 2026-11-05', () => {
+    expect(endOptions('2026-11-05T17:00:00.000Z', '2026-11-05', JAKARTA)).toEqual([])
+  })
   it('gives 32 ends from 09:00 on 2026-11-05 in Jakarta: 09:15 to 17:00, the 8-hour limit', () => {
     const e = endOptions('2026-11-05T02:00:00.000Z', '2026-11-05', JAKARTA)
     expect(e).toHaveLength(32)
@@ -186,10 +199,10 @@ describe('formatTime', () => {
   it('puts the date first when the instant falls before the line date (Review Focus 2)', () => {
     expect(formatTime('2026-11-04T16:00:00.000Z', JAKARTA, '2026-11-05')).toBe('Wed 4 Nov 23:00')
   })
-  it('puts the date first and the short name last for a repeated hour on another line date (Review Focus 3)', () => {
+  it("2027-10-31 01:30 BST on 2027-10-30's line: date first, short name last (Review Focus 3)", () => {
     expect(formatTime('2027-10-31T00:30:00.000Z', LONDON, '2027-10-30')).toBe('Sun 31 Oct 01:30 BST')
   })
-  it('2028-04-02 in Australia/Lord_Howe: the half hour the clocks repeat gets short names (Review Focus 5)', () => {
+  it('2028-04-02 in Australia/Lord_Howe: the two 01:30 labels differ, GMT+11 then GMT+10:30 (Review Focus 5)', () => {
     expect(formatTime('2028-04-01T14:30:00.000Z', 'Australia/Lord_Howe', '2028-04-02')).toBe('01:30 GMT+11')
     expect(formatTime('2028-04-01T15:00:00.000Z', 'Australia/Lord_Howe', '2028-04-02')).toBe('01:30 GMT+10:30')
     expect(formatTime('2028-04-01T15:30:00.000Z', 'Australia/Lord_Howe', '2028-04-02')).toBe('02:00')
@@ -200,8 +213,9 @@ describe('formatTime', () => {
     const from22 = endOptions('2026-11-05T15:00:00.000Z', '2026-11-05', JAKARTA).map(label(JAKARTA, '2026-11-05'))
     expect([from22[0], from22.at(-1)]).toEqual(['22:15', 'Fri 6 Nov 00:00'])
   })
-  it('labels the ends from 01:30 BST on 2027-10-31 in London: 01:45 BST, 01:00 GMT and on to 08:30', () => {
+  it('2027-10-31 in London: 32 end labels from 01:30 BST, 01:45 BST, 01:00 GMT and on to 08:30', () => {
     const ends = endOptions('2027-10-31T00:30:00.000Z', '2027-10-31', LONDON).map(label(LONDON, '2027-10-31'))
+    expect(ends).toHaveLength(32)
     expect(ends.slice(0, 2)).toEqual(['01:45 BST', '01:00 GMT'])
     expect(ends.at(-1)).toBe('08:30')
   })
