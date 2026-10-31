@@ -1,6 +1,6 @@
 // The booking store (D5, D6) on a real PostgreSQL 17, in a database of this file's own (D8).
 import { readFileSync } from "node:fs";
-import { Pool } from "pg";
+import { Pool, type PoolClient } from "pg";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { NewBooking } from "../src/domain.ts";
 import { createBookingStore } from "../src/booking-store.ts";
@@ -157,8 +157,11 @@ describe("remove", () => {
       open = false;
       expect(await removing).toBe(true);
     } finally {
-      if (open) await holder.query("ROLLBACK");
-      holder.release();
+      try {
+        if (open) await holder.query("ROLLBACK");
+      } finally {
+        holder.release();
+      }
     }
   });
 });
@@ -265,4 +268,87 @@ describe("restart", () => {
       await second.end();
     }
   });
+});
+
+describe("insert under contention", () => {
+  // X: another account's booking of merapi, written by a second client with plain SQL.
+  const X = slot("02:00", "03:00", { accountId: "u_002" });
+  const later = slot("02:30", "03:30");
+  const insertX = async (other: PoolClient) => {
+    const { rows } = await other.query<{ id: string }>(
+      `INSERT INTO booking (room_id, account_id, title, start_at, end_at)
+       VALUES ($1, $2, $3, $4::timestamptz, $5::timestamptz) RETURNING id`,
+      [X.roomId, X.accountId, X.title, X.start.toISOString(), X.end.toISOString()],
+    );
+    return { id: rows[0].id, ...X };
+  };
+
+  it("reads the room's bookings only once it holds the room's lock (D7)", async () => {
+    const other = await db.pool.connect();
+    let open = false;
+    try {
+      await other.query("BEGIN");
+      open = true;
+      await other.query("SELECT pg_advisory_xact_lock(hashtext('merapi'))");
+      const x = await insertX(other);
+      const inserting = store().insert(later);
+      await blockedOn("advisory");
+      await other.query("COMMIT");
+      open = false;
+      expect(await inserting).toEqual({ ok: false, error: x });
+    } finally {
+      try {
+        if (open) await other.query("ROLLBACK");
+      } finally {
+        other.release();
+      }
+    }
+  });
+
+  it("answers a 23P01 by the re-read, naming the booking it met", async () => {
+    const other = await db.pool.connect();
+    let open = false;
+    try {
+      await other.query("BEGIN");
+      open = true;
+      const x = await insertX(other);
+      const inserting = store().insert(later);
+      await blockedOn("transactionid");
+      await other.query("COMMIT");
+      open = false;
+      expect(await inserting).toEqual({ ok: false, error: x });
+      expect(await count()).toBe(1);
+    } finally {
+      try {
+        if (open) await other.query("ROLLBACK");
+      } finally {
+        other.release();
+      }
+    }
+  });
+
+  it("answers a 40P01 by the re-read, naming the booking it met", async () => {
+    const other = await db.pool.connect();
+    let open = false;
+    try {
+      await other.query("BEGIN");
+      open = true;
+      // The store's session keeps the server's 1 s, so it is the one that finds the cycle and is aborted.
+      await other.query("SET LOCAL deadlock_timeout = '10s'");
+      const x = await insertX(other);
+      const inserting = store().insert(later);
+      await blockedOn("transactionid");
+      // The store holds merapi's lock and waits on X's transaction: this closes the cycle.
+      await other.query("SELECT pg_advisory_xact_lock(hashtext('merapi'))");
+      await other.query("COMMIT");
+      open = false;
+      expect(await inserting).toEqual({ ok: false, error: x });
+    } finally {
+      try {
+        if (open) await other.query("ROLLBACK");
+      } finally {
+        other.release();
+      }
+    }
+  }, 10_000);
 });

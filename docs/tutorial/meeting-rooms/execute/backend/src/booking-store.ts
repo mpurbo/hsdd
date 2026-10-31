@@ -22,7 +22,15 @@ const toStoredBooking = (row: Row): StoredBooking => ({
   end: row.end_at,
 });
 
-const insertOn = async (client: PoolClient, b: NewBooking): Promise<Result<StoredBooking, StoredBooking>> => {
+// One lock per room, held to the end of the transaction (D7).
+const LOCK_ROOM = "SELECT pg_advisory_xact_lock(hashtext($1))";
+
+// One attempt, inside inTransaction: LOCK_ROOM with roomId, then the earliest
+// overlapping booking, else the INSERT. Each statement under READ COMMITTED takes a
+// fresh snapshot, and a commit is visible before its locks are released, so the read
+// after the lock sees every booking of the room committed by an earlier holder.
+const attemptInsert = async (client: PoolClient, b: NewBooking): Promise<Result<StoredBooking, StoredBooking>> => {
+  await client.query(LOCK_ROOM, [b.roomId]);
   const bounds = [b.start.toISOString(), b.end.toISOString()];
   const overlap = await client.query<Row>(
     `SELECT ${COLUMNS} FROM booking
@@ -39,8 +47,14 @@ const insertOn = async (client: PoolClient, b: NewBooking): Promise<Result<Store
   return { ok: true, value: toStoredBooking(inserted.rows[0]) };
 };
 
-// One lock per room, held to the end of the transaction (D7).
-const LOCK_ROOM = "SELECT pg_advisory_xact_lock(hashtext($1))";
+// Only a writer that skips the room's lock can still bring the exclusion constraint
+// (23P01) or a deadlock with that writer (40P01). The answer to contention is the
+// attempt again: it waits for the room's lock, so the booking it met is committed
+// before the re-read names it. After MAX_ATTEMPTS the last error is thrown, so such a
+// writer cannot keep the store retrying forever.
+const MAX_ATTEMPTS = 3;
+const isContention = (error: unknown): boolean =>
+  typeof error === "object" && error !== null && ["23P01", "40P01"].includes((error as { code?: unknown }).code as string);
 
 export function createBookingStore(pool: Pool): BookingStore {
   const inTransaction = async <T>(work: (client: PoolClient) => Promise<T>): Promise<T> => {
@@ -63,7 +77,15 @@ export function createBookingStore(pool: Pool): BookingStore {
     }
   };
   return {
-    insert: (b) => inTransaction((client) => insertOn(client, b)),
+    async insert(b) {
+      for (let attempt = 1; ; attempt++) {
+        try {
+          return await inTransaction((client) => attemptInsert(client, b));
+        } catch (error) {
+          if (!isContention(error) || attempt === MAX_ATTEMPTS) throw error;
+        }
+      }
+    },
     async overlapping(from, to) {
       const { rows } = await pool.query<Row>(
         `SELECT ${COLUMNS} FROM booking
