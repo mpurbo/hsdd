@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useId, useRef, useState } from 'react'
-import { fetchMyBookings } from '../api/client'
-import type { Booking } from '../api/types'
+import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from 'react'
+import { cancelBooking, fetchMyBookings } from '../api/client'
+import type { Booking, CancelFailure } from '../api/types'
 import { MESSAGES } from '../messages'
 import type { ZoneName } from '../time/time'
 import { bookingLine } from './bookingLines'
@@ -17,18 +17,45 @@ type ListState =
   | { readonly kind: 'unavailable' }
 
 /**
- * The user's bookings (AC-6.1). The list on screen is always the last answer of
- * GET /api/me/bookings (design note 2). Latest request wins, and an answer
- * after unmount is dropped, `onSessionExpired` included (design note 3).
+ * The notice above the list after a Cancel (design note 6): D10's message for
+ * a refusal, D3's for anything else. The client decides the failure from
+ * `error.code` alone, so `error.message` never reaches the screen (D10).
+ * `unauthorized` has no notice: it ends the session (D1).
+ */
+const CANCEL_NOTICE: Readonly<Record<Exclude<CancelFailure, 'unauthorized'>, string>> = {
+  started: MESSAGES.cancelStarted,
+  'not-found': MESSAGES.cancelNotFound,
+  'not-yours': MESSAGES.cancelNotYours,
+  unavailable: MESSAGES.unavailable,
+}
+
+const including = (ids: ReadonlySet<string>, id: string): ReadonlySet<string> => new Set([...ids, id])
+
+const excluding = (ids: ReadonlySet<string>, id: string): ReadonlySet<string> =>
+  new Set([...ids].filter((other) => other !== id))
+
+/**
+ * The user's bookings (AC-6.1), each with Cancel (AC-6.2, D9). The list on
+ * screen is always the last answer of GET /api/me/bookings, never edited here
+ * (design note 2). Latest request wins, and an answer after unmount is
+ * dropped, `onSessionExpired` included (design note 3).
  */
 export function MyBookings({ token, zone, onSessionExpired }: MyBookingsProps) {
   const headingId = useId()
   const [list, setList] = useState<ListState>({ kind: 'loading' })
+  const [notice, setNotice] = useState<string | undefined>(undefined)
+  // Ids whose Cancel is in flight. Each stays busy until its DELETE and the
+  // refetch it triggers have settled (design note 2).
+  const [cancelling, setCancelling] = useState<ReadonlySet<string>>(() => new Set())
   const alive = useRef(false)
   const newest = useRef(0)
-  // Design note 4: read through a ref, so a new callback identity never refetches.
+  // Design note 4: read through a ref, so a new callback identity never
+  // refetches. Written in a layout effect, not during render; it commits
+  // before any answer can arrive.
   const onSessionExpiredRef = useRef(onSessionExpired)
-  onSessionExpiredRef.current = onSessionExpired
+  useLayoutEffect(() => {
+    onSessionExpiredRef.current = onSessionExpired
+  })
 
   // Settles after its answer has been applied, or dropped as stale or after unmount.
   const load = useCallback(async (): Promise<void> => {
@@ -48,9 +75,28 @@ export function MyBookings({ token, zone, onSessionExpired }: MyBookingsProps) {
     }
   }, [load])
 
+  const cancel = async (id: string): Promise<void> => {
+    setNotice(undefined)
+    setCancelling((ids) => including(ids, id))
+    const result = await cancelBooking(token, id)
+    if (!alive.current) return
+    if (result.ok) {
+      await load()
+    } else if (result.reason === 'unauthorized') {
+      onSessionExpiredRef.current()
+      return
+    } else {
+      setNotice(CANCEL_NOTICE[result.reason])
+      // D3 keeps the list as it is; a refusal shows it fetched again (design note 6).
+      if (result.reason !== 'unavailable') await load()
+    }
+    setCancelling((ids) => excluding(ids, id))
+  }
+
   return (
     <section className="home-bookings" aria-labelledby={headingId}>
       <h2 id={headingId}>My bookings</h2>
+      {notice === undefined ? null : <p role="status">{notice}</p>}
       {list.kind === 'loading' ? (
         <p>Loading…</p>
       ) : list.kind === 'unavailable' ? (
@@ -61,12 +107,15 @@ export function MyBookings({ token, zone, onSessionExpired }: MyBookingsProps) {
         <ul className="home-booking-list">
           {list.bookings.map((booking) => {
             const line = bookingLine(booking, zone)
+            const busy = cancelling.has(booking.id)
             return (
               <li key={line.id}>
                 <p className="home-booking-when">{line.when}</p>
                 <p className="home-booking-what">
                   <span>{line.what}</span>
-                  <button type="button">Cancel</button>
+                  <button type="button" disabled={busy} onClick={() => void cancel(booking.id)}>
+                    {busy ? 'Cancelling…' : 'Cancel'}
+                  </button>
                 </p>
               </li>
             )
