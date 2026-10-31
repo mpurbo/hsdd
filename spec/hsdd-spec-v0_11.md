@@ -1449,14 +1449,24 @@ its phases ship (v0.10.0 §11.5); `hsdd-auto` never closes it.
 
 ### 9.3 When the request is a new version of a source
 
-An intake whose request is a new version of a source document (or one that
-bumps contract versions) also moves citations. The `setup` step updates
-`sources`: the new version becomes normative or informative with its
-`version`, and the old one moves to `baseline` with its own. It also updates
-the `orchestrator_files` that name the normative source. Both are recorded
+An intake whose request is a new version of a source document also moves
+citations of the source, and one that supersedes a contract version (a
+`lockstep` bump deprecates the old version in the run that drafts the next,
+v0.10.0 §3.5) moves citations of that version. A `coexisting` bump moves
+none: the old version stays live, and each consumer moves in a phase of its
+own (§12.4). For a new source version the `setup` step updates `sources`:
+the new version becomes normative or informative with its `version`, and the
+old one moves to `baseline` with its own. It also updates the
+`orchestrator_files` that name the normative source. Both are recorded
 decisions. The intake record then routes one `citation-touch` per artifact
-that may still cite a superseded version, with `when: cites-superseded`
-(§12.2), after the content handoffs, and the touches follow §12.4.
+that may still cite a superseded string, with `when: cites-superseded`
+(§12.2), after the content handoffs, and the touches follow §12.4. No touch
+moves a contract version in a node header or an ADR's `affects`:
+`hsdd-reconcile`'s version ripple writes a confirmed version into the
+headers and the specs above them, and `hsdd-adr` adds the new version to
+`affects`. So each leaf-parent the change lands on gets a
+`phase-plan-append` and a `reconcile`, and a `spec-touch` only when its own
+text changes.
 
 ---
 
@@ -2256,10 +2266,16 @@ section present, like the steps the skill's step 2 names. It is invoked as
 `/hsdd-reconcile align {node ids or all} after {what changed}` and, for each
 named node's plan text:
 
-1. moves every live citation of a contract version that is no longer current
-   to the current version, by §12.4's rule, in unshipped phases only;
+1. moves every live citation of a contract version that is superseded
+   (§12.2: `deprecated` or `retired`, or with no file of its own) to the
+   current version, by §12.4's rule, in unshipped phases only and never in
+   a node header's `Produces` or `Consumes` line; a citation of an earlier
+   version that stays live beside the new one (`coexisting`) stays, and
+   align routes one `consider` item to the node, naming the new version,
+   since moving a consumer is that node's planning, never align's;
 2. re-derives each phase gate's contract and guarantee arguments against the
-   current contract's validation artifacts, where the gate names them;
+   validation artifacts of the version the phase cites, where the gate names
+   them;
 3. checks that every phase id named in a contract's `produced_by`,
    `consumers` or delivery text exists, and that every phase Scope that cites
    an intake record cites one that exists;
@@ -2273,23 +2289,37 @@ gate argument".
 
 ### 12.4 Citation touches when a version moves
 
-When a source document or a contract moves to a new version, every artifact
-that cites the old version is touched once, by its owning skill
-(`hsdd-contract`, `hsdd-adr`, `hsdd-spec`), under this rule, invoked as
-`citation touch {file}: move its citations to the current versions`, which
-those three skills gain as a paragraph **Citation touch**:
+When a source document moves to a new version, or a contract version is
+superseded, every artifact that cites the old version is touched once, by
+its owning skill (`hsdd-contract`, `hsdd-adr`, `hsdd-spec`), under this
+rule, invoked as `citation touch {file}: move its citations to the current
+versions`, which those three skills gain as a paragraph **Citation touch**.
+A contract version is superseded as §12.2 says: its file is `deprecated` or
+`retired` (`lockstep` deprecates it in the run that drafts the next version,
+v0.10.0 §3.5), or it has no file of its own (a bump in place, before
+0.10.2). A `coexisting` version stays `stable` while it has a live consumer,
+and each consumer moves to the new version in a phase of its own.
 
-- A **live** citation moves to the current version: a node's Consumes or
-  Produces line, an unshipped phase's boundary or delivery line, a guarantee
-  citation, a fixture header comment, any sentence that states what holds
-  now.
+- A **live** citation of a superseded version moves to the current one: an
+  unshipped phase's boundary or delivery line, a guarantee citation, a
+  fixture header comment, a node's `Sources` entry for a source document,
+  any sentence that states what holds now.
+- Never move a contract version in a node header's `Produces` or `Consumes`
+  line, or in a copy of that line above the node (a parent's embedded
+  summary, child-node table or DAG, the root's contract matrix):
+  `hsdd-reconcile`'s version ripple writes those, keeping every version the
+  node's phases name (v0.10.0 §3.5). Never edit an ADR's `affects`:
+  `hsdd-adr` adds the new version there.
+- An earlier contract version that is neither `deprecated` nor `retired`
+  stays live beside the new one (`coexisting`): leave every citation of it,
+  and route one `consider` item, naming the new version, to the node whose
+  plan would move to it (the node of the citing phase, or the producer or
+  consumer the citing sentence is about), so that node's own planning
+  decides when it moves.
 - A **shipped phase** (one whose verification doc is on the spec repo's
   main line, the conventions' `**Main line:**`, `main` when absent, v0.10.0
-  §14.2) is history in full: nothing in it moves.
-  While a shipped phase or an `external_consumers` entry still names the old
-  version, that version keeps its `stable` standing in the contract's
-  `## Versioning` (v0.10.0 §3.5: the old version stays until all consumers
-  migrate), and the touch reports each such reference as kept.
+  §14.2) is history in full: nothing in it moves, and the touch reports each
+  such reference as kept.
 - **Historical** text keeps the version it describes: a dated amendment
   entry, a migration note, a "Corrected" paragraph, an account of what an
   earlier version did.
@@ -2303,10 +2333,11 @@ those three skills gain as a paragraph **Citation touch**:
   need that, leave it, route it as a finding, and name the step it needs.
 - Classify the touch against the touched artifact's own versioning rules
   (it normally stays at its version) and record that as one decision.
-- Report how many citations moved and how many were kept as history.
+- Report how many citations moved and how many were kept, as history or
+  as a live earlier version.
 
-The final gate's F2 lists what still names an old version, so the report
-can say that each remaining reference was read and is history.
+The final gate's F2 lists what still names a superseded version, so the
+report can say that each remaining reference was read and is history.
 
 ### 12.5 What stays deferred
 
@@ -3667,10 +3698,13 @@ place, classified and recorded.
 
 **`citation-touch`** (`hsdd-contract`, `hsdd-adr` or `hsdd-spec`). Default
 invocation: "Citation touch {target_file}: move its citations to the
-current versions." What to do: apply §12.4's citation-touch rule exactly; report the
-counts moved and kept in `notes`. Done when: no live citation in the files
-names a superseded string, and every sentence that restates another artifact
-is true against its current text.
+current versions." What to do: apply §12.4's citation-touch rule exactly:
+never move a contract version in a node header's `Produces` or `Consumes`
+line, a copy of it above the node, or an ADR's `affects`; leave every
+citation of a live earlier version (`coexisting`) and route a `consider`
+item for it; report the counts moved and kept in `notes`. Done when: no
+citation the rule moves names a superseded string, and every sentence that
+restates another artifact is true against its current text.
 
 **`phase-plan`** (`hsdd-phase-plan`). Default invocation: "Plan the phases
 of `{target}`." What to do: follow the skill's phase record and
@@ -3707,7 +3741,7 @@ and the flips the skill allows are made.
 **`align`** (`hsdd-reconcile`, align mode). Default invocation: "Align
 {target} after {reason}." What to do: §12.3. Route
 every finding beyond citations and gate arguments to its owning skill. Done
-when: the named plans cite only current versions, except history.
+when: the named plans cite no superseded version, except history.
 
 **`intake`** (`hsdd-intake`). Default invocation: "Route `{request}`
 ({authority}) into the tree." What to do: follow `hsdd-intake`: read every
@@ -3718,7 +3752,9 @@ a `shape` stop. A landing on an as-built node puts a `promote` handoff first
 (ADRs and contracts before the specs and plans that consume them); then one
 `citation-touch` per artifact that may still cite a superseded string
 (`when: cites-superseded`); then, for each affected leaf-parent, a
-`spec-touch`, a `phase-plan-append` and a `reconcile`. Order no align: the
+`phase-plan-append` and a `reconcile` (a `spec-touch` only for a change to
+the node's own text, never for the contract version in its header, which
+the reconcile writes). Order no align: the
 segment's align stage follows the handoffs (§9.2). State an insert rule. Read the earlier `would_upstream` decisions in
 the facts against the request, and record in `notes` which it adopts,
 contradicts or leaves open. Write no spec, contract or ADR. Done when: the

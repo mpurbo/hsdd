@@ -414,7 +414,10 @@ on the first unfinished one.
   `**Status:** open`; never close it.
 - A request that is a new version of a source moves citations: the setup
   updates `sources`, and the record routes one `citation-touch` per citing
-  artifact with `when: cites-superseded`, after the content handoffs.
+  artifact with `when: cites-superseded`, after the content handoffs. A
+  contract version's citations move only once it is superseded (its file
+  `deprecated` or `retired`); a `coexisting` version stays live, and no
+  touch moves the version in a node header or an ADR's `affects`.
 
 ## Judgement points
 

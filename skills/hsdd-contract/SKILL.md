@@ -260,21 +260,34 @@ through `hsdd-reconcile`, as for any other contract.
   spec), the contracts it solely produced go to `retired` the same way,
   through `hsdd-reconcile`, and the live-consumer rule applies to each.
 
-**Citation touch.** When a source document or a contract moves to a new
-version, every artifact that cites the old version is touched once, by its
-owning skill. Invoked as `citation touch {file}: move its citations to the
-current versions`, change only citations and the sentences they sit in:
+**Citation touch.** When a source document moves to a new version, or a
+contract version is superseded, every artifact that cites the old version is
+touched once, by its owning skill. A contract version is superseded once its
+file is `deprecated` or `retired` (`lockstep` deprecates it in the run that
+drafts the next version), or when it has no file of its own (a bump in
+place, before 0.10.2). Invoked as
+`citation touch {file}: move its citations to the current versions`, change
+only citations and the sentences they sit in:
 
-- A **live** citation moves to the current version: a node's Consumes or
-  Produces line, an unshipped phase's boundary or delivery line, a guarantee
-  citation, a fixture header comment, any sentence that states what holds
-  now.
+- A **live** citation of a superseded version moves to the current one: an
+  unshipped phase's boundary or delivery line, a guarantee citation, a
+  fixture header comment, a node's `Sources` entry for a source document,
+  any sentence that states what holds now.
+- Never move a contract version in a node header's `Produces` or `Consumes`
+  line, or in a copy of that line above the node (a parent's embedded
+  summary, child-node table or DAG, the root's contract matrix):
+  `hsdd-reconcile`'s version ripple writes those, keeping every version the
+  node's phases name. Never edit an ADR's `affects`: `hsdd-adr` adds the
+  new version there.
+- An earlier contract version that is neither `deprecated` nor `retired`
+  stays live beside the new one (`coexisting`): leave every citation of it,
+  and route one `consider` item, naming the new version, to the node whose
+  plan would move to it (the node of the citing phase, or the producer or
+  consumer the citing sentence is about), so that node's own planning
+  decides when it moves.
 - A **shipped phase** (one whose verification doc is on the spec repo's
   main line, the conventions' `**Main line:**`, `main` when absent) is
-  history in full: nothing in it moves. While a shipped phase or an
-  `external_consumers` entry still names the old version, that version keeps
-  its `stable` standing in the contract's `## Versioning` (the old version
-  stays until all consumers migrate), and the touch reports each such
+  history in full: nothing in it moves, and the touch reports each such
   reference as kept.
 - **Historical** text keeps the version it describes: a dated amendment
   entry, a migration note, a "Corrected" paragraph, an account of what an
@@ -289,7 +302,8 @@ current versions`, change only citations and the sentences they sit in:
   need that, leave it, route it as a finding, and name the step it needs.
 - Classify the touch against the touched artifact's own versioning rules
   (it normally stays at its version) and record that as one decision.
-- Report how many citations moved and how many were kept as history.
+- Report how many citations moved and how many were kept, as history or
+  as a live earlier version.
 
 ## The Registry (generated, never hand-edited)
 

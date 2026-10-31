@@ -173,11 +173,17 @@ Invoked as `/hsdd-reconcile align {node ids or all} after {what changed}`.
 Align runs standalone, with no pending section present, and for each named
 node's plan text:
 
-1. moves every live citation of a contract version that is no longer current
-   to the current version, by the Citation touch rule of `hsdd-spec`, in
-   unshipped phases only;
+1. moves every live citation of a contract version that is superseded (its
+   file `deprecated` or `retired`, or no file of its own) to the current
+   version, by the Citation touch rule of `hsdd-spec`, in unshipped phases
+   only and never in a node header's `Produces` or `Consumes` line; a
+   citation of an earlier version that stays live beside the new one
+   (`coexisting`) stays, and align routes one `consider` item to the node,
+   naming the new version, since moving a consumer is that node's planning,
+   never align's;
 2. re-derives each phase gate's contract and guarantee arguments against the
-   current contract's validation artifacts, where the gate names them;
+   validation artifacts of the version the phase cites, where the gate names
+   them;
 3. checks that every phase id named in a contract's `produced_by`,
    `consumers` or delivery text exists, and that every phase Scope that cites
    an intake record cites one that exists;

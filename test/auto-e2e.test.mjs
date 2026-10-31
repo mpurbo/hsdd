@@ -815,27 +815,40 @@ const SPEC_V2 = readFileSync(join(FIXTURES, "tree/00-empty/ref/spec.md"), "utf8"
   .replace("Version: v1.", "Version: v2.")
   .replace("the total in cents", "the total as a money object (amount in cents and a currency, IDR or USD)");
 
-// The record routes one citation touch per artifact that cites a superseded string (9.3, 12.4), each
-// conditional on `cites-superseded`, after the content handoffs.
+// The bump the v0.10.2 way (v0.10.0 §3.1, §3.5): order-api@v2 is drafted in its own file beside v1,
+// migration mode coexisting, so v1 stays stable and its citations stay live. The record routes the
+// bump, the ADR handoff before the phase plans, a content touch, one citation touch per artifact that
+// may cite a superseded string (9.3, 12.4), each conditional on `cites-superseded`, then a
+// phase-plan-append on the producer and on the consumer and one reconcile, which writes the version
+// into the node headers (no spec-touch: the header's version is reconcile's).
+const RECORD_PATH = "hsdd/management/2026-10-23-intake-order-v2.md";
 const TOUCHES = [
-  { id: "H3a", skill: "hsdd-spec", target: "shop.web.app", file: "hsdd/spec/shop.web.app.md", after: ["H2"] },
-  { id: "H3b", skill: "hsdd-spec", target: "shop.api", file: "hsdd/spec/shop.api.md", after: ["H1"] },
-  { id: "H3c", skill: "hsdd-spec", target: "shop", file: "hsdd/spec/shop.md", after: ["H1"] },
-  { id: "H3d", skill: "hsdd-spec", target: "shop.web", file: "hsdd/spec/shop.web.md", after: ["H1"] },
-  { id: "H3e", skill: "hsdd-adr", target: "ADR-001", file: "hsdd/adr/001-order-ids.md", after: ["H1"] },
+  { id: "H4a", skill: "hsdd-spec", target: "shop.web.app", file: "hsdd/spec/shop.web.app.md", after: ["H3"] },
+  { id: "H4b", skill: "hsdd-spec", target: "shop.api", file: "hsdd/spec/shop.api.md", after: ["H1"] },
+  { id: "H4c", skill: "hsdd-spec", target: "shop", file: "hsdd/spec/shop.md", after: ["H1"] },
+  { id: "H4d", skill: "hsdd-spec", target: "shop.web", file: "hsdd/spec/shop.web.md", after: ["H1"] },
+  { id: "H4e", skill: "hsdd-adr", target: "ADR-001", file: "hsdd/adr/001-order-ids.md", after: ["H2"] },
 ];
 const touchPrompt = (file) => `citation touch ${file}: move its citations to the current versions`;
 
 const PROMPTS = {
-  H1: "Touch order-api: Spec v2 §2 adds a currency to every order; retyping total_cents is breaking, so author order-api@v2 with a migration note",
-  H2: `Touch shop.web.app: Spec v2 §3 shows the currency of every total; cite order-api@v2 and ${REQUEST}`,
+  H1: "Touch order-api: Spec v2 §2 adds a currency to every order; retyping total_cents is breaking, so draft order-api@v2 in its own file beside v1, migration mode coexisting, with a migration note",
+  H2: "Update ADR-001: order-api@v2 keeps the id format, so its affects gains order-api@v2",
+  H3: `Touch shop.web.app: Spec v2 §3 shows the currency of every total; its Sources cite ${REQUEST}`,
+  H5: `Append to shop.api the phase that serves order-api@v2 beside v1, per ${RECORD_PATH}`,
+  H6: `Append to shop.web.app the phase that shows the currency of every total from order-api@v2, per ${RECORD_PATH}`,
+  H7: "Reconcile shop.api,shop.web.app: confirm order-api@v2's phase ids and write the version into the node headers",
 };
 
 const intakeRecord = () => {
   const handoffs = [
     { id: "H1", kind: "contract-touch", skill: "hsdd-contract", target: "order-api", prompt: PROMPTS.H1, when: null, after: [] },
-    { id: "H2", kind: "spec-touch", skill: "hsdd-spec", target: "shop.web.app", prompt: PROMPTS.H2, when: null, after: ["H1"] },
+    { id: "H2", kind: "adr-update", skill: "hsdd-adr", target: "ADR-001", prompt: PROMPTS.H2, when: null, after: ["H1"] },
+    { id: "H3", kind: "spec-touch", skill: "hsdd-spec", target: "shop.web.app", prompt: PROMPTS.H3, when: null, after: ["H1"] },
     ...TOUCHES.map((t) => ({ id: t.id, kind: "citation-touch", skill: t.skill, target: t.target, prompt: touchPrompt(t.file), when: "cites-superseded", after: t.after })),
+    { id: "H5", kind: "phase-plan-append", skill: "hsdd-phase-plan", target: "shop.api", prompt: PROMPTS.H5, when: null, after: [] },
+    { id: "H6", kind: "phase-plan-append", skill: "hsdd-phase-plan", target: "shop.web.app", prompt: PROMPTS.H6, when: null, after: [] },
+    { id: "H7", kind: "reconcile", skill: "hsdd-reconcile", target: "shop.api,shop.web.app", prompt: PROMPTS.H7, when: null, after: [] },
   ];
   return [
     "# Intake: Order API v2, a currency on every order", "",
@@ -849,12 +862,17 @@ const intakeRecord = () => {
     "`total` money object. The storefront shows the currency (§3).", "",
     "## Routing", "",
     "Class `cross-node`: the change lands on shop.api, which produces order-api, and on",
-    "shop.web.app, which consumes it. Every artifact that may still cite order-api@v1 is",
-    "then touched once, by its owning skill, when it still cites a superseded version.", "",
+    "shop.web.app, which consumes it. order-api@v2 coexists with v1, so each artifact",
+    "that may still cite Spec v1 is touched once, by its owning skill, when it still",
+    "cites a superseded string; each node plans its own move to v2.", "",
     "Handoffs, in order:", "",
     `1. H1, hsdd-contract: \`${PROMPTS.H1}\``,
-    `2. H2, hsdd-spec: \`${PROMPTS.H2}\``,
-    ...TOUCHES.map((t, i) => `${i + 3}. ${t.id}, ${t.skill}, only when the file still cites a superseded version: \`${touchPrompt(t.file)}\``), "",
+    `2. H2, hsdd-adr: \`${PROMPTS.H2}\``,
+    `3. H3, hsdd-spec: \`${PROMPTS.H3}\``,
+    ...TOUCHES.map((t, i) => `${i + 4}. ${t.id}, ${t.skill}, only when the file still cites a superseded version: \`${touchPrompt(t.file)}\``),
+    `9. H5, hsdd-phase-plan: \`${PROMPTS.H5}\``,
+    `10. H6, hsdd-phase-plan: \`${PROMPTS.H6}\``,
+    `11. H7, hsdd-reconcile: \`${PROMPTS.H7}\``, "",
     "```hsdd-handoffs",
     JSON.stringify({ version: 1, handoffs }, null, 2),
     "```", "",
@@ -864,35 +882,66 @@ const intakeRecord = () => {
   ].join("\n");
 };
 
-// H1: the contract takes v2 (the breaking retype, a migration note in its own ## Versioning), and its
-// fixtures and schema, whose header comments are live citations, move with it.
+// H1: v2 in its own file, `id: order-api`, with its own schema and fixtures; v1's files are untouched.
+const V1_CONTRACT = "hsdd/contract/order-api.md";
+const V2_CONTRACT = "hsdd/contract/order-api.v2.md";
 const SCHEMA_TOTAL = '"total": { "type": "object", "required": ["amount_cents", "currency"], "properties": { "amount_cents": { "type": "integer", "minimum": 0 }, "currency": { "enum": ["IDR", "USD"] } } },';
+const fixtureText = (rel) => readFileSync(join(FIXTURES, "tree", rel), "utf8");
 const contractV2 = {
-  "hsdd/contract/order-api.md": (old) => edit("version: v1", "version: v2")(old)
+  [V2_CONTRACT]: () => fixtureText("06-planned/hsdd/contract/order-api.md")
+    .replace("version: v1", "version: v2").replace("status: stable", "status: draft").replace("phase_ids: final", "phase_ids: provisional")
+    .replace("produced_by: [shop.api.2]", "produced_by: [shop.api.3]").replace("consumers: [shop.web.app.1, shop.web.app.2]", "consumers: [shop.web.app.3]")
     .replace("`Order` is `{ \"id\", \"customer_id\", \"lines\", \"total_cents\", \"status\", \"created_at\" }`",
       "`Order` is `{ \"id\", \"customer_id\", \"lines\", \"total\", \"status\", \"created_at\" }`, where `total` is `{ \"amount_cents\", \"currency\" }`")
     .replace("- G2: `total_cents` equals", "- G2: `total.amount_cents` equals")
-    .replace(/- v1 current\.[\s\S]*?migrate\./, "- v2 current. v1 is superseded: `total_cents` became `total`, a money object;\n  migration note: read `total.amount_cents` where v1 read `total_cents`."),
-  "hsdd/contract/fixture/order-api/create-order.json": (old) => edit("order-api@v1 example", "order-api@v2 example")(old)
-    .replace('"total_cents": 2100,', '"total": { "amount_cents": 2100, "currency": "IDR" },'),
-  "hsdd/contract/fixture/order-api/get-missing-order.json": edit("order-api@v1 example", "order-api@v2 example"),
-  "hsdd/contract/schema/order-api.schema.json": (old) => edit('"$id": "order-api/v1"', '"$id": "order-api/v2"')(old)
-    .replace('"$comment": "order-api@v1:', '"$comment": "order-api@v2:')
+    .replace(/- v1 current\.[\s\S]*?migrate\./, "- v2 current. Migration mode: coexisting: shop.api serves order-api@v1 and v2\n  while v1 has a live consumer. Migration note: read `total.amount_cents` where\n  v1 read `total_cents`.")
+    .replace("hsdd/contract/schema/order-api.schema.json", "hsdd/contract/schema/order-api.v2.schema.json")
+    .replace("hsdd/contract/fixture/order-api/", "hsdd/contract/fixture/order-api.v2/"),
+  "hsdd/contract/fixture/order-api.v2/create-order.json": () => fixtureText("03-contracts/hsdd/contract/fixture/order-api/create-order.json")
+    .replace("order-api@v1 example", "order-api@v2 example").replace('"total_cents": 2100,', '"total": { "amount_cents": 2100, "currency": "IDR" },'),
+  "hsdd/contract/fixture/order-api.v2/get-missing-order.json": () => fixtureText("03-contracts/hsdd/contract/fixture/order-api/get-missing-order.json")
+    .replace("order-api@v1 example", "order-api@v2 example"),
+  "hsdd/contract/schema/order-api.v2.schema.json": () => fixtureText("03-contracts/hsdd/contract/schema/order-api.schema.json")
+    .replace('"$id": "order-api/v1"', '"$id": "order-api/v2"').replace('"$comment": "order-api@v1:', '"$comment": "order-api@v2:')
     .replace('"lines", "total_cents", "status"', '"lines", "total", "status"')
     .replace('"total_cents": { "type": "integer", "minimum": 0 },', SCHEMA_TOTAL),
 };
 
-// A citation touch moves every live citation (12.4): the contract version and the source path.
-const citesCurrent = (old) => old.replaceAll("order-api@v1", "order-api@v2").replaceAll("ref/spec.md", REQUEST);
+// A citation touch moves the source path; order-api@v1 coexists with v2, so its citations stay live,
+// and a node header's Produces or Consumes is never a citation touch's to move (12.4).
+const movesSource = (old) => old.replaceAll("ref/spec.md", REQUEST);
 const AMENDED = "2026-10-23";
-const touchPlan = (file, transform = citesCurrent, extra = {}) => ({
-  files: { [file]: transform },
+const touchPlan = (file, extra = {}) => ({
+  files: { [file]: movesSource },
   decisions: [dec(`Classify the citation touch of ${file} against its own versioning rules`, {
     artifact: file, options: [{ label: "compatible", consequence: "the file keeps its version" }, { label: "breaking", consequence: "the file would take a new version" }], chosen: "compatible",
   })],
-  notes: ["moved every live citation to order-api@v2 and Spec v2"],
+  notes: ["moved the Spec citations to Spec v2; kept every citation of order-api@v1, which coexists with v2"],
   ...extra,
 });
+
+// A phase appended to a leaf-parent's plan (v0.10.0 §11.3): a summary row, the phase, and a pending
+// section with the planner's confirm entry for v2.
+const appended = (row, after, phase, confirm) => (old) => old
+  .replace(after, `${after}\n${row}`)
+  .replace(/\n```mermaid/, `\n${phase}\n\`\`\`mermaid`)
+  .replace(/## Governance updates \(pending reconcile\)[\s\S]*$/, `## Governance updates (pending reconcile)\n\n> Emitted by hsdd-phase-plan. Drained by hsdd-reconcile; do not apply by hand.\n\n- ${confirm}\n`);
+const API_PHASE = [
+  "### shop.api.3: Money totals", "",
+  "- **Consumes:** none", "- **Produces:** [order-api@v2]",
+  `- **Scope:** serve order-api@v2 beside v1: the \`total\` money object on every order (${RECORD_PATH})`,
+  "- **Size estimate:** ~3 files (~150 lines), <= 3 OpenSpec tasks", "- **Gate:** node default plus contract replay for order-api.v2",
+  "- **Verification:** an order read through v2 carries its total with a currency; v1 reads are unchanged",
+  "- **Review tier:** spot-check", "- **Dependencies:** shop.api.2 (order endpoints)", "",
+].join("\n");
+const WEB_PHASE = [
+  "### shop.web.app.3: Currency on totals", "",
+  "- **Consumes:** [order-api@v2]", "- **Produces:** none",
+  `- **Scope:** move the order client to order-api@v2 and show every total with its currency (${RECORD_PATH})`,
+  "- **Size estimate:** ~3 files (~150 lines), <= 3 OpenSpec tasks", "- **Gate:** node default",
+  "- **Verification:** order history and checkout show each total with its currency",
+  "- **Review tier:** spot-check", "- **Dependencies:** shop.web.app.2 (cart and checkout)", "",
+].join("\n");
 
 // The pre-existing defect the intake never touches (Review Focus 3): an ADR, citing no contract, that
 // cites an open-question id no spec defines.
@@ -905,7 +954,7 @@ const ADR_002 = [
   "## Alternatives considered", "", "- The email address as the id: rejected because emails change.", "",
 ].join("\n");
 
-test("intake: handoffs run or skip by their condition under a predecided breaking-amend, and ## Produced gains order-api@v2", () => {
+test("intake: a bump drafted beside v1 under a predecided breaking-amend; touches run or skip by their condition; ## Produced gains order-api@v2", () => {
   const web = readFileSync(join(FIXTURES, "tree/04-mid/hsdd/spec/shop.web.md"), "utf8").replace("- **Produces:** none\n", "- **Produces:** none\n- **Governed by:** [ADR-002]\n");
   const dir = makeRepo({
     stage: "06-planned", config: baseConfig(),
@@ -930,13 +979,14 @@ test("intake: handoffs run or skip by their condition under a predecided breakin
         chosen: "v2 normative, v1 baseline",
       }));
       changeLog(dir, config.sources, `sources: ${REQUEST} normative at v2, ref/spec.md moved to the baseline at v1`);
-      // 8.4: the change breaks a stable contract, so the segment will meet breaking-amend; decided once.
-      config.predecided = decide(dir, step, dec("A breaking change to a stable contract: how is it versioned?", {
-        options: [{ label: "next version", consequence: "the contract takes v2 with a migration note; consumers move by citation touches" }, { label: "new contract", consequence: "a second contract beside the first" }],
-        chosen: "next version", would_have_asked: true, stop_class: "breaking-amend", blast_radius: "contract", evidence: ["Spec §2", "hsdd/contract/order-api.md"],
+      // 8.4: the change breaks a stable contract, so the segment will meet breaking-amend; decided once,
+      // with the migration mode (v0.10.0 §3.5).
+      config.predecided = decide(dir, step, dec("A breaking change to a stable contract: how is it versioned, and in which migration mode?", {
+        options: [{ label: "next version, coexisting", consequence: "order-api@v2 in its own file; shop.api serves both while v1 has a live consumer, and each consumer moves in a phase of its own" }, { label: "next version, lockstep", consequence: "v1 goes deprecated now and every consumer needs a migration phase that lands with v2" }],
+        chosen: "next version, coexisting", would_have_asked: true, stop_class: "breaking-amend", blast_radius: "contract", evidence: ["Spec §2", "hsdd/contract/order-api.md"],
       }));
-      setKey(dir, "predecided", { "breaking-amend": { answer: "A breaking change to a stable contract takes the next version with a migration note.", decision: config.predecided } });
-      changeLog(dir, config.predecided, "predecided breaking-amend: a breaking change to a stable contract takes the next version");
+      setKey(dir, "predecided", { "breaking-amend": { answer: "A breaking change to a stable contract takes the next version in its own file, migration mode coexisting, with a migration note.", decision: config.predecided } });
+      changeLog(dir, config.predecided, "predecided breaking-amend: a breaking change to a stable contract takes the next version, coexisting");
     },
   });
   const predecided = config.predecided;
@@ -944,15 +994,15 @@ test("intake: handoffs run or skip by their condition under a predecided breakin
   assert.ok(read(dir, "hsdd/auto/plan.md").includes(`the owner's instruction: "${instruction}"`), "a clean instruction is quoted in plan.md");
 
   const intake = runStep(dir, {
-    files: { "hsdd/management/2026-10-23-intake-order-v2.md": intakeRecord() },
+    files: { [RECORD_PATH]: intakeRecord() },
     decisions: [
-      dec("Which class is the request?", { artifact: "hsdd/management/2026-10-23-intake-order-v2.md", chosen: "A" }),
-      dec("Route one citation touch per artifact citing order-api@v1 or ref/spec.md, each run only while it still cites a superseded string?", {
-        artifact: "hsdd/management/2026-10-23-intake-order-v2.md", options: [{ label: "conditional touches", consequence: "a file a content handoff already moved is skipped" }, { label: "unconditional", consequence: "every file is touched even when nothing is left to move" }],
+      dec("Which class is the request?", { artifact: RECORD_PATH, chosen: "A" }),
+      dec("Route one citation touch per artifact citing ref/spec.md or order-api@v1, each run only while it still cites a superseded string?", {
+        artifact: RECORD_PATH, options: [{ label: "conditional touches", consequence: "a file with nothing superseded left is skipped" }, { label: "unconditional", consequence: "every file is touched even when nothing is left to move" }],
         chosen: "conditional touches", evidence: ["Spec §2"],
       }),
       dec("Spec v2 §3 names no display format for an amount in a currency: which one does the tree assume?", {
-        artifact: "hsdd/management/2026-10-23-intake-order-v2.md", chosen: "A", would_upstream: true, blast_radius: "upstream", confidence: "medium", evidence: ["Spec §3"],
+        artifact: RECORD_PATH, chosen: "A", would_upstream: true, blast_radius: "upstream", confidence: "medium", evidence: ["Spec §3"],
       }),
     ],
     routed: [{ target: REQUEST, kind: "consider", text: "Spec v2 §3 does not say how the storefront formats an amount in a currency." }],
@@ -963,38 +1013,68 @@ test("intake: handoffs run or skip by their condition under a predecided breakin
   const [consider] = itemsFrom(dir, intake, "consider");
   const routing = jsonl(dir, "hsdd/judgement/decisions.jsonl").find((d) => d.step_ref === intake && d.chosen === "conditional touches").id;
 
-  // H1 meets breaking-amend and applies the predecided answer instead of stopping.
+  // H1 meets breaking-amend and applies the predecided answer instead of stopping: v2 in its own file.
   const h1 = launch(dir, {
     files: contractV2,
     regen: true,
-    decisions: [dec("Retyping total_cents breaks order-api@v1: next version or a new contract?", {
-      artifact: "hsdd/contract/order-api.md", options: [{ label: "next version", consequence: "order-api@v2" }, { label: "new contract", consequence: "order-money-api@v1" }],
-      chosen: "next version", would_have_asked: true, stop_class: "breaking-amend", blast_radius: "contract", evidence: [predecided, "Spec §2"],
+    decisions: [dec("Retyping total_cents breaks order-api@v1: which version, in which migration mode?", {
+      artifact: V2_CONTRACT, options: [{ label: "next version, coexisting", consequence: "order-api@v2 beside v1" }, { label: "new contract", consequence: "order-money-api@v1" }],
+      chosen: "next version, coexisting", would_have_asked: true, stop_class: "breaking-amend", blast_radius: "contract", evidence: [predecided, "Spec §2"],
     })],
   }, { kind: "contract-touch", target: "order-api", handoff: "H1" });
-  assert.match(read(dir, `hsdd/auto/dispatch/${h1}.md`), new RegExp(`- \`breaking-amend\`: A breaking change to a stable contract takes the next version with a migration note\\. \\(${predecided}\\)`));
+  assert.match(read(dir, `hsdd/auto/dispatch/${h1}.md`), new RegExp(`- \`breaking-amend\`: A breaking change to a stable contract takes the next version in its own file, migration mode coexisting, with a migration note\\. \\(${predecided}\\)`));
   assert.ok(read(dir, `hsdd/auto/dispatch/${h1}.md`).includes(PROMPTS.H1), "a handoff step's invocation is the record's prompt");
   review(dir, h1);
   commitStep(dir, h1);
+  assert.equal(read(dir, V1_CONTRACT), fixtureText("06-planned/hsdd/contract/order-api.md"), "v1's file is untouched");
 
-  // The rest of the handoffs: H2 moves shop.web.app's citations with its content change, so its touch
-  // (H3a) is skipped by its condition; every other touch still finds order-api@v1 and runs. The ADR's
-  // touch moves its live citations and keeps a dated amendment entry naming v1 (history, 12.4).
-  const adrTouch = (old) => `${citesCurrent(old).replace(/\s*$/, "")}\n\n## Amendments\n\n- ${AMENDED}: citation touch for Spec v2; the citations of order-api@v1 moved to order-api@v2, and the id format did not change.\n`;
+  // The rest of the handoffs. H3 moves shop.web.app's source citation with its content change, so its
+  // touch (H4a) is skipped; ADR-001 cites no baseline string and only the live order-api@v1, so its
+  // touch (H4e) is skipped too. The other touches move the source path, keep order-api@v1, and route
+  // a consider item for each live citation of it to the node that plans the move (12.4); each node's
+  // phase-plan-append closes its item.
+  const adrUpdate = (old) => `${old.replace("affects: [shop.api, order-api@v1]", "affects: [shop.api, order-api@v1, order-api@v2]").replace(/\s*$/, "")}\n\n## Amendments\n\n- ${AMENDED}: order-api@v2 keeps the id format; its affects gains order-api@v2.\n`;
+  const considerOn = (target, text) => ({ target, kind: "consider", text });
+  const itemsBefore = queue(dir).length;
   assert.deepEqual(drive(dir, seg, {
+    "adr-update ADR-001": {
+      files: { "hsdd/adr/001-order-ids.md": adrUpdate }, regen: true,
+      decisions: [dec("Amend ADR-001 for order-api@v2, or supersede it?", { artifact: "hsdd/adr/001-order-ids.md", chosen: "A" })],
+    },
     "spec-touch shop.web.app": {
-      files: { "hsdd/spec/shop.web.app.md": (old) => citesCurrent(old).replace("Totals are\nshown from `total_cents` and never recomputed.", "Totals are\nshown from `total` with its currency and never recomputed.") },
+      files: { "hsdd/spec/shop.web.app.md": (old) => movesSource(old).replace("Totals are\nshown from `total_cents` and never recomputed.", "Totals are\nshown from `total` with its currency and never recomputed.") },
       decisions: [dec("Where does the storefront show the currency?", { artifact: "hsdd/spec/shop.web.app.md" })],
     },
-    "citation-touch shop.api": touchPlan("hsdd/spec/shop.api.md"),
+    "citation-touch shop.api": touchPlan("hsdd/spec/shop.api.md", { routed: [considerOn("shop.api", "shop.api.2 produces order-api@v1, which stays live beside the drafted v2 (coexisting): plan the phase that produces v2")] }),
     "citation-touch shop": touchPlan("hsdd/spec/shop.md"),
-    "citation-touch shop.web": touchPlan("hsdd/spec/shop.web.md"),
-    "citation-touch ADR-001": touchPlan("hsdd/adr/001-order-ids.md", adrTouch, { regen: true, notes: ["moved 2 live citations to order-api@v2, kept 1 dated amendment entry as history"] }),
-    "align shop.api,shop.web.app": { notes: ["both plans cite only current versions"] },
+    "citation-touch shop.web": touchPlan("hsdd/spec/shop.web.md", { routed: [considerOn("shop.web.app", "shop.web says shop.web.app builds against order-api@v1, which stays live beside v2 (coexisting): plan whether and when shop.web.app moves")] }),
+    "phase-plan-append shop.api": {
+      files: { "hsdd/spec/shop.api.md": appended("| shop.api.3 | Money totals | spot-check | ~3 files, <= 3 OpenSpec tasks | shop.api.2 |", "| shop.api.2 | Order endpoints | full-review | ~6 files, <= 7 OpenSpec tasks | shop.api.1 |", API_PHASE, "confirm `order-api@v2` produced_by: [shop.api.3]") },
+      decisions: [dec("Does shop.api.3 serve v2 beside v1, or replace v1?", { artifact: "hsdd/spec/shop.api.md" })],
+      closes: [{ id: "Q-002", outcome: "addressed", note: "shop.api.3 produces order-api@v2 beside v1" }],
+    },
+    "phase-plan-append shop.web.app": {
+      files: { "hsdd/spec/shop.web.app.md": appended("| shop.web.app.3 | Currency on totals | spot-check | ~3 files, <= 3 OpenSpec tasks | shop.web.app.2 |", "| shop.web.app.2 | Cart and checkout | full-review | ~6 files, <= 7 OpenSpec tasks | shop.web.app.1 |", WEB_PHASE, "confirm `order-api@v2` consumers: [shop.web.app.3]") },
+      decisions: [dec("Does the storefront move to v2 in a phase of its own?", { artifact: "hsdd/spec/shop.web.app.md" })],
+      closes: [{ id: "Q-003", outcome: "addressed", note: "shop.web.app.3 moves the client to order-api@v2" }],
+    },
+    "reconcile shop.api,shop.web.app": {
+      files: {
+        [V2_CONTRACT]: (old) => old.replace("status: draft", "status: stable").replace("phase_ids: provisional", "phase_ids: final"),
+        "hsdd/spec/shop.api.md": (old) => old.replace("- **Produces:** [order-api@v1]\n- **Governed by:**", "- **Produces:** [order-api@v1, order-api@v2]\n- **Governed by:**")
+          .replace(/## Governance updates \(pending reconcile\)[\s\S]*$/, DRAINED),
+        "hsdd/spec/shop.web.app.md": (old) => old.replace("- **Consumes:** [order-api@v1]\n- **Produces:** none\n- **Sources:**", "- **Consumes:** [order-api@v1, order-api@v2]\n- **Produces:** none\n- **Sources:**")
+          .replace(/## Governance updates \(pending reconcile\)[\s\S]*$/, DRAINED),
+      },
+      regen: true,
+      decisions: [dec("Both sides of order-api@v2 confirmed: finalize its phase ids and flip it stable?", { artifact: V2_CONTRACT, blast_radius: "contract" })],
+    },
   }, {
     // 6.9: the skip's change-log entry, opening with the intake decision that made the touches conditional.
     onSkip: (skip) => changeLog(dir, routing, `skipped ${skip.handoff}: ${skip.reason}`),
   }), { done: true });
+  assert.deepEqual(queue(dir).slice(itemsBefore).filter((l) => l.status === "open").map((l) => [l.id, l.target]), [["Q-002", "shop.api"], ["Q-003", "shop.web.app"]]);
+  for (const id of ["Q-002", "Q-003"]) assert.equal(queue(dir).filter((l) => l.id === id).at(-1).status, "addressed", id);
 
   const reportText = read(dir, `hsdd/auto/report/${seg.id}.md`);
   assert.match(/## Upstream\n([\s\S]*?)\n### Earlier proposals/.exec(reportText)[1], /Spec v2 §3 names no display format/);
@@ -1006,34 +1086,39 @@ test("intake: handoffs run or skip by their condition under a predecided breakin
   assert.equal(closer.kind, "plan");
   assert.match(read(dir, `hsdd/auto/dispatch/${closer.step_ref}.md`), new RegExp(`"item": "${consider.id}"`));
 
-  // Every citing artifact got a touch or was skipped by its condition: H3a skipped, once, the rest ran.
+  // Every citing artifact got a touch or was skipped by its condition.
   const skips = jsonl(dir, "hsdd/auto/handoffs.jsonl");
-  assert.deepEqual(skips.map((l) => [l.handoff, l.status]), [["H3a", "skipped"]]);
-  assert.match(skips[0].reason, /cites-superseded does not hold/);
+  assert.deepEqual(skips.map((l) => [l.handoff, l.status]), [["H4a", "skipped"], ["H4e", "skipped"]]);
+  assert.ok(skips.every((l) => /cites-superseded does not hold/.test(l.reason)), JSON.stringify(skips));
   const handoffs = stateOf(dir).intake.handoffs.map((h) => [h.id, h.state]);
-  assert.deepEqual(handoffs, [["H1", "executed"], ["H2", "executed"], ["H3a", "skipped"], ["H3b", "executed"], ["H3c", "executed"], ["H3d", "executed"], ["H3e", "executed"]]);
-  assert.equal(subjects(dir).filter((s) => /^auto: skip H3a: cites-superseded does not hold/.test(s)).length, 1, "one skip commit");
+  assert.deepEqual(handoffs, [["H1", "executed"], ["H2", "executed"], ["H3", "executed"], ["H4a", "skipped"], ["H4b", "executed"], ["H4c", "executed"], ["H4d", "executed"], ["H4e", "skipped"], ["H5", "executed"], ["H6", "executed"], ["H7", "executed"]]);
+  assert.equal(subjects(dir).filter((s) => /^auto: skip H4[ae]: cites-superseded does not hold/.test(s)).length, 2, "one skip commit each");
   const plan = read(dir, "hsdd/auto/plan.md");
-  for (const [id, text] of [[config.sources, "sources: "], [predecided, "predecided breaking-amend: "], [routing, "skipped H3a: cites-superseded does not hold"]]) {
+  for (const [id, text] of [[config.sources, "sources: "], [predecided, "predecided breaking-amend: "], [routing, "skipped H4a: cites-superseded does not hold"], [routing, "skipped H4e: cites-superseded does not hold"]]) {
     assert.ok(plan.includes(`\n- ${id}: ${text}`), `a change-log entry opening with ${id}: ${text}`);
   }
 
-  // F2 lists no live reference. What remains is the ADR's dated amendment entry: exactly one F2 line, for
-  // that file, and every line there naming order-api@v1 is a dated entry (history, 12.4). The contract's
-  // own migration note is in its own file, which F2 leaves out.
+  // order-api@v1 coexists with v2: it is no superseded version, so F2 lists nothing, and its citations
+  // are where they were. The node headers carry both versions (reconcile's ripple); the ADR's affects
+  // gained v2 (hsdd-adr) and kept v1.
   const final = cli(dir, "gate.mjs", ["--final"]).stdout;
-  const f2 = final.split("\n").filter((l) => /^warn {2}F2 /.test(l));
-  assert.deepEqual(f2.map((l) => /^warn {2}F2 (\S+): (\S+) /.exec(l).slice(1)), [["hsdd/adr/001-order-ids.md", "order-api@v1"]], final);
-  const stale = read(dir, "hsdd/adr/001-order-ids.md").split("\n").filter((l) => l.includes("order-api@v1"));
-  assert.ok(stale.length > 0 && stale.every((l) => l.startsWith(`- ${AMENDED}: `)), stale.join("\n"));
+  assert.deepEqual(final.split("\n").filter((l) => /^warn {2}F2 /.test(l)), [], final);
+  assert.match(read(dir, "hsdd/spec/shop.api.md"), /^- \*\*Produces:\*\* \[order-api@v1, order-api@v2\]$/m);
+  assert.match(read(dir, "hsdd/spec/shop.api.md"), /### shop\.api\.2: Order endpoints\n\n- \*\*Consumes:\*\* none\n- \*\*Produces:\*\* \[order-api@v1\]/);
+  assert.match(read(dir, "hsdd/spec/shop.web.app.md"), /^- \*\*Consumes:\*\* \[order-api@v1, order-api@v2\]$/m);
+  assert.match(read(dir, "hsdd/adr/001-order-ids.md"), /^affects: \[shop\.api, order-api@v1, order-api@v2\]$/m);
+  assert.match(read(dir, "hsdd/contract/INDEX.md"), /\| `order-api` \| v2 \| api \| stable \|/);
+  for (const file of ["hsdd/spec/shop.api.md", "hsdd/spec/shop.md", "hsdd/spec/shop.web.md", "hsdd/spec/shop.web.app.md"]) {
+    assert.ok(!read(dir, file).includes("ref/spec.md"), `${file} cites Spec v2 only`);
+  }
   // The pre-existing defect stays a warning: its file is not changed in the segment.
   assert.match(final, /^warn {2}C6 OQ7 is cited and defined nowhere \(hsdd\/adr\/002-customer-ids\.md\); not changed in this segment$/m);
   assert.doesNotMatch(final, /^ERROR/m);
   assert.equal(gitIn(dir, "log", "--format=%h", "main..HEAD", "--", "hsdd/adr/002-customer-ids.md"), "", "no step touched it");
   assert.match(read(dir, `hsdd/auto/dispatch/${h1}.md`), /^> Take in "Spec V2" as normative: #1 priority\.\n> Do not ask me anything, but record the decisions\.$/m);
 
-  // The record's ## Produced gains the bump and the touched ADR, and no phase; one change-log line names the segment.
-  const record = read(dir, "hsdd/management/2026-10-23-intake-order-v2.md");
+  // The record's ## Produced gains the bump and the amended ADR, and no phase; one change-log line names the segment.
+  const record = read(dir, RECORD_PATH);
   const produced = /## Produced\n([\s\S]*?)\n## Change log/.exec(record)[1];
   assert.match(produced, /^- Contracts bumped: order-api@v2$/m);
   assert.match(produced, /^- ADRs amended: ADR-001$/m);

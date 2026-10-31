@@ -46,11 +46,13 @@ puts a `promote` handoff first (§9.2). For a new version of a source, order
 the handoffs: content handoffs producer-first (ADRs and contracts before the
 specs and plans that consume them); then one `citation-touch` per artifact
 that may still cite a superseded string (`when: cites-superseded`); then, for
-each affected leaf-parent, a `spec-touch`, a `phase-plan-append` and a
-`reconcile`. Order no align: the segment's align stage follows the handoffs
-(§9.2). State an insert rule. Read the earlier `would_upstream` decisions in
-the facts against the request, and record in `notes` which it adopts,
-contradicts or leaves open. Write no spec, contract or ADR.
+each affected leaf-parent, a `phase-plan-append` and a `reconcile` (a
+`spec-touch` only for a change to the node's own text, never for the
+contract version in its header, which the reconcile writes). Order no align:
+the segment's align stage follows the handoffs (§9.2). State an insert rule.
+Read the earlier `would_upstream` decisions in the facts against the request,
+and record in `notes` which it adopts, contradicts or leaves open. Write no
+spec, contract or ADR.
 
 ### Done when
 
