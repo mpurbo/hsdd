@@ -1,0 +1,124 @@
+npx playwright test e2e/rooms.spec.ts, on e626e69 plus the uncommitted e2e/rooms.ts, e2e/rooms.spec.ts and the M-zone edit below
+--- M-zone diff (against the spec without the mutant) ---
+diff --git a/../rooms.spec.clean b/e2e/rooms.spec.ts
+index 979934d..a353f9b 100644
+--- a/../rooms.spec.clean
++++ b/e2e/rooms.spec.ts
+@@ -23,6 +23,13 @@ import { ROOMS, ZONES, bookViaApi, expectedLines, openRooms, roomLines, showDate
+ const HOME_DATES: IsoDate[] = britishWinterDays(addDays(todayIn(LONDON), 60), 6);
+ const DATES: IsoDate[] = britishWinterDays(addDays(HOME_DATES[5], 1), 8);
+ 
++test.beforeEach(async ({ page }) => {
++  await page.route("**/api/me", async (route) => {
++    const response = await route.fetch();
++    await route.fulfill({ response, json: { ...(await response.json()), timeZone: "Asia/Kolkata" } });
++  });
++});
++
+ const ORDER: RoomId[] = ["merapi", "bromo", "thames", "kew"];
+ const DAY = 24 * 60 * 60 * 1000;
+ 
+--- output ---
+
+> @simple-login/backend@1.0.0 db:up
+> node scripts/db-up.mjs up
+
+ Container meeting-rooms-postgres-1 Running 
+ Container meeting-rooms-postgres-1 Waiting 
+ Container meeting-rooms-postgres-1 Healthy 
+
+Running 3 tests using 1 worker
+
+  ✘  1 e2e/rooms.spec.ts:52:3 › AC-4.1: Rooms lists the four rooms in order, opens on today in ayu's zone, and Home returns (5.4s)
+  ✘  2 e2e/rooms.spec.ts:52:3 › AC-4.1: Rooms lists the four rooms in order, opens on today in budi's zone, and Home returns (5.4s)
+  ✘  3 e2e/rooms.spec.ts:72:1 › AC-4.2: a date in ayu's zone shows each room's overlapping bookings, earliest first, and (no bookings) (5.6s)
+
+
+  1) e2e/rooms.spec.ts:52:3 › AC-4.1: Rooms lists the four rooms in order, opens on today in ayu's zone, and Home returns 
+
+    Error: expect(locator).toHaveValue(expected) failed
+
+    Locator:  getByLabel('Rooms on')
+    Expected: "2026-11-01"
+    Received: "2026-10-31"
+    Timeout:  5000ms
+
+    Call log:
+      - Expect "toHaveValue" getByLabel('Rooms on') with timeout 5000ms
+      - waiting for getByLabel('Rooms on')
+        14 × locator resolved to <input id="_r_2_" type="date" value="2026-10-31"/>
+           - unexpected value "2026-10-31"
+
+
+      55 |     await page.clock.setFixedTime(at);
+      56 |     await openRooms(page, who);
+    > 57 |     await expect(page.getByLabel("Rooms on")).toHaveValue(today);
+         |                                               ^
+      58 |     await expect
+      59 |       .poll(async () => {
+      60 |         const text = await page.getByRole("main").innerText();
+        at <repo>/e2e/rooms.spec.ts:57:47
+
+    Error Context: test-results/rooms-AC-4-1-Rooms-lists-t-ae173-ayu-s-zone-and-Home-returns/error-context.md
+
+  2) e2e/rooms.spec.ts:52:3 › AC-4.1: Rooms lists the four rooms in order, opens on today in budi's zone, and Home returns 
+
+    Error: expect(locator).toHaveValue(expected) failed
+
+    Locator:  getByLabel('Rooms on')
+    Expected: "2026-10-31"
+    Received: "2026-11-01"
+    Timeout:  5000ms
+
+    Call log:
+      - Expect "toHaveValue" getByLabel('Rooms on') with timeout 5000ms
+      - waiting for getByLabel('Rooms on')
+        14 × locator resolved to <input id="_r_2_" type="date" value="2026-11-01"/>
+           - unexpected value "2026-11-01"
+
+
+      55 |     await page.clock.setFixedTime(at);
+      56 |     await openRooms(page, who);
+    > 57 |     await expect(page.getByLabel("Rooms on")).toHaveValue(today);
+         |                                               ^
+      58 |     await expect
+      59 |       .poll(async () => {
+      60 |         const text = await page.getByRole("main").innerText();
+        at <repo>/e2e/rooms.spec.ts:57:47
+
+    Error Context: test-results/rooms-AC-4-1-Rooms-lists-t-c3679-udi-s-zone-and-Home-returns/error-context.md
+
+  3) e2e/rooms.spec.ts:72:1 › AC-4.2: a date in ayu's zone shows each room's overlapping bookings, earliest first, and (no bookings) 
+
+    Error: expect(received).toEqual(expected) // deep equality
+
+    - Expected  - 2
+    + Received  + 2
+
+      Array [
+    -   "10:00 to 11:00  Kew earlier",
+    +   "08:30 to 09:30  Kew earlier",
+        "(03:00 to 04:00 in London)",
+    -   "15:00 to 16:00  Kew later",
+    +   "13:30 to 14:30  Kew later",
+        "(08:00 to 09:00 in London)",
+      ]
+
+    Call Log:
+    - Timeout 5000ms exceeded while waiting on the predicate
+
+      83 |   await expect.poll(() => roomLines(page, "merapi")).toEqual(["(no bookings)"]);
+      84 |   await expect.poll(() => roomLines(page, "bromo")).toEqual(["(no bookings)"]);
+    > 85 |   await expect.poll(() => roomLines(page, "kew")).toEqual([
+         |                                                   ^
+      86 |     ...expectedLines(earlier, "kew", zone, date),
+      87 |     ...expectedLines(later, "kew", zone, date),
+      88 |   ]);
+        at <repo>/e2e/rooms.spec.ts:85:51
+
+    Error Context: test-results/rooms-AC-4-2-a-date-in-ayu-298ba-iest-first-and-no-bookings-/error-context.md
+
+  3 failed
+    e2e/rooms.spec.ts:52:3 › AC-4.1: Rooms lists the four rooms in order, opens on today in ayu's zone, and Home returns 
+    e2e/rooms.spec.ts:52:3 › AC-4.1: Rooms lists the four rooms in order, opens on today in budi's zone, and Home returns 
+    e2e/rooms.spec.ts:72:1 › AC-4.2: a date in ayu's zone shows each room's overlapping bookings, earliest first, and (no bookings) 

@@ -1,0 +1,46 @@
+MUTANT=fake-201 npx playwright test e2e/rooms.spec.ts -g AC-5.1 (corrected M-fake-201, uncommitted changes on 4134f5b)
+
+--- mutant: POST /api/bookings answered with 201 and a complete Booking { id: crypto.randomUUID(), roomId, roomName, title, start, end }; see task-3-red-fake-201.txt for the diff
+
+
+> @simple-login/backend@1.0.0 db:up
+> node scripts/db-up.mjs up
+
+ Container meeting-rooms-postgres-1 Running 
+ Container meeting-rooms-postgres-1 Waiting 
+ Container meeting-rooms-postgres-1 Healthy 
+
+Running 1 test using 1 worker
+
+  ✘  1 e2e/rooms.spec.ts:133:1 › AC-5.1 and AC-5.2: budi books through the form; starts and ends fall on quarter hours, every end after its start (5.5s)
+
+
+  1) e2e/rooms.spec.ts:133:1 › AC-5.1 and AC-5.2: budi books through the form; starts and ends fall on quarter hours, every end after its start 
+
+    Error: expect(received).toEqual(expected) // deep equality
+
+    - Expected  - 2
+    + Received  + 1
+
+      Array [
+    -   "09:00 to 10:00  Form booking",
+    -   "(16:00 to 17:00 in Jakarta)",
+    +   "(no bookings)",
+      ]
+
+    Call Log:
+    - Timeout 5000ms exceeded while waiting on the predicate
+
+      159 |   const [end] = wallTimeInstants(date, "10:00", zone);
+      160 |   const booking = { start, end, title: "Form booking" };
+    > 161 |   await expect.poll(() => roomLines(page, "bromo")).toEqual(expectedLines(booking, "bromo", zone, date));
+          |                                                     ^
+      162 |   // Pin: 09:00 to 10:00 in London is 16:00 to 17:00 in Jakarta.
+      163 |   expect((await roomLines(page, "bromo"))[1]).toBe("(16:00 to 17:00 in Jakarta)");
+      164 |
+        at <repo>/e2e/rooms.spec.ts:161:53
+
+    Error Context: test-results/rooms-AC-5-1-and-AC-5-2-bu-bcf86-s-every-end-after-its-start/error-context.md
+
+  1 failed
+    e2e/rooms.spec.ts:133:1 › AC-5.1 and AC-5.2: budi books through the form; starts and ends fall on quarter hours, every end after its start 

@@ -1,0 +1,46 @@
+npx playwright test e2e/rooms.spec.ts -g AC-5.1 with M-fake-201 (uncommitted changes on f35740b)
+
+--- mutant diff (POST /api/bookings answered locally with 201)
+150a151,154
+>   await page.route("**/api/bookings", async (route) => {
+>     if (route.request().method() !== "POST") return route.fallback();
+>     await route.fulfill({ status: 201, json: { ...route.request().postDataJSON(), id: "made-up-id" } });
+>   });
+
+
+> @simple-login/backend@1.0.0 db:up
+> node scripts/db-up.mjs up
+
+
+Running 1 test using 1 worker
+
+  ✘  1 e2e/rooms.spec.ts:129:1 › AC-5.1 and AC-5.2: budi books through the form; starts and ends fall on quarter hours, every end after its start (5.6s)
+
+
+  1) e2e/rooms.spec.ts:129:1 › AC-5.1 and AC-5.2: budi books through the form; starts and ends fall on quarter hours, every end after its start 
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: getByText('Booked.')
+    Expected: visible
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeVisible" getByText('Booked.') with timeout 5000ms
+      - waiting for getByText('Booked.')
+
+
+      154 |   });
+      155 |   await bookThroughForm(page, { room: "Bromo", start: "09:00", end: "10:00", title: "Form booking" });
+    > 156 |   await expect(page.getByText("Booked.")).toBeVisible();
+          |                                           ^
+      157 |   const [start] = wallTimeInstants(date, "09:00", zone);
+      158 |   const [end] = wallTimeInstants(date, "10:00", zone);
+      159 |   const booking = { start, end, title: "Form booking" };
+        at <repo>/e2e/rooms.spec.ts:156:43
+
+    Error Context: test-results/rooms-AC-5-1-and-AC-5-2-bu-bcf86-s-every-end-after-its-start/error-context.md
+
+  1 failed
+    e2e/rooms.spec.ts:129:1 › AC-5.1 and AC-5.2: budi books through the form; starts and ends fall on quarter hours, every end after its start 

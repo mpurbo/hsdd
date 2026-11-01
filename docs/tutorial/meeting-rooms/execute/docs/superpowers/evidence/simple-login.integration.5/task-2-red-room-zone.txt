@@ -1,0 +1,54 @@
+npx playwright test e2e/rooms.spec.ts -g AC-4.3 with M-room-zone (uncommitted changes on f35740b)
+
+--- mutant diff vs. clean tests (M-room-zone: every room's timeZone set to the signed-in user's zone)
+104a105,109
+>   await page.route("**/api/rooms?*", async (route) => {
+>     const response = await route.fetch();
+>     const body = await response.json();
+>     await route.fulfill({ response, json: { ...body, rooms: body.rooms.map((r: object) => ({ ...r, timeZone: "Europe/London" })) } });
+>   });
+116a122,126
+>   await ayu.route("**/api/rooms?*", async (route) => {
+>     const response = await route.fetch();
+>     const body = await response.json();
+>     await route.fulfill({ response, json: { ...body, rooms: body.rooms.map((r: object) => ({ ...r, timeZone: "Asia/Jakarta" })) } });
+>   });
+
+
+> @simple-login/backend@1.0.0 db:up
+> node scripts/db-up.mjs up
+
+
+Running 1 test using 1 worker
+
+  ✘  1 e2e/rooms.spec.ts:98:1 › AC-4.3: another office's bookings also show the room's local times; the user's own zone shows none (5.4s)
+
+
+  1) e2e/rooms.spec.ts:98:1 › AC-4.3: another office's bookings also show the room's local times; the user's own zone shows none 
+
+    Error: expect(received).toEqual(expected) // deep equality
+
+    - Expected  - 1
+    + Received  + 0
+
+      Array [
+        "02:00 to 03:00  Merapi morning",
+    -   "(09:00 to 10:00 in Jakarta)",
+      ]
+
+    Call Log:
+    - Timeout 5000ms exceeded while waiting on the predicate
+
+      111 |   await openRooms(page, "budi");
+      112 |   await showDate(page, date);
+    > 113 |   await expect.poll(() => roomLines(page, "merapi")).toEqual(expectedLines(merapi, "merapi", ZONES.budi, date));
+          |                                                      ^
+      114 |   const merapiLines = await roomLines(page, "merapi");
+      115 |   expect(merapiLines[0]).toContain("02:00 to 03:00");
+      116 |   expect(merapiLines[1]).toBe("(09:00 to 10:00 in Jakarta)");
+        at <repo>/e2e/rooms.spec.ts:113:54
+
+    Error Context: test-results/rooms-AC-4-3-another-offic-f855d--user-s-own-zone-shows-none/error-context.md
+
+  1 failed
+    e2e/rooms.spec.ts:98:1 › AC-4.3: another office's bookings also show the room's local times; the user's own zone shows none 
