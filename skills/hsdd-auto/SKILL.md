@@ -631,7 +631,9 @@ decision and
 in the sidecar of the step under review when the item came from its report
 or review, otherwise in a `plan` step; never between steps. Add a
 change-log entry naming the decision. Reject an item that duplicates a
-pending handoff (same kind and target), citing it. To make an item wait for
+pending handoff (same kind and target), citing it. The inserted step's
+invocation carries the item's text, so the text is the step's instruction:
+an in-place rewrite of an unshipped phase names the phase. To make an item wait for
 intake handoffs, open it with
 `routed.mjs open --from {step} --target run --kind insert-step --text "{why}" --step-kind {kind} --step-target {target} --after handoffs`
 (or `--after {handoff id}`). An item routed from a stopped handoff step

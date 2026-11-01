@@ -440,8 +440,8 @@ test("a default invocation renders the instruction slots", () => {
   assert.equal(inv("contract"), "Author `order-api@v1`.");
   assert.equal(inv("spec-touch"), "Touch `shop.api`: item Q-001 on shop.api.");
   assert.equal(inv("graft"), "Graft under `shop.web` the child this step's routed item or handoff names: insert graft on shop.web.");
-  assert.equal(inv("phase-plan-append"), "Append phases to `shop.web.app` per the insert-step item Q-001.");
-  assert.equal(inv("citation-touch"), "Citation touch `hsdd/contract/order-api.md`: move its citations to the current versions.");
+  assert.equal(inv("phase-plan-append"), "Append phases to `shop.web.app` per the insert-step item Q-001. This step executes the insert-step item Q-001: insert phase-plan-append on shop.web.app.");
+  assert.equal(inv("citation-touch"), "Citation touch `hsdd/contract/order-api.md`: move its citations to the current versions. This step executes the insert-step item Q-001: insert citation-touch on order-api.");
   assert.equal(inv("align"), "Align all after the consistency pass.");
   assert.equal(inv("intake"), "Route `ref/spec-v2.md` (accepted RFC) into the tree.");
 });
@@ -847,4 +847,22 @@ test("citation-touch facts give a baseline version as its citation name cites it
   assert.ok(facts.includes("Superseded strings `PRD 1` and `PRD v1`: a baseline source's version, cited by its citation name; a bare `1` is no citation (hsdd/auto/run.yaml)"), facts.join("\n"));
   assert.ok(facts.includes("Superseded string `Spec v0.9`: a baseline source's version, cited by its citation name; a bare `v0.9` is no citation (hsdd/auto/run.yaml)"), facts.join("\n"));
   assert.ok(!facts.some((l) => l.startsWith("Superseded string `1`")), facts.join("\n"));
+});
+
+test("an inserted step's invocation carries its item's text (run finding R-3)", () => {
+  // The run's S24: an inserted phase-plan-append rendered "Append phases to ... per {record}." and the step had
+  // to read the queue to learn it should rewrite an unshipped phase in place.
+  const text = "Rewrite the unshipped phase shop.web.app.2 in place; keep {target} as written.";
+  const dir = queue(intakeRepo({ record: ORDER }), { ...insert("Q-001", "phase-plan-append", "shop.web.app"), text }, accepted("Q-001"));
+  const ctx = dispatchContext(dir);
+  const step_ = { kind: "phase-plan-append", skill: "hsdd-phase-plan", target: "shop.web.app", handoff: null, queue_item: "Q-001", continues: null, write_set: [], inputs: [], why: "test" };
+  assert.equal(stepFills(ctx, step_, { step: "S03", head: "abcdef0" }).invocation,
+    `Append phases to \`shop.web.app\` per ${RECORD}. This step executes the insert-step item Q-001: Rewrite the unshipped phase shop.web.app.2 in place; keep {target} as written.`);
+  // Its continuation carries the same text; a kind whose default already has {reason} does not repeat it.
+  assert.match(stepFills(ctx, { ...step_, continues: "S03" }, { step: "S04", head: "abcdef0" }).invocation, /This step executes the insert-step item Q-001: Rewrite/);
+  const touch = { ...step_, kind: "spec-touch", skill: "hsdd-spec", target: "shop.api" };
+  assert.equal(stepFills(ctx, touch, { step: "S03", head: "abcdef0" }).invocation, "Touch `shop.api`: Rewrite the unshipped phase shop.web.app.2 in place; keep {target} as written.");
+  // A step from a stage rule is unchanged.
+  const reconcile = { ...step_, kind: "reconcile", skill: "hsdd-reconcile", target: "shop.api", queue_item: null };
+  assert.equal(stepFills(ctx, reconcile, { step: "S03", head: "abcdef0" }).invocation, "Reconcile shop.api.");
 });

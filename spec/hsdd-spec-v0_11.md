@@ -1299,7 +1299,8 @@ The orchestrator accepts or rejects it with a `plan` decision
 the item came from its report or review (§8.5), and otherwise in a `plan`
 step (§10.3); never between steps. `next.mjs` returns accepted, unaddressed
 items as steps before any stage rule, oldest first. The step takes its id at
-dispatch (§7.2), its dispatch file names the item (`queue_item`), and
+dispatch (§7.2), its dispatch file names the item (`queue_item`), its
+invocation carries the item's text (appendix C.2), and
 `commit.mjs` marks the item `addressed` when the step commits as
 `completed`; a stopped step leaves it `accepted` for its continuation. An
 item may carry `after` (§6.5): `next.mjs` returns it only once the named
@@ -3634,7 +3635,7 @@ Each line names its file; check it there before relying on it.
 | `{decide_command}` | `node hsdd/scripts/auto/decide.mjs --step {step} --stdin` |
 | `{write_set_list}` | The dispatch file's `write_set`, comma-separated, each in backticks. |
 | `{experiments_dir}` | `run.yaml`. |
-| `{invocation}` | An intake handoff's `prompt`, verbatim; otherwise the kind's default invocation from C.3, rendered. |
+| `{invocation}` | An intake handoff's `prompt`, verbatim; otherwise the kind's default invocation from C.3, rendered. For a step that executes an `insert-step` item (or continues one) whose kind's default has no `{reason}`, the rendered default is followed by `This step executes the insert-step item {id}: {reason}.`, so the step reads the item's text in its invocation. |
 | `{fact_lines}` | C.2a below. |
 | `{routed_lines}` | Every open queue item matching the step (§6.5): id, kind, from, text. Or `none`. |
 | `{predecided_lines}` | One line per `predecided` entry: class, answer, decision id; or `none`. Keys are stoppable classes, so there are at most seven lines. |
