@@ -121,6 +121,9 @@ Before Task 3's review, the controller reverted its implementer's change that sh
 11. The web gate's one-off failure is recorded, not fixed (this node owns nothing under `web/`). Cost: the root `npm test` can stay intermittently red until the web owner looks.
 12. rooms.spec's dates keep `DATES[1]` as `DATES[0]`'s next date (the final review's option b). Cost: on a few days a year AC-4.2 runs on November dates.
 13. Commits carry `Co-Authored-By: Claude Opus 5.5`, the orchestrator's line, subagents' commits included. Cost: none.
+14. AC-4.1 runs as two tests, one per account, with the same assertions. Cost: every later test count shifts by one against the plan.
+15. `fillBookingForm` joins e2e/rooms.ts (and `bookThroughForm` calls it) so AC-5.4 can fill both forms before one `Promise.all` of clicks. Cost: none.
+16. The final fix wave also fixed five of the final review's Minors and one table's padding, not only its Important finding. Cost: none; each is a one-line clarity change in the same files.
 
 ## Outstanding
 
