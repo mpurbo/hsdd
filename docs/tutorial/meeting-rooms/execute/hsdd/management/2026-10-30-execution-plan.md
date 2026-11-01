@@ -123,8 +123,8 @@ C-2, C-3 and C-4 depend on nothing and can run before Sync A. H-2 is an Entry it
 | ID | Owner | Action | Depends | Finding | ☐ |
 |---|---|---|---|---|---|
 | C-1 | Backend 🤖 | Move profile-api@v1 to `deprecated` with A-1's sunset date. | Sync A (A-1) | F-1 | ☐ |
-| C-2 | Owner 🤖 | Add `simple-login` to ADR-001's `affects`. | none | F-3 | ☐ |
-| C-3 | Backend 🤝 | Add the web phases that read auth-api@v1's fixtures to its `consumers`. | none | F-4 | ☐ |
+| C-2 | Owner 🤖 | Add `simple-login` to ADR-001's `affects`. | none | F-3 | ☑ |
+| C-3 | Backend 🤝 | Add the web phases that read auth-api@v1's fixtures to its `consumers`. | none | F-4 | ☑ |
 | C-4 | Owner 🤖 | Link OQ1's row to external track E-1. | none | F-5 | ☐ |
 
 ### H · human steps
@@ -266,3 +266,4 @@ None existed before this plan; numbering starts at 1. All three are *proposed* a
 ## Change log
 
 - 2026-10-30: first publication (adoption run).
+- 2026-11-01: hsdd-checkpoint ticked C-2 (ADR-001's `affects` names `simple-login` since `b304ae8`, hsdd-auto S03, DEC-022) and C-3 (auth-api@v1's `consumers` names `simple-login.web.3` and `simple-login.web.4` since `2e46f32`, S06, DEC-056; its Validate line holds). C-3's question on the two phases' Consumes lines was left for the owner and carries forward as C-9. Superseded by 2026-11-01-execution-plan.md.
