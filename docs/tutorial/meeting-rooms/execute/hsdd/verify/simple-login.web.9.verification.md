@@ -251,12 +251,10 @@ the title field. Output in `browser-check.out.jsonl`, screenshots
   derivative, plan, evidence text) plus this doc and six screenshots.
 
 ## Sign-off
-- Reviewer / date:
-- Review tier applied:
-- Disposition of each Outstanding item: verified | waived (reason) |
-  deferred to {phase-id}
-- Disposition of each Learning: spec-updated | contract-bumped (id@v) |
-  adr-proposed (ADR-nnn) | dropped (reason)
+- Reviewer / date: Claude for Purbo Mohamad (owner proxy, delegated by the owner before the run), 2026-11-01
+- Review tier applied: full-review: four task reviewers and a final whole-branch reviewer read (final: 1 Important, no-break-space test cases silently turned into ASCII spaces, fixed with four more fixes and re-reviewed 5 of 5 addressed); the real-browser check at 360 and 1280 px against a backend on its own database, with screenshots under docs/superpowers/evidence/simple-login.web.9/, looked at; the gate rerun green by the orchestrator (18 files, 387 tests)
+- Disposition of each Outstanding item: iOS zoom, screen-reader and Safari or Firefox focus checks: waived (a one-laptop demo tested in Chrome, PRD v2 Constraints); the clock-change days in a browser: deferred to simple-login.integration.5
+- Disposition of each Learning: all five dropped for this tree; two are owner decisions carried as open items for a later intake: a failed refetch right after a 201 replaces Booked. with D3's message (keep Booked. visible), and an unavailable answer on Book does not refetch the date (a retry after a timeout that did save names the user's own booking); both need a network failure at that exact moment
 
 > The review gate is not passed while an Outstanding item or a Learning
 > lacks a disposition. Dispositions execute at the root through the owning
