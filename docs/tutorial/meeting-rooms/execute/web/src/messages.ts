@@ -32,6 +32,8 @@ export const MESSAGES = {
   noTimesLeft: 'No times left on this date.',
 } as const
 
-/** D10: a Book answered 409; the booking's own times, written in the user's zone, never `error.message` (G18). */
-export const bookConflictMessage = (roomName: string, start: string, end: string): string =>
-  `${roomName} is already booked from ${start} to ${end}.`
+/**
+ * D10: a Book answered 409. The sentence is `{roomName} is already booked from {start} to {end}.`;
+ * `range` is `formatRange`'s `{start} to {end}` for the booking's own times in the user's zone, never `error.message` (G18).
+ */
+export const bookConflictMessage = (roomName: string, range: string): string => `${roomName} is already booked from ${range}.`

@@ -107,7 +107,8 @@ export function BookingForm({ token, zone, date, rooms, now, onBooked, onSession
     } else {
       setMessage(outcome.message)
       if (outcome.kind === 'booked') {
-        setTitle('')
+        // Typing works while busy: clear the title only if it is still the one that was sent.
+        setTitle((t) => (t === title ? '' : t))
         onBookedRef.current()
       }
     }

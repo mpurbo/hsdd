@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { Booking } from '../api/types'
+import { bookConflictMessage } from '../messages'
 import { loadFixture } from '../test/fetchStub'
 import { startOptions } from '../time/time'
 import { bookOutcome, keepOrFirst, timeChoices, titleAllowed } from './bookingRules'
@@ -15,7 +16,7 @@ describe('titleAllowed (AC-5.6, booking-api@v1 G8)', () => {
   })
   it("refuses book-title-too-long's 81 code points", () => expect(titleAllowed(titleOf('book-title-too-long'))).toBe(false))
   it('refuses empty and whitespace-only titles (Review Focus 5)', () => {
-    for (const t of ['', '   ', '\t\t', '  ', ' \t \n']) expect(titleAllowed(t)).toBe(false)
+    for (const t of ['', '   ', '\t\t', '\u00a0\u00a0', ' \t\u00a0\n']) expect(titleAllowed(t)).toBe(false)
   })
   it('accepts a title with spaces around it', () => expect(titleAllowed('  Retro ')).toBe(true))
 })
@@ -39,6 +40,9 @@ describe('keepOrFirst', () => {
   it('falls back to the first', () => expect(keepOrFirst('z', ['a', 'b'])).toBe('a'))
   it('opens on the first', () => expect(keepOrFirst(undefined, ['a', 'b'])).toBe('a'))
   it('is undefined when nothing is offered', () => expect(keepOrFirst('a', [])).toBeUndefined())
+})
+describe('bookConflictMessage (D10)', () => {
+  it('writes the sentence around a formatted range', () => expect(bookConflictMessage('Merapi', '09:00 to 10:00')).toBe('Merapi is already booked from 09:00 to 10:00.'))
 })
 describe('bookOutcome (D10, booking-api@v1 G18)', () => {
   const conflict = (fixture('book-overlap').response.body as { error: { conflict: Booking } }).error.conflict

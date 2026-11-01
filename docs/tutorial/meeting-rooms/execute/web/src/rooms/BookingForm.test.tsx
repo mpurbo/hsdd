@@ -110,6 +110,15 @@ describe('BookingForm choices', () => {
     expect(optionTexts('start')[0]).toBe('09:15')
   })
 
+  it('a later clock moves a chosen start that is no longer offered to the first offered', async () => {
+    const { user, view, props } = renderForm(JAKARTA)
+    await user.selectOptions(select('start'), '09:00')
+    expect(shownOption('start')).toBe('09:00')
+    view.rerender(<BookingForm {...props} now="2026-11-05T02:00:00.000Z" />)
+    expect(shownOption('start')).toBe('09:15')
+    expect(optionTexts('end')[0]).toBe('09:30')
+  })
+
   it('no start left', async () => {
     const { user } = renderForm({ ...JAKARTA, date: '2026-11-04', now: '2026-11-05T02:00:00.000Z' })
     expect(screen.getByText('No times left on this date.')).toBeTruthy()
@@ -361,5 +370,16 @@ describe('BookingForm Book (D10, D1, D3)', () => {
     act(() => select('room').focus())
     await stub.answer(0, ...answerOf('book-overlap'))
     expect(document.activeElement).toBe(select('room'))
+  })
+
+  it('a title typed while Book is in flight survives the 201', async () => {
+    const stub = stubFetchDeferred()
+    const { user } = renderForm(JAKARTA)
+    await choose(user, 'Merapi', '09:00', '10:00', 'Sprint planning')
+    await user.click(book())
+    await user.type(titleField(), ' and retro')
+    await stub.answer(0, ...answerOf('book-a-room'))
+    expect(titleField().value).toBe('Sprint planning and retro')
+    expect(alert()?.textContent).toBe('Booked.')
   })
 })

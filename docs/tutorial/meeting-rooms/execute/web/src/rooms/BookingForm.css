@@ -21,6 +21,7 @@
 .booking-form select,
 .booking-form input {
   font: inherit;
+  font-size: 1rem; /* under 16px, iOS Safari zooms on focus */
   max-width: 100%;
   box-sizing: border-box;
   padding: 8px 10px;

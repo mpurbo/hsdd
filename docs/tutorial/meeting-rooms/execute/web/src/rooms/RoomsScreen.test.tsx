@@ -315,6 +315,22 @@ describe('RoomsScreen (AC-4.1 to AC-4.4, D1, D3, D8)', () => {
       expect(screen.getByRole('alert').textContent).toBe('Booked.')
     })
 
+    it('a date changed while Book is in flight drops the answer and refetches nothing for either date', async () => {
+      clockAt('2026-11-04T18:00:00.000Z')
+      const stub = stubFetchDeferred()
+      renderRooms('Asia/Jakarta')
+      await stub.answer(0, 200, edges.response.body)
+      await chooseAndBook(userEvent.setup())
+      fireEvent.change(dateInput(), { target: { value: '2026-11-06' } })
+      await stub.answer(1, 201, booked)
+      expect(stub.routes()).toEqual([
+        GET_EDGES,
+        'POST /api/bookings',
+        'GET /api/rooms?from=2026-11-05T17:00:00.000Z&to=2026-11-06T17:00:00.000Z',
+      ])
+      expect(screen.queryByRole('alert')).toBeNull()
+    })
+
     it('a refetch that answers 401 calls onSessionExpired', async () => {
       clockAt('2026-11-04T18:00:00.000Z')
       const noToken = atPath(fixture('rooms-no-token'), RANGE_EDGES_PATH)
