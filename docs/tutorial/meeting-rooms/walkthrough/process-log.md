@@ -846,3 +846,48 @@ root `npm test`: backend 299, replay 46, web 387, browser 49, all green.
   phase followed it.
 
 ### 07:43 · integration.4 (spot-check)
+
+**integration.4, 07:43 to 08:18 (agent), signed 08:22.** Home's browser
+tests and a pure `e2e/time.ts` pinned to ADR-002's strings; AC-1.1's
+browser test drops the 3-second check, per PRD v2 (DEC-195's open item).
+Browser suite 49 to 69. The Home behavior had shipped with the web
+phases, so each test's red came from a named network mutant (a temporary
+`page.route` block, six of them, outputs committed). Spot-check review:
+a seasonal date collision (Important: integration.5 picking its own
+dates would land on the same days about 224 run days of 2027), fixed
+with a shared winter-date helper. The browser checks the web.7 and
+integration.3 sign-offs had deferred (ayu on the Login screen, 360 px,
+Cancel's width and alert, focus) all passed against `npm run dev`.
+
+- **Finding (HSDD).** Items an earlier sign-off defers to a later phase
+  never reach that phase's context; the agent learned them only from the
+  orchestrator's brief. A deferral names a phase id, and nothing carries
+  it forward.
+- **Finding (HSDD).** constraint 1's "commit before that phase" red does
+  not fit an integration phase whose behavior shipped across several
+  earlier phases; network-boundary mutants were the only red available.
+
+### 08:23 · integration.5 (full-review), the last phase
+
+### 08:40 · six hsdd-auto defects fixed (on `feat/v0.11.0`)
+
+While integration.4 and .5 ran, a fresh agent fixed the run's hsdd-auto
+findings on `fix/v011-run-findings`, merged with 815 tests (804 before),
+build decisions B-52 to B-57:
+
+- R-1: a baseline source version matches only with its citation name
+  (`PRD 1`, `PRD v1`), never as a bare token; the spec had said bare.
+- R-2: an item on a handoff waits for that handoff's own step; B-10's
+  fallback applies only once the handoff is executed or skipped.
+- R-3: an inserted step whose default invocation has no `{reason}` slot
+  gets "This step executes the insert-step item {id}: {text}." appended.
+- R-4: an accepted insert-step can be withdrawn by a second decision
+  while no dispatch names it.
+- R-5: `## Produced` lists contracts added and ADRs proposed beside ADRs
+  amended, and drops the placeholder.
+- R-6: the parent's citation touch owns its copies of a child's lines;
+  a child's touch changes only its own file.
+
+The tutorial's own run keeps the skills it was recorded with
+(`.claude/skills/` copied at 6fa66cb); its records show the defects these
+fixes address.
