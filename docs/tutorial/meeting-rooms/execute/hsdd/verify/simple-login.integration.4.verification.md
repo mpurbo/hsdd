@@ -167,12 +167,10 @@ AC-2.5's literal times.
   plan, +1641; evidence, +1638 lines of text plus five PNGs.
 
 ## Sign-off
-- Reviewer / date:
-- Review tier applied:
-- Disposition of each Outstanding item: verified | waived (reason) |
-  deferred to {phase-id}
-- Disposition of each Learning: spec-updated | contract-bumped (id@v) |
-  adr-proposed (ADR-nnn) | dropped (reason)
+- Reviewer / date: Claude for Purbo Mohamad (owner proxy, delegated by the owner before the run), 2026-11-01
+- Review tier applied: spot-check: the diff read by file list (e2e/time.ts, its spec, home.spec.ts, evidence), the six named network mutants' red outputs in docs/superpowers/evidence/simple-login.integration.4/ read, the fresh reviewer's report read (1 Important, a seasonal date collision with integration.5's tests, fixed test-first with a shared winter-date helper), the root npm test rerun green by the orchestrator (browser 69)
+- Disposition of each Outstanding item: the README's coverage sentence (now false): deferred to simple-login.integration.5, which completes the browser coverage; VoiceOver and the OS time-zone change: waived (the alert role is checked in the accessibility tree; three browser zones give identical text); a fresh clone: deferred to the tutorial's fresh-clone run
+- Disposition of each Learning: all dropped for this tree; that deferred items from earlier sign-offs never reach a later phase's context is carried to the checkpoint as an HSDD finding
 
 > The review gate is not passed while an Outstanding item or a Learning
 > lacks a disposition. Dispositions execute at the root through the owning
