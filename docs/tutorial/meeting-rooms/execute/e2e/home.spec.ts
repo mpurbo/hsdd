@@ -14,6 +14,7 @@
 // | AC-2.5: budi's Merapi booking          |           1 | Merapi | budi    |
 // | AC-6.1: soonest first                  |        2, 3 | Kew    | both    |
 // | AC-6.2: Cancel                         |           4 | Bromo  | both    |
+// | Success: a restart                     |           5 | Kew    | budi    |
 //
 // The AC-6.1 empty-state test cancels every booking budi holds, so no test may
 // rely on a booking of budi's made outside its own body.
@@ -188,4 +189,18 @@ test("AC-6.1: with every booking of budi's cancelled, Home shows (no bookings) u
   }
   await home(page, "budi");
   await expectLines(page, "My bookings", "(no bookings)");
+});
+
+test("Success: after a restart, Login says the session expired and Home still lists the booking", async ({ page, backend }) => {
+  const booking = await book("budi", "kew", winterDay(5), LONDON, "09:00", "10:00", "Survives restart");
+  const item = [homeLine(booking.start, booking.end, LONDON), "Kew · Survives restart"];
+  await home(page, "budi");
+  await expectLines(page, ...item);
+  // ADR-001: a restart ends every token and keeps every booking (booking-api@v1 G17).
+  await backend.restart();
+  await page.reload();
+  await expect(page.getByText("Your session has expired. Please sign in again.")).toBeVisible(); // AC-2.3
+  await expect(page.getByRole("button", { name: "Sign in" })).toBeVisible();
+  await signIn(page, "budi", PASSWORDS.budi);
+  await expectLines(page, ...item);
 });
