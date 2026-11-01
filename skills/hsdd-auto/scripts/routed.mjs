@@ -9,7 +9,7 @@ import { P, resolveLayout } from "./lib/paths.mjs";
 import { targetType } from "./lib/kinds.mjs";
 import { loadConfig } from "./lib/config.mjs";
 import { leafParentsOf, loadTree } from "./lib/tree.mjs";
-import { appendJsonl, idNum, readDispatch, readJsonl, readReports, stepNum } from "./lib/records.mjs";
+import { appendJsonl, idNum, listDispatches, readDispatch, readJsonl, readReports, stepNum } from "./lib/records.mjs";
 
 export class QueueError extends Error {
   constructor(errors) {
@@ -70,8 +70,9 @@ export const nextQueueId = (lines) => {
 const OPEN_ONLY = ["from", "target", "kind", "text", "step_kind", "step_target", "after"];
 const CLOSE_FIELDS = ["by", "note", "decision"];
 
-// A.5's schema and its code rules, for `line` appended after `lines`.
-export const lineErrors = (lines, line) => {
+// A.5's schema and its code rules, for `line` appended after `lines`. `executing` maps an item id to the
+// step whose dispatch file names it (`queue_item`); an accepted item is withdrawn only without one (B-55).
+export const lineErrors = (lines, line, { executing = new Map() } = {}) => {
   const schema = validate("queue-line", line);
   if (schema.length > 0) return schema;
   const errors = [];
@@ -105,12 +106,18 @@ export const lineErrors = (lines, line) => {
       else if (insert && item.status !== "accepted") errors.push(`${line.id}: an insert-step item is addressed only after it is accepted (it is ${item.status})`);
       else if (!insert && item.status !== "open") errors.push(`${line.id}: is already ${item.status}`);
       break;
-    case "accepted": case "rejected":
+    case "accepted": case "rejected": {
       need("decision");
       forbid("by", "note");
+      const withdrawal = insert && line.status === "rejected" && item.status === "accepted";
       if (!insert) errors.push(`${line.id}: only an insert-step item is accepted or rejected (it is ${item.kind})`);
-      else if (item.status !== "open") errors.push(`${line.id}: is already ${item.status}`);
+      else if (withdrawal && executing.has(line.id)) {
+        errors.push(`${line.id}: is accepted and ${executing.get(line.id)} was dispatched for it; an accepted item is withdrawn only before a step is dispatched for it`);
+      } else if (withdrawal && line.decision === item.events.at(-1).decision) {
+        errors.push(`${line.id}: a withdrawal records a decision of its own, not ${line.decision}, which accepted it`);
+      } else if (!withdrawal && item.status !== "open") errors.push(`${line.id}: is already ${item.status}`);
       break;
+    }
     default:
   }
   return errors;
@@ -155,11 +162,11 @@ export const planIngest = (lines, { step, kind, segment, segmentOf, routed, clos
 
 // Validates every new line against the queue as it will stand, then appends them all; on any
 // error nothing is written.
-const appendLines = (repoRoot, newLines) => {
+const appendLines = (repoRoot, newLines, opts) => {
   const lines = readJsonl(repoRoot, P.queue);
   const errors = [];
   newLines.reduce((acc, line) => {
-    errors.push(...lineErrors(acc, line));
+    errors.push(...lineErrors(acc, line, opts));
     return [...acc, line];
   }, lines);
   if (errors.length > 0) throw new QueueError(errors);
@@ -233,8 +240,16 @@ export const closeItem = (repoRoot, id, { outcome, by, note }, { tree } = {}) =>
   appendLines(repoRoot, [{ id, at: nowStamp(), status: outcome, by, note }]);
 };
 
+// Item id -> the step whose dispatch file names it as `queue_item` (the last such step).
+const executingSteps = (repoRoot) => new Map(listDispatches(repoRoot).flatMap((s) => {
+  const id = readFront(repoRoot, s)?.queue_item;
+  return typeof id === "string" ? [[id, s]] : [];
+}));
+
+// Accepts or rejects an insert-step item; `rejected` on an accepted one withdraws it while no step has
+// been dispatched for it (B-55).
 export const decideItem = (repoRoot, id, { outcome, decision }) => {
-  appendLines(repoRoot, [{ id, at: nowStamp(), status: outcome, decision }]);
+  appendLines(repoRoot, [{ id, at: nowStamp(), status: outcome, decision }], { executing: executingSteps(repoRoot) });
 };
 
 // commit.mjs, when the inserted step commits as completed. A rerun finds the item addressed and writes nothing.

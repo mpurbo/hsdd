@@ -340,3 +340,35 @@ test("ingest ignores defects in the config, the tree and the intake records", ()
   assert.equal(r.code, 0, r.stdout);
   assert.deepEqual(queue(dir).map((l) => l.id), ["Q-001"]);
 });
+
+test("an accepted insert-step is withdrawn by a rejection of its own until a step is dispatched for it (run finding R-4)", () => {
+  // The run's Q-085: accepted by DEC-209, made moot by S24, and "already accepted" on --rejected.
+  const base = [
+    open("Q-001", { target: "run", kind: "insert-step", step_kind: "reconcile", step_target: "shop.api" }),
+    line("Q-001", "accepted", "2026-10-22T10:30:00Z", { decision: "DEC-001" }),
+  ];
+  const withdraw = line("Q-001", "rejected", "2026-10-22T11:00:00Z", { decision: "DEC-002" });
+  assert.deepEqual(lineErrors(base, withdraw), []);
+  assert.match(lineErrors(base, { ...withdraw, decision: "DEC-001" }).join(), /decision of its own/);
+  assert.match(lineErrors(base, withdraw, { executing: new Map([["Q-001", "S07"]]) }).join(), /S07/);
+  assert.match(lineErrors([...base, withdraw], line("Q-001", "accepted", "2026-10-22T11:30:00Z", { decision: "DEC-003" })).join(), /already rejected/);
+  assert.match(lineErrors(base, line("Q-001", "accepted", "2026-10-22T11:30:00Z", { decision: "DEC-003" })).join(), /already accepted/);
+  const addressed = [...base, line("Q-001", "addressed", "2026-10-22T12:00:00Z", { by: "S07", note: "n" })];
+  assert.match(lineErrors(addressed, withdraw).join(), /already addressed/);
+
+  // At the edge: the CLI withdraws while no dispatch file names the item, and refuses once one does.
+  const dir = makeRepo({ stage: "06-planned" });
+  const id = openItem(dir, { from: "S01", target: "run", kind: "insert-step", text: "x", step_kind: "reconcile", step_target: "shop.api" });
+  decideItem(dir, id, { outcome: "accepted", decision: "DEC-001" });
+  const out = silent();
+  assert.equal(main(["decide", id, "--rejected", "--decision", "DEC-002"], dir, out), 0, out.out.join("\n"));
+  assert.equal(queueItems(queue(dir)).get(id).status, "rejected");
+  assert.deepEqual(queue(dir).filter((l) => l.id === id).map((l) => l.status), ["open", "accepted", "rejected"]);
+
+  const ran = makeRepo({ stage: "06-planned" });
+  const q = openItem(ran, { from: "S01", target: "run", kind: "insert-step", text: "x", step_kind: "reconcile", step_target: "shop.api" });
+  decideItem(ran, q, { outcome: "accepted", decision: "DEC-001" });
+  fakeStep(ran, { step: "S02", segment: SEGMENT, kind: "reconcile", target: "shop.api", queue_item: q, status: "stopped" });
+  assert.throws(() => decideItem(ran, q, { outcome: "rejected", decision: "DEC-002" }), /S02/);
+  assert.equal(queueItems(queue(ran)).get(q).status, "accepted");
+});

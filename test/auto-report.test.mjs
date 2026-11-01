@@ -325,6 +325,18 @@ test("deferred findings list open consider items, rejected insert-steps and alig
   for (const absent of ["Q-001", "Q-003", "Q-005", "a new finding"]) assert.ok(!deferred.includes(absent), `${absent} must not be listed:\n${deferred}`);
 });
 
+test("deferred findings name a withdrawn insert-step's accepting and withdrawing decisions (run finding R-4)", () => {
+  const dir = begun();
+  step(dir, 2, "spec-touch", "shop.api");
+  queue(dir,
+    { id: "Q-001", status: "open", from: "S02", target: "run", kind: "insert-step", text: "add a reconcile", step_kind: "reconcile", step_target: "shop.api" },
+    { id: "Q-001", status: "accepted", decision: "DEC-009" },
+    { id: "Q-001", status: "rejected", decision: "DEC-011" },
+  );
+  const deferred = section(build(dir), "Deferred findings");
+  assert.ok(deferred.includes("| insert-step, withdrawn | Q-001 | S02 | reconcile on shop.api | add a reconcile (accepted by DEC-009, withdrawn by DEC-011) |"), deferred);
+});
+
 // ---------- the plan report ----------
 
 test("plan report has the tree table and every decision by blast radius", () => {

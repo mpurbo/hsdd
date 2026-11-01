@@ -1307,6 +1307,11 @@ item may carry `after` (§6.5): `next.mjs` returns it only once the named
 handoff, or every handoff, is executed or skipped, so an insert ordered
 "before the final align" waits for the handoffs. The orchestrator rejects an
 item that duplicates a pending handoff (same kind and target), citing it.
+An accepted item for which no step has been dispatched yet (no dispatch
+file names it as `queue_item`) is withdrawn the same way, by a `rejected`
+line with a `plan` decision of its own, recorded where an acceptance would
+be, when the steps since its acceptance made it moot; once a step has been
+dispatched for it, it stays accepted, and the step closes it.
 The orchestrator adds a change-log entry naming the decision.
 
 ### 8.8 Waiting
@@ -1861,7 +1866,8 @@ routed.mjs list [--target <id>] [--open]
 records each `closes` entry. `open` lets the orchestrator raise an item.
 `close` lets the orchestrator close a `must-address` or `consider` item that
 targets `run` or the request path, in a `plan` step (§10.2). `decide`
-records the outcome of an `insert-step` item. `list` prints items in their
+records the outcome of an `insert-step` item, and `--rejected` on an
+accepted one withdraws it while no step has been dispatched for it (§8.7). `list` prints items in their
 current state. Item ids are `Q-001` onward. The module also exports the
 matching rule of §6.5, which `dispatch.mjs` and `gate.mjs` use.
 
@@ -1898,8 +1904,9 @@ and kept across re-runs. Both modes have, in order:
    `reads_outside` entries, inserted and skipped steps, and the final gate's
    warning count.
 9. **Deferred findings** (generated): `consider` items still open,
-   `insert-step` items rejected (with the decision id), and align findings
-   not reopened (§9.1).
+   `insert-step` items rejected (with the decision id) or withdrawn (with
+   the accepting and the withdrawing decision ids), and align findings not
+   reopened (§9.1).
 10. **How to review** (fixed text): read the report, then the decisions
     under item 3 in the ledger; record one line per decision in
     `hsdd/judgement/decision-reviews.jsonl` (§6.8); each step is two
@@ -3185,7 +3192,9 @@ and `text`, plus `step_kind` and `step_target` for `insert-step`, whose
 `handoffs`);
 `addressed` and `explained` have `by` and `note`; `accepted` and `rejected`
 have `decision` and apply only to `insert-step` items; an `addressed` line
-for an `insert-step` item follows an `accepted` one.
+for an `insert-step` item follows an `accepted` one; a `rejected` line may
+follow an `accepted` one (a withdrawal, §8.7) when its `decision` differs
+from the acceptance's and no dispatch file names the item as `queue_item`.
 
 ### A.6 `review.schema.json`
 

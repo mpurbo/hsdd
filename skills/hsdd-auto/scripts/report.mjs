@@ -232,8 +232,14 @@ const deferredTable = (ctx, covered, steps, queueLines, queue) => {
   const items = [...queue.values()];
   const considers = items.filter((it) => it.kind === "consider" && it.status === "open" && ours(it))
     .map((it) => ["consider, open", it.id, it.from, it.target, it.text]);
-  const rejected = items.filter((it) => it.kind === "insert-step" && it.status === "rejected" && ours(it))
-    .map((it) => ["insert-step, rejected", it.id, it.from, `${it.step_kind} on ${it.step_target}`, `${it.text} (rejected by ${it.events.at(-1).decision})`]);
+  // A rejection after an acceptance withdraws the item (B-55): both decisions are named.
+  const rejected = items.filter((it) => it.kind === "insert-step" && it.status === "rejected" && ours(it)).map((it) => {
+    const accepted = it.events.find((e) => e.status === "accepted");
+    const last = it.events.at(-1).decision;
+    return accepted
+      ? ["insert-step, withdrawn", it.id, it.from, `${it.step_kind} on ${it.step_target}`, `${it.text} (accepted by ${accepted.decision}, withdrawn by ${last})`]
+      : ["insert-step, rejected", it.id, it.from, `${it.step_kind} on ${it.step_target}`, `${it.text} (rejected by ${last})`];
+  });
   const segOf = (s) => frontOf(ctx, s)?.segment ?? runLineOf(ctx, s)?.segment ?? null;
   const repeats = steps.filter(({ step }) => frontOf(ctx, step)?.kind === "align").flatMap(({ step, segment }) => {
     const routed = readReports(ctx.repoRoot, step).flatMap(({ report }) => report?.routed ?? []);
