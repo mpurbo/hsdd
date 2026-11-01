@@ -111,9 +111,9 @@ nodes, what each receiving skill will do, the exact handoff prompt; for
 structural, the options and what the human must decide}
 
 ## Produced
-{a ledger: nodes grafted, contracts bumped (id@v), ADRs proposed, phases
-appended (ids). hsdd-checkpoint appends phases from Scope citations; grafts
-and bumps may be appended by hand}
+{a ledger: nodes grafted, contracts bumped (id@v), contracts added (id@v),
+ADRs proposed, ADRs amended, phases appended (ids). hsdd-checkpoint appends
+phases from Scope citations; grafts and bumps may be appended by hand}
 
 ## Change log
 - YYYY-MM-DD: created, routed {class}
@@ -170,7 +170,12 @@ whenever it runs with `--unattended`, and may write it otherwise.
 
 **`cites-superseded`** holds when any of the target's files contains a
 superseded string. The superseded strings are: for every `baseline` source
-in `run.yaml`, its `path` and its `version`; and for every contract `id`
+in `run.yaml`, its `path`, and its `version` tied to its citation name,
+`{cite} {version}` or, when the version does not start with `v`,
+`{cite} v{version}`, with whitespace between the two, the name not inside a
+longer word and the version followed by neither a letter, digit, `_` or
+`-` nor a `.` and a digit (a bare version string is no citation: a version
+`1` would match every number); and for every contract `id`
 whose current version, the highest any file of that `id` holds, is `v{n}`
 with `n` above 0, each `{id}@v{k}` with `k` below `n` that is superseded,
 followed by a character that is not a letter, digit, `_` or `-`, or by the

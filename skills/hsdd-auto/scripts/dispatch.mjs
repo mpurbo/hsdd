@@ -352,7 +352,13 @@ const invocationText = (ctx, next, c4) => {
     if (h === null) throw new DispatchError([`handoff ${next.handoff} is not in the segment's intake record (${recordPath(ctx) ?? "none found"})`]);
     return h.prompt;
   }
-  return render(stepTemplate(next.kind).invocation, escapeFills(c4), `steps/${next.kind}.md default_invocation`);
+  const { invocation } = stepTemplate(next.kind);
+  const rendered = render(invocation, escapeFills(c4), `steps/${next.kind}.md default_invocation`);
+  // B-54: a step that executes an insert-step item reads the item's text in its invocation; a default with
+  // a {reason} slot carries it already. The text is appended as data, never rendered.
+  return next.queue_item && c4.reason != null && !slotNames(invocation).includes("reason")
+    ? `${rendered} This step executes the insert-step item ${next.queue_item}: ${c4.reason}.`
+    : rendered;
 };
 
 const targetLine = (ctx, next) => {

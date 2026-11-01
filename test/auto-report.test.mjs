@@ -325,6 +325,18 @@ test("deferred findings list open consider items, rejected insert-steps and alig
   for (const absent of ["Q-001", "Q-003", "Q-005", "a new finding"]) assert.ok(!deferred.includes(absent), `${absent} must not be listed:\n${deferred}`);
 });
 
+test("deferred findings name a withdrawn insert-step's accepting and withdrawing decisions (run finding R-4)", () => {
+  const dir = begun();
+  step(dir, 2, "spec-touch", "shop.api");
+  queue(dir,
+    { id: "Q-001", status: "open", from: "S02", target: "run", kind: "insert-step", text: "add a reconcile", step_kind: "reconcile", step_target: "shop.api" },
+    { id: "Q-001", status: "accepted", decision: "DEC-009" },
+    { id: "Q-001", status: "rejected", decision: "DEC-011" },
+  );
+  const deferred = section(build(dir), "Deferred findings");
+  assert.ok(deferred.includes("| insert-step, withdrawn | Q-001 | S02 | reconcile on shop.api | add a reconcile (accepted by DEC-009, withdrawn by DEC-011) |"), deferred);
+});
+
 // ---------- the plan report ----------
 
 test("plan report has the tree table and every decision by blast radius", () => {
@@ -376,7 +388,7 @@ const produced = () => {
 test("intake append to ## Produced is idempotent and lists no phases", () => {
   const dir = produced();
   const add = producedAdditions(ctxOf(dir), ISEG);
-  assert.deepEqual(add, { contracts: ["order-api@v2"], adrs: ["ADR-001"], nodes: ["shop.web.admin"] });
+  assert.deepEqual(add, { contracts: ["order-api@v2"], addedContracts: [], adrs: ["ADR-001"], proposedAdrs: [], nodes: ["shop.web.admin"] });
   assert.equal(appendProduced(ctxOf(dir), ISEG), true);
   const once = read(dir, RECORD);
   const produced_ = section(once, "Produced");
@@ -400,6 +412,37 @@ test("## Produced lists a version drafted in its own file as the id's bump; a ne
   put(dir, "hsdd/contract/pay-api.md", "---\nid: pay-api\nversion: v1\nstatus: draft\n---\n\n# Contract: pay-api\n");
   step(dir, 3, "contract-touch", "order-api", { handoff: "H1" }, ISEG);
   assert.deepEqual(producedAdditions(ctxOf(dir), ISEG).contracts, ["order-api@v2"]);
+});
+
+test("## Produced lists a new contract as added and a new ADR as proposed, and replaces a none-yet placeholder (run finding R-5)", () => {
+  // The run's record after its report step: "- none yet: ..." stayed beside "ADRs amended: ADR-001, ADR-002",
+  // ADR-002 was new, and the new contract booking-api@v1 was missing.
+  const placeholder = ORDER.replace("## Produced\n", "## Produced\n- none yet: grafts, bumps and ADRs are appended as the handoffs land;\n  `hsdd-checkpoint` appends phases from their Scope citations\n");
+  const dir = intakeBegun();
+  put(dir, RECORD, placeholder);
+  commitAll(dir, "the intake record with its placeholder");
+  put(dir, ADR, `${read(dir, ADR)}\nAmended for the currency.\n`);
+  put(dir, "hsdd/adr/002-currency.md", "---\nid: ADR-002\nstatus: accepted\naffects: [shop.api]\ndate: 2026-10-22\n---\n\n# ADR-002: Currency\n");
+  put(dir, "hsdd/contract/pay-api.md", "---\nid: pay-api\nversion: v1\nstatus: draft\n---\n\n# Contract: pay-api\n");
+  step(dir, 3, "adr", "ADR-002", {}, ISEG);
+  const add = producedAdditions(ctxOf(dir), ISEG);
+  assert.deepEqual(add, { contracts: [], addedContracts: ["pay-api@v1"], adrs: ["ADR-001"], proposedAdrs: ["ADR-002"], nodes: [] });
+  assert.equal(appendProduced(ctxOf(dir), ISEG), true);
+  const record = read(dir, RECORD);
+  assert.equal(section(record, "Produced").trim(), "- Contracts added: pay-api@v1\n- ADRs proposed: ADR-002\n- ADRs amended: ADR-001");
+  const today = nowStamp().slice(0, 10);
+  assert.ok(section(record, "Change log").includes(`- ${today}: hsdd-auto segment ${ISEG}: contracts added pay-api@v1; ADRs proposed ADR-002; ADRs amended ADR-001`), record);
+});
+
+test("appendedRecord removes only a placeholder that says nothing is produced yet", () => {
+  const add = { contracts: ["a@v2"], adrs: [], nodes: [] };
+  const withNone = (body) => `# Intake: x\n\n## Produced\n\n${body}\n\n## Change log\n\n- d: created\n`;
+  for (const body of ["None yet.", "- none", "_None yet: the handoffs append._", "(none yet)", "{a ledger: nodes grafted, contracts bumped (id@v), ADRs proposed, phases\nappended (ids). hsdd-checkpoint appends phases from Scope citations; grafts\nand bumps may be appended by hand}"]) {
+    const out = appendedRecord(withNone(body), add, "seg-1", "2026-10-23");
+    assert.ok(out.includes("## Produced\n\n- Contracts bumped: a@v2\n\n## Change log"), `${body}\n---\n${out}`);
+  }
+  const kept = appendedRecord(withNone("- Phases: shop.api.1\n- Nonetheless kept: x"), add, "seg-1", "2026-10-23");
+  assert.ok(kept.includes("- Phases: shop.api.1\n- Nonetheless kept: x\n- Contracts bumped: a@v2\n"), kept);
 });
 
 test("## Produced: a version file that was there at the setup is no bump of this segment", () => {

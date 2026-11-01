@@ -291,3 +291,41 @@ test("handoffTargets maps each handoff id to its target; empty without a block",
   assert.deepEqual([...handoffTargets(null)], []);
   assert.deepEqual([...handoffTargets({ block: { handoffs: "not a list" } })], []);
 });
+
+test("cites-superseded ties a baseline version to its citation name, never a bare token (run finding R-1)", () => {
+  // The tutorial run's sources: a baseline PRD at version "1" and an update cited as "Update 1".
+  const dir = makeRepo({ files: {
+    "notes/min-length.json": "{ \"type\": \"string\", \"minLength\": 1 }\n",
+    "notes/numbers.md": "- `username`: string, 1 to 64 characters (RFC-001 §1, phase 1).\n",
+    "notes/prd-1.md": "Per PRD 1 §US-2, a booking has a title.\n",
+    "notes/prd-v1.md": "Per PRD v1 §US-2, a booking has a title.\n",
+    "notes/prd-wrapped.md": "Per PRD\n1 §US-2, a booking has a title.\n",
+    "notes/prd-v2.md": "Per PRD v2 §US-2, a booking has a title.\n",
+    "notes/prd-10.md": "Per PRD 10 and PRD 1.2 and XPRD 1.\n",
+    "notes/update.md": "As Update 1 v1 §Scope says, the phone is optional.\n",
+    "notes/bare-v1.md": "The API v1 shape stays.\n",
+  } });
+  const config = withDefaults(baseConfig({ sources: {
+    normative: [{ path: "ref/prd-v2.md", cite: "PRD v2", version: "2" }],
+    baseline: [
+      { path: "ref/prd.md", cite: "PRD", version: "1" },
+      { path: "ref/update-1.md", cite: "Update 1", version: "1" },
+    ],
+  } }));
+  const strings = supersededStrings(config, { contracts: new Map() });
+  const holds = (file) => citesSuperseded(dir, [file], strings);
+  assert.equal(holds("notes/min-length.json"), false);
+  assert.equal(holds("notes/numbers.md"), false);
+  assert.equal(holds("notes/prd-1.md"), true);
+  assert.equal(holds("notes/prd-v1.md"), true);
+  assert.equal(holds("notes/prd-wrapped.md"), true);
+  assert.equal(holds("notes/prd-v2.md"), false);
+  assert.equal(holds("notes/prd-10.md"), false);
+  assert.equal(holds("notes/update.md"), true);
+  // A version that already starts with v is not given a second v; a bare version is no citation.
+  const v = supersededStrings(withDefaults(baseConfig({ sources: {
+    normative: [{ path: "ref/spec-v2.md", cite: "Spec", version: "v2" }],
+    baseline: [{ path: "ref/spec.md", cite: "Spec", version: "v1" }],
+  } })), { contracts: new Map() });
+  assert.equal(citesSuperseded(dir, ["notes/bare-v1.md"], v), false);
+});

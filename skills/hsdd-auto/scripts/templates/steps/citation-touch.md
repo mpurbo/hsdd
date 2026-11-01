@@ -42,8 +42,12 @@ Each line names its file; check it there before relying on it.
 apply §12.4's citation-touch rule exactly: never move a contract version in a
 node header's `Produces` or `Consumes` line, a copy of it above the node, or
 an ADR's `affects`; leave every citation of a live earlier version
-(`coexisting`) and route a `consider` item for it; report the counts moved
-and kept in `notes`.
+(`coexisting`) and route a `consider` item for it; move the source citations
+in this file's copies of a child node's lines (an embedded summary,
+child-node table or DAG), matching the child's own `Sources` entry when that
+has already moved. On a child node, change only its own file: the copy of
+its lines in the parent's spec is the parent's touch's (§12.4). Report the
+counts moved and kept in `notes`.
 
 ### Done when
 

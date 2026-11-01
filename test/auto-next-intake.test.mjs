@@ -288,7 +288,19 @@ test("intakeHandoffTargets is guarded by a completed intake step and a valid blo
   assert.deepEqual([...intakeHandoffTargets(ctxOf(stopped))], []);
   assert.deepEqual([...intakeHandoffTargets(ctxOf(begun()))], []);
   const done = routed();
+  h1(done);
+  skip(done, "H2a");
   assert.deepEqual([...intakeHandoffTargets(ctxOf(done))].sort(), [["H1", "order-api"], ["H2a", "shop.web.app"]]);
+});
+
+test("intakeHandoffTargets names only executed or skipped handoffs (run finding R-2)", () => {
+  // Before its handoff runs, an item on H2a waits for H2a's own step; no other step on shop.web.app takes it.
+  const dir = routed();
+  assert.deepEqual([...intakeHandoffTargets(ctxOf(dir))], [], "H1 and H2a are pending");
+  h1(dir);
+  assert.deepEqual([...intakeHandoffTargets(ctxOf(dir))], [["H1", "order-api"]], "H1 executed, H2a pending");
+  skip(dir, "H2a");
+  assert.deepEqual([...intakeHandoffTargets(ctxOf(dir))].sort(), [["H1", "order-api"], ["H2a", "shop.web.app"]]);
 });
 
 test("consistency before align", () => {

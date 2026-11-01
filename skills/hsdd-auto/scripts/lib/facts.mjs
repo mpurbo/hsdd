@@ -8,6 +8,7 @@ import { authorityText, sourcesOf } from "./config.mjs";
 import { contractRefs, leafParentsOf, phaseNodeOf, toLines } from "./tree.mjs";
 import { contractRoles, nodeFiles, specFilesInOrder } from "./order.mjs";
 import { contractAt, contractTarget, lowerVersions, refFile, splitRef, supersededVersions, targetVersions, versionsOf } from "./contracts.mjs";
+import { citedBaseline, citedVersions } from "./intake.mjs";
 
 const unique = (xs) => [...new Set(xs)];
 const code = (s) => `\`${s}\``;
@@ -212,13 +213,19 @@ const contractFacts = (ctx, step) => {
   ];
 };
 
-// The superseded strings of 12.2 as text: baseline paths and versions, and every superseded contract
-// version (lib/contracts.mjs: deprecated or retired, or with no file of its own).
+// The superseded strings of 12.2 as text: baseline paths, baseline versions tied to their citation names
+// (B-52), and every superseded contract version (lib/contracts.mjs: deprecated or retired, or with no file
+// of its own).
+const citedLine = (s) => {
+  const forms = citedVersions(s.version).map((v) => code(`${s.cite} ${v}`));
+  return cite(`Superseded string${forms.length > 1 ? "s" : ""} ${forms.join(" and ")}: a baseline source's version, cited by its citation name; a bare ${code(s.version)} is no citation`, P.runYaml);
+};
+
 const supersededLines = (ctx) => {
   const baseline = ctx.config.sources.baseline ?? [];
   const lines = [
     ...unique(baseline.map((s) => s.path)).map((p) => cite(`Superseded string ${code(p)}: the path of a baseline source`, P.runYaml)),
-    ...unique(baseline.map((s) => s.version).filter(Boolean)).map((v) => cite(`Superseded string ${code(v)}: the version of a baseline source`, P.runYaml)),
+    ...citedBaseline(ctx.config).map(citedLine),
     ...[...ctx.tree.contracts.values()].flatMap((c) => supersededVersions(c).map((v) => (v.file
       ? cite(`Superseded string ${code(`${c.slug}@${v.version}`)}: ${c.slug} is at ${c.version}, and its ${v.version} file is ${v.file.status}`, v.file.file)
       : cite(`Superseded string ${code(`${c.slug}@${v.version}`)}: ${c.slug} is at ${c.version}${versionsOf(c).length > 1 ? `, and no file holds ${v.version}` : ""}`, c.file)))),

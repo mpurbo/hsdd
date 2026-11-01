@@ -739,7 +739,11 @@ drains every pending section in the tree, §7.1); for `intake`, the request
 path. An item
 **matches** a step when its target equals the step's target, is an element of
 the step's target list (`all` matching every leaf-parent), or is the
-handoff id the step executes. `dispatch.mjs` lists every open matching item
+handoff id the step executes. Once that handoff is executed or skipped, an
+item on its id also matches a step on the handoff's own target, so an item
+routed to a skipped handoff, or after its step ran, can still close (§9.1
+stage 7); before then it waits for the handoff's step, and no other step on
+that target takes it. `dispatch.mjs` lists every open matching item
 in the step's prompt, and the step must close each in `closes`.
 
 **Closing.** An item's later events are new lines with its id: `addressed` or
@@ -958,7 +962,7 @@ repository; `H/` is `hsdd/` and `H/spec/`, `H/contract/`, `H/adr/` and
 | `root-spec`, `mid-level-spec`, `graft`, `promote`, `spec-touch` | `H/spec/*.md`, `H/conventions.md` |
 | `adr`, `adr-update` | `H/adr/**`, `H/spec/*.md` and `H/contract/*.md` (to add `Governed by` and mark resolved open-question rows), `H/scripts/gen-registry.mjs` |
 | `contract`, `contract-touch` | `H/contract/**`, `H/adr/INDEX.md`, `H/scripts/gen-registry.mjs` |
-| `citation-touch` | the target's file; for a contract also `H/contract/fixture/{slug}/**` and `H/contract/schema/{slug}.schema.json`; `H/contract/INDEX.md`, `H/adr/INDEX.md` |
+| `citation-touch` | the target's file (on a node, never its parent's spec, whose copy of the node's lines the parent's own touch moves, §12.4); for a contract also `H/contract/fixture/{slug}/**` and `H/contract/schema/{slug}.schema.json`; `H/contract/INDEX.md`, `H/adr/INDEX.md` |
 | `phase-plan`, `phase-plan-append` | `H/spec/{node}.md` only |
 | `reconcile`, `align` | `H/contract/**`, `H/spec/*.md`, `H/conventions.md`, `H/adr/INDEX.md` |
 | `intake` | one new file `H/management/YYYY-MM-DD-intake-{slug}.md`, and existing `H/management/*-intake-*.md` files (their change logs, for collisions) |
@@ -1295,13 +1299,19 @@ The orchestrator accepts or rejects it with a `plan` decision
 the item came from its report or review (§8.5), and otherwise in a `plan`
 step (§10.3); never between steps. `next.mjs` returns accepted, unaddressed
 items as steps before any stage rule, oldest first. The step takes its id at
-dispatch (§7.2), its dispatch file names the item (`queue_item`), and
+dispatch (§7.2), its dispatch file names the item (`queue_item`), its
+invocation carries the item's text (appendix C.2), and
 `commit.mjs` marks the item `addressed` when the step commits as
 `completed`; a stopped step leaves it `accepted` for its continuation. An
 item may carry `after` (§6.5): `next.mjs` returns it only once the named
 handoff, or every handoff, is executed or skipped, so an insert ordered
 "before the final align" waits for the handoffs. The orchestrator rejects an
 item that duplicates a pending handoff (same kind and target), citing it.
+An accepted item for which no step has been dispatched yet (no dispatch
+file names it as `queue_item`) is withdrawn the same way, by a `rejected`
+line with a `plan` decision of its own, recorded where an acceptance would
+be, when the steps since its acceptance made it moot; once a step has been
+dispatched for it, it stays accepted, and the step closes it.
 The orchestrator adds a change-log entry naming the decision.
 
 ### 8.8 Waiting
@@ -1856,7 +1866,8 @@ routed.mjs list [--target <id>] [--open]
 records each `closes` entry. `open` lets the orchestrator raise an item.
 `close` lets the orchestrator close a `must-address` or `consider` item that
 targets `run` or the request path, in a `plan` step (§10.2). `decide`
-records the outcome of an `insert-step` item. `list` prints items in their
+records the outcome of an `insert-step` item, and `--rejected` on an
+accepted one withdraws it while no step has been dispatched for it (§8.7). `list` prints items in their
 current state. Item ids are `Q-001` onward. The module also exports the
 matching rule of §6.5, which `dispatch.mjs` and `gate.mjs` use.
 
@@ -1893,21 +1904,29 @@ and kept across re-runs. Both modes have, in order:
    `reads_outside` entries, inserted and skipped steps, and the final gate's
    warning count.
 9. **Deferred findings** (generated): `consider` items still open,
-   `insert-step` items rejected (with the decision id), and align findings
-   not reopened (§9.1).
+   `insert-step` items rejected (with the decision id) or withdrawn (with
+   the accepting and the withdrawing decision ids), and align findings not
+   reopened (§9.1).
 10. **How to review** (fixed text): read the report, then the decisions
     under item 3 in the ledger; record one line per decision in
     `hsdd/judgement/decision-reviews.jsonl` (§6.8); each step is two
     commits, `{artifact}: {step} ...` then `{judgement}: {step}`.
 
 For an intake segment the `report` step also appends to the intake record's
-`## Produced` the contracts bumped (`id@v`), the ADRs amended and the nodes
-grafted, and one change-log line. A contract `id` counts as bumped when its
+`## Produced` the contracts bumped (`id@v`), the contracts added (`id@v`),
+the ADRs proposed and amended, and the nodes grafted, and one change-log
+line. A contract `id` counts as bumped when its
 current version is above the highest version any of its files held at the
 setup commit: a later version in a file of its own (v0.10.0 §3.1), or a bump
-in place; an `id` with no file then is new, not bumped. This is the hand append `hsdd-intake`'s
+in place; an `id` with no file then is added, not bumped. An ADR changed in
+the segment is proposed when its file did not exist at the setup commit, and
+amended otherwise. The first append replaces a placeholder the record's
+`## Produced` holds (a list item or paragraph whose first word is "none",
+or the template's own `{a ledger: ...}` text), so no "none yet" line stays
+beside real entries. This is the hand append `hsdd-intake`'s
 template allows for grafts and bumps; §15.3 adds the report step to the
-conventions template's writers of `hsdd/management/`. Phases are not
+conventions template's writers of `hsdd/management/`, and the contracts
+added and ADRs amended to the template's ledger. Phases are not
 appended: `hsdd-checkpoint` appends them from their Scope citations (v0.10.0
 §11.2).
 
@@ -2246,7 +2265,12 @@ A.7):
 
 **`cites-superseded`** holds when any of the target's files contains a
 superseded string. The superseded strings are: for every `baseline` source
-in `run.yaml`, its `path` and its `version`; and for every contract `id`
+in `run.yaml`, its `path`, and its `version` tied to its citation name,
+`{cite} {version}` or, when the version does not start with `v`,
+`{cite} v{version}`, with whitespace between the two, the name not inside a
+longer word and the version followed by neither a letter, digit, `_` or
+`-` nor a `.` and a digit (a bare version string is no citation: a version
+`1` would match every number); and for every contract `id`
 whose current version, the highest any file of that `id` holds (v0.10.0
 §3.1), is `v{n}` with `n` above 0, each `{id}@v{k}` with `k` below `n` that
 is superseded, followed by a character that is not a letter, digit, `_` or
@@ -2334,6 +2358,11 @@ and each consumer moves to the new version in a phase of its own.
   `hsdd-reconcile`'s version ripple writes those, keeping every version the
   node's phases name (v0.10.0 §3.5). Never edit an ADR's `affects`:
   `hsdd-adr` adds the new version there.
+- A copy of a child node's header lines in its parent's spec (the parent's
+  embedded summary of the child, child-node table or DAG) is the parent's
+  text: the citation touch on the parent moves the source citations in it,
+  matching the child's own `Sources` entry when that has already moved, and
+  a citation touch on the child changes only the child's own file.
 - An earlier contract version that is neither `deprecated` nor `retired`
   stays live beside the new one (`coexisting`): leave every citation of it,
   and route one `consider` item, naming the new version, to the node whose
@@ -2557,6 +2586,11 @@ with a migration the skill performs in a `setup` step.
 - `hsdd-spec`'s `conventions.md` template, the `hsdd/management/` bullet:
   its writers gain "and `hsdd-auto`'s report step, for an intake record's
   `## Produced`".
+- `hsdd-intake`'s record template, `## Produced`: the ledger gains
+  "contracts added (id@v)" and "ADRs amended", the two lines `hsdd-auto`'s
+  report step appends beside the bumps, proposals and grafts (§10.9);
+  v0.10.0 §11.2's "a ledger of the nodes, contracts, ADRs and phases the
+  change produced" already covers both.
 - v0.10.0 §16.3: the "An `hsdd-review` skill" row reads "Deferred, together
   with the judge that would gate unattended runs (v0.11 §16.2)". The
   "Back-application" row also covers v0.11.0's rules. The "Scheduling" row
@@ -2670,7 +2704,8 @@ record with a handoff block, and a ledger with legacy lines). At least:
   producer-first order on a three-contract chain; a cycle returns `stop`;
   a pending continuation and an accepted insert-step come before the stage
   rule; intake handoff order, `after`, and `cites-superseded` both ways,
-  including a `baseline` version string and a `{slug}@v{k}` reference;
+  including a `baseline` version cited by its citation name, a bare
+  version token that does not count, and a `{slug}@v{k}` reference;
   `skip`, `waiting`, `blocked`, `close`, `decide`, `stuck` and `done`; an
   item's `after` honoured; a stopped step's item or handoff returned only as
   its continuation; a `promote`
@@ -3174,7 +3209,9 @@ and `text`, plus `step_kind` and `step_target` for `insert-step`, whose
 `handoffs`);
 `addressed` and `explained` have `by` and `note`; `accepted` and `rejected`
 have `decision` and apply only to `insert-step` items; an `addressed` line
-for an `insert-step` item follows an `accepted` one.
+for an `insert-step` item follows an `accepted` one; a `rejected` line may
+follow an `accepted` one (a withdrawal, §8.7) when its `decision` differs
+from the acceptance's and no dispatch file names the item as `queue_item`.
 
 ### A.6 `review.schema.json`
 
@@ -3624,7 +3661,7 @@ Each line names its file; check it there before relying on it.
 | `{decide_command}` | `node hsdd/scripts/auto/decide.mjs --step {step} --stdin` |
 | `{write_set_list}` | The dispatch file's `write_set`, comma-separated, each in backticks. |
 | `{experiments_dir}` | `run.yaml`. |
-| `{invocation}` | An intake handoff's `prompt`, verbatim; otherwise the kind's default invocation from C.3, rendered. |
+| `{invocation}` | An intake handoff's `prompt`, verbatim; otherwise the kind's default invocation from C.3, rendered. For a step that executes an `insert-step` item (or continues one) whose kind's default has no `{reason}`, the rendered default is followed by `This step executes the insert-step item {id}: {reason}.`, so the step reads the item's text in its invocation. |
 | `{fact_lines}` | C.2a below. |
 | `{routed_lines}` | Every open queue item matching the step (§6.5): id, kind, from, text. Or `none`. |
 | `{predecided_lines}` | One line per `predecided` entry: class, answer, decision id; or `none`. Keys are stoppable classes, so there are at most seven lines. |
@@ -3730,7 +3767,11 @@ current versions." What to do: apply §12.4's citation-touch rule exactly:
 never move a contract version in a node header's `Produces` or `Consumes`
 line, a copy of it above the node, or an ADR's `affects`; leave every
 citation of a live earlier version (`coexisting`) and route a `consider`
-item for it; report the counts moved and kept in `notes`. Done when: no
+item for it; move the source citations in this file's copies of a child
+node's lines (an embedded summary, child-node table or DAG), matching the
+child's own `Sources` entry when that has already moved. On a child node, change only its own file: the copy of its
+lines in the parent's spec is the parent's touch's (§12.4). Report the
+counts moved and kept in `notes`. Done when: no
 citation the rule moves names a superseded string, and every sentence that
 restates another artifact is true against its current text.
 
