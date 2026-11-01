@@ -1,0 +1,239 @@
+# Mutant A: profile timeZone swapped to the browser's zone (Asia/Kolkata) at /api/me. Diff against the committed test:
++// MUTANT A (never committed): the profile's zone swapped to the browser's.
++test.beforeEach(async ({ page }) => {
++  await page.route("**/api/me", async (route) => {
++    const response = await route.fetch();
++    const body = await response.json();
++    if (response.status() === 200) body.timeZone = "Asia/Kolkata";
++    await route.fulfill({ response, json: body });
++  });
++});
+ 
+ const AYU = profileFixture("me-ayu");
+ const BUDI = profileFixture("me-budi");
+ /** The whole raw text, character for character: `exact: true` normalizes whitespace. */
+
+
+> @simple-login/backend@1.0.0 db:up
+> node scripts/db-up.mjs up
+
+ Container meeting-rooms-postgres-1 Running 
+ Container meeting-rooms-postgres-1 Waiting 
+ Container meeting-rooms-postgres-1 Healthy 
+
+Running 7 tests using 1 worker
+
+  ✘  1 e2e/home.spec.ts:61:1 › AC-2.1: Home shows the signed-in user's details (5.5s)
+  ✘  2 e2e/home.spec.ts:73:1 › AC-2.5: each account's Home shows its zone as its name, the whole text (5.4s)
+  ✘  3 e2e/home.spec.ts:84:1 › AC-2.5: ayu's Thames booking shows on her Home in Jakarta time (5.5s)
+  ✘  4 e2e/home.spec.ts:92:1 › AC-2.5: budi's Merapi booking shows on his Home in London time (5.4s)
+  ✓  5 e2e/home.spec.ts:100:1 › AC-2.4: Home shows each account's phone number exactly as stored (644ms)
+  ✓  6 e2e/home.spec.ts:119:1 › AC-2.2: reloading keeps the user signed in (443ms)
+  ✓  7 e2e/home.spec.ts:137:1 › AC-2.3: a session the backend no longer knows returns to Login with the expiry message (1.1s)
+
+
+  1) e2e/home.spec.ts:61:1 › AC-2.1: Home shows the signed-in user's details ───────────────────────
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: getByText(/^Asia\/Jakarta$/)
+    Expected: visible
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeVisible" getByText(/^Asia\/Jakarta$/) with timeout 5000ms
+      - waiting for getByText(/^Asia\/Jakarta$/)
+
+
+      68 |   await expect(page.getByText(exactly(AYU.phone!))).toBeVisible();
+      69 |   await expect(page.getByText("Time zone", { exact: true })).toBeVisible();
+    > 70 |   await expect(page.getByText(exactly(AYU.timeZone!))).toBeVisible();
+         |                                                        ^
+      71 | });
+      72 |
+      73 | test("AC-2.5: each account's Home shows its zone as its name, the whole text", async ({ page }) => {
+        at <repo>/e2e/home.spec.ts:70:56
+
+    Error Context: test-results/home-AC-2-1-Home-shows-the-signed-in-user-s-details/error-context.md
+
+  2) e2e/home.spec.ts:73:1 › AC-2.5: each account's Home shows its zone as its name, the whole text 
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: getByText(/^Asia\/Jakarta$/)
+    Expected: visible
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeVisible" getByText(/^Asia\/Jakarta$/) with timeout 5000ms
+      - waiting for getByText(/^Asia\/Jakarta$/)
+
+
+      74 |   expect([AYU.timeZone, BUDI.timeZone]).toEqual(["Asia/Jakarta", "Europe/London"]);
+      75 |   await home(page, "ayu");
+    > 76 |   await expect(page.getByText(exactly(AYU.timeZone!))).toBeVisible();
+         |                                                        ^
+      77 |   await signOut(page);
+      78 |   await signIn(page, "budi", PASSWORDS.budi);
+      79 |   await expect(page.getByText(exactly(BUDI.timeZone!))).toBeVisible();
+        at <repo>/e2e/home.spec.ts:76:56
+
+    Error Context: test-results/home-AC-2-5-each-account-s-16118--as-its-name-the-whole-text/error-context.md
+
+  3) e2e/home.spec.ts:84:1 › AC-2.5: ayu's Thames booking shows on her Home in Jakarta time ────────
+
+    Error: expect(locator).toContainText(expected) failed
+
+    Locator: locator('body')
+    Timeout: 5000ms
+    - Expected substring  -  1
+    + Received string     + 20
+
+    - Thu 31 Dec 17:00 to 18:00 Thames · Home zone ayu
+    + Hello, Ayu Lestari
+    + Username
+    + ayu
+    + Email
+    + ayu@example.com
+    + Phone
+    + +62 812 3456 7890
+    + Time zone
+    + Asia/Kolkata
+    + Member since
+    + 14 March 2024
+    + My bookings
+    +
+    + Thu 31 Dec  15:30 to 16:30
+    +
+    + Thames · Home zone ayu
+    + Cancel
+    +
+    + Book a room
+    + Sign out
+
+    Call log:
+      - Expect "toContainText" locator('body') with timeout 5000ms
+      - waiting for locator('body')
+        2 × locator resolved to <body>…</body>
+          - unexpected value "Sign in
+    Username
+    Password
+    Signing in…"
+        12 × locator resolved to <body>…</body>
+           - unexpected value "Hello, Ayu Lestari
+    Username
+    ayu
+    Email
+    ayu@example.com
+    Phone
+    +62 812 3456 7890
+    Time zone
+    Asia/Kolkata
+    Member since
+    14 March 2024
+    My bookings
+    
+    Thu 31 Dec  15:30 to 16:30
+    
+    Thames · Home zone ayu
+    Cancel
+    
+    Book a room
+    Sign out"
+
+
+      56 | /** Home shows `lines` in this order, each as text with whitespace normalized. */
+      57 | async function expectLines(page: Page, ...lines: string[]): Promise<void> {
+    > 58 |   await expect(page.locator("body")).toContainText(normalize(lines.join(" ")), { useInnerText: true });
+         |                                      ^
+      59 | }
+      60 |
+      61 | test("AC-2.1: Home shows the signed-in user's details", async ({ page }) => {
+        at expectLines (<repo>/e2e/home.spec.ts:58:38)
+        at <repo>/e2e/home.spec.ts:89:9
+
+    Error Context: test-results/home-AC-2-5-ayu-s-Thames-b-6e3d5-on-her-Home-in-Jakarta-time/error-context.md
+
+  4) e2e/home.spec.ts:92:1 › AC-2.5: budi's Merapi booking shows on his Home in London time ────────
+
+    Error: expect(locator).toContainText(expected) failed
+
+    Locator: locator('body')
+    Timeout: 5000ms
+    - Expected substring  -  1
+    + Received string     + 20
+
+    - Fri 1 Jan 02:00 to 03:00 Merapi · Home zone budi
+    + Hello, Budi Santoso
+    + Username
+    + budi
+    + Email
+    + budi@example.com
+    + Phone
+    + +62 813 9876 5432
+    + Time zone
+    + Asia/Kolkata
+    + Member since
+    + 9 January 2025
+    + My bookings
+    +
+    + Fri 1 Jan  07:30 to 08:30
+    +
+    + Merapi · Home zone budi
+    + Cancel
+    +
+    + Book a room
+    + Sign out
+
+    Call log:
+      - Expect "toContainText" locator('body') with timeout 5000ms
+      - waiting for locator('body')
+        2 × locator resolved to <body>…</body>
+          - unexpected value "Sign in
+    Username
+    Password
+    Signing in…"
+        12 × locator resolved to <body>…</body>
+           - unexpected value "Hello, Budi Santoso
+    Username
+    budi
+    Email
+    budi@example.com
+    Phone
+    +62 813 9876 5432
+    Time zone
+    Asia/Kolkata
+    Member since
+    9 January 2025
+    My bookings
+    
+    Fri 1 Jan  07:30 to 08:30
+    
+    Merapi · Home zone budi
+    Cancel
+    
+    Book a room
+    Sign out"
+
+
+      56 | /** Home shows `lines` in this order, each as text with whitespace normalized. */
+      57 | async function expectLines(page: Page, ...lines: string[]): Promise<void> {
+    > 58 |   await expect(page.locator("body")).toContainText(normalize(lines.join(" ")), { useInnerText: true });
+         |                                      ^
+      59 | }
+      60 |
+      61 | test("AC-2.1: Home shows the signed-in user's details", async ({ page }) => {
+        at expectLines (<repo>/e2e/home.spec.ts:58:38)
+        at <repo>/e2e/home.spec.ts:97:9
+
+    Error Context: test-results/home-AC-2-5-budi-s-Merapi--3968c--on-his-Home-in-London-time/error-context.md
+
+  4 failed
+    e2e/home.spec.ts:61:1 › AC-2.1: Home shows the signed-in user's details ────────────────────────
+    e2e/home.spec.ts:73:1 › AC-2.5: each account's Home shows its zone as its name, the whole text ─
+    e2e/home.spec.ts:84:1 › AC-2.5: ayu's Thames booking shows on her Home in Jakarta time ─────────
+    e2e/home.spec.ts:92:1 › AC-2.5: budi's Merapi booking shows on his Home in London time ─────────
+  3 passed (33.5s)
+exit 1

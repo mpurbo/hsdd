@@ -1,0 +1,98 @@
+# Mutant F, inserted before the file's first const:
+// MUTANT F (never committed): bookings lost at the restart. My bookings
+// answers an empty list to any token after the first one the page used,
+// that is, after signing in again.
+test.beforeEach(async ({ page }) => {
+  let first: string | undefined;
+  await page.route("**/api/me/bookings", async (route) => {
+    const token = route.request().headers()["authorization"];
+    first ??= token;
+    if (token === first) return route.continue();
+    await route.fulfill({ status: 200, json: { bookings: [] } });
+  });
+});
+
+
+> @simple-login/backend@1.0.0 db:up
+> node scripts/db-up.mjs up
+
+ Container meeting-rooms-postgres-1 Running 
+ Container meeting-rooms-postgres-1 Waiting 
+ Container meeting-rooms-postgres-1 Healthy 
+
+Running 1 test using 1 worker
+
+  ✘  1 e2e/home.spec.ts:207:1 › Success: after a restart, Login says the session expired and Home still lists the booking (6.0s)
+
+
+  1) e2e/home.spec.ts:207:1 › Success: after a restart, Login says the session expired and Home still lists the booking 
+
+    Error: expect(locator).toContainText(expected) failed
+
+    Locator: locator('body')
+    Timeout: 5000ms
+    - Expected substring  -  1
+    + Received string     + 17
+
+    - Tue 5 Jan 09:00 to 10:00 Kew · Survives restart
+    + Hello, Budi Santoso
+    + Username
+    + budi
+    + Email
+    + budi@example.com
+    + Phone
+    + +62 813 9876 5432
+    + Time zone
+    + Europe/London
+    + Member since
+    + 9 January 2025
+    + My bookings
+    +
+    + (no bookings)
+    +
+    + Book a room
+    + Sign out
+
+    Call log:
+      - Expect "toContainText" locator('body') with timeout 5000ms
+      - waiting for locator('body')
+        2 × locator resolved to <body>…</body>
+          - unexpected value "Sign in
+    Username
+    Password
+    Signing in…"
+        12 × locator resolved to <body>…</body>
+           - unexpected value "Hello, Budi Santoso
+    Username
+    budi
+    Email
+    budi@example.com
+    Phone
+    +62 813 9876 5432
+    Time zone
+    Europe/London
+    Member since
+    9 January 2025
+    My bookings
+    
+    (no bookings)
+    
+    Book a room
+    Sign out"
+
+
+      65 | /** Home shows `lines` in this order, each as text with whitespace normalized. */
+      66 | async function expectLines(page: Page, ...lines: string[]): Promise<void> {
+    > 67 |   await expect(page.locator("body")).toContainText(normalize(lines.join(" ")), { useInnerText: true });
+         |                                      ^
+      68 | }
+      69 |
+      70 | /** The `Cancel` button of the booking whose Home line is `line`: inside the deepest element holding both. */
+        at expectLines (<repo>/e2e/home.spec.ts:67:38)
+        at <repo>/e2e/home.spec.ts:218:9
+
+    Error Context: test-results/home-Success-after-a-resta-09171-ome-still-lists-the-booking/error-context.md
+
+  1 failed
+    e2e/home.spec.ts:207:1 › Success: after a restart, Login says the session expired and Home still lists the booking 
+exit 1

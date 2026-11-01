@@ -1,0 +1,50 @@
+# Mutant C, inserted before the file's first const:
+// MUTANT C (never committed): my bookings arrive in reverse order.
+test.beforeEach(async ({ page }) => {
+  await page.route("**/api/me/bookings", async (route) => {
+    const response = await route.fetch();
+    const body = await response.json();
+    if (response.status() === 200) body.bookings.reverse();
+    await route.fulfill({ response, json: body });
+  });
+});
+
+
+> @simple-login/backend@1.0.0 db:up
+> node scripts/db-up.mjs up
+
+ Container meeting-rooms-postgres-1 Running 
+ Container meeting-rooms-postgres-1 Waiting 
+ Container meeting-rooms-postgres-1 Healthy 
+
+Running 3 tests using 1 worker
+
+  ✘  1 e2e/home.spec.ts:160:1 › AC-6.1: budi's bookings show soonest first, each with Cancel, and none of ayu's (631ms)
+  ✓  2 e2e/home.spec.ts:177:1 › AC-6.2: Cancel removes the booking's lines at once and frees its range (632ms)
+  ✓  3 e2e/home.spec.ts:192:1 › AC-6.1: with every booking of budi's cancelled, Home shows (no bookings) under My bookings (416ms)
+
+
+  1) e2e/home.spec.ts:160:1 › AC-6.1: budi's bookings show soonest first, each with Cancel, and none of ayu's 
+
+    Error: Hello, Budi Santoso Username budi Email budi@example.com Phone +62 813 9876 5432 Time zone Europe/London Member since 9 January 2025 My bookings Sun 3 Jan 09:00 to 10:00 Kew · Order 3 Cancel Sat 2 Jan 14:00 to 15:00 Kew · Order 2 Cancel Sat 2 Jan 09:00 to 10:00 Kew · Order 1 Cancel Book a room Sign out
+
+    expect(received).toBeLessThan(expected)
+
+    Expected: < 191
+    Received:   237
+
+      169 |   const text = normalize(await page.locator("body").innerText());
+      170 |   const positions = items.map((item) => text.indexOf(normalize(item.join(" "))));
+    > 171 |   expect(positions[0], text).toBeLessThan(positions[1]);
+          |                              ^
+      172 |   expect(positions[1], text).toBeLessThan(positions[2]);
+      173 |   for (const [line] of items) await expect(cancelButton(page, line)).toHaveCount(1);
+      174 |   expect(text).not.toContain("Ayu not budi");
+        at <repo>/e2e/home.spec.ts:171:30
+
+    Error Context: test-results/home-AC-6-1-budi-s-booking-552d1-th-Cancel-and-none-of-ayu-s/error-context.md
+
+  1 failed
+    e2e/home.spec.ts:160:1 › AC-6.1: budi's bookings show soonest first, each with Cancel, and none of ayu's 
+  2 passed (6.6s)
+exit 1
