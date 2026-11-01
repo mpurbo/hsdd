@@ -137,6 +137,19 @@ export function britishWinterDate(from: IsoDate): IsoDate {
   throw new RangeError(`no date wholly in GMT within a year of ${from}`);
 }
 
+/**
+ * `count` distinct dates, each the first wholly-GMT date after the one before,
+ * the first on or after `from`. Every start in British summer time maps to the
+ * same first dates, so a spec file that needs dates of its own continues from
+ * the day after an earlier file's last date (see e2e/home.spec.ts's header),
+ * never from today plus an offset of its own.
+ */
+export function britishWinterDays(from: IsoDate, count: number): IsoDate[] {
+  const days: IsoDate[] = [];
+  for (let next = from; days.length < count; next = addDays(days[days.length - 1], 1)) days.push(britishWinterDate(next));
+  return days;
+}
+
 // ADR-002 Decision 7: the strings the web app shows, as the tests expect them.
 
 /** A time as 24-hour `HH:mm` in `zone`. */

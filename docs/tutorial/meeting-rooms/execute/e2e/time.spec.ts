@@ -3,7 +3,7 @@
 // that read it would miss every exact instant below.
 import { expect, test } from "./fixtures.ts";
 import {
-  JAKARTA, LONDON, bookingTimes, britishWinterDate, dayRange, formatDate, formatTime, homeLine, nextClockChangeDays, quarterHours, rangeLabel,
+  JAKARTA, LONDON, addDays, bookingTimes, britishWinterDate, britishWinterDays, dayRange, formatDate, formatTime, homeLine, nextClockChangeDays, quarterHours, rangeLabel,
   timeIn, timeLabel, todayIn, wallTimeInstants, zoneName,
 } from "./time.ts";
 
@@ -51,6 +51,17 @@ test("time.ts: a date in British winter time is wholly GMT and never a change da
   expect(britishWinterDate("2027-01-27")).toBe("2027-01-27");
   expect(britishWinterDate("2027-06-01")).toBe("2027-11-01");
   expect(britishWinterDate("2027-03-28")).toBe("2027-11-01");
+});
+
+test("time.ts: winter dates for a file are distinct, wholly GMT, and a later file continues after them", () => {
+  expect(britishWinterDays("2027-03-25", 4)).toEqual(["2027-03-25", "2027-03-26", "2027-03-27", "2027-11-01"]);
+  // Two starts in British summer time give the same first dates, so a later
+  // file starts the day after an earlier file's last date, never from today.
+  expect(britishWinterDays("2027-06-01", 2)).toEqual(britishWinterDays("2027-08-01", 2));
+  const home = britishWinterDays("2027-06-01", 6);
+  const next = britishWinterDays(addDays(home[home.length - 1], 1), 3);
+  expect(next.filter((d) => home.includes(d))).toEqual([]);
+  expect(next[0] > home[5]).toBe(true);
 });
 
 test("time.ts: a wall time off the quarter hours is refused", () => {

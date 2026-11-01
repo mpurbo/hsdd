@@ -5,8 +5,12 @@
 // London dates wholly in GMT (British winter time, never a clock-change day),
 // the first at least 60 days after today in London, so none is one of the UTC
 // days 39 to 47 that rig.spec.ts and success.spec.ts book. Computed once, at
-// module load. Home lists every booking of the account that has not ended,
-// including other files', so a test checks its own lines only.
+// module load: britishWinterDays(addDays(todayIn(LONDON), 60), 6). A later
+// file that books on winter dates continues from the day after the last of
+// these (britishWinterDays(addDays(last, 1), n)); a start of its own would
+// meet these dates whenever both starts fall in British summer time. Home
+// lists every booking of the account that has not ended, including other
+// files', so a test checks its own lines only.
 //
 // | Test                                   | Winter date | Room   | Account |
 // |----------------------------------------|------------:|--------|---------|
@@ -18,7 +22,7 @@
 //
 // The AC-6.1 empty-state test cancels every booking budi holds, so no test may
 // rely on a booking of budi's made outside its own body.
-import { JAKARTA, LONDON, addDays, britishWinterDate, homeLine, todayIn, wallTimeInstants, type IsoDate } from "./time.ts";
+import { JAKARTA, LONDON, addDays, britishWinterDays, homeLine, todayIn, wallTimeInstants, type IsoDate } from "./time.ts";
 import { PASSWORDS, deleteBooking, getMyBookings, postBooking, tokenFor, type Booking, type Username } from "./api.ts";
 import { expect, profileFixture, signIn, signOut, test } from "./fixtures.ts";
 import type { Locator, Page } from "@playwright/test";
@@ -29,8 +33,7 @@ const BUDI = profileFixture("me-budi");
 const exactly = (text: string) => new RegExp(`^${text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`);
 const normalize = (text: string) => text.replace(/\s+/g, " ").trim();
 
-const WINTER: IsoDate[] = [britishWinterDate(addDays(todayIn(LONDON), 60))];
-while (WINTER.length < 6) WINTER.push(britishWinterDate(addDays(WINTER[WINTER.length - 1], 1)));
+const WINTER: IsoDate[] = britishWinterDays(addDays(todayIn(LONDON), 60), 6);
 /** The n-th date of this file's own, each wholly in GMT. */
 const winterDay = (n: number): IsoDate => WINTER[n];
 
