@@ -20,8 +20,11 @@
 // | AC-5.1, AC-5.2: the form  |          3 | Bromo         | budi     |
 // | AC-5.3: overlap, touching |          4 | Merapi        | ayu, budi|
 // | AC-5.4: two at once       |          5 | Thames        | both     |
-import { JAKARTA, LONDON, addDays, britishWinterDays, dayRange, formatDate, quarterHours, timeLabel, todayIn, wallTimeInstants, type IsoDate } from "./time.ts";
-import { getMyBookings, getRooms, tokenFor, type Booking } from "./api.ts";
+// | AC-5.5: already started   |       none | Bromo, today  | budi     |
+// | AC-5.6: title rules       |          6 | Kew           | budi     |
+// | AC-2.3: expired session   |          7 | Merapi        | budi     |
+import { JAKARTA, LONDON, addDays, britishWinterDays, dateIn, dayRange, formatDate, quarterHours, timeLabel, todayIn, wallTimeInstants, type IsoDate } from "./time.ts";
+import { currentQuarterHour, getMyBookings, getRooms, tokenFor, type Booking } from "./api.ts";
 import { expect, test } from "./fixtures.ts";
 import {
   ROOMS, ZONES, bookThroughForm, bookViaApi, expectedLines, fillBookingForm, labelInstants, openRooms, optionLabels, overlapMessage,
@@ -240,4 +243,86 @@ test("AC-5.4: two users pressing Book together get one booking; the other sees t
   } finally {
     await other.close();
   }
+});
+
+test("AC-5.5: with only the browser's clock five minutes before the current quarter hour, booking it shows That time has already started.", async ({ page }) => {
+  const zone = ZONES.budi;
+  const q = currentQuarterHour();
+  const date = dateIn(q, zone);
+  const end = new Date(Date.parse(q) + 15 * 60_000).toISOString();
+  const from = timeLabel(q, zone, date);
+  const to = timeLabel(end, zone, date);
+
+  await page.clock.setFixedTime(Date.parse(q) - 5 * 60_000);
+  await openRooms(page, "budi");
+  await showDate(page, date);
+  await expect.poll(() => optionLabels(page, "start")).toContain(from);
+
+  await bookThroughForm(page, { room: "Bromo", start: from, end: to, title: "Started" });
+  await expect(page.getByText("That time has already started.", { exact: true })).toBeVisible();
+  await expect(page.getByText("Booked.", { exact: true })).toHaveCount(0);
+
+  const rooms = await getRooms(await tokenFor("budi"), q, end);
+  expect(rooms.status).toBe(200);
+  const bromo = (rooms.body as { rooms: Array<{ id: string; bookings: Booking[] }> }).rooms.find((r) => r.id === "bromo")!;
+  expect(bromo.bookings).toEqual([]);
+});
+
+test("AC-5.6: blank, spaces-only and 81-character titles book nothing; 80 characters book exactly as typed", async ({ page }) => {
+  const date = DATES[6];
+  const zone = ZONES.budi;
+  const typed = " 😀 Retro  and planning, " + "x".repeat(56);
+  expect([...typed].length).toBe(80);
+  const tooLong = "y".repeat(81);
+  expect([...tooLong].length).toBe(81);
+
+  await openRooms(page, "budi");
+  await showDate(page, date);
+  await expect.poll(() => optionLabels(page, "start")).toContain("10:00");
+  const choice = { room: "Kew", start: "10:00", end: "11:00" };
+  const title = page.getByRole("textbox", { name: "title" });
+  const book = page.getByRole("button", { name: "Book", exact: true });
+
+  for (const refused of ["", "   ", tooLong]) {
+    await fillBookingForm(page, { ...choice, title: refused });
+    if (await book.isEnabled()) await book.click();
+    else await title.press("Enter");
+    await expect(page.getByText("Booked.", { exact: true })).toHaveCount(0);
+  }
+  await expect.poll(() => roomLines(page, "kew")).toEqual(["(no bookings)"]);
+
+  await bookThroughForm(page, { ...choice, title: typed });
+  await expect(page.getByText("Booked.", { exact: true })).toBeVisible();
+  const [start] = wallTimeInstants(date, "10:00", zone);
+  const [end] = wallTimeInstants(date, "11:00", zone);
+  await expect.poll(() => roomLines(page, "kew")).toEqual(expectedLines({ start, end, title: typed }, "kew", zone, date));
+
+  const rooms = await getRooms(await tokenFor("budi"), dayRange(date, LONDON).start, dayRange(date, LONDON).end);
+  expect(rooms.status).toBe(200);
+  const kew = (rooms.body as { rooms: Array<{ id: string; bookings: Booking[] }> }).rooms.find((r) => r.id === "kew")!;
+  expect(kew.bookings).toHaveLength(1);
+  expect(kew.bookings[0].title === typed).toBe(true);
+});
+
+// Last in the file: backend.restart() ends every token, and no later test may depend on an earlier session.
+test("AC-2.3: after a restart, pressing Book lands on Login with the expiry message", async ({ page, backend }) => {
+  const date = DATES[7];
+  const zone = ZONES.budi;
+  await openRooms(page, "budi");
+  await showDate(page, date);
+  await expect.poll(() => optionLabels(page, "start")).toContain("09:00");
+  await fillBookingForm(page, { room: "Merapi", start: "09:00", end: "10:00", title: "After restart" });
+
+  await backend.restart();
+  // The service itself must refuse the call: a local answer would not.
+  const call = page.waitForResponse((r) => r.url().endsWith("/api/bookings") && r.request().method() === "POST");
+  await page.getByRole("button", { name: "Book", exact: true }).click();
+  expect((await call).status()).toBe(401);
+  await expect(page.getByText("Your session has expired. Please sign in again.", { exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Sign in" })).toBeVisible();
+
+  const rooms = await getRooms(await tokenFor("budi"), dayRange(date, zone).start, dayRange(date, zone).end);
+  expect(rooms.status).toBe(200);
+  const merapi = (rooms.body as { rooms: Array<{ id: string; bookings: Booking[] }> }).rooms.find((r) => r.id === "merapi")!;
+  expect(merapi.bookings).toEqual([]);
 });
