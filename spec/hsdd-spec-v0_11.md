@@ -962,7 +962,7 @@ repository; `H/` is `hsdd/` and `H/spec/`, `H/contract/`, `H/adr/` and
 | `root-spec`, `mid-level-spec`, `graft`, `promote`, `spec-touch` | `H/spec/*.md`, `H/conventions.md` |
 | `adr`, `adr-update` | `H/adr/**`, `H/spec/*.md` and `H/contract/*.md` (to add `Governed by` and mark resolved open-question rows), `H/scripts/gen-registry.mjs` |
 | `contract`, `contract-touch` | `H/contract/**`, `H/adr/INDEX.md`, `H/scripts/gen-registry.mjs` |
-| `citation-touch` | the target's file; for a contract also `H/contract/fixture/{slug}/**` and `H/contract/schema/{slug}.schema.json`; `H/contract/INDEX.md`, `H/adr/INDEX.md` |
+| `citation-touch` | the target's file (on a node, never its parent's spec, whose copy of the node's lines the parent's own touch moves, §12.4); for a contract also `H/contract/fixture/{slug}/**` and `H/contract/schema/{slug}.schema.json`; `H/contract/INDEX.md`, `H/adr/INDEX.md` |
 | `phase-plan`, `phase-plan-append` | `H/spec/{node}.md` only |
 | `reconcile`, `align` | `H/contract/**`, `H/spec/*.md`, `H/conventions.md`, `H/adr/INDEX.md` |
 | `intake` | one new file `H/management/YYYY-MM-DD-intake-{slug}.md`, and existing `H/management/*-intake-*.md` files (their change logs, for collisions) |
@@ -2358,6 +2358,11 @@ and each consumer moves to the new version in a phase of its own.
   `hsdd-reconcile`'s version ripple writes those, keeping every version the
   node's phases name (v0.10.0 §3.5). Never edit an ADR's `affects`:
   `hsdd-adr` adds the new version there.
+- A copy of a child node's header lines in its parent's spec (the parent's
+  embedded summary of the child, child-node table or DAG) is the parent's
+  text: the citation touch on the parent moves the source citations in it,
+  matching the child's own `Sources` entry when that has already moved, and
+  a citation touch on the child changes only the child's own file.
 - An earlier contract version that is neither `deprecated` nor `retired`
   stays live beside the new one (`coexisting`): leave every citation of it,
   and route one `consider` item, naming the new version, to the node whose
@@ -3762,7 +3767,11 @@ current versions." What to do: apply §12.4's citation-touch rule exactly:
 never move a contract version in a node header's `Produces` or `Consumes`
 line, a copy of it above the node, or an ADR's `affects`; leave every
 citation of a live earlier version (`coexisting`) and route a `consider`
-item for it; report the counts moved and kept in `notes`. Done when: no
+item for it; move the source citations in this file's copies of a child
+node's lines, matching the child's own `Sources` entry when that has
+already moved. On a child node, change only its own file: the copy of its
+lines in the parent's spec is the parent's touch's (§12.4). Report the
+counts moved and kept in `notes`. Done when: no
 citation the rule moves names a superseded string, and every sentence that
 restates another artifact is true against its current text.
 

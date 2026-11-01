@@ -109,6 +109,18 @@ test("hsdd-intake's record template lists what the report step appends to ## Pro
   assert.ok(s.includes("the contracts bumped (`id@v`), the contracts added (`id@v`), the ADRs proposed and amended, and the nodes grafted"), "spec 10.9");
 });
 
+// Run finding R-6: who moves the copy of a child's lines in its parent's file.
+const COPY_RULE = "A copy of a child node's header lines in its parent's spec (the parent's embedded summary of the child, child-node table or DAG) is the parent's text: the citation touch on the parent moves the source citations in it, matching the child's own `Sources` entry when that has already moved, and a citation touch on the child changes only the child's own file.";
+
+test("the citation-touch rule says the parent's touch moves the copies of a child's lines (run finding R-6)", () => {
+  for (const s of ["hsdd-spec", "hsdd-adr", "hsdd-contract"]) assert.ok(norm(skill(s)).includes(`- ${COPY_RULE}`), s);
+  assert.ok(norm(spec).includes(`- ${COPY_RULE}`), "spec 12.4");
+  const template = norm(readFileSync(join(ROOT, "skills", "hsdd-auto", "scripts", "templates", "steps", "citation-touch.md"), "utf8"));
+  assert.ok(template.includes("On a child node, change only its own file: the copy of its lines in the parent's spec is the parent's touch's (§12.4)."), "template");
+  assert.ok(norm(spec).includes("On a child node, change only its own file: the copy of its lines in the parent's spec is the parent's touch's (§12.4)."), "spec C.3");
+  assert.ok(norm(spec).includes("| `citation-touch` | the target's file (on a node, never its parent's spec, whose copy of the node's lines the parent's own touch moves, §12.4);"), "spec 7.3");
+});
+
 // The ask-point table of each skill, as spec 12.1 gives it: the bold skill heading, then its pipe lines.
 const specLines = spec.split("\n");
 const specTable = (s) => {

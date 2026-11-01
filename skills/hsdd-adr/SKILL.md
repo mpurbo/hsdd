@@ -156,6 +156,11 @@ only citations and the sentences they sit in:
   `hsdd-reconcile`'s version ripple writes those, keeping every version the
   node's phases name. Never edit an ADR's `affects`: `hsdd-adr` adds the
   new version there.
+- A copy of a child node's header lines in its parent's spec (the parent's
+  embedded summary of the child, child-node table or DAG) is the parent's
+  text: the citation touch on the parent moves the source citations in it,
+  matching the child's own `Sources` entry when that has already moved, and
+  a citation touch on the child changes only the child's own file.
 - An earlier contract version that is neither `deprecated` nor `retired`
   stays live beside the new one (`coexisting`): leave every citation of it,
   and route one `consider` item, naming the new version, to the node whose
