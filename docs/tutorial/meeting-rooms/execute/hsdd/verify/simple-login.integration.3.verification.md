@@ -129,12 +129,16 @@ verify-dev.mjs, verify-dev.txt, e2e-tz-jakarta.txt.
 
 ## Observed
 
-2026-11-01. Task 7's runs ran from 23:54 to 23:58 UTC on 2026-10-31, which is
-06:54 to 06:58 on 2026-11-01 on the laptop's clock (Asia/Jakarta). All of them
-fall on the UTC date 2026-10-31, so gate run 1, gate run 2 and the zone run
-booked the same per-day slots: day +39 is 2026-12-09, rounds 1 to 5 are 2026-12-11 to
-2026-12-15, the restart test 2026-12-16, AC-6.3 2026-12-17, the dev check
-(day +48) 2026-12-18. Node 24.18.0.
+2026-11-01. Task 7's runs fall on the UTC date 2026-10-31, as the committed
+stamps show: `verify-dev.mjs book` at 2026-10-31T23:56:40Z and `check` at
+2026-10-31T23:57:41Z (verify-dev.txt), with gate run 2 between them; gate run
+1's Vitest `Start at 05:25:03` (gate-run-1.txt) is a little over two minutes
+before gate run 2's `Start at 05:27:12` (gate-run-2.txt), both on the
+Asia/Kolkata clock the gate sets; the zone run's cleanup is stamped
+2026-10-31T23:58:33Z (e2e-tz-jakarta.txt). So gate run 1, gate run 2 and the
+zone run booked the same per-day slots, the day offsets of the header tables in
+`e2e/rig.spec.ts` and `e2e/success.spec.ts`. The dev check's day (+48) is
+2026-12-18 (verify-dev.txt). Node 24.18.
 
 ### Baseline
 
@@ -293,14 +297,16 @@ scripts not covered by allowScripts, a warning only). Run 2 followed
 
 Each round printed one `round N: ... won, booking <uuid>` line, in both runs.
 
-Each run on a freshly created `meeting_rooms_e2e`: both runs fall on the UTC
-date 2026-10-31, so run 2 booked the slots run 1 had left booked: the sentinel
-(Bromo, 2026-12-09 00:00 to 00:15 UTC) and the five round winners in Merapi on
-2026-12-11 to 2026-12-15 (rounds 1 to 4 at 02:00 to 03:00 UTC; round 5 a range
-that contains 02:00 to 02:15, as all twenty of its requests do). Run 2's
-sentinel and rounds answered 201 (gate-run-2.txt); a database carried over from
-run 1 answers 409 there, which is the failure task-3-red-sentinel-run2.txt
-shows on the shipped rig.
+A freshly created `meeting_rooms_e2e` for each run, by inference: the logs do
+not show the global setup's `DROP DATABASE` and `CREATE DATABASE` (it prints
+only `db:up`'s lines). Both runs fall on one UTC date, so run 2 booked the
+slots run 1 had left booked: the sentinel (Bromo, day +39, in
+`e2e/rig.spec.ts`) and the five round winners (Merapi, days +41 to +45, in
+`e2e/success.spec.ts`; all twenty round 5 ranges share one quarter hour, so
+each overlaps that round's winner). Gate run 2 passed the sentinel and every round
+(gate-run-2.txt), which only a freshly created database allows: a database
+carried over from run 1 answers 409 there, the failure
+task-3-red-sentinel-run2.txt shows on the shipped rig.
 
 Ports after each run: `verify-dev.mjs` refuses to start while 3000 or 5173
 listens. Its `book` run started after gate run 1 and its `check` run after gate
@@ -318,8 +324,8 @@ evidence caveats below.
   `POST /api/bookings` 201 with
   `{"id":"bcf4fa7c-7d77-40e5-a7b2-2697204677d2","roomId":"kew","roomName":"Kew","title":"Dev check","start":"2026-12-18T06:00:00.000Z","end":"2026-12-18T07:00:00.000Z"}`.
   SIGTERM to the group; `npm run dev` exited; both ports closed; exit 0.
-- Gate run 2 (gate-run-2.txt), which dropped and re-created
-  `meeting_rooms_e2e`.
+- Gate run 2 (gate-run-2.txt), exit 0, whose browser suite ran on a freshly
+  created `meeting_rooms_e2e` (inferred above from its sentinel and rounds).
 - `check bcf4fa7c-7d77-40e5-a7b2-2697204677d2`, 2026-10-31T23:57:41Z:
   `npm run dev` again; sign-in 200; `/api/me` 200, `"ayu"`;
   `GET /api/me/bookings` 200 lists exactly one `Dev check` booking, the same
@@ -337,9 +343,10 @@ Outstanding.
 
 ### An exported zone (e2e-tz-jakarta.txt)
 
-`TZ=Asia/Jakarta npm run e2e`, 23:58:16Z: 49 passed, exit 0, including
+`TZ=Asia/Jakarta npm run e2e`: 49 passed, exit 0, including
 `the run is in Asia/Kolkata: the worker and the browser`. Winners: budi, ayu,
-budi, ayu, ayu. Afterwards `lsof` on 3000 and 5173 print nothing.
+budi, ayu, ayu. The cleanup checks, stamped 2026-10-31T23:58:33Z: `lsof` on
+3000 and 5173 print nothing.
 
 ### Evidence caveats
 
@@ -402,8 +409,9 @@ budi, ayu, ayu. Afterwards `lsof` on 3000 and 5173 print nothing.
   integration.4 and .5 drive them in the browser.
 - The service inherits `TZ=Asia/Kolkata` by construction (the spawn
   environment), but no contract exposes the service's zone, so it cannot be
-  observed from outside. To verify: only through a contract change that
-  exposes it, which nothing asks for.
+  observed from outside. It cannot be verified through the contracts.
+  Proposed for sign-off: waived (unobservable through the contracts; inherited
+  by construction from the spawn environment).
 - Whether the twenty requests overlap inside the service cannot be observed
   from outside; the rounds prove G5's outcome, and the reds show only the
   route's absence. To verify: a backend-side test with a non-atomic store
@@ -439,7 +447,8 @@ sign-off.
   Thames on clock-change days, which this phase's day offsets can hit). The
   final review caught it here. The change: simple-login.integration's plan
   states, for phases .4 and .5, that a test asserts only on rooms and ids it
-  owns. Disposition: spec-updated
+  owns. Disposition: spec-updated (proposed; applied at the root through
+  hsdd-phase-plan by the reviewer)
 - `hsdd/templates/verification.md` (the tree's copy) differs from the
   hsdd-config 0.11 bundled template (no delegated sign-off form) and carries
   an em dash in its title. Disposition: dropped (the switch's step 7 keeps a
@@ -462,17 +471,18 @@ sign-off.
   whole-branch review: one round (With fixes), then one fix wave (203fce9)
   and one scoped re-review that passed it.
 - Gate failures before green: 0. The baseline, run 1 and run 2 each exited 0
-  (gate-baseline.txt, gate-run-1.txt, gate-run-2.txt). Task 7's gate runs took
-  26 s and 23 s of wall-clock by `date -u` around each (not in the evidence);
-  the browser suite's share was 11.6 s and 10.7 s.
+  (gate-baseline.txt, gate-run-1.txt, gate-run-2.txt). In Task 7's gate runs
+  the browser suite took 11.6 s and 10.7 s; the whole gate's wall-clock is not
+  in the evidence.
 - Tokens: not reported by the harness.
 - Product diff vs process artifacts, `git diff --numstat 9a1e469..HEAD`:
   - through 203fce9: product (package.json, playwright.config.ts, e2e/,
-    README.md) 9 files, +535 -60; process (hsdd-context/, docs/superpowers/,
-    hsdd/verify/) 29 files, +3472 -0, of which hsdd-context/ 1397, the plan
-    422, evidence 1653.
-  - with Task 7's commit: product unchanged; process 36 files, +4749 -0;
-    Task 7 adds 7 files, +1277 (this doc, five evidence files, verify-dev.mjs).
+    README.md) 9 files, +535 -60; process (hsdd-context/, docs/superpowers/)
+    29 files, +3472 -0, of which hsdd-context/ 1397, the plan 422, evidence
+    1653.
+  - with Task 7's commits: product unchanged; process (hsdd-context/,
+    docs/superpowers/, hsdd/verify/) 36 files, +4759 -0;
+    Task 7 adds 7 files, +1287 (this doc, five evidence files, verify-dev.mjs).
 - Escaped defects: none found yet.
 
 ## Sign-off
