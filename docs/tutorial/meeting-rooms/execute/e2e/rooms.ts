@@ -80,15 +80,27 @@ export async function optionLabels(page: Page, name: "start" | "end"): Promise<s
   return options.map((label) => label.trim());
 }
 
-/** Selects `room`, `start` and `end` by label, fills `title` and presses `Book`. */
-export async function bookThroughForm(
+/** Selects `room`, `start` and `end` by label and fills `title`, without pressing `Book`. */
+export async function fillBookingForm(
   page: Page, choice: { room: string; start: string; end: string; title: string },
 ): Promise<void> {
   await page.getByRole("combobox", { name: "room", exact: true }).selectOption({ label: choice.room });
   await page.getByRole("combobox", { name: "start", exact: true }).selectOption({ label: choice.start });
   await page.getByRole("combobox", { name: "end", exact: true }).selectOption({ label: choice.end });
   await page.getByRole("textbox", { name: "title" }).fill(choice.title);
+}
+
+/** Fills the form (see `fillBookingForm`) and presses `Book`. */
+export async function bookThroughForm(
+  page: Page, choice: { room: string; start: string; end: string; title: string },
+): Promise<void> {
+  await fillBookingForm(page, choice);
   await page.getByRole("button", { name: "Book" }).click();
+}
+
+/** The message Rooms shows when `room` is already booked over `other`: its times in `userZone`, against the line date `lineDate`. */
+export function overlapMessage(room: RoomId, other: Pick<Booking, "start" | "end">, userZone: string, lineDate: IsoDate): string {
+  return `${ROOMS[room].name} is already booked from ${rangeLabel(other.start, other.end, userZone, lineDate)}.`;
 }
 
 /** Each quarter hour of `date` and of the next date in `zone`, keyed by the label the form shows (`timeLabel` against `date`). */

@@ -1,0 +1,91 @@
+MUTANT=fake-201 npx playwright test e2e/rooms.spec.ts -g 'AC-5.[34]' (Task 3 tests plus mutant, uncommitted changes on 4134f5b)
+
+--- mutant diff (env MUTANT selects; routes installed on page.context() and the second context)
+25a26
+> import type { BrowserContext } from "@playwright/test";
+175a177
+>   await mutate(page.context());
+214a217,218
+>     await mutate(page.context());
+>     await mutate(other);
+249a254,271
+> 
+> async function mutate(context: BrowserContext): Promise<void> {
+>   await context.route("**/api/bookings", async (route) => {
+>     if (route.request().method() !== "POST") return route.fallback();
+>     if (process.env.MUTANT === "fake-201") {
+>       const body = route.request().postDataJSON();
+>       await route.fulfill({ status: 201, json: { id: crypto.randomUUID(), roomId: body.roomId, roomName: ROOMS[body.roomId as RoomId].name, title: body.title, start: body.start, end: body.end } });
+>     } else if (process.env.MUTANT === "conflict-shift") {
+>       const response = await route.fetch();
+>       if (response.status() !== 409) return route.fulfill({ response });
+>       const json = await response.json();
+>       const hour = 60 * 60 * 1000;
+>       const move = (at: string) => new Date(Date.parse(at) + hour).toISOString();
+>       json.error.conflict = { ...json.error.conflict, start: move(json.error.conflict.start), end: move(json.error.conflict.end) };
+>       await route.fulfill({ response, json });
+>     } else await route.fallback();
+>   });
+> }
+
+
+> @simple-login/backend@1.0.0 db:up
+> node scripts/db-up.mjs up
+
+ Container meeting-rooms-postgres-1 Running 
+ Container meeting-rooms-postgres-1 Waiting 
+ Container meeting-rooms-postgres-1 Healthy 
+
+Running 2 tests using 1 worker
+
+  ✘  1 e2e/rooms.spec.ts:170:1 › AC-5.3: an overlap is refused with the other booking's times in budi's zone; touching books (5.5s)
+  ✘  2 e2e/rooms.spec.ts:200:1 › AC-5.4: two users pressing Book together get one booking; the other sees the overlap message in their own zone (1.0s)
+
+
+  1) e2e/rooms.spec.ts:170:1 › AC-5.3: an overlap is refused with the other booking's times in budi's zone; touching books 
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: getByText('Merapi is already booked from 02:00 to 03:00.')
+    Expected: visible
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeVisible" getByText('Merapi is already booked from 02:00 to 03:00.') with timeout 5000ms
+      - waiting for getByText('Merapi is already booked from 02:00 to 03:00.')
+
+
+      184 |   await bookThroughForm(page, { room: "Merapi", start: "02:30", end: "03:30", title: "Budi overlapping" });
+      185 |   const message = overlapMessage("merapi", ayus, zone, date);
+    > 186 |   await expect(page.getByText(message)).toBeVisible();
+          |                                         ^
+      187 |   // Pin: 09:00 to 10:00 in Jakarta is 02:00 to 03:00 in London.
+      188 |   expect(message).toContain("02:00 to 03:00");
+      189 |   await expect(page.getByText("Booked.")).toHaveCount(0);
+        at <repo>/e2e/rooms.spec.ts:186:41
+
+    Error Context: test-results/rooms-AC-5-3-an-overlap-is-13768--budi-s-zone-touching-books/error-context.md
+
+  2) e2e/rooms.spec.ts:200:1 › AC-5.4: two users pressing Book together get one booking; the other sees the overlap message in their own zone 
+
+    Error: expect(received).toHaveLength(expected)
+
+    Expected length: 1
+    Received length: 2
+    Received array:  ["Race budi", "Race ayu"]
+
+      236 |       if (await done.isVisible()) booked.push(title);
+      237 |     }
+    > 238 |     expect(booked).toHaveLength(1);
+          |                    ^
+      239 |     const winner = entries.find(({ title }) => title === booked[0])!;
+      240 |
+      241 |     const rooms = await getRooms(await tokenFor("ayu"), dayRange(date, LONDON).start, dayRange(date, LONDON).end);
+        at <repo>/e2e/rooms.spec.ts:238:20
+
+    Error Context: test-results/rooms-AC-5-4-two-users-pre-5d18c-p-message-in-their-own-zone/error-context.md
+
+  2 failed
+    e2e/rooms.spec.ts:170:1 › AC-5.3: an overlap is refused with the other booking's times in budi's zone; touching books 
+    e2e/rooms.spec.ts:200:1 › AC-5.4: two users pressing Book together get one booking; the other sees the overlap message in their own zone 

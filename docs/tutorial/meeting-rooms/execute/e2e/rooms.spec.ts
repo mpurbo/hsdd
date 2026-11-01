@@ -18,11 +18,14 @@
 // | AC-4.2: a date's bookings |          0 | Merapi to Kew | ayu      |
 // | AC-4.3: room-local times  |          2 | all           | both     |
 // | AC-5.1, AC-5.2: the form  |          3 | Bromo         | budi     |
-import { JAKARTA, LONDON, addDays, britishWinterDays, formatDate, quarterHours, timeLabel, todayIn, wallTimeInstants, type IsoDate } from "./time.ts";
-import { getMyBookings, tokenFor } from "./api.ts";
+// | AC-5.3: overlap, touching |          4 | Merapi        | ayu, budi|
+// | AC-5.4: two at once       |          5 | Thames        | both     |
+import { JAKARTA, LONDON, addDays, britishWinterDays, dayRange, formatDate, quarterHours, timeLabel, todayIn, wallTimeInstants, type IsoDate } from "./time.ts";
+import { getMyBookings, getRooms, tokenFor, type Booking } from "./api.ts";
 import { expect, test } from "./fixtures.ts";
 import {
-  ROOMS, ZONES, bookThroughForm, bookViaApi, expectedLines, labelInstants, openRooms, optionLabels, roomLines, showDate,
+  ROOMS, ZONES, bookThroughForm, bookViaApi, expectedLines, fillBookingForm, labelInstants, openRooms, optionLabels, overlapMessage,
+  roomLines, showDate,
   type RoomId,
 } from "./rooms.ts";
 
@@ -161,4 +164,86 @@ test("AC-5.1 and AC-5.2: budi books through the form; starts and ends fall on qu
   expect(mine.status).toBe(200);
   const held = (mine.body as { bookings: { title: string; start: string; end: string }[] }).bookings;
   expect(held.filter((b) => b.title === "Form booking")).toEqual([expect.objectContaining({ start, end })]);
+});
+
+test("AC-5.3: an overlap is refused with the other booking's times in budi's zone; touching books", async ({ page }) => {
+  const date = DATES[4];
+  const zone = ZONES.budi;
+  const ayus = await bookViaApi("ayu", "merapi", date, JAKARTA, "09:00", "10:00", "Ayu in Merapi");
+  const [start] = wallTimeInstants(date, "03:00", zone);
+  const [end] = wallTimeInstants(date, "04:00", zone);
+  const budis = { start, end, title: "Budi touching" };
+
+  await openRooms(page, "budi");
+  await showDate(page, date);
+  // The new date has loaded once ayu's booking shows.
+  await expect.poll(() => roomLines(page, "merapi")).toEqual(expectedLines(ayus, "merapi", zone, date));
+
+  await bookThroughForm(page, { room: "Merapi", start: "02:30", end: "03:30", title: "Budi overlapping" });
+  const message = overlapMessage("merapi", ayus, zone, date);
+  await expect(page.getByText(message)).toBeVisible();
+  // Pin: 09:00 to 10:00 in Jakarta is 02:00 to 03:00 in London.
+  expect(message).toContain("02:00 to 03:00");
+  await expect(page.getByText("Booked.")).toHaveCount(0);
+  await expect.poll(() => roomLines(page, "merapi")).toEqual(expectedLines(ayus, "merapi", zone, date));
+
+  await bookThroughForm(page, { room: "Merapi", start: "03:00", end: "04:00", title: budis.title });
+  await expect(page.getByText("Booked.")).toBeVisible();
+  await expect.poll(() => roomLines(page, "merapi")).toEqual([
+    ...expectedLines(ayus, "merapi", zone, date),
+    ...expectedLines(budis, "merapi", zone, date),
+  ]);
+});
+
+test("AC-5.4: two users pressing Book together get one booking; the other sees the overlap message in their own zone", async ({ page, browser }) => {
+  const date = DATES[5];
+  // The database lives for one run, so a repeated run (--repeat-each) takes the next hour's slot: 10:00 London, then 11:00, and so on.
+  const hour = test.info().repeatEachIndex;
+  const at = (h: number) => `${String(h).padStart(2, "0")}:00`;
+  const tag = hour === 0 ? "" : ` ${hour}`; // titles stay distinct across repeats
+  const entries = [
+    { who: "budi", from: at(10 + hour), to: at(11 + hour), title: `Race budi${tag}` },
+    { who: "ayu", from: at(17 + hour), to: at(18 + hour), title: `Race ayu${tag}` },
+  ] as const;
+  const [start] = wallTimeInstants(date, at(10 + hour), LONDON);
+  const [end] = wallTimeInstants(date, at(11 + hour), LONDON);
+  const range = { start, end };
+
+  const other = await browser.newContext();
+  try {
+    const pages = { budi: page, ayu: await other.newPage() };
+    for (const { who } of entries) {
+      await openRooms(pages[who], who);
+      await showDate(pages[who], date);
+      const starts = quarterHours(date, ZONES[who]).map((at) => timeLabel(at, ZONES[who], date));
+      await expect.poll(() => optionLabels(pages[who], "start")).toEqual(starts);
+      await expect.poll(async () => (await roomLines(pages[who], "thames")).length).toBeGreaterThan(0);
+    }
+    for (const { who, from, to, title } of entries) {
+      await fillBookingForm(pages[who], { room: "Thames", start: from, end: to, title });
+    }
+    await Promise.all(entries.map(({ who }) => pages[who].getByRole("button", { name: "Book" }).click()));
+
+    const booked: string[] = [];
+    for (const { who, title } of entries) {
+      const refused = pages[who].getByText(overlapMessage("thames", range, ZONES[who], date));
+      const done = pages[who].getByText("Booked.");
+      await expect(done.or(refused)).toBeVisible();
+      if (await done.isVisible()) booked.push(title);
+    }
+    expect(booked).toHaveLength(1);
+    const winner = entries.find(({ title }) => title === booked[0])!;
+
+    const rooms = await getRooms(await tokenFor("ayu"), dayRange(date, LONDON).start, dayRange(date, LONDON).end);
+    expect(rooms.status).toBe(200);
+    const thames = (rooms.body as { rooms: Array<{ id: string; bookings: Booking[] }> }).rooms.find((r) => r.id === "thames")!;
+    expect(thames.bookings.filter((b) => b.start < end && b.end > start).map((b) => b.title)).toEqual([winner.title]);
+
+    const mine = { ...range, title: winner.title };
+    const shown = async () => (await roomLines(pages[winner.who], "thames")).join("\n");
+    await expect.poll(shown).toContain(expectedLines(mine, "thames", ZONES[winner.who], date).join("\n"));
+    expect(await shown()).not.toContain(entries.find(({ title }) => title !== winner.title)!.title);
+  } finally {
+    await other.close();
+  }
 });
