@@ -1,0 +1,16 @@
+npx playwright test e2e/rooms.spec.ts (uncommitted changes on f35740b, no mutant)
+
+
+> @simple-login/backend@1.0.0 db:up
+> node scripts/db-up.mjs up
+
+
+Running 5 tests using 1 worker
+
+  ✓  1 e2e/rooms.spec.ts:51:3 › AC-4.1: Rooms lists the four rooms in order, opens on today in ayu's zone, and Home returns (523ms)
+  ✓  2 e2e/rooms.spec.ts:51:3 › AC-4.1: Rooms lists the four rooms in order, opens on today in budi's zone, and Home returns (478ms)
+  ✓  3 e2e/rooms.spec.ts:71:1 › AC-4.2: a date in ayu's zone shows each room's overlapping bookings, earliest first, and (no bookings) (575ms)
+  ✓  4 e2e/rooms.spec.ts:98:1 › AC-4.3: another office's bookings also show the room's local times; the user's own zone shows none (825ms)
+  ✓  5 e2e/rooms.spec.ts:129:1 › AC-5.1 and AC-5.2: budi books through the form; starts and ends fall on quarter hours, every end after its start (597ms)
+
+  5 passed (5.6s)

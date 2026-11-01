@@ -2,7 +2,7 @@
 // room`, read and driven by the words PRD v2 Screens shows. Shared by
 // rooms.spec.ts and clock-change.spec.ts (a spec file cannot import another).
 import type { Page } from "@playwright/test";
-import { JAKARTA, LONDON, rangeLabel, wallTimeInstants, type IsoDate } from "./time.ts";
+import { JAKARTA, LONDON, addDays, quarterHours, rangeLabel, timeLabel, wallTimeInstants, type Instant, type IsoDate } from "./time.ts";
 import { PASSWORDS, postBooking, tokenFor, type Booking, type Username } from "./api.ts";
 import { expect, signIn } from "./fixtures.ts";
 
@@ -70,4 +70,30 @@ export async function bookViaApi(
   const reply = await postBooking(await tokenFor(who), { roomId: room, start, end, title });
   expect(reply.status, JSON.stringify(reply.body)).toBe(201);
   return reply.body as Booking;
+}
+
+/** The visible labels of the `start` or `end` combobox's options, in order. */
+export async function optionLabels(page: Page, name: "start" | "end"): Promise<string[]> {
+  const options = await page.getByRole("combobox", { name, exact: true }).locator("option").evaluateAll(
+    (nodes) => nodes.map((node) => node.textContent ?? ""),
+  );
+  return options.map((label) => label.trim());
+}
+
+/** Selects `room`, `start` and `end` by label, fills `title` and presses `Book`. */
+export async function bookThroughForm(
+  page: Page, choice: { room: string; start: string; end: string; title: string },
+): Promise<void> {
+  await page.getByRole("combobox", { name: "room", exact: true }).selectOption({ label: choice.room });
+  await page.getByRole("combobox", { name: "start", exact: true }).selectOption({ label: choice.start });
+  await page.getByRole("combobox", { name: "end", exact: true }).selectOption({ label: choice.end });
+  await page.getByRole("textbox", { name: "title" }).fill(choice.title);
+  await page.getByRole("button", { name: "Book" }).click();
+}
+
+/** Each quarter hour of `date` and of the next date in `zone`, keyed by the label the form shows (`timeLabel` against `date`). */
+export function labelInstants(date: IsoDate, zone: string): Map<string, Instant> {
+  return new Map(
+    [...quarterHours(date, zone), ...quarterHours(addDays(date, 1), zone)].map((at) => [timeLabel(at, zone, date), at]),
+  );
 }

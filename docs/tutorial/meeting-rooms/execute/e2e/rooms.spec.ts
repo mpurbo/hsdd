@@ -16,9 +16,15 @@
 // |---------------------------|-----------:|---------------|----------|
 // | AC-4.1: order and default |       none | all           | both     |
 // | AC-4.2: a date's bookings |          0 | Merapi to Kew | ayu      |
-import { LONDON, addDays, britishWinterDays, formatDate, todayIn, type IsoDate } from "./time.ts";
+// | AC-4.3: room-local times  |          2 | all           | both     |
+// | AC-5.1, AC-5.2: the form  |          3 | Bromo         | budi     |
+import { JAKARTA, LONDON, addDays, britishWinterDays, formatDate, quarterHours, timeLabel, todayIn, wallTimeInstants, type IsoDate } from "./time.ts";
+import { getMyBookings, tokenFor } from "./api.ts";
 import { expect, test } from "./fixtures.ts";
-import { ROOMS, ZONES, bookViaApi, expectedLines, openRooms, roomLines, showDate, type RoomId } from "./rooms.ts";
+import {
+  ROOMS, ZONES, bookThroughForm, bookViaApi, expectedLines, labelInstants, openRooms, optionLabels, roomLines, showDate,
+  type RoomId,
+} from "./rooms.ts";
 
 const HOME_DATES: IsoDate[] = britishWinterDays(addDays(todayIn(LONDON), 60), 6);
 const DATES: IsoDate[] = britishWinterDays(addDays(HOME_DATES[5], 1), 8);
@@ -87,4 +93,72 @@ test("AC-4.2: a date in ayu's zone shows each room's overlapping bookings, earli
   const onNext = expectedLines(thames, "thames", zone, next);
   await expect.poll(async () => (await roomLines(page, "thames")).join("\n")).toContain(onNext.join("\n"));
   expect((await roomLines(page, "thames"))[0]).toMatch(new RegExp(`^${formatDate(date)} 23:00 to 02:00`));
+});
+
+test("AC-4.3: another office's bookings also show the room's local times; the user's own zone shows none", async ({ page }) => {
+  const date = DATES[2];
+  const merapi = await bookViaApi("ayu", "merapi", date, JAKARTA, "09:00", "10:00", "Merapi morning");
+  const bromo = await bookViaApi("ayu", "bromo", date, JAKARTA, "11:00", "12:00", "Bromo late morning");
+  const thames = await bookViaApi("budi", "thames", date, LONDON, "10:00", "11:00", "Thames morning");
+  const kew = await bookViaApi("budi", "kew", date, LONDON, "13:00", "14:00", "Kew afternoon");
+
+  // Budi, in London: Jakarta's rooms show London times, then Jakarta's own.
+  await openRooms(page, "budi");
+  await showDate(page, date);
+  await expect.poll(() => roomLines(page, "merapi")).toEqual(expectedLines(merapi, "merapi", ZONES.budi, date));
+  const merapiLines = await roomLines(page, "merapi");
+  expect(merapiLines[0]).toContain("02:00 to 03:00");
+  expect(merapiLines[1]).toBe("(09:00 to 10:00 in Jakarta)");
+  await expect.poll(() => roomLines(page, "kew")).toEqual(expectedLines(kew, "kew", ZONES.budi, date));
+  expect(await roomLines(page, "kew")).toHaveLength(1);
+
+  // Ayu, in Jakarta, in a context of her own.
+  const ayu = await (await page.context().browser()!.newContext()).newPage();
+  try {
+    await openRooms(ayu, "ayu");
+    await showDate(ayu, date);
+    await expect.poll(() => roomLines(ayu, "thames")).toEqual(expectedLines(thames, "thames", ZONES.ayu, date));
+    expect((await roomLines(ayu, "thames"))[1]).toBe("(10:00 to 11:00 in London)");
+    await expect.poll(() => roomLines(ayu, "bromo")).toEqual(expectedLines(bromo, "bromo", ZONES.ayu, date));
+    expect(await roomLines(ayu, "bromo")).toHaveLength(1);
+  } finally {
+    await ayu.context().close();
+  }
+});
+
+test("AC-5.1 and AC-5.2: budi books through the form; starts and ends fall on quarter hours, every end after its start", async ({ page }) => {
+  const date = DATES[3];
+  const zone = ZONES.budi;
+  const instants = labelInstants(date, zone);
+  await openRooms(page, "budi");
+  await showDate(page, date);
+
+  const starts = quarterHours(date, zone).map((at) => timeLabel(at, zone, date));
+  await expect.poll(() => optionLabels(page, "start")).toEqual(starts);
+  expect(starts).toHaveLength(96);
+
+  for (const start of ["09:00", "23:00"]) {
+    await page.getByRole("combobox", { name: "start", exact: true }).selectOption({ label: start });
+    const startAt = Date.parse(instants.get(start)!);
+    await expect
+      .poll(async () => {
+        const ends = await optionLabels(page, "end");
+        return ends.length > 0 && ends.every((label) => instants.has(label) && Date.parse(instants.get(label)!) > startAt);
+      })
+      .toBe(true);
+  }
+
+  await bookThroughForm(page, { room: "Bromo", start: "09:00", end: "10:00", title: "Form booking" });
+  await expect(page.getByText("Booked.")).toBeVisible();
+  const [start] = wallTimeInstants(date, "09:00", zone);
+  const [end] = wallTimeInstants(date, "10:00", zone);
+  const booking = { start, end, title: "Form booking" };
+  await expect.poll(() => roomLines(page, "bromo")).toEqual(expectedLines(booking, "bromo", zone, date));
+  // Pin: 09:00 to 10:00 in London is 16:00 to 17:00 in Jakarta.
+  expect((await roomLines(page, "bromo"))[1]).toBe("(16:00 to 17:00 in Jakarta)");
+
+  const mine = await getMyBookings(await tokenFor("budi"));
+  expect(mine.status).toBe(200);
+  const held = (mine.body as { bookings: { title: string; start: string; end: string }[] }).bookings;
+  expect(held.filter((b) => b.title === "Form booking")).toEqual([expect.objectContaining({ start, end })]);
 });
