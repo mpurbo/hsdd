@@ -1,0 +1,162 @@
+{
+  "step_ref": "S26",
+  "skill": "hsdd-spec",
+  "target": "simple-login.integration",
+  "status": "completed",
+  "stop": null,
+  "artifacts": [],
+  "experiments": [],
+  "self_check": [
+    {
+      "gate": "The spec stays high-level; it is not an implementation plan.",
+      "status": "pass",
+      "note": "Header and Overview unchanged; the clause Q-081 names is phase content (simple-login.integration.3 Scope (b)), so nothing was written at the spec level (DEC-220)."
+    },
+    {
+      "gate": "Every node has explicit consumed/produced contract ids.",
+      "status": "n/a",
+      "note": "not exercised by this step"
+    },
+    {
+      "gate": "Every node is testable in isolation (fixtures, mocks, schemas).",
+      "status": "n/a",
+      "note": "not exercised by this step"
+    },
+    {
+      "gate": "Every dependency edge is typed; parallel lanes are called out.",
+      "status": "n/a",
+      "note": "not exercised by this step"
+    },
+    {
+      "gate": "Each child is marked internal or leaf-parent.",
+      "status": "n/a",
+      "note": "not exercised by this step"
+    },
+    {
+      "gate": "Mermaid DAG matches the dependency table.",
+      "status": "n/a",
+      "note": "not exercised by this step"
+    },
+    {
+      "gate": "`conventions.md` exists/updated at the root.",
+      "status": "pass",
+      "note": "hsdd/conventions.md exists; S21's answer adds no layout, naming or protocol convention, so it is unchanged."
+    },
+    {
+      "gate": "The decomposition axis at each level matches ownership stated by the human, not assumed <U+2014 EM DASH> no node is owned by two teams.",
+      "status": "n/a",
+      "note": "not exercised by this step"
+    },
+    {
+      "gate": "Every child node has its own `hsdd/spec/{child-id}.md` file.",
+      "status": "n/a",
+      "note": "not exercised by this step"
+    },
+    {
+      "gate": "Every input source appears in the Sources of at least one node, or is marked in the root `## Sources` as \"informative only <U+2014 EM DASH> not decomposed\", with a reason.",
+      "status": "n/a",
+      "note": "not exercised by this step"
+    },
+    {
+      "gate": "No node's Sources lists a document that does not govern it.",
+      "status": "n/a",
+      "note": "not exercised by this step"
+    },
+    {
+      "gate": "Field blocks are bullet lists and empty lists say \"none\".",
+      "status": "n/a",
+      "note": "not exercised by this step"
+    },
+    {
+      "gate": "Every open question is defined once, in its owning spec, with a table row and a `### {ID}` detail subsection; child views carry `[inherits …]`; no cited ID lacks a definition.",
+      "status": "n/a",
+      "note": "not exercised by this step"
+    },
+    {
+      "gate": "OQ prefixes used by node specs are declared in `conventions.md`.",
+      "status": "n/a",
+      "note": "not exercised by this step"
+    },
+    {
+      "gate": "Under `multi-team`, every node whose team differs from its parent's carries `- **Team:**`; no node is owned by two teams.",
+      "status": "n/a",
+      "note": "not exercised by this step"
+    },
+    {
+      "gate": "Where children exchange contracts, an integration node exists or the decision not to add one is stated in the parent (one line).",
+      "status": "n/a",
+      "note": "not exercised by this step"
+    },
+    {
+      "gate": "A graft kept every existing child id and touched only the new child's file, the parent's summaries and the parent's DAG.",
+      "status": "n/a",
+      "note": "not exercised by this step"
+    },
+    {
+      "gate": "A retired node's file is kept; its contracts' retirement went through `hsdd-reconcile`.",
+      "status": "n/a",
+      "note": "not exercised by this step"
+    },
+    {
+      "gate": "Promotion: the human confirmed before `- **Adopted:** promoted` was written; `## Observed surface` kept; `v0` contracts unchanged unless redesigned.",
+      "status": "n/a",
+      "note": "not exercised by this step"
+    }
+  ],
+  "routed": [
+    {
+      "target": "run",
+      "kind": "insert-step",
+      "step_kind": "phase-plan-append",
+      "step_target": "simple-login.integration",
+      "text": "From S26 (Q-081, DEC-221). Rewrite the unshipped phase simple-login.integration.3 in place (hsdd-phase-plan append mode; the phase keeps its id, name, tier, size, gate, Consumes and Dependencies), wording only. In Scope (b), the sentence 'The rig assumes the service creates its tables and the four pre-loaded rooms in an empty database when it starts, which this plan's request entry on booking-api@v1 asks the backend to confirm; if the backend answers with a separate command, the global setup runs that command with the same `DATABASE_URL`.' becomes a statement of what booking-api@v1's Development address now promises (S21, DEC-198): the service creates its tables in the empty meeting_rooms_e2e that DATABASE_URL names before it listens, the rooms are part of the service and need no loading, so the new database lists all four with no bookings, and the database itself must exist, which the global setup creates. The fallback for a separate command is dropped, since the producer answered otherwise and simple-login.backend.7's start test now proves the promise (S24). Nothing the phase implements, consumes or replays changes, so no pending entry is expected and the intake record's insert rule does not call for a reconcile; the step decides that. Do not touch simple-login.integration.1, .2 (shipped), .4 or .5."
+    }
+  ],
+  "closes": [
+    {
+      "id": "Q-081",
+      "outcome": "explained",
+      "note": "The clause Q-081 names is in simple-login.integration.3 Scope (b), inside the Phase Plan, which this touch may not edit (hsdd-spec Touch; the Citation touch exception does not apply because booking-api@v1 is current, not superseded). The header, the Overview and the embedded summary in hsdd/spec/simple-login.md never mention the request entry or a separate command and stay true, so no file changed (DEC-220). The report routes an insert-step for a phase-plan-append on simple-login.integration that rewrites the unshipped simple-login.integration.3 in place to cite booking-api@v1's Development address and drop the fallback (DEC-221)."
+    }
+  ],
+  "reads_outside": [
+    {
+      "path": "hsdd/contract/booking-api.md",
+      "why": "Check that the Development address holds S21's answer (tables created in an empty database before the service listens; rooms are not rows) and the 2026-11-01 Versioning entry."
+    },
+    {
+      "path": "hsdd/spec/simple-login.backend.md",
+      "why": "grep for the request-entry wording outside the target; read the 2026-11-01 rewrite note on simple-login.backend.7."
+    },
+    {
+      "path": "hsdd/conventions.md, git ls-tree main hsdd/verify/",
+      "why": "Confirm simple-login.integration.3 is unshipped (no verification doc on the main line)."
+    },
+    {
+      "path": "hsdd/management/2026-10-31-intake-prd-simple-login-v2.md",
+      "why": "The handoff list and the insert rule, to judge whether the request answer requires a phase-plan-append on this node."
+    },
+    {
+      "path": "hsdd/auto/queue.jsonl, hsdd/auto/plan.md",
+      "why": "Full text and history of Q-078 to Q-085 and which steps have run; whether any later step touches simple-login.integration."
+    },
+    {
+      "path": "hsdd/auto/steps/S23.json, hsdd/auto/steps/S23.decisions.jsonl",
+      "why": "Precedent: how the spec touch on simple-login.backend closed items whose content is Phase Plan and routed an insert-step."
+    },
+    {
+      "path": "hsdd/judgement/decisions.jsonl, hsdd/judgement/run.jsonl",
+      "why": "DEC-198's text and the recent step log."
+    },
+    {
+      "path": ".claude/skills/hsdd-auto/SKILL.md (sections 8 and Inserted steps)",
+      "why": "Whether the align stage would touch this re-planned leaf-parent later, and how an insert-step is routed and accepted."
+    }
+  ],
+  "notes": [
+    "No file changed: the artifact commit for this step is empty, like S23's first dispatch.",
+    "Same sentence, second inaccuracy for the inserted step to fix with the first: Scope (b) says the service creates 'the four pre-loaded rooms' in the empty database, while booking-api@v1's Development address says the rooms are part of the service, not rows to load.",
+    "Routing a consider back to simple-login.integration was rejected (DEC-221): the consistency stage would dispatch another spec-touch facing the same Phase Plan rule."
+  ],
+  "read_check": "3995901f"
+}

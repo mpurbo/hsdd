@@ -136,7 +136,7 @@ button { font: inherit; color: inherit; }
 }
 .toc ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
 .toc a {
-  display: grid; grid-template-columns: 22px 1fr; gap: 6px; align-items: baseline;
+  display: grid; grid-template-columns: 28px 1fr; gap: 6px; align-items: baseline;
   padding: 6px 8px; border-radius: 8px; color: var(--ink); text-decoration: none; font-size: 14px; line-height: 1.35;
 }
 .toc a:hover { background: var(--sunk); }
@@ -241,6 +241,23 @@ main {
 .dg .band { fill: var(--sunk); }
 .dg .band-label { fill: var(--faint); font-size: 11px; font-weight: 600; letter-spacing: 0.08em; }
 
+/* The three ideas (why, step 4). Each element's resting style is its final frame, so the
+   reduced-motion rule at the end of this file shows the finished picture with no animation. */
+.dg.ideas .appear { animation: idea-appear 0.45s ease-out both; }
+.dg.ideas .draw { stroke-dasharray: 400; animation: idea-draw 0.6s ease-out both; }
+.dg.ideas .flowing { stroke-dasharray: 7 6; animation: idea-fade 0.3s ease-out 0.6s both, idea-flow 0.9s linear 0.6s infinite; }
+.dg.ideas .dimmed { opacity: 0.3; animation: idea-dim 0.4s ease-out both; }
+.dg.ideas .pulse { fill: none; stroke: var(--done); stroke-width: 2; transform-box: fill-box; transform-origin: center; animation: idea-pulse 1.6s ease-out 1s infinite both; }
+.dg .reviewer path, .dg .reviewer circle { fill: none; stroke: var(--ink); stroke-width: 2; stroke-linecap: round; }
+.dg .reviewer .head { fill: var(--card); }
+.dg .t-ok { fill: var(--done); font-size: 12px; font-weight: 700; }
+@keyframes idea-appear { from { opacity: 0; transform: translateY(-6px); } }
+@keyframes idea-draw { from { stroke-dashoffset: 400; } to { stroke-dashoffset: 0; } }
+@keyframes idea-fade { from { opacity: 0; } }
+@keyframes idea-flow { to { stroke-dashoffset: -13; } }
+@keyframes idea-dim { from { opacity: 1; } }
+@keyframes idea-pulse { from { opacity: 0.9; transform: scale(1); } to { opacity: 0; transform: scale(1.35); } }
+
 /* ---------- size bars (chapter 1) ---------- */
 .sizes { display: grid; gap: 12px; }
 .size-row { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 12px; align-items: center; }
@@ -276,6 +293,7 @@ button.card:hover { border-color: var(--accent); }
 .card .num { font-family: var(--mono); font-size: 12px; color: var(--faint); }
 .detail { border-top: 1px solid var(--rule); padding-top: 12px; display: grid; gap: 8px; font-size: 14px; }
 .detail h3 { font-size: 16px; }
+.detail ul { margin: 0; padding-left: 20px; display: grid; gap: 4px; }
 
 .doc { border: 1px solid var(--rule); border-radius: 8px; overflow: hidden; background: var(--paper); min-width: 0; }
 .doc-tab {

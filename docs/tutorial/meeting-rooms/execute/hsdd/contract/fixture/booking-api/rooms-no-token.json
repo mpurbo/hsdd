@@ -1,0 +1,21 @@
+{
+  "name": "rooms-no-token",
+  "description": "No Authorization header.",
+  "clock": "2026-11-04T12:00:00.000Z",
+  "given": [],
+  "request": {
+    "method": "GET",
+    "path": "/api/rooms?from=2026-11-05T00:00:00.000Z&to=2026-11-06T00:00:00.000Z",
+    "headers": {}
+  },
+  "response": {
+    "status": 401,
+    "body": {
+      "error": {
+        "code": "UNAUTHORIZED",
+        "message": "Sign in to continue."
+      }
+    }
+  },
+  "replay": "exact"
+}

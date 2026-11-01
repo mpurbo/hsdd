@@ -1,0 +1,8 @@
+{
+  "$comment": "order-api@v1 example: reading an order that does not exist",
+  "request": { "method": "GET", "path": "/orders/ord_01JB2Y3Z4A5B6C7D8E9F0G1H2K" },
+  "response": {
+    "status": 404,
+    "body": { "code": "order_not_found", "message": "no order ord_01JB2Y3Z4A5B6C7D8E9F0G1H2K" }
+  }
+}

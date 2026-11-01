@@ -1,0 +1,55 @@
+{
+  "name": "book-overlap-several",
+  "description": "02:45Z to 03:15Z overlaps two bookings; the refusal names the one with the earliest start, whichever was made first.",
+  "clock": "2026-11-04T12:00:00.000Z",
+  "given": [
+    {
+      "id": "00000000-0000-4000-8000-000000000024",
+      "account": "budi",
+      "roomId": "merapi",
+      "title": "Design sync",
+      "start": "2026-11-05T03:00:00.000Z",
+      "end": "2026-11-05T04:00:00.000Z"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000025",
+      "account": "budi",
+      "roomId": "merapi",
+      "title": "Sprint planning",
+      "start": "2026-11-05T02:00:00.000Z",
+      "end": "2026-11-05T03:00:00.000Z"
+    }
+  ],
+  "request": {
+    "method": "POST",
+    "path": "/api/bookings",
+    "headers": {
+      "authorization": "Bearer {{token:ayu}}",
+      "content-type": "application/json"
+    },
+    "body": {
+      "roomId": "merapi",
+      "start": "2026-11-05T02:45:00.000Z",
+      "end": "2026-11-05T03:15:00.000Z",
+      "title": "Retro"
+    }
+  },
+  "response": {
+    "status": 409,
+    "body": {
+      "error": {
+        "code": "BOOKING_CONFLICT",
+        "message": "The room is already booked for part of that time.",
+        "conflict": {
+          "id": "00000000-0000-4000-8000-000000000025",
+          "roomId": "merapi",
+          "roomName": "Merapi",
+          "title": "Sprint planning",
+          "start": "2026-11-05T02:00:00.000Z",
+          "end": "2026-11-05T03:00:00.000Z"
+        }
+      }
+    }
+  },
+  "replay": "exact"
+}

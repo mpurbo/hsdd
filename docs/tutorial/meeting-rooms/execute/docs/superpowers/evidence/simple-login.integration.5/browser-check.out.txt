@@ -1,0 +1,23 @@
+browser zone America/Los_Angeles; today in London 2026-11-01
+budi's browser reports zone America/Los_Angeles
+2027-03-28 (March): 92 starts; any 01:xx: false; around the gap: 00:30, 00:45, 02:00, 02:15
+2027-10-31 (October): 100 starts; the repeated hour: 01:00 BST, 01:15 BST, 01:30 BST, 01:45 BST, 01:00 GMT, 01:15 GMT, 01:30 GMT, 01:45 GMT
+check date 2027-01-30 (no bookings in any room before the check)
+budi's Rooms on 2027-01-30:
+Rooms on
+Home
+Merapi · Jakarta · 8 seats
+02:00 to 03:00  Sprint planning
+(09:00 to 10:00 in Jakarta)
+Bromo · Jakarta · 4 seats
+(no bookings)
+Thames · London · 10 seats
+10:00 to 11:00  Design review
+Kew · London · 4 seats
+(no bookings)
+budi sees: Booked.
+ayu sees: Thames is already booked from 19:00 to 20:00.
+Thames on 2027-01-31 holds 1 booking(s): Race budi
+cancelled 4f13a9f2-56f9-480a-92eb-2d770cc33164: 204
+cancelled 02ed4a83-b404-4588-9a45-d290c32cddca: 204
+cancelled ca3c4b69-9156-4d56-a1a1-580c3cef446e: 204

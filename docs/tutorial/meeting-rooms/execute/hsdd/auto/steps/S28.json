@@ -1,0 +1,135 @@
+{
+  "step_ref": "S28",
+  "skill": "hsdd-spec",
+  "target": "simple-login",
+  "status": "completed",
+  "stop": null,
+  "artifacts": [
+    "hsdd/spec/simple-login.md"
+  ],
+  "experiments": [],
+  "self_check": [
+    {
+      "gate": "The spec stays high-level; it is not an implementation plan.",
+      "status": "pass",
+      "note": "The two touched cells repeat the children's Purpose lines; they name responsibilities, not routes, schemas or code (DEC-227, DEC-228)."
+    },
+    {
+      "gate": "Every node has explicit consumed/produced contract ids.",
+      "status": "pass",
+      "note": "The Consumes and Produces cells of the Child nodes table are unchanged; every row names contract ids or none."
+    },
+    {
+      "gate": "Every node is testable in isolation (fixtures, mocks, schemas).",
+      "status": "n/a",
+      "note": "not exercised by this step"
+    },
+    {
+      "gate": "Every dependency edge is typed; parallel lanes are called out.",
+      "status": "n/a",
+      "note": "not exercised by this step"
+    },
+    {
+      "gate": "Each child is marked internal or leaf-parent.",
+      "status": "n/a",
+      "note": "not exercised by this step: the Kind cells are unchanged and still read leaf-parent."
+    },
+    {
+      "gate": "Mermaid DAG matches the dependency table.",
+      "status": "n/a",
+      "note": "not exercised by this step"
+    },
+    {
+      "gate": "`conventions.md` exists/updated at the root.",
+      "status": "pass",
+      "note": "hsdd/conventions.md exists; the touch adds no layout, naming or protocol convention, so it is unchanged."
+    },
+    {
+      "gate": "The decomposition axis at each level matches ownership stated by the human, not assumed <U+2014 EM DASH> no node is owned by two teams.",
+      "status": "n/a",
+      "note": "not exercised by this step: the axis and the children are unchanged. The gate's dash is written as <U+2014 EM DASH> because the run's prose rules ban the character."
+    },
+    {
+      "gate": "Every child node has its own `hsdd/spec/{child-id}.md` file.",
+      "status": "pass",
+      "note": "hsdd/spec/simple-login.backend.md, simple-login.web.md and simple-login.integration.md exist; each table Purpose cell now equals line 4 of its child's file and the embedded summary's Purpose."
+    },
+    {
+      "gate": "Every input source appears in the Sources of at least one node, or is marked in the root `## Sources` as \"informative only <U+2014 EM DASH> not decomposed\", with a reason.",
+      "status": "n/a",
+      "note": "not exercised by this step. The gate's dash is written as <U+2014 EM DASH>."
+    },
+    {
+      "gate": "No node's Sources lists a document that does not govern it.",
+      "status": "n/a",
+      "note": "not exercised by this step"
+    },
+    {
+      "gate": "Field blocks are bullet lists and empty lists say \"none\".",
+      "status": "pass",
+      "note": "No field block was touched; the table's empty Consumes and Produces cells still say none."
+    },
+    {
+      "gate": "Every open question is defined once, in its owning spec, with a table row and a `### {ID}` detail subsection; child views carry `[inherits …]`; no cited ID lacks a definition.",
+      "status": "n/a",
+      "note": "not exercised by this step: the touched cells cite no OQ."
+    },
+    {
+      "gate": "OQ prefixes used by node specs are declared in `conventions.md`.",
+      "status": "n/a",
+      "note": "not exercised by this step"
+    },
+    {
+      "gate": "Under `multi-team`, every node whose team differs from its parent's carries `- **Team:**`; no node is owned by two teams.",
+      "status": "n/a",
+      "note": "not exercised by this step: conventions.md says single-team."
+    },
+    {
+      "gate": "Where children exchange contracts, an integration node exists or the decision not to add one is stated in the parent (one line).",
+      "status": "n/a",
+      "note": "not exercised by this step"
+    },
+    {
+      "gate": "A graft kept every existing child id and touched only the new child's file, the parent's summaries and the parent's DAG.",
+      "status": "n/a",
+      "note": "not exercised by this step"
+    },
+    {
+      "gate": "A retired node's file is kept; its contracts' retirement went through `hsdd-reconcile`.",
+      "status": "n/a",
+      "note": "not exercised by this step"
+    },
+    {
+      "gate": "Promotion: the human confirmed before `- **Adopted:** promoted` was written; `## Observed surface` kept; `v0` contracts unchanged unless redesigned.",
+      "status": "n/a",
+      "note": "not exercised by this step"
+    }
+  ],
+  "routed": [],
+  "closes": [
+    {
+      "id": "Q-082",
+      "outcome": "addressed",
+      "note": "The Child nodes table's Purpose cells for simple-login.backend and simple-login.web now copy, word for word, the Purpose lines of their embedded summaries, which equal line 4 of each child's own file (DEC-227, DEC-228). The simple-login.integration row already did. Nothing else in hsdd/spec/simple-login.md changed: git diff shows those two table lines only."
+    }
+  ],
+  "reads_outside": [
+    {
+      "path": "hsdd/auto/queue.jsonl (Q-082)",
+      "why": "The routed item's full text and status."
+    },
+    {
+      "path": "hsdd/judgement/decisions.jsonl (DEC-203)",
+      "why": "How the orchestrator framed the fix: the cells should match the touched embedded summaries."
+    },
+    {
+      "path": "hsdd/auto/steps/S10.json, hsdd/auto/steps/S27.json",
+      "why": "The report shape and how earlier reports quote gates whose text holds a banned character."
+    }
+  ],
+  "notes": [
+    "Decisions DEC-227 and DEC-228. Changed: two rows of the Child nodes table in hsdd/spec/simple-login.md, Purpose column only. Kind, Consumes, Produces, the embedded summaries, the DAG and every other section are untouched; the root has no Phase Plan.",
+    "Each child's Purpose now stands in three places with the same words: the child's file, the root's embedded summary and the root's Child nodes table. A later touch of a child's Purpose changes all three, or Q-082 recurs."
+  ],
+  "read_check": "18df2ac8"
+}

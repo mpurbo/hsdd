@@ -1,0 +1,2 @@
+{"type":"user","message":{"role":"user","content":"You are step S04 of an unattended HSDD run. Your complete instructions are\nin hsdd/auto/dispatch/S04.md. Read the whole file first, then follow it exactly."}}
+{"type":"assistant","message":{"role":"assistant","content":[{"type":"text","text":"Reading the dispatch file."}]}}

@@ -1,0 +1,9 @@
+{
+  "name": "experiment-backend-start-empty-database",
+  "private": true,
+  "type": "module",
+  "description": "Throwaway (S24): D6's schema applied at a start on an empty database, then again at a second start, and dropping a test database a pool still holds. Not part of any build.",
+  "devDependencies": {
+    "pg": "^8.23.1"
+  }
+}

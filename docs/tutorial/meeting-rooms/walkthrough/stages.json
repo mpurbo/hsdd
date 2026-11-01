@@ -1,0 +1,17 @@
+{
+  "start": "080ef39",
+  "setup": "c786fbd",
+  "intake": "85df0c9",
+  "adrs": "b9cc7ee",
+  "contracts": "cc54394",
+  "touches": "239ad77",
+  "plans": "364bb31",
+  "consistency": "dd7a183",
+  "report": "6215471",
+  "review": "97d0510",
+  "backend": "de962f0",
+  "web": "627d1b7",
+  "integration": "fc134a0",
+  "checkpoint": "70bfc4f",
+  "worth": "HEAD"
+}

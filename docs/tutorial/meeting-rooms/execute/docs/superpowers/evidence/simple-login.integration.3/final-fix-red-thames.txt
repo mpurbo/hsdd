@@ -1,0 +1,139 @@
+# Red: e2e/aa-thames.spec.ts (temporary, never committed) simulates simple-login.integration.5's clock-change spec, which runs first and books Thames 00:30 to 01:30 UTC as budi on days that rig.spec.ts and success.spec.ts also use (utcDay 40, 41, 46). Run on the code before the fix.
+
+
+> @simple-login/backend@1.0.0 db:up
+> node scripts/db-up.mjs up
+
+ Container meeting-rooms-postgres-1 Running 
+ Container meeting-rooms-postgres-1 Waiting 
+ Container meeting-rooms-postgres-1 Healthy 
+
+Running 15 tests using 1 worker
+
+  ✓   1 e2e/aa-thames.spec.ts:5:1 › budi books Thames on three days the other specs use (48ms)
+  ✓   2 e2e/rig.spec.ts:10:1 › the run is in Asia/Kolkata: the worker and the browser (183ms)
+  ✓   3 e2e/rig.spec.ts:17:1 › api.ts: instants are toISOString() strings on quarter hours of UTC (2ms)
+  ✘   4 e2e/rig.spec.ts:26:1 › api.ts: sign in, book, list, cancel against the service (60ms)
+  ✓   5 e2e/rig.spec.ts:44:1 › a run starts with no bookings: a slot only this test books is free (41ms)
+  ✓   6 e2e/rig.spec.ts:51:1 › startService refuses a port already in use (3ms)
+  ✓   7 e2e/rig.spec.ts:55:1 › startService fails at once, with the service's words, when the service exits before it listens (35ms)
+  ✘   8 e2e/success.spec.ts:36:3 › 20 simultaneous attempts, round 1 of 5: one 201, nineteen 409 (91ms)
+round 2: ayu won, booking f3390e72-27c2-4464-b9c5-0bca803bcdcf
+  ✓   9 e2e/success.spec.ts:36:3 › 20 simultaneous attempts, round 2 of 5: one 201, nineteen 409 (108ms)
+round 3: budi won, booking 5943f67a-fb2e-40c9-bf56-e30a7bf77535
+  ✓  10 e2e/success.spec.ts:36:3 › 20 simultaneous attempts, round 3 of 5: one 201, nineteen 409 (72ms)
+round 4: budi won, booking 6eddd913-dc27-4c1a-afba-0b46ff4c2ff3
+  ✓  11 e2e/success.spec.ts:36:3 › 20 simultaneous attempts, round 4 of 5: one 201, nineteen 409 (75ms)
+round 5: ayu won, booking e9698563-4234-4aa8-8482-7ebe8d53ca56
+  ✓  12 e2e/success.spec.ts:36:3 › 20 simultaneous attempts, round 5 of 5: one 201, nineteen 409, twenty ranges sharing one quarter hour (73ms)
+  ✘  13 e2e/success.spec.ts:84:1 › a restart keeps every booking with its id and ends every token (65ms)
+  ✓  14 e2e/success.spec.ts:121:1 › AC-5.5 at the service: the current quarter hour has started (36ms)
+  ✓  15 e2e/success.spec.ts:128:1 › AC-6.3: budi cannot cancel ayu's booking (61ms)
+
+
+  1) e2e/rig.spec.ts:26:1 › api.ts: sign in, book, list, cancel against the service ────────────────
+
+    Error: expect(received).toEqual(expected) // deep equality
+
+    - Expected  -  1
+    + Received  + 10
+
+    @@ -7,11 +7,20 @@
+          "bromo",
+          Array [],
+        ],
+        Array [
+          "thames",
+    -     Array [],
+    +     Array [
+    +       Object {
+    +         "end": "2026-12-10T01:30:00.000Z",
+    +         "id": "c17c6fcc-d811-432c-b1f4-7df36d1400e8",
+    +         "roomId": "thames",
+    +         "roomName": "Thames",
+    +         "start": "2026-12-10T00:30:00.000Z",
+    +         "title": "Clock change",
+    +       },
+    +     ],
+        ],
+        Array [
+          "kew",
+          Array [
+            Object {
+
+      36 |   expect(rooms.status).toBe(200);
+      37 |   expect((rooms.body as { rooms: Array<{ id: string; bookings: Booking[] }> }).rooms.map((r) => [r.id, r.bookings]))
+    > 38 |     .toEqual([["merapi", []], ["bromo", []], ["thames", []], ["kew", [booking]]]);
+         |      ^
+      39 |   expect(((await getMyBookings(ayu)).body as { bookings: Booking[] }).bookings).toContainEqual(booking);
+      40 |   expect(await deleteBooking(ayu, booking.id)).toEqual({ status: 204, body: null });
+      41 |   expect(((await getMyBookings(ayu)).body as { bookings: Booking[] }).bookings).not.toContainEqual(booking);
+        at <repo>/e2e/rig.spec.ts:38:6
+
+    Error Context: test-results/rig-api-ts-sign-in-book-list-cancel-against-the-service/error-context.md
+
+  2) e2e/success.spec.ts:36:3 › 20 simultaneous attempts, round 1 of 5: one 201, nineteen 409 ──────
+
+    Error: expect(received).toEqual(expected) // deep equality
+
+    - Expected  -  1
+    + Received  + 10
+
+    @@ -16,11 +16,20 @@
+          "bromo",
+          Array [],
+        ],
+        Array [
+          "thames",
+    -     Array [],
+    +     Array [
+    +       Object {
+    +         "end": "2026-12-11T01:30:00.000Z",
+    +         "id": "958e9645-bcea-4ddc-b1d3-a838a7573010",
+    +         "roomId": "thames",
+    +         "roomName": "Thames",
+    +         "start": "2026-12-11T00:30:00.000Z",
+    +         "title": "Clock change",
+    +       },
+    +     ],
+        ],
+        Array [
+          "kew",
+          Array [],
+        ],
+
+      61 |     expect(rooms.status).toBe(200);
+      62 |     expect((rooms.body as { rooms: RoomView[] }).rooms.map((r) => [r.id, r.bookings]))
+    > 63 |       .toEqual([["merapi", [winner]], ["bromo", []], ["thames", []], ["kew", []]]);
+         |        ^
+      64 |
+      65 |     const mine = await getMyBookings(tokens[winnerName]);
+      66 |     expect(mine.status).toBe(200);
+        at <repo>/e2e/success.spec.ts:63:8
+
+    Error Context: test-results/success-20-simultaneous-at-82d54-1-of-5-one-201-nineteen-409/error-context.md
+
+  3) e2e/success.spec.ts:84:1 › a restart keeps every booking with its id and ends every token ─────
+
+    Error: expect(received).toHaveLength(expected)
+
+    Expected length: 1
+    Received length: 2
+    Received array:  [{"end": "2026-12-16T01:30:00.000Z", "id": "076a6827-48f5-4756-b3a2-db511ccae9ab", "roomId": "thames", "roomName": "Thames", "start": "2026-12-16T00:30:00.000Z", "title": "Clock change"}, {"end": "2026-12-16T03:00:00.000Z", "id": "2ab06947-70d2-49d0-bcaf-67fe2c2778c5", "roomId": "kew", "roomName": "Kew", "start": "2026-12-16T02:00:00.000Z", "title": "Restart kew"}]
+
+      101 |   };
+      102 |   expect(before.ayu).toHaveLength(2);
+    > 103 |   expect(before.budi).toHaveLength(1);
+          |                       ^
+      104 |
+      105 |   await backend.restart();
+      106 |
+        at <repo>/e2e/success.spec.ts:103:23
+
+    Error Context: test-results/success-a-restart-keeps-ev-7e686-its-id-and-ends-every-token/error-context.md
+
+  3 failed
+    e2e/rig.spec.ts:26:1 › api.ts: sign in, book, list, cancel against the service ─────────────────
+    e2e/success.spec.ts:36:3 › 20 simultaneous attempts, round 1 of 5: one 201, nineteen 409 ───────
+    e2e/success.spec.ts:84:1 › a restart keeps every booking with its id and ends every token ──────
+  12 passed (6.6s)

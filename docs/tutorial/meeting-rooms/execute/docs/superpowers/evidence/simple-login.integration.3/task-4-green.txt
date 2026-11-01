@@ -1,0 +1,37 @@
+
+> @simple-login/backend@1.0.0 db:up
+> node scripts/db-up.mjs up
+
+ Container meeting-rooms-postgres-1 Running 
+ Container meeting-rooms-postgres-1 Waiting 
+ Container meeting-rooms-postgres-1 Healthy 
+
+Running 25 tests using 1 worker
+
+  ✓   1 e2e/proxy-replay.spec.ts:11:1 › replays 24 exact fixtures: 4 of auth-api@v1, 5 of profile-api@v2, 15 of booking-api@v1, none of profile-api@v1 (18ms)
+  ✓   2 e2e/proxy-replay.spec.ts:21:3 › replay through the proxy: auth-api/login-empty-username (94ms)
+  ✓   3 e2e/proxy-replay.spec.ts:21:3 › replay through the proxy: auth-api/login-missing-password (4ms)
+  ✓   4 e2e/proxy-replay.spec.ts:21:3 › replay through the proxy: auth-api/login-unknown-user (23ms)
+  ✓   5 e2e/proxy-replay.spec.ts:21:3 › replay through the proxy: auth-api/login-wrong-password (22ms)
+  ✓   6 e2e/proxy-replay.spec.ts:21:3 › replay through the proxy: profile-api.v2/me-ayu (23ms)
+  ✓   7 e2e/proxy-replay.spec.ts:21:3 › replay through the proxy: profile-api.v2/me-budi (23ms)
+  ✓   8 e2e/proxy-replay.spec.ts:21:3 › replay through the proxy: profile-api.v2/me-expired-token (646ms)
+  ✓   9 e2e/proxy-replay.spec.ts:21:3 › replay through the proxy: profile-api.v2/me-no-token (5ms)
+  ✓  10 e2e/proxy-replay.spec.ts:21:3 › replay through the proxy: profile-api.v2/me-unknown-token (2ms)
+  ✓  11 e2e/proxy-replay.spec.ts:21:3 › replay through the proxy: booking-api/book-end-not-after-start (24ms)
+  ✓  12 e2e/proxy-replay.spec.ts:21:3 › replay through the proxy: booking-api/book-instant-with-offset (25ms)
+  ✓  13 e2e/proxy-replay.spec.ts:21:3 › replay through the proxy: booking-api/book-not-on-a-quarter-hour (22ms)
+  ✓  14 e2e/proxy-replay.spec.ts:21:3 › replay through the proxy: booking-api/book-title-blank (23ms)
+  ✓  15 e2e/proxy-replay.spec.ts:21:3 › replay through the proxy: booking-api/book-title-too-long (22ms)
+  ✓  16 e2e/proxy-replay.spec.ts:21:3 › replay through the proxy: booking-api/book-too-long (22ms)
+  ✓  17 e2e/proxy-replay.spec.ts:21:3 › replay through the proxy: booking-api/book-unknown-room (26ms)
+  ✓  18 e2e/proxy-replay.spec.ts:21:3 › replay through the proxy: booking-api/book-unknown-token (2ms)
+  ✓  19 e2e/proxy-replay.spec.ts:21:3 › replay through the proxy: booking-api/cancel-malformed-id (22ms)
+  ✓  20 e2e/proxy-replay.spec.ts:21:3 › replay through the proxy: booking-api/cancel-no-token (2ms)
+  ✓  21 e2e/proxy-replay.spec.ts:21:3 › replay through the proxy: booking-api/cancel-unknown (27ms)
+  ✓  22 e2e/proxy-replay.spec.ts:21:3 › replay through the proxy: booking-api/my-bookings-expired-token (644ms)
+  ✓  23 e2e/proxy-replay.spec.ts:21:3 › replay through the proxy: booking-api/rooms-from-not-before-to (27ms)
+  ✓  24 e2e/proxy-replay.spec.ts:21:3 › replay through the proxy: booking-api/rooms-instant-without-milliseconds (22ms)
+  ✓  25 e2e/proxy-replay.spec.ts:21:3 › replay through the proxy: booking-api/rooms-no-token (2ms)
+
+  25 passed (4.6s)

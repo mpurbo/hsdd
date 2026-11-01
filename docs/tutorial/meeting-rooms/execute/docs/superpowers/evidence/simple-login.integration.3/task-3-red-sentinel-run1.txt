@@ -1,0 +1,6 @@
+
+Running 1 test using 1 worker
+
+  ✓  1 e2e/rig.spec.ts:44:1 › a run starts with no bookings: a slot only this test books is free (42ms)
+
+  1 passed (1.6s)

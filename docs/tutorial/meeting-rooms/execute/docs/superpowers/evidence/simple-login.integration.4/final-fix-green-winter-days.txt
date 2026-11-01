@@ -1,0 +1,38 @@
+
+> @simple-login/backend@1.0.0 db:up
+> node scripts/db-up.mjs up
+
+ Container meeting-rooms-postgres-1 Running 
+ Container meeting-rooms-postgres-1 Waiting 
+ Container meeting-rooms-postgres-1 Healthy 
+
+Running 26 tests using 1 worker
+
+  ✓   1 e2e/home.spec.ts:66:1 › AC-2.1: Home shows the signed-in user's details (514ms)
+  ✓   2 e2e/home.spec.ts:78:1 › AC-2.5: each account's Home shows its zone as its name, the whole text (530ms)
+  ✓   3 e2e/home.spec.ts:89:1 › AC-2.5: ayu's Thames booking shows on her Home in Jakarta time (418ms)
+  ✓   4 e2e/home.spec.ts:97:1 › AC-2.5: budi's Merapi booking shows on his Home in London time (446ms)
+  ✓   5 e2e/home.spec.ts:105:1 › AC-2.4: Home shows each account's phone number exactly as stored (535ms)
+  ✓   6 e2e/home.spec.ts:114:1 › Budi sees Budi's profile, not Ayu's (404ms)
+  ✓   7 e2e/home.spec.ts:124:1 › AC-2.2: reloading keeps the user signed in (442ms)
+  ✓   8 e2e/home.spec.ts:132:1 › AC-3.1: Sign out returns to Login, and a reload stays there (488ms)
+  ✓   9 e2e/home.spec.ts:142:1 › AC-2.3: a session the backend no longer knows returns to Login with the expiry message (1.0s)
+  ✓  10 e2e/home.spec.ts:154:1 › AC-6.1: budi's bookings show soonest first, each with Cancel, and none of ayu's (550ms)
+  ✓  11 e2e/home.spec.ts:171:1 › AC-6.2: Cancel removes the booking's lines at once and frees its range (576ms)
+  ✓  12 e2e/home.spec.ts:186:1 › AC-6.1: with every booking of budi's cancelled, Home shows (no bookings) under My bookings (450ms)
+  ✓  13 e2e/home.spec.ts:197:1 › Success: after a restart, Login says the session expired and Home still lists the booking (1.2s)
+  ✓  14 e2e/time.spec.ts:13:1 › time.ts: a date's range runs from its start to the next date's start, in the zone given (1ms)
+  ✓  15 e2e/time.spec.ts:18:1 › time.ts: London's March change day is 23 hours, with no 01:00 to 01:45 (4ms)
+  ✓  16 e2e/time.spec.ts:26:1 › time.ts: London's October change day is 25 hours, with 01:00 to 01:45 first BST, then GMT (2ms)
+  ✓  17 e2e/time.spec.ts:38:1 › time.ts: the next change days are strictly after today's date in London (0ms)
+  ✓  18 e2e/time.spec.ts:43:1 › time.ts: today's date depends on the zone, never on the ambient one (0ms)
+  ✓  19 e2e/time.spec.ts:49:1 › time.ts: a date in British winter time is wholly GMT and never a change day (98ms)
+  ✓  20 e2e/time.spec.ts:56:1 › time.ts: winter dates for a file are distinct, wholly GMT, and a later file continues after them (162ms)
+  ✓  21 e2e/time.spec.ts:67:1 › time.ts: a wall time off the quarter hours is refused (1ms)
+  ✓  22 e2e/time.spec.ts:74:1 › time.ts: a time is 24-hour HH:mm in the zone given; a date is en-GB weekday, day and month (0ms)
+  ✓  23 e2e/time.spec.ts:80:1 › time.ts: a time off its line's date carries its own date (2ms)
+  ✓  24 e2e/time.spec.ts:86:1 › time.ts: a time in an hour the clocks repeat carries the zone's short name (3ms)
+  ✓  25 e2e/time.spec.ts:92:1 › time.ts: a room in another zone adds its own times and office; one in the user's zone does not (2ms)
+  ✓  26 e2e/time.spec.ts:100:1 › time.ts: Home's line is the start's date, two spaces, then the range in the user's zone (5ms)
+
+  26 passed (11.8s)

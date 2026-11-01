@@ -1,0 +1,1038 @@
+# Process log: meeting rooms (simple-login, PRD version 2)
+
+The record of the third simple-login tutorial: a product-sized change to a
+finished HSDD project, planned by `hsdd-auto` unattended and then built
+phase by phase, with the HSDD v0.11.0 skills as written in this
+repository's `skills/` on branch `feat/v0.11.0`. Times are WIB (UTC+7),
+31 October 2026 unless a line says otherwise.
+
+Every HSDD stop meant for a human (the first run's questions, the review
+of the run's decisions, sign-offs) was taken by Claude acting for the
+owner, by the owner's choice before the run. Each is marked
+**[owner proxy]**; the closing notes list them all.
+
+## Starting point
+
+- The sandbox repository started as a byte copy of
+  `docs/tutorial/simple-login-update/execute/` at main 885c906 (the
+  finished phone-number change: three contract files with `profile-api@v2`
+  beside v1, four node specs, the closed intake record, the first
+  checkpoint's documents). Commit
+  `e84ae36`.
+- One new input, `hsdd/context/prd-simple-login.v2.md`: version 2 of the
+  PRD, approved, superseding version 1 together with update 1. It keeps
+  stories 1 to 3, adds the time zone to Home, and adds the Rooms screen,
+  booking and cancelling, with PostgreSQL in Docker Compose (Colima on
+  macOS) and tests against a real database. Three choices are left to
+  engineering. Commit `204a5c7`.
+- The owner chose the domain (meeting rooms over to-do, bill splitting,
+  event sign-up and a reading list), the mode (`intake`, so the run is a
+  real continuation of simple-login) and owner proxy for the review of the
+  run's decisions.
+
+## Why the run happens outside this repository
+
+`hsdd-auto` commits every step on its own branch and checks every write
+against a write set relative to the repository root. Inside this
+repository the tree would sit at `docs/tutorial/meeting-rooms/execute/hsdd/`,
+not at `hsdd/`. So the run happens in a standalone repository, and its
+history is imported afterwards.
+
+Two harness deviations, the same as the builder's smoke run (see
+`review/hsdd-v0_11-acceptance.md`): the orchestrating session's working
+directory is the HSDD repository, so each launch prompt carries one extra
+line naming the sandbox root; and the session's Skill tool cannot load the
+HSDD skills by name, so each dispatch carries one cited context line
+telling the step to read the skill's `SKILL.md` by path. For the same
+reason the adapter's hooks and deny rules are installed but not enforced
+in this session; they stay prompt instructions, and the gate checks every
+write after the fact.
+
+## Timeline
+
+### 19:20 · v0.11.0 branch
+
+- `feat/v0.11.0` from main 885c906 (v0.10.2), merging `feat/hsdd-auto`
+  (63 commits, cut from f3d9673 before v0.10.1). Three textual conflicts:
+  CHANGELOG, `hsdd-contract` and `hsdd-reconcile`. 775 tests pass.
+  Merge commit f8f9171.
+- A fresh agent compares hsdd-auto with v0.10.1 and v0.10.2's rules
+  before the run starts, so the run uses consistent skills.
+
+### 19:55 · hsdd-auto against v0.10.2: fifteen gaps, fixed before the run
+
+The check found nine defects and six drifts. The 775 tests passed because
+the end-to-end test still bumped a contract inside its one file, the model
+v0.10.2 replaced. Four defects would have broken this run:
+
+- The scripts index contracts by file name, so `profile-api.v2.md` reads as
+  a second contract. The gate's C4 refuses the file, C5 refuses every
+  citation of `profile-api@v2` (the four node specs, `auth-api.md` and
+  ADR-001 of this very tree), and a step planning a v2 consumer is told v2
+  is v1 and given v1's fixtures.
+- `approved PRD`, the authority v0.10.2 added and this request carries,
+  cannot be given to `/hsdd-auto intake`.
+- Citation touch and align treat every lower contract version as stale and
+  edit node headers, which v0.10.2's `coexisting` migration forbids.
+- A bump's migration mode (`coexisting` or `lockstep`) has no unattended
+  disposition, so a step would pick it silently.
+
+Two choices taken for the owner, to ratify **[owner proxy]**: a lower
+version is superseded only when `deprecated` or `retired`, and citation
+touch never edits node headers or ADR `affects` (option 1 of 2; option 2
+kept "newest is current" with a recorded decision per moved consumer); the
+migration mode folds into the existing `breaking-amend` stop class (one
+stop and one predecided answer per bump) rather than a class of its own.
+Two agents fix the gaps in parallel worktrees.
+
+### 21:00 · gaps fixed and merged
+
+Both branches merged into `feat/v0.11.0` with one trivial test conflict;
+804 tests pass (775 before). Three small follow-ups found by the fixing
+agents went in the same evening: reconcile's table routes a lockstep
+bump's consumers like hsdd-contract's does, a new `{target_id}` slot so a
+later version's contract step renders `order-api@v2`, and hsdd-spec's
+Sources example says `approved PRD`. Build decisions B-40 to B-51 in
+`docs/superpowers/plans/2026-10-22-hsdd-auto-decisions.md`.
+
+Docker for the build: Homebrew's `colima`, `docker` and `docker-compose`.
+Colima 0.10.3's VM came up with a dangling `/etc/resolv.conf` (no
+`systemd-resolved` in its image), so image pulls failed on DNS; a static
+resolver inside the VM fixed it. `docker compose` as a plugin needs a line
+in `~/.docker/config.json`, which this session may not write; the
+standalone `docker-compose` works meanwhile.
+
+### 21:15 · first run, as owner proxy
+
+The HSDD skills were copied into the sandbox's `.claude/skills/`
+(git-ignored), the way a project installs them locally, so `skills_dir` is
+the relative `.claude/skills` and the run uses a fixed copy of the skills
+while `feat/v0.11.0` moves on.
+
+The first run's ten questions, answered **[owner proxy]**
+(`hsdd/auto/run.yaml`):
+
+- run `meeting-rooms`, root `simple-login`, branch `auto/meeting-rooms`
+  from `main`;
+- who builds what: PRD v2's two developers, the backend developer owning
+  the database; the integration node stays where both run together;
+- sources before the intake: PRD v1, update 1 and RFC-001, all normative;
+  `hsdd/context/` read-only;
+- out of bounds: agent memory directories and the HSDD repository itself,
+  so no step reads this log or the earlier tutorials;
+- owner facts: superpowers as coding method, Node 24 and npm,
+  PostgreSQL 17 in Docker Compose, nothing installed globally;
+- policy `decide-and-record`, full stop set; no owner files;
+- prose rules from the owner's instructions (no em dash, no banned phrase)
+  at level `error`; the co-author trailer on every commit.
+
+The owner's instruction, also proxy: `/hsdd-auto intake
+hsdd/context/prd-simple-login.v2.md --authority approved-prd`, "version 2
+supersedes version 1 together with update 1; take it in end to end; decide
+and record every question".
+
+### 21:18 · S00 setup, S01 plan
+
+- `open-segment` created `auto/meeting-rooms` and segment
+  `2026-10-31-intake-prd-simple-login-v2`.
+- Setup copied the scripts to `hsdd/scripts/auto/`, installed the adapter
+  (deny rules for memory, the HSDD repository and `hsdd/context/`; a Bash
+  hook; the `hsdd-auto-step` agent type) and recorded four decisions:
+  DEC-001 sources (PRD v2 normative, PRD v1 and update 1 baseline, RFC-001
+  stays normative), DEC-002 the instruction's reading, DEC-003 host
+  enforcement only from a session started in the sandbox, DEC-004 the two
+  harness deviations.
+- The gate passed with three warnings, all about the update tutorial's
+  existing tree (`profile-api.v2.md`'s `governed_by` does not name
+  ADR-001); nothing this run wrote.
+- The plan step wrote the segment's paragraph in `hsdd/auto/plan.md`,
+  naming the decisions it expects: the class and landing, persistence,
+  the contract changes, PRD v2's three open limits and web navigation.
+
+### 21:20 · S02 intake (subagent)
+
+`next.mjs` returned the `intake` step on the request. Dispatched with one
+context line pointing at `.claude/skills/hsdd-intake/SKILL.md`.
+
+### 21:36 · S02 reviewed and committed
+
+- **Class `cross-node`** (DEC-005): the decomposition axis (who builds
+  what) still holds, so rooms, bookings and PostgreSQL land on the
+  backend, the screens on the web, the success tests on integration. No
+  node is missing, so not `new-capability`; the shape fits, so not
+  `structural`.
+- **Contracts:** a new `booking-api@v1`, one contract for rooms and
+  bookings (DEC-006); `profile-api@v2` touched for the time zone under its
+  own `additive-only` rule rather than a v3 (DEC-007); `auth-api@v1`
+  touched so its token guarantee names the new API.
+- **ADRs:** ADR-001 updated, amended if sessions stay in memory or
+  superseded if they move to PostgreSQL (DEC-008); a new ADR-002 for the
+  time model, which spans three nodes and two contracts (DEC-009); no
+  persistence ADR, since PostgreSQL is a PRD constraint and the rest is
+  the backend's own decision (DEC-010).
+- **Upstream:** RFC-001's version-1 statements (in-memory, two endpoints,
+  no database, no router) are resolved locally and flagged for its authors
+  (DEC-013, the segment's only `would_have_asked` so far, class
+  `upstream`).
+- **Nineteen handoffs** in one producer-first sequence: H1 ADR-001, H2
+  ADR-002, H3 booking-api, H4 auth-api, H5 profile-api@v2, H6 to H9 the
+  node texts, H10 to H13 citation touches (`when: cites-superseded`), then
+  an append and a reconcile per leaf-parent. An insert rule adds steps
+  when a later change alters an already-planned node.
+- **Routed:** a must-address to H1 (three contracts lack
+  `governed_by: [ADR-001]`, an old gap of the update tutorial that the
+  gate would turn into an error once a step touches them), and three
+  `consider` items pointing at the open execution plan's repairs.
+- **Review:** 21 reads outside the step's inputs, all inside the
+  repository (the receiving skills, the run's own scripts); kept (DEC-017).
+
+**Finding (HSDD).** The step's own experiment showed that `cites-superseded`
+treats a baseline source's version as a bare token. With `version: "1"`,
+every file with a standalone 1 (`"minLength": 1`, "1 to 64 characters")
+"cites a superseded version". The record limited its touches to the four
+specs that really cite the old paths, so the run is unaffected; a run
+whose insert rule adds touches would dispatch needless steps.
+
+### 21:37 · S03 adr-update ADR-001 (H1)
+
+- **ADR-001 amended, not superseded** (DEC-018): sessions stay in memory,
+  so a restart still signs everyone out, while bookings in PostgreSQL
+  survive it. PRD v2 accepted either answer; keeping the store changes no
+  shipped code or guarantee and keeps the restart the integration phase
+  uses as its expired-token stand-in. Sign-out stays client-side
+  (DEC-019). `affects` gains `booking-api@v1` and, absorbing the open
+  execution plan's repair C-2, `simple-login` (DEC-022).
+- The must-address from S02 closed: `governed_by: [ADR-001]` added to
+  `auth-api`, `profile-api` and `profile-api.v2` (DEC-023).
+- Gate: C3 and C5 warn about `booking-api@v1`, cited before H3 drafts it:
+  a forward reference, as designed. Reads outside kept (DEC-024).
+
+### 21:45 · S04 adr ADR-002, the time model (H2)
+
+- **ADR-002, the time model**, written `accepted` under DEC-037 (the
+  segment's second `would_have_asked`: hsdd-adr's "never write invented
+  content as accepted" gives way under an unattended run, and the owner's
+  review is the acceptance). Thirteen decisions: UTC instants on the wire
+  in `toISOString` form like auth-api's `expiresAt` (DEC-025);
+  `timestamptz` and half-open `[start, end)` intervals, so touching
+  bookings do not overlap (DEC-026); the account's IANA zone served in the
+  profile, never the browser's (DEC-027); the web app does every
+  conversion and the backend works in instants only (DEC-028, medium, the
+  choice most open to review); the backend's injected clock decides
+  "started", equality counts (DEC-029); the quarter-hour rule checked on
+  the UTC instant (DEC-030); the booking form lists a day's quarter-hour
+  instants, so London's skipped hour never appears and its repeated hour
+  appears twice, marked BST and GMT (DEC-031, DEC-032); tests run in a
+  third ambient zone, such as Asia/Kolkata, so neither account's zone nor
+  UTC hides a bug (DEC-034).
+- Two experiments, both in the run's records: Node 24's `Intl` on London's
+  23-hour and 25-hour days, and a throwaway `postgres:17-alpine` container
+  showing `timestamptz` keeps the instant under any session zone and an
+  exclusion constraint refuses an overlap with SQLSTATE 23P01. Docker was
+  available because Colima had been installed that evening.
+- Reads outside kept (DEC-038).
+
+### 22:00 · S05 contract booking-api@v1 (H3)
+
+- **booking-api@v1 drafted** (`versioned`, governed by ADR-001 and
+  ADR-002): four endpoints (`GET /api/rooms?from&to` with the day as two
+  instants, `GET /api/me/bookings`, `POST /api/bookings`, `DELETE
+  /api/bookings/{id}`), one flat booking shape, eight error codes with a
+  fixed check order, the overlap refusal naming the earliest overlapping
+  booking as `error.conflict` inside RFC-001's envelope (DEC-044, not
+  flagged upstream since the RFC forbids no extra field). Eighteen
+  guarantees, 35 fixtures that each carry the backend's `clock` and the
+  bookings `given` before it, so the producer can replay them exactly.
+- **PRD v2's two open limits**, both `would_have_asked`: the longest
+  booking is 8 hours (DEC-046, medium; all-day events would move it), and
+  a booking may start at most 365 days ahead (DEC-047, high: London's
+  clocks change at most 217 days after any moment, so the integration
+  node can always book a change day through the API).
+- The experiment compiled the schema with the backend's own Ajv settings,
+  validated every fixture, reproduced each one from an independent model
+  of the Interface, and caught seven deliberately broken fixtures.
+- Routed to the phase plans: the replay rig must learn `clock`, `given`,
+  `DELETE` and a bodiless 204; the web's fetch stub compares raw paths
+  while `URLSearchParams` encodes the colons; only 14 fixtures can be
+  replayed through the proxy against the real clock.
+- Small finding (HSDD): one hsdd-contract quality gate contains an em
+  dash, and the step wrote it as `<U+2014 EM DASH>` in its `self_check`
+  instead of copying it verbatim, although the gate exempts step reports
+  from the prose rules.
+- Reads outside kept (DEC-055).
+
+### 22:18 · S06 contract-touch auth-api (H4)
+
+- **auth-api@v1 touched, v1 stays `stable`** (DEC-060): G2 names
+  `booking-api@v1`; two new guarantees state shipped behavior that was
+  only in ADR-001 (G3: a restart ends every token; G4: sign-out is
+  client-side), each classified a clarification against the code and the
+  integration phase that observed it (DEC-057, DEC-058). `consumers`
+  gains the shipped web.3 and web.4 phases, absorbing the execution
+  plan's repair C-3 (DEC-056). No schema or fixture changed.
+- Noted by the step: auth-api has no `Breaking:` line, which the v0.11
+  contract template expects; setting one was left out of a touch.
+- Reads outside kept (DEC-061).
+
+### 22:26 · S07 contract-touch profile-api@v2 (H5)
+
+The first step on a `{id}.v{n}` target, which the gap fixes made possible.
+
+- **profile-api@v2 gains `timeZone`, stays v2** (DEC-065): the field is
+  optional in the schema, so every old fixture still validates and the
+  shipped web (whose decoder ignores unknown fields) keeps working; a
+  guarantee says every 200 carries it (G4) and another that a consumer
+  never substitutes another zone (G5) (DEC-063). Making it required would
+  have been v3 and a `breaking-amend`.
+- The cost lands on the producer: the new `me-ayu` and `me-budi` fixtures
+  fail against the shipped backend's exact replay until a backend phase
+  serves the field, so `main` goes red between the contract change and
+  that phase, as in the previous tutorial. Routed to all three phase
+  plans.
+- The touch on `profile-api.v2` (a `{id}.v{n}` target) ran clean; before
+  the gap fixes the gate refused any step on that file.
+- Reads outside kept (DEC-066).
+
+### 22:35 · S08 to S11: spec touches (H6 to H9)
+
+- **S08, the root** (H6): Purpose, Owns, Does not own, the Overview, the
+  Isolation strategy's contract list and the Decisions section restated
+  from PRD v2 (DEC-067 to DEC-077). It also rewrote the Overview's lead,
+  which still said "nothing is persisted" and "exactly two endpoints".
+- **Owner attention:** PRD v2's Success section leaves out version 1's
+  "Home within 3 seconds of Sign in", so the root no longer carries it
+  (DEC-073, medium), while the shipped integration.1 still asserts it.
+  The omission was the PRD author's (Claude, writing PRD v2 as product);
+  the run noticed and routed the question to the integration plan.
+- The root is briefly inconsistent: its Isolation strategy names
+  `booking-api@v1` while the child table, DAG and matrix do not yet;
+  reconcile's version ripple adds it later, by design.
+
+- **S09, the backend** (H7): Purpose, Owns (the time zones, rooms,
+  bookings, PostgreSQL 17 and its Compose service, the four booking
+  paths), the Isolation strategy (a real PostgreSQL in every test that
+  touches bookings; the replay learns `clock` and `given`) and the
+  Overview, in the node's file and its embedded copy in the root.
+- **Finding (hsdd-auto).** Four items meant for H14, the backend's phase
+  plan, were handed to this spec touch, because an item on a handoff id
+  also matches any step on that handoff's target (build decision B-10,
+  meant for the consistency stage). A step must close every item its
+  dispatch lists, so it closed them `explained` and carried each text to
+  H14 as a new item; H11, also on the backend, will be handed the copies
+  and must carry them again. Nothing is lost, but every step on the node
+  before H14 pays for it (DEC-087).
+
+### 22:55 · S10 spec-touch simple-login.web (H8)
+
+- **S10, the web** (H8): Purpose, Owns (Home with the time zone and my
+  bookings, the Rooms screen, the conversion and display of times under
+  ADR-002) and the Overview, which now describes three screens and leaves
+  navigation to the plan's D4. It also rewrote the Isolation strategy,
+  which H8 did not name, because no later handoff writes it; kept
+  (DEC-096).
+- Noticed by the step: the web learns about an expired session only when
+  `GET /api/me` answers 401 (D1), while every booking endpoint can now be
+  the first to see it. Routed to the web's phase plan.
+- Three more items carried to H16 the same way (B-10 finding).
+
+### 23:02 · S11 spec-touch simple-login.integration (H9)
+
+- **S11, integration** (H9): Owns now runs the real service with its
+  PostgreSQL 17 (through the backend's Compose service) beside the web
+  app and names PRD v2's three scripted tests; the Isolation strategy
+  requires a real database, a third browser time zone and the real clock;
+  the Overview ties each success test to the guarantee it checks and keeps
+  the restart as the expired-token stand-in.
+- Noticed by the step and routed to the integration plan: the shipped rig
+  starts no database, and bookings now persist between test runs, so a
+  second run's 20 attempts could all get 409 unless each run gets a clean
+  database or clean slots. Six items carried to H18 (B-10 finding again).
+
+### 23:09 · S12 to S15: citation touches (H10 to H13)
+
+- **S12, the root** (H10): 13 citations of PRD 1 and Update 1 moved to
+  PRD v2, with section names mapped (US-1 to US-6, Rooms, Constraints);
+  RFC-001 kept; ten `profile-api@v1` citations kept because v1 is still
+  live beside v2, nine of them in copies of Produces and Consumes lines,
+  which the narrowed citation rule never moves (gap fix G-9 at work).
+- **Finding (hsdd-auto).** A child's citation touch may write only the
+  child's own file, but the root embeds a copy of each child's header. The
+  root's touch moved those copies itself and routed the mapping to H11 to
+  H13 so each child's header agrees (DEC-116).
+- **S13, backend** (H11): one Sources line moved, matching the root's
+  copy; twelve citations kept (shipped phases, a dated append paragraph,
+  live `profile-api@v1`).
+- **S14, web** (H12): the Sources line and D3's two criterion citations
+  moved (D{n} are live node decisions, unlike shipped phases); 21 kept as
+  history and 3 as live v1. Review routed one citation nit to the web
+  node: the Overview cites PRD v2 Screens for three screens, but Screens
+  draws only Home and Rooms (DEC-128, Q-064).
+- **S15, integration** (H13): one Sources line moved; 17 citations kept
+  as history in the two shipped phases. The step observed that the
+  Overview cites ADR-001 while ADR-001 does not govern the node; review
+  left it, since the node reaches ADR-001 only through auth-api@v1's
+  guarantee (DEC-135, medium).
+
+### 23:43 · S16 phase-plan-append simple-login.backend (H14)
+
+The first phase plan of the run, carrying the many items routed to H14
+since S02.
+
+- **Four backend phases appended**, interfaces first: backend.4
+  (gate-only: `timeZone` in the accounts, which turns the gate green
+  again; booking types, the store interface, rooms as data,
+  `backend/compose.yaml`, a test database per test file, the replay rig
+  for `clock`, `given`, DELETE and 204), backend.5 (spot-check: the
+  booking rules as pure functions), backend.6 (full-review: the store on
+  PostgreSQL) and backend.7 (full-review: the four endpoints, producing
+  booking-api@v1). Phases 5 and 6 can run in parallel.
+- **The experiment that decided D7** (DEC-149), against a real
+  PostgreSQL 17 in Colima with 20 simultaneous attempts per round: a
+  per-room advisory lock (lock, read the earliest overlap, insert) gave
+  exactly one 201 and nineteen 409s in 60 of 60 rounds, the slowest
+  71 ms. The exclusion constraint alone settled only through deadlocks,
+  up to 19 s a round. "Re-read and retry", which S05 had suggested,
+  livelocked: 18 attempts unbooked after ten retries, 219 deadlocks.
+- Edge values PostgreSQL refuses, each now a plan decision: a title with
+  U+0000 (refused with 400, plus an `amend` on booking-api@v1 for
+  reconcile), year 0000 as `timestamptz` (the range bound is clamped),
+  non-UUID text for a uuid column (404 before any query).
+- `db:up` picks `docker compose` or `docker-compose`, since this laptop
+  has only the standalone binary.
+- DEC-149's prose says 90 rounds; the experiment says 60. Decisions are
+  never edited, so the correction is its own decision (DEC-150).
+
+### 00:13 (1 November) · S17 reconcile simple-login.backend (H15)
+
+- Two confirms: `profile-api@v2` is produced by backend.3 and backend.4;
+  `booking-api@v1` by backend.7, replacing S05's guess of backend.4. The
+  version ripple added `booking-api@v1` to the backend's Produces and to
+  the root's child table, DAG and matrix.
+- The U+0000 title `amend` applied in place on draft `booking-api@v1`,
+  schema included, with a recorded judgement (DEC-154, `would_have_asked`);
+  an experiment checked the new pattern on all 35 fixtures and 200,000
+  random strings.
+- The Compose `note` became a `## Local database` section in
+  `hsdd/conventions.md`, since other nodes' planners read conventions but
+  not the backend's plan (DEC-156, `would_have_asked`).
+- `booking-api@v1` stays `draft` and provisional until the web and
+  integration plans name their consumer phases.
+
+### 00:23 · S18 phase-plan-append simple-login.web (H16)
+
+- **Five web phases appended**: web.5 (spot-check: booking-api client,
+  `Profile.timeZone`, a fixture stub that answers a bodiless 204, Vitest
+  under `TZ=Asia/Kolkata` with a guard test), web.6 (full-review: pure
+  `Intl` time functions pinned to London's 92-quarter-hour and
+  100-quarter-hour days), web.7 (Home: time zone, my bookings, Cancel,
+  the session ending on a 401 from any call), web.8 (Rooms and
+  navigation; a reload shows Home), web.9 (the booking form and the
+  AC-5.3 message from `error.conflict`). D1 and D4 revised in place with
+  dated markers; D6 to D11 new.
+- The experiment reproduced, with `Intl` alone, the exact query paths of
+  the three rooms fixtures and the Rooms lines PRD v2 draws, and found
+  that the 80-character title fixture is 80 code points but 81 UTF-16
+  units, which a naive `maxLength` would refuse.
+- **For the owner:** ADR-002's date-mark rule, applied literally, repeats
+  the date in some room-local lines, `(Wed 4 Nov 16:30 to Wed 4 Nov 17:30
+  in London)` (DEC-170); shortening it needs an ADR-002 amendment.
+- **Two protocol slips, recorded (DEC-176):** the planner read the
+  backend's phase plan for its append format, which planner isolation
+  forbids (declared, and the web plan depends on contracts only); and it
+  edited one word of a minted decision to remove an em dash it had quoted
+  from a skill template. **Finding (HSDD):** the prose rules collide with
+  verbatim quotes of skill text that itself holds the banned character;
+  S05 met the same.
+
+### 00:45 · S19 reconcile simple-login.web (H17)
+
+- Three confirms drained: `booking-api@v1` consumers now web.5, web.7,
+  web.8, web.9 (integration.3 still a guess until H18); `profile-api@v2`
+  and `auth-api@v1` gain their web consumers and stay `stable`. The ripple
+  added `booking-api@v1` to the web's Consumes and the root's copies.
+
+### 00:49 · S20 phase-plan-append simple-login.integration (H18)
+
+- **Three integration phases appended**: integration.3 (full-review: the
+  rig onto PostgreSQL with its own `meeting_rooms_e2e` database per run,
+  the service and `db:up` started through the backend's scripts, the
+  browser in Asia/Kolkata, the proxy replay grown by the 15 booking-api
+  fixtures that hold under any clock, and PRD v2's two Success tests
+  against the service: 20 simultaneous attempts over five rounds, and a
+  restart that keeps every booking), integration.4 (spot-check: Home
+  browser tests and a pure `Intl` helper pinned to ADR-002's examples),
+  integration.5 (full-review: Rooms browser tests, AC-5.4 with two
+  browsers, AC-4.4 on the next last Sunday of March and October).
+- A `request` on booking-api@v1 for reconcile: does the service create its
+  tables in an empty database at start-up? Either answer keeps the phase
+  set.
+- DEC-187 (`would_have_asked`): criteria that need a booking already
+  started are covered by the backend's replay under its injected clock,
+  not by a browser test that waits.
+- integration.4 removes the shipped 3-second check, following PRD v2;
+  review flagged it for the owner as the PRD author's omission
+  (DEC-195, `would_have_asked`, `would_upstream`).
+
+### 01:10 · S21 reconcile simple-login.integration (H19)
+
+- S21 drained the last pending entries: integration's three confirms
+  made `booking-api@v1`'s consumers final, so it flipped from `draft` to
+  `stable` (any breaking change now needs v2); the request was answered
+  yes (the service creates its tables in an empty database at start-up),
+  written into the contract's Development address as a compatible
+  clarification (DEC-198, `would_have_asked`); `meeting_rooms_e2e` was
+  reserved in the conventions' Local database section.
+
+### 01:18 · consistency stage
+
+All nineteen handoffs executed. Seven `consider` items were still open.
+S22, a plan step, routed the three on `run` (stale Purpose cells in the
+root's child table; the web Overview's citation) to the nodes whose text
+they are (DEC-203). The stage then dispatches one spec-touch per node with
+open items: S23 on the backend (three items from the integration plan
+about starting the service on an empty database).
+
+- **S23, backend**: no change to the header for the three items (the
+  start behavior lives in D3, D6 and backend.7, and the contract now
+  promises it), but it routed an insert-step: rewrite the unshipped
+  backend.7 in place so its own gate proves the start-on-an-empty-database
+  promise the integration rig relies on (DEC-205). The integration's
+  "shipped rig breaks while the backend needs PostgreSQL" item was
+  explained: the root `npm test` runs the backend gate first, which
+  starts the database itself (DEC-206).
+- **First rework of the run.** S23 reported, and left unchanged, that the
+  backend's Isolation strategy says "the service itself opens no port"
+  while the shipped start test listens on an ephemeral port (S09 wrote
+  it). A false sentence in the step's own target goes back to the step:
+  resumed once with the finding (DEC-207).
+- The rework corrected the clause to "no fixed port: only the `start`
+  test listens, on 127.0.0.1 at a port the system picks" (DEC-208).
+- **Inserted steps** (DEC-209): the intake record's insert rule covers
+  exactly this case (a request answered at reconcile after the node's
+  append, changing what an unshipped phase should prove), so a
+  phase-plan-append rewriting backend.7 in place (Q-084) and a reconcile
+  on the backend after it (Q-085) join the path, each with a change-log
+  entry in `hsdd/auto/plan.md`.
+
+### 01:28 · S24 phase-plan-append simple-login.backend (inserted, Q-084)
+
+- backend.7 rewritten in place: `start` takes the database URL and
+  applies the schema before it listens; its test starts the service on a
+  database created empty, lists the four rooms, books Merapi, starts again
+  on the same database and finds the booking with its id while the old
+  token gets 401. The old restart test folds into it, keeping the phase
+  at about 400 lines (DEC-211, DEC-212). The experiment showed why the
+  test closes its apps rather than force-dropping the database.
+- **Finding (hsdd-auto).** An inserted phase-plan-append renders the
+  template's default "Append phases to ..." and carries none of the queue
+  item's text; the step had to read its `queue_item` to learn that it
+  should rewrite backend.7 (DEC-210).
+- **Finding (hsdd-auto).** The rewrite emitted no pending entry, so the
+  inserted reconcile has nothing to drain, but `routed.mjs` cannot
+  withdraw an accepted insert-step (DEC-215, DEC-216). It runs anyway.
+
+### 01:38 · S25 reconcile simple-login.backend (inserted, Q-085)
+- S25 drained nothing, as expected, and stamped the section a second
+  time the same day.
+- **S26, integration**: no header change; the stale text (integration.3's
+  Scope still offered a "separate command" fallback and said the service
+  creates "the four pre-loaded rooms" in the database, which the contract
+  contradicts: rooms are data in the service) sits inside the Phase Plan,
+  which a spec-touch may not edit. It routed an insert-step to rewrite
+  that unshipped Scope in place; accepted without a reconcile (DEC-222),
+  since a false sentence in a Scope reaches the implementer through the
+  phase context.
+
+### 01:46 · S27 phase-plan-append simple-login.integration (inserted, Q-086)
+- S27 rewrote that one Scope sentence (the rig runs no schema or seeding
+  step; the service creates its tables in the empty `meeting_rooms_e2e`;
+  the rooms are part of the service). The same default-invocation gap as
+  S24, and a second planner-isolation slip (it checked the rooms claim
+  against the backend's D3), recorded (DEC-226).
+- S28, the root: the child table's two stale Purpose cells now copy the
+  embedded summaries verbatim. Each child's Purpose now lives in three
+  places (child file, embedded summary, child table), which is how it
+  went stale.
+
+### 01:52 · S29 spec-touch simple-login.web (the Screens citation)
+- S29, the web: one citation now reads `(PRD v2 US-1, Screens)`.
+
+### 01:54 · S30 report: DONE
+
+- The final gate gave no F2 line: no live text cites a superseded
+  contract version (the narrowed rule, gap fix G-9: `profile-api@v1`'s ten
+  citations are a live earlier version under `coexisting`). Prose slots
+  filled: outcome, what changed, earlier proposals, assumptions, record
+  gaps.
+- `state.mjs done` printed `DONE 2026-10-31-intake-prd-simple-login-v2`;
+  `ledger.mjs validate` 0 errors, 0 warnings.
+- **Numbers:** 31 steps (S00 to S30): 27 by subagents, 4 by the
+  orchestrator; 65 commits on `auto/meeting-rooms`; 231 decisions; 12
+  experiments, three of them against a real PostgreSQL 17 in Colima and
+  one in the installed Chrome; one rework; three inserted steps; no stop.
+- **Finding (hsdd-auto).** The report step's `## Produced` append lists
+  "ADRs amended: ADR-001, ADR-002", though ADR-002 is new, and omits the
+  new `booking-api@v1`; its "none yet" placeholder line also stays.
+
+### 01:58 · the owner's review sitting [owner proxy]
+
+`hsdd/judgement/decision-reviews.jsonl`, one line per decision the
+report lists first, reviewer "Claude for Purbo Mohamad (owner proxy)", the
+named-delegate form v0.10.2 admits: 32 agree, 1 disagree. The disagreement
+is DEC-032: ADR-002's date-mark rule, applied literally, repeats a date in
+a room-local range (`Wed 4 Nov 16:30 to Wed 4 Nov 17:30 in London`); the
+preferred form shows it once. It is left for the owner as a follow-up (an
+ADR-002 amendment through a later intake), not acted on in this run, so
+the build follows ADR-002 as written.
+
+`auto/meeting-rooms` merged into the sandbox's `main` (2e9ef03).
+
+## The build
+
+> **On times.** The orchestrator wrote this section's times as it went,
+> and from backend.7 on they run 18 to 40 minutes later than the commits;
+> the commit times in `execute/`'s history are authoritative. Commit ids
+> in this log are the sandbox's; the imported history in this repository
+> has new ids, as the tutorial's README explains.
+
+hsdd-auto plans and stops there, so the twelve phases go through the
+ordinary per-phase path: `hsdd-config`'s switch, then the superpowers
+derivative it writes (planning, the execution skill the review tier names,
+the discipline skills), the gate, a verification doc, and the owner's
+sign-off, here Claude as owner proxy.
+
+- **Lanes.** Two worktrees of the sandbox, cut from `main` at 2e9ef03:
+  `lane/backend` (backend.4 to .7) and `lane/web` (web.5 to .9), each run
+  by one agent per phase; integration.3 to .5 after both. Each phase agent
+  may launch its own subagents (checked: subagents here can start agents
+  and load skills), so the full-review tier runs as
+  `subagent-driven-development` intends.
+- **Isolation.** A phase agent's whole specification is its two context
+  files and the files their Links name; other nodes' specs and other
+  phases' contexts are off limits.
+- **Sign-off.** The agent leaves `## Sign-off` empty; after reading its
+  report, the orchestrator signs as owner proxy, merges the lane into
+  `main` with `--no-ff`, and starts the lane's next phase.
+
+### 02:05 · backend.4 (gate-only) and web.5 (spot-check), in parallel
+
+**web.5, 01:58 to 02:24 (agent), signed 02:31.** Ten commits on
+`lane/web`. Gate 90 to 199 tests (client 19 to 124; a new ambient-zone
+guard). Seven tasks, each test watched failing first, or run against a
+named mutant where the behavior already existed (4 mutants, all caught).
+Spot-check review by a fresh reviewer: 0 Critical, 1 Important (a client
+sort of the rooms would pass every test, since the fixtures already come
+in order; a sorting mutant passed 176/176) and a Minor raised to
+Important (the deciders' `error.code` half untested), both fixed with a
+failing mutant shown. Product 675 lines added, 1.8 times the Size
+estimate, mostly fixture tables. Signed by the orchestrator after
+rerunning the gate (199 green); five Learnings dropped with reasons.
+Findings about HSDD from the phase:
+
+- The verification template's title carries an em dash
+  (between `{phase-id}` and `{Phase Name}`), which collides with the owner's prose
+  rule; the project's copy is also stale (no delegated sign-off line),
+  and the switch leaves it alone.
+- "What to eyeball", which spot-check depth asks for, has no heading in
+  the template.
+- The self-contained check counts `@v`, `ADR-`, `OQ` and `D{n}` ids only,
+  so the phase block's "H17 and H19" (handoff ids of the intake) passed
+  undefined.
+- The referenced-contract closure pulls in `profile-api@v1` through
+  auth-api@v1's G2, although this node's stub refuses v1's fixtures.
+- D7's rule (a zone name `Intl` refuses counts as absent) names no phase
+  to apply it.
+
+### 02:32 · web.6 (full-review)
+
+**backend.4, 01:58 to 02:30 (agent), signed 02:36.** Eleven commits on
+`lane/backend`. Before: the backend gate was red (68/72), exactly the
+red window S07 predicted: `me-ayu` and `me-budi` now carry `timeZone`.
+After: 111 tests in 14 files, replay 10/10, the gate starting PostgreSQL
+itself; a curl of `GET /api/me` shows each account's zone. Gate-only tier,
+so one final reviewer (`executing-plans` has no per-task reviewers): 0
+Critical, 2 Important (a test database leaked when its schema failed;
+the replay rig reported a schema failure as every `oneOf` branch, 176
+lines for one wrong id), both fixed test-first. Product +850 lines, 696 of
+them tests: twice the Size estimate. Outstanding: the `docker compose`
+plugin branch of `db-up.mjs`, never run on this host; waived at sign-off.
+New findings about HSDD from this phase:
+
+- The superpowers derivative template wraps the Gate in backticks, which
+  doubles them when the Gate already carries its own.
+- booking-api@v1's own `###` headings land at the same level as the
+  context's contract subsections (`### {id}@{v}`).
+- The template's bold labels have no blank lines around them, so a
+  contract body ending in a list swallows the next label.
+- `writing-plans`' header names both execution skills, while the
+  derivative's Plan check says "no other"; and `executing-plans` puts the
+  final review after the last task, which in HSDD is the verification doc
+  that should record the review.
+- Phase 4's Dependencies line still calls booking-api@v1 `draft`; it was
+  made `stable` by S21, after the plan was written.
+
+### 02:37 · backend.5 (spot-check) and backend.6 (full-review), in parallel
+
+**backend.5, 02:37 to 03:03 (agent), signed 03:05.** The booking rules
+as pure functions: instants, the rooms query, the new booking's request
+and limits in contract order, the views, cancelling and the error
+responses, plus a test that scans the module's source for I/O, clock
+reads and zone names. Gate 111 to 195 (two new test files: 45 rules, 39
+over the 16 fixtures that answer 400, 403, 404 or 422). Spot-check
+review: 1 Important (a `checkCancel` that checked the id's form after
+ownership passed all 83 tests), fixed with a failing test. Outstanding:
+the Scope says the content-type rule is "as for sign-in", code outside
+the phase's context; deferred to backend.7's route tests.
+
+- **Finding (HSDD).** A Scope that points at behavior ("as for sign-in")
+  rather than an id slips past the self-contained check, which counts
+  ids only.
+- **Process slip, declared:** the agent read 30 header lines of
+  backend.4's plan for format before noticing the rule against reading
+  other phases' plans.
+
+**web.6, 02:32 to 03:13 (agent), signed 03:15.** The time module: zone
+names, `todayIn`, `dayRange`, the form's quarter-hour options, and the
+formatters, all pure and taking the zone as an argument; guards that ban
+every `Date` local getter and any zone literal but `'UTC'` outside the
+module. Gate 199 to 262; the 63 time tests also pass under Europe/London,
+America/St_Johns, Asia/Jakarta and UTC. Full review: per-task reviewers
+(one Important: unparsable instants silently gave empty options) and a
+final reviewer (one Important: `parseInstant` read a date-time without `Z`
+in the ambient zone), each fixed and re-reviewed; the final reviewer also
+brute-forced all 418 IANA zones over 2026 to 2028 and found no mismatch.
+Outstanding (en-GB output in Chromium, the browser's ambient zone)
+deferred to the integration browser phases. The doc cited a gate log in
+the git-ignored `.superpowers/` workspace; the signature notes the
+orchestrator's rerun instead, and later phase agents are told that
+evidence must be in the repository.
+
+- **Finding (HSDD).** hsdd-config's filling rule takes referenced
+  contracts only from the Phase block or a contract subsection, while
+  step 9 and rule 2 take every `@v` in the file; inlined D{n} decisions
+  that cite contracts cascade, so a phase that consumes nothing carried
+  about 500 of its 707 context lines in contract text. Contract order
+  ("the order the file first names it") is circular when the first naming
+  is in Decisions, after Contracts.
+- **Finding (HSDD).** The Scope cited an experiment directory and the
+  intake record, which the Links do not name; the agent did not read
+  them and reproduced the pinned values with a prototype instead.
+
+### 03:16 · web.7 (full-review)
+
+**backend.6, 02:37 to 03:40 (agent), signed 03:45.** The booking store
+on PostgreSQL: insert, find, overlapping, `notEndedOf` and remove, with
+D7's per-room advisory lock. Gate 111 to 140 on its own branch (224 once
+merged with backend.5). The race test runs 10 rounds of 20 simultaneous
+inserts, 13 to 30 ms each, with no deadlock in PostgreSQL's log. Full
+review, six reviewers: a read-before-lock mutant passed every test the
+plan listed (Important, fixed with a cancel-under-lock test both that and
+a no-lock mutant fail); the final wave pinned `READ COMMITTED` after a
+run under SERIALIZABLE failed with 40001, and added a `FOR UPDATE NOWAIT`
+probe for the remove's lock order. The 40P01 path is tested with a real,
+deliberately provoked deadlock.
+
+- **Finding (HSDD).** D7 relies on READ COMMITTED without saying so, and
+  the phase's Verification line ("no `deadlock detected`") could not
+  catch the read-before-lock mutant, which logged 183 ERROR lines and no
+  deadlock: a Verification line that names a symptom instead of the
+  invariant.
+- **Finding (HSDD).** The Scope cites G3 to G17 without naming the
+  contract; booking-api@v1 entered the context only through the
+  self-contained gate.
+
+### 03:47 · backend.7 (full-review)
+
+The lane agent's prompt names the two items earlier sign-offs deferred to
+this phase (the content-type comparison with sign-in, the pool's missing
+`'error'` listener).
+
+**web.7, 03:16 to 04:05 (agent), signed 04:07.** Home: the Time zone row,
+My bookings (loading, empty, refusal and 401 handling), Cancel, and the
+flow's `session-expired` event wired in App. Gate 262 to 296. Full
+review: overlapping Cancels made a cancelled booking's button usable
+again before the refetch (Important, fixed: the newest list request
+wins); the final reviewer found that a screen reader heard nothing after
+a Cancel and focus fell to the page (Important, fixed with `role="alert"`
+and focus to the heading). Browser checks deferred to integration.4.
+Owner-proxy ruling at sign-off: a cancel gets no success message,
+because PRD v2 AC-6.2's confirmation is the booking leaving the list.
+
+- **Finding (HSDD).** The Scope said "Home as PRD v2 Screens draws it",
+  but hsdd-config never inlines source documents and the Links did not
+  name the PRD, so the phase agent had no wireframe; the update
+  tutorial's web.4 met the same gap. The final reviewer read the PRD
+  anyway: the layout matched but for an indent.
+
+### 04:08 · web.8 (full-review)
+
+**backend.7, 03:47 to 04:36 (agent), signed 04:42.** The four booking
+endpoints, the service starting on its database (schema applied, pool
+closed on shutdown), and requests Fastify refuses answered in each
+endpoint's own check order. Gate 224 to 299; the replay now runs all 45
+fixtures (46 with a count test). backend.5's deferred content-type item
+settled by comparison: `POST /api/login` and `POST /api/bookings` answer
+`text/plain` 400/400, no content type 400/400, `application/json;
+charset=utf-8` 200/201. Full review: the final reviewer reproduced a
+crash when a connection dropped while a request held it (waiting on a
+room's lock); fixed with a listener on each connection. Evidence committed
+under `docs/superpowers/evidence/simple-login.backend.7/`. The one
+Outstanding item, a real PostgreSQL restart under a running service, was
+verified by the orchestrator before signing: 200 before, 500 during the
+outage with the process alive, 200 right after `db:up`.
+
+- **Finding (HSDD).** The Scope's "else 400" for a refused DELETE body
+  contradicted the contract's DELETE table; the context never mentions
+  Fastify's `frameworkErrors` path. The Scope also cites RFC-001 §9,
+  which the context does not excerpt (the self-contained rule covers
+  contracts, ADRs and OQs, not sources).
+- **Finding (superpowers).** Its task-brief script copies only the task
+  text into each subagent's brief, leaving out the plan's Global
+  Constraints; the phase agent shared a common-context file instead.
+
+### 04:44 · integration.3 (full-review), after the backend lane
+
+**web.8, 04:08 to 05:00 (agent), signed 05:03.** Rooms on a date with
+each booking's lines in the user's zone and the office's, Book a room on
+Home, and App moving between the two. The item web.7's sign-off left for
+it is closed: an expiry now carries the token of the request that got the
+401, and App clears storage only while storage still holds that token;
+single-guard mutants show each check is needed. Gate 296 to 331. Full
+review: a comment claiming either guard alone was enough (Important,
+from the agent's own plan); the final reviewer found the Rooms header
+jumping about 107 px on every date change and `Loading…` not pinned after
+one (both fixed). 360 px screenshots committed as evidence. Owner-proxy
+rulings at sign-off: focus on a screen change and a retry on Rooms are
+product improvements for a later intake.
+
+### 05:04 · web.9 (full-review), with integration.3 still running
+
+### 05:16 to 06:54 · paused on the account's usage limit
+
+Both running phase agents (integration.3 and web.9) stopped on the
+account's five-hour usage limit. Their work was committed or left in their
+worktrees; after the reset each was resumed with a message telling it to
+read `git log` and `git status` first and carry on. Nothing was lost.
+
+**web.9, 05:04 to 07:20 (agent, paused for the limit), signed 07:24.**
+The booking form: a pure core for its choices, the form itself with the
+room, start, end and title, D10's answers, and Rooms fetching the date
+again after a booking. Gate 331 to 387. Full review: the final reviewer
+found that the no-break-space test cases had silently become ASCII spaces
+(an editor tool turned the plan's `\u` escapes into literal characters,
+and an implementer copied the text), plus four smaller fixes. The agent
+ran the real app in Chrome against a backend on its own database at 360
+and 1280 px. Product 313 lines, tests 583: two and a half times the Size
+estimate. Two owner decisions carried as open items, both needing a
+network failure at that exact moment: a failed refetch right after a 201
+hides `Booked.`, and an `unavailable` answer on Book does not refetch.
+
+The web lane is done (web.5 to web.9); the web gate went from 90 to 387
+tests.
+
+**integration.3, 04:44 to 07:35 (agent, paused for the limit), signed
+07:42.** The browser suite on PostgreSQL: a `meeting_rooms_e2e` database
+re-created per run, the service in its own process group, the browser in
+Asia/Kolkata, the proxy replay grown by 15 booking-api fixtures, and PRD
+v2's two Success tests against the service: 20 simultaneous attempts in
+five rounds (one winner each), and a restart that keeps every booking.
+Browser suite 20 to 49. Full review: tests asserting Thames would fail
+about 14 days a year, on the days integration.5 books it for London's
+clock change (Important, fixed by deriving each test's window from its
+own day), and the README claimed full coverage (fixed). Before signing,
+the orchestrator merged `main` (web.8 and web.9) into the lane and ran the
+root `npm test`: backend 299, replay 46, web 387, browser 49, all green.
+
+- **Finding (HSDD).** The runtime reports `Asia/Kolkata` as
+  `Asia/Calcutta`; the context names the literal, so a test comparing
+  names fails. A context that pins a zone name should say canonical or
+  alias.
+- **Finding (HSDD).** Conventions name no directory for phase evidence;
+  backend.7 chose `docs/superpowers/evidence/{phase}/` and every later
+  phase followed it.
+
+### 07:43 · integration.4 (spot-check)
+
+**integration.4, 07:43 to 08:18 (agent), signed 08:22.** Home's browser
+tests and a pure `e2e/time.ts` pinned to ADR-002's strings; AC-1.1's
+browser test drops the 3-second check, per PRD v2 (DEC-195's open item).
+Browser suite 49 to 69. The Home behavior had shipped with the web
+phases, so each test's red came from a named network mutant (a temporary
+`page.route` block, six of them, outputs committed). Spot-check review:
+a seasonal date collision (Important: integration.5 picking its own
+dates would land on the same days about 224 run days of 2027), fixed
+with a shared winter-date helper. The browser checks the web.7 and
+integration.3 sign-offs had deferred (ayu on the Login screen, 360 px,
+Cancel's width and alert, focus) all passed against `npm run dev`.
+
+- **Finding (HSDD).** Items an earlier sign-off defers to a later phase
+  never reach that phase's context; the agent learned them only from the
+  orchestrator's brief. A deferral names a phase id, and nothing carries
+  it forward.
+- **Finding (HSDD).** constraint 1's "commit before that phase" red does
+  not fit an integration phase whose behavior shipped across several
+  earlier phases; network-boundary mutants were the only red available.
+
+### 08:23 · integration.5 (full-review), the last phase
+
+### 08:40 · six hsdd-auto defects fixed (on `feat/v0.11.0`)
+
+While integration.4 and .5 ran, a fresh agent fixed the run's hsdd-auto
+findings on `fix/v011-run-findings`, merged with 815 tests (804 before),
+build decisions B-52 to B-57:
+
+- R-1: a baseline source version matches only with its citation name
+  (`PRD 1`, `PRD v1`), never as a bare token; the spec had said bare.
+- R-2: an item on a handoff waits for that handoff's own step; B-10's
+  fallback applies only once the handoff is executed or skipped.
+- R-3: an inserted step whose default invocation has no `{reason}` slot
+  gets "This step executes the insert-step item {id}: {text}." appended.
+- R-4: an accepted insert-step can be withdrawn by a second decision
+  while no dispatch names it.
+- R-5: `## Produced` lists contracts added and ADRs proposed beside ADRs
+  amended, and drops the placeholder.
+- R-6: the parent's citation touch owns its copies of a child's lines;
+  a child's touch changes only its own file.
+
+The tutorial's own run keeps the skills it was recorded with
+(`.claude/skills/` copied at 6fa66cb); its records show the defects these
+fixes address.
+
+**integration.5, 08:23 to 09:30 (agent), signed 09:33.** Rooms' browser
+tests: the rooms and a date's bookings in the user's zone, room-local
+times, booking through the form, the overlap refusal, two users booking
+at once in two browsers (AC-5.4), started times and title rules, an
+expired session at Book, and London's clock-change days on Rooms and Home
+(AC-4.4) on the next last Sunday of March and of October. Browser suite
+69 to 85; the README's coverage text made true. Full review: on one London
+date a year, an AC-4.2 booking fell inside the clock-change test's view
+and only file order hid it (Important, fixed red-then-green). Final root
+`npm test`, rerun by the orchestrator: backend 299, replay 46, web 387,
+browser 85.
+
+- **Open item for the owner (product).** In the two-browser check the
+  user who lost the race saw `(no bookings)` under Thames beside "Thames
+  is already booked from 19:00 to 20:00.": web.9 refetches the date after
+  a 201 but not after a 409. A web change request, not fixed in this run.
+- **Open item for the owner (flake).** `web/src/App.test.tsx`'s AC-2.2
+  test failed once on a clean install and passed in every later run.
+
+All twelve phases are signed and merged on the sandbox's `main`
+(0a618de).
+
+### 09:35 · hsdd-checkpoint
+
+**The checkpoint, 09:35 to 09:55 (agent).** The intake record closed: all
+twelve phases cite it in their Scope, each has a verification doc on
+`main`, a green gate, and a named delegated sign-off, which v0.10.2 counts
+as done. 21 of 21 phases done. It re-ran the root `npm test` from a fresh
+install (green), wrote `2026-11-01-progress.md` and
+`2026-11-01-execution-plan.md`, regenerated the atlas, ticked the earlier
+plan's C-2 and C-3 (absorbed by the run, DEC-022 and DEC-056), and wrote
+findings F-10 to F-22 with a Sync A agenda of eleven items (A-1 to A-11)
+for the owner, asking nothing. Two of its findings judge the proxy itself:
+the twelve sign-offs dropped all 53 Learnings and took 10 waivers (F-10,
+F-11), and the review sitting's disagreement with DEC-032 never landed,
+so web.8 shipped the repeated-date form the proxy rejected (F-12).
+
+**Fresh clone, 09:58.** `git clone` of the sandbox, `npm run
+install:all && npm test`: backend 299, replay 46, web 387, runner 3,
+browser 85, all green.
+
+### 10:05 · into this repository
+
+The sandbox's `main` (226 commits) was cloned, every commit's files and
+message scrubbed of local absolute paths (phase agents' evidence logs
+held 138 of them; they now read `<repo>`, `<scratch>` or `~`), rewritten
+under `docs/tutorial/meeting-rooms/execute/`, and merged into
+`feat/v0.11.0` with its history (e5f8641), so the walkthrough reads each
+stage from git like the earlier tutorials. `template/` is the run's
+starting commit: simple-login after update 1, plus PRD v2.
+
+## Closing notes for the owner
+
+### Decisions taken as owner proxy
+
+1. The change request itself: PRD v2 was written by Claude as product.
+   It dropped version 1's 3-second target by accident (DEC-073, DEC-195;
+   agenda A-10).
+2. The first run's ten answers (`hsdd/auto/run.yaml`) and the segment's
+   instruction.
+3. Two hsdd-auto design choices made before the run (build decisions
+   B-41 and B-49): a lower contract version is superseded only when
+   deprecated or retired, and a bump's migration mode folds into
+   `breaking-amend`.
+4. The review sitting: 32 agree, 1 disagree (DEC-032), not acted on
+   (checkpoint F-12, agenda A-8).
+5. Twelve sign-offs, each "Claude for Purbo Mohamad (owner proxy)", with
+   their dispositions (agenda A-6). Product rulings inside them: a
+   cancel gets no success message (web.7); focus on a screen change and a
+   retry on Rooms are later work (web.8); a failed refetch after a 201
+   and an unrefreshed date after `unavailable` (web.9) and the stale
+   Rooms list after a 409 (integration.5) are left for a change request
+   (agenda A-9).
+
+### Findings about HSDD
+
+Fixed in v0.11.0, before or after the run: the fifteen gaps between
+hsdd-auto and v0.10.2 (G-1 to G-15; B-40 to B-51), and six defects the
+run showed (R-1 to R-6; B-52 to B-57): a bare-token `cites-superseded`,
+items on a handoff handed to every step on its node, an inserted step's
+invocation without its item's text, no way to withdraw an accepted
+insert-step, a mislabelled `## Produced`, and a child's citation touch
+unable to reach its root copy.
+
+Open, for the owner (none changed in this release):
+
+1. **hsdd-auto: planner isolation is a prompt rule only.** Two planners
+   read a sibling's phase plan (S18, S27); nothing in the gate sees it.
+2. **hsdd-auto and every skill: verbatim quotes meet prose rules.**
+   Steps copy skill text that holds an em dash into `self_check` and
+   decisions; one step edited a minted decision to remove it (S18).
+3. **hsdd-config: the referenced-contract closure cascades.** The filling
+   rule takes contracts from the Phase block and contract subsections;
+   step 9 and rule 2 take every `@v` in the file. Inlined decisions that
+   cite contracts pull in more, so phases that consume nothing carried
+   500 to 700 lines of contract text, and the contract order ("first
+   named") is circular when the first naming is in Decisions.
+4. **hsdd-config: the self-contained check counts ids only.** Handoff
+   ids (H17, H19), behavior references ("as for sign-in"), source
+   documents (PRD v2 Screens, cited by four phases), the intake record
+   and experiment paths all slipped through; agents either worked without
+   them or read outside their context.
+5. **Deferred items do not travel.** A sign-off that defers an item to a
+   later phase writes the phase id, and nothing carries the item into
+   that phase's context; here the orchestrator's brief did.
+6. **The verification template.** Its title holds an em dash; it has no
+   heading for spot-check's "what to eyeball"; the project's copy lacks
+   v0.10.2's delegated sign-off line, and the switch leaves it.
+7. **The superpowers derivative.** The Gate is wrapped in backticks it
+   may already carry; a contract's own `###` headings collide with the
+   context's; bold labels without blank lines merge into a preceding
+   list; constraint 11 is unclear for a stack skill that is not a
+   language; `writing-plans`' header names both execution skills against
+   the Plan check; both execution skills put the final review after the
+   last task, which in HSDD is the verification doc; constraint 1's
+   "commit before that phase" red does not fit an integration phase.
+8. **Sizing.** Phases landed at 1.5 to 2.5 times their Size estimate
+   once tests count; the conventions do not say whether they do.
+9. **Evidence.** No convention names where phase evidence lives; agents
+   first cited git-ignored workspace logs, then settled on
+   `docs/superpowers/evidence/{phase}/`.
+10. **A Verification line can name a symptom.** backend.6's "no
+    `deadlock detected`" could not catch a read-before-lock mutant that
+    logged 183 errors and no deadlock.
+11. **superpowers (upstream):** its task-brief script leaves the plan's
+    Global Constraints out of each subagent's brief.
+
+### The numbers
+
+- **Planning (hsdd-auto):** 31 steps (27 subagents), 231 decisions, 65
+  commits, 12 experiments, one rework, three inserted steps, no stop;
+  19:20 to 01:54 WIB including the gap fixes beforehand.
+- **Build:** twelve phases in two lanes then integration, 02:05 to 09:33
+  WIB with an 80-minute pause for the usage limit. Backend gate 72 to
+  299 tests, contract replay 10 to 46, web gate 90 to 387, browser suite
+  20 to 85. Every phase review found at least one real defect the plan's
+  own tests missed; each was fixed with a test seen failing first.
+- **Sandbox history:** 226 commits.

@@ -1,0 +1,45 @@
+# Red run: the restart test against the backend of 25ed989
+# Commands run from the worktree:
+#   git restore --source=25ed989 --worktree -- backend
+#   npm --prefix backend install --no-audit --no-fund
+#   FORCE_COLOR=0 npx playwright test e2e/success.spec.ts -g "a restart keeps" 2>&1 | tee docs/superpowers/evidence/simple-login.integration.3/task-6-red-restart-before-backend-7.txt
+# ---- Playwright output ----
+
+> @simple-login/backend@1.0.0 db:up
+> node scripts/db-up.mjs up
+
+ Container meeting-rooms-postgres-1 Running 
+ Container meeting-rooms-postgres-1 Waiting 
+ Container meeting-rooms-postgres-1 Healthy 
+
+Running 1 test using 1 worker
+
+  ✘  1 e2e/success.spec.ts:84:1 › a restart keeps every booking with its id and ends every token (56ms)
+
+
+  1) e2e/success.spec.ts:84:1 › a restart keeps every booking with its id and ends every token ─────
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 201
+    Received: 404
+
+      92 |   for (const [who, roomId, from, to] of books) {
+      93 |     const reply = await postBooking(old[who], { roomId, start: instant(day, from), end: instant(day, to), title: `Restart ${roomId}` });
+    > 94 |     expect(reply.status).toBe(201);
+         |                          ^
+      95 |   }
+      96 |   const rangeOf = (token: string) => getRooms(token, instant(day, 0), instant(utcDay(47), 0));
+      97 |   const before = {
+        at <repo>/e2e/success.spec.ts:94:26
+
+    Error Context: test-results/success-a-restart-keeps-ev-7e686-its-id-and-ends-every-token/error-context.md
+
+  1 failed
+    e2e/success.spec.ts:84:1 › a restart keeps every booking with its id and ends every token ──────
+# ---- Restore ----
+#   git restore --worktree -- backend
+#   npm --prefix backend install --no-audit --no-fund
+#   git status --short backend
+# (end of git status output; empty means backend/ is restored)
+# What the earlier backend does: POST /api/bookings answers 404 at 25ed989 (the booking endpoints are not served yet; simple-login.backend.7 wires them), so the test fails at its first booking, before the restart. No booking was stored, so 'bookings lost' was not observable; the red is a missing endpoint.

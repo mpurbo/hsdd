@@ -1,0 +1,50 @@
+node v24.18.0, tz data 2026b, icu 78.3
+
+1. typeof globalThis.Temporal: undefined
+
+2. Intl.supportedValuesOf("timeZone"): 418 zones; Asia/Jakarta true; Europe/London true
+
+3. offsets not a multiple of 15 minutes, 2026-01-01 to 2029-01-01, 1832512 samples over 418 zones: none
+
+4. local day bounds [start of D, start of D+1) and length
+   Europe/London 2026-10-25: 2026-10-24T23:00:00.000Z to 2026-10-26T00:00:00.000Z = 25 hours
+   Europe/London 2026-11-05: 2026-11-05T00:00:00.000Z to 2026-11-06T00:00:00.000Z = 24 hours
+   Europe/London 2027-03-28: 2027-03-28T00:00:00.000Z to 2027-03-28T23:00:00.000Z = 23 hours
+   Europe/London 2027-10-31: 2027-10-30T23:00:00.000Z to 2027-11-01T00:00:00.000Z = 25 hours
+   Asia/Jakarta 2026-11-05: 2026-11-04T17:00:00.000Z to 2026-11-05T17:00:00.000Z = 24 hours
+   Asia/Jakarta 2027-03-28: 2027-03-27T17:00:00.000Z to 2027-03-28T17:00:00.000Z = 24 hours
+
+5. quarter-hour instants from the start of the day to the start of the next (Europe/London)
+   2027-03-28: 92 slots; wall times repeated: none; 01:00 offered: false
+     00:30 GMT (00:30Z), 00:45 GMT (00:45Z), 02:00 BST (01:00Z), 02:15 BST (01:15Z), 02:30 BST (01:30Z), 02:45 BST (01:45Z), 03:00 BST (02:00Z), 03:15 BST (02:15Z), 03:30 BST (02:30Z), 03:45 BST (02:45Z), 04:00 BST (03:00Z)
+     every slot is a quarter hour both in UTC and on London's wall clock: true
+   2027-10-31: 100 slots; wall times repeated: 01:00, 01:15, 01:30, 01:45; 01:00 offered: true
+     00:30 BST (23:30Z), 00:45 BST (23:45Z), 01:00 BST (00:00Z), 01:15 BST (00:15Z), 01:30 BST (00:30Z), 01:45 BST (00:45Z), 01:00 GMT (01:00Z), 01:15 GMT (01:15Z), 01:30 GMT (01:30Z), 01:45 GMT (01:45Z), 02:00 GMT (02:00Z)
+     every slot is a quarter hour both in UTC and on London's wall clock: true
+
+6. timeZoneName short
+   en-GB Europe/London 2026-01-15: GMT
+   en-GB Europe/London 2026-07-15: BST
+   en-GB Asia/Jakarta 2026-07-15: GMT+7
+   en-US Europe/London 2026-01-15: GMT
+   en-US Europe/London 2026-07-15: GMT+1
+   en-US Asia/Jakarta 2026-07-15: GMT+7
+
+7. en-GB formats against PRD v2's examples
+   Merapi booking: 02:00 to 03:00 (09:00 to 10:00 in Jakarta)
+   AC-4.3 example: 09:00 to 10:00 (16:00 to 17:00 in Jakarta)
+   Home sketch date: "Thu 5 Nov" parts ["Thu"," ","5"," ","Nov"]
+   midnight with h23: "00:00"
+
+8. ambient zone under TZ
+   TZ=Asia/Kolkata: resolved zone and getHours() of 2026-11-05T02:00Z: Asia/Calcutta 7
+   TZ=UTC: resolved zone and getHours() of 2026-11-05T02:00Z: UTC 2
+
+9. instant strings
+   toISOString: 2026-11-05T02:00:00.000Z; JSON.stringify: "2026-11-05T02:00:00.000Z"
+   Date.parse equal to 2026-11-05T02:00Z: 2026-11-05T02:00:00.000Z -> true; 2026-11-05T02:00:00Z -> true; 2026-11-05T09:00:00+07:00 -> true; 2026-11-05T02:00:00 -> false (the last has no zone and reads as local time, TZ=unset)
+
+10. Europe/London clock changes
+   changes: 2026-03-29T01:00, 2026-10-25T01:00, 2027-03-28T01:00, 2027-10-31T01:00, 2028-03-26T01:00, 2028-10-29T01:00, 2029-03-25T01:00, 2029-10-28T01:00, 2030-03-31T01:00, 2030-10-27T01:00, 2031-03-30T01:00, 2031-10-26T01:00, 2032-03-28T01:00, 2032-10-31T01:00, 2033-03-27T01:00, 2033-10-30T01:00, 2034-03-26T01:00, 2034-10-29T01:00, 2035-03-25T01:00, 2035-10-28T01:00, 2036-03-30T01:00, 2036-10-26T01:00
+   days between consecutive changes: min 147, max 217
+   first change after 2026-10-31: 2027-03-28, 148 days ahead

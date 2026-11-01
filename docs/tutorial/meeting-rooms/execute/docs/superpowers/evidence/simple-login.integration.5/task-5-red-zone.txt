@@ -1,0 +1,204 @@
+MUTANT=zone npx playwright test e2e/clock-change.spec.ts (uncommitted changes on 808888d)
+--- mutant diff
+22a23,35
+> 
+> test.beforeEach(async ({ page }) => {
+>   await page.route("**/api/me", async (route) => {
+>     if (process.env.MUTANT !== "zone") return route.fallback();
+>     const response = await route.fetch();
+>     await route.fulfill({ response, json: { ...(await response.json()), timeZone: "Asia/Kolkata" } });
+>   });
+>   await page.route("**/api/bookings", async (route) => {
+>     if (process.env.MUTANT !== "fake-201" || route.request().method() !== "POST") return route.fallback();
+>     const body = route.request().postDataJSON();
+>     await route.fulfill({ status: 201, json: { id: crypto.randomUUID(), roomId: body.roomId, roomName: ROOMS[body.roomId as RoomId].name, title: body.title, start: body.start, end: body.end } });
+>   });
+> });
+--- output
+
+> @simple-login/backend@1.0.0 db:up
+> node scripts/db-up.mjs up
+
+ Container meeting-rooms-postgres-1 Running 
+ Container meeting-rooms-postgres-1 Waiting 
+ Container meeting-rooms-postgres-1 Healthy 
+
+Running 5 tests using 1 worker
+
+  ✘  1 e2e/clock-change.spec.ts:53:1 › AC-4.4: the March day offers 92 starts and none from 01:00 to 01:45 (5.5s)
+  ✘  2 e2e/clock-change.spec.ts:62:1 › AC-4.4: the October day offers 100 starts, 01:00 to 01:45 BST then GMT (5.5s)
+  ✓  3 e2e/clock-change.spec.ts:75:1 › bookable: true at exactly 365 days, false one millisecond after (168ms)
+  ✘  4 e2e/clock-change.spec.ts:108:3 › AC-4.4: budi books Thames across the skipped hour on the March day (5.5s)
+  ✘  5 e2e/clock-change.spec.ts:108:3 › AC-4.4: budi books Thames from 01:30 BST to 01:30 GMT on the October day (5.5s)
+
+
+  1) e2e/clock-change.spec.ts:53:1 › AC-4.4: the March day offers 92 starts and none from 01:00 to 01:45 
+
+    Error: expect(received).toEqual(expected) // deep equality
+
+    - Expected  - 0
+    + Received  + 4
+
+    @@ -1,10 +1,14 @@
+      Array [
+        "00:00",
+        "00:15",
+        "00:30",
+        "00:45",
+    +   "01:00",
+    +   "01:15",
+    +   "01:30",
+    +   "01:45",
+        "02:00",
+        "02:15",
+        "02:30",
+        "02:45",
+        "03:00",
+
+    Call Log:
+    - Timeout 5000ms exceeded while waiting on the predicate
+
+      54 |   const { march } = DAYS;
+      55 |   await roomsOn(page, "budi", march);
+    > 56 |   await expect.poll(() => optionLabels(page, "start")).toEqual(startLabels(march));
+         |                                                        ^
+      57 |   const labels = await optionLabels(page, "start");
+      58 |   expect(labels).toHaveLength(92);
+      59 |   expect(labels.filter((label) => label.startsWith("01:"))).toEqual([]);
+        at <repo>/e2e/clock-change.spec.ts:56:56
+
+    Error Context: test-results/clock-change-AC-4-4-the-Ma-effe6-nd-none-from-01-00-to-01-45/error-context.md
+
+  2) e2e/clock-change.spec.ts:62:1 › AC-4.4: the October day offers 100 starts, 01:00 to 01:45 BST then GMT 
+
+    Error: expect(received).toEqual(expected) // deep equality
+
+    - Expected  - 8
+    + Received  + 4
+
+    @@ -1,18 +1,14 @@
+      Array [
+        "00:00",
+        "00:15",
+        "00:30",
+        "00:45",
+    -   "01:00 BST",
+    -   "01:15 BST",
+    -   "01:30 BST",
+    -   "01:45 BST",
+    -   "01:00 GMT",
+    -   "01:15 GMT",
+    -   "01:30 GMT",
+    -   "01:45 GMT",
+    +   "01:00",
+    +   "01:15",
+    +   "01:30",
+    +   "01:45",
+        "02:00",
+        "02:15",
+        "02:30",
+        "02:45",
+        "03:00",
+
+    Call Log:
+    - Timeout 5000ms exceeded while waiting on the predicate
+
+      63 |   const { october } = DAYS;
+      64 |   await roomsOn(page, "budi", october);
+    > 65 |   await expect.poll(() => optionLabels(page, "start")).toEqual(startLabels(october));
+         |                                                        ^
+      66 |   const labels = await optionLabels(page, "start");
+      67 |   expect(labels).toHaveLength(100);
+      68 |   const from = labels.indexOf("01:00 BST");
+        at <repo>/e2e/clock-change.spec.ts:65:56
+
+    Error Context: test-results/clock-change-AC-4-4-the-Oc-324ad-01-00-to-01-45-BST-then-GMT/error-context.md
+
+  3) e2e/clock-change.spec.ts:108:3 › AC-4.4: budi books Thames across the skipped hour on the March day 
+
+    Error: expect(received).toEqual(expected) // deep equality
+
+    - Expected  - 0
+    + Received  + 4
+
+    @@ -1,10 +1,14 @@
+      Array [
+        "00:00",
+        "00:15",
+        "00:30",
+        "00:45",
+    +   "01:00",
+    +   "01:15",
+    +   "01:30",
+    +   "01:45",
+        "02:00",
+        "02:15",
+        "02:30",
+        "02:45",
+        "03:00",
+
+    Call Log:
+    - Timeout 5000ms exceeded while waiting on the predicate
+
+      123 |     await roomsOn(page, "budi", date);
+      124 |     await expect.poll(() => roomLines(page, "thames")).toEqual(["(no bookings)"]);
+    > 125 |     await expect.poll(() => optionLabels(page, "start")).toEqual(startLabels(date));
+          |                                                          ^
+      126 |     await bookThroughForm(page, { room: "Thames", start: day.from, end: day.to, title: day.title });
+      127 |     await expect(page.getByText("Booked.", { exact: true })).toBeVisible();
+      128 |
+        at <repo>/e2e/clock-change.spec.ts:125:58
+
+    Error Context: test-results/clock-change-AC-4-4-budi-b-061fc-ipped-hour-on-the-March-day/error-context.md
+
+  4) e2e/clock-change.spec.ts:108:3 › AC-4.4: budi books Thames from 01:30 BST to 01:30 GMT on the October day 
+
+    Error: expect(received).toEqual(expected) // deep equality
+
+    - Expected  - 8
+    + Received  + 4
+
+    @@ -1,18 +1,14 @@
+      Array [
+        "00:00",
+        "00:15",
+        "00:30",
+        "00:45",
+    -   "01:00 BST",
+    -   "01:15 BST",
+    -   "01:30 BST",
+    -   "01:45 BST",
+    -   "01:00 GMT",
+    -   "01:15 GMT",
+    -   "01:30 GMT",
+    -   "01:45 GMT",
+    +   "01:00",
+    +   "01:15",
+    +   "01:30",
+    +   "01:45",
+        "02:00",
+        "02:15",
+        "02:30",
+        "02:45",
+        "03:00",
+
+    Call Log:
+    - Timeout 5000ms exceeded while waiting on the predicate
+
+      123 |     await roomsOn(page, "budi", date);
+      124 |     await expect.poll(() => roomLines(page, "thames")).toEqual(["(no bookings)"]);
+    > 125 |     await expect.poll(() => optionLabels(page, "start")).toEqual(startLabels(date));
+          |                                                          ^
+      126 |     await bookThroughForm(page, { room: "Thames", start: day.from, end: day.to, title: day.title });
+      127 |     await expect(page.getByText("Booked.", { exact: true })).toBeVisible();
+      128 |
+        at <repo>/e2e/clock-change.spec.ts:125:58
+
+    Error Context: test-results/clock-change-AC-4-4-budi-b-93428-1-30-GMT-on-the-October-day/error-context.md
+
+  4 failed
+    e2e/clock-change.spec.ts:53:1 › AC-4.4: the March day offers 92 starts and none from 01:00 to 01:45 
+    e2e/clock-change.spec.ts:62:1 › AC-4.4: the October day offers 100 starts, 01:00 to 01:45 BST then GMT 
+    e2e/clock-change.spec.ts:108:3 › AC-4.4: budi books Thames across the skipped hour on the March day 
+    e2e/clock-change.spec.ts:108:3 › AC-4.4: budi books Thames from 01:30 BST to 01:30 GMT on the October day 
+  1 passed (29.8s)

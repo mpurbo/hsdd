@@ -1,0 +1,64 @@
+{
+  "step_ref": "S08",
+  "skill": "hsdd-spec",
+  "target": "simple-login",
+  "status": "completed",
+  "stop": null,
+  "artifacts": ["hsdd/spec/simple-login.md"],
+  "experiments": [],
+  "self_check": [
+    { "gate": "The spec stays high-level; it is not an implementation plan.", "status": "pass", "note": "The restated text names flows, constraints, success criteria and where decisions live. The only mechanisms named (instants, timestamptz, the backend's clock) summarize ADR-002, as the ADR-001 bullet summarizes ADR-001; how exactly-one-wins is enforced is left to simple-login.backend's D{n} (DEC-077)." },
+    { "gate": "Every node has explicit consumed/produced contract ids.", "status": "pass", "note": "The root's Consumes and Produces stay none; the children's lines are unchanged and explicit. booking-api@v1 reaches the children's Produces and Consumes, the child table, the DAG and the contract matrix through hsdd-reconcile (H15, H17, H19), as the invocation leaves those lines to it." },
+    { "gate": "Every node is testable in isolation (fixtures, mocks, schemas).", "status": "pass", "note": "The root's Isolation strategy now names the four contract versions the children meet at, booking-api@v1 included, each with a schema and fixtures (DEC-071). The children's own strategies are H7 to H9's." },
+    { "gate": "Every dependency edge is typed; parallel lanes are called out.", "status": "n/a", "note": "not exercised by this step" },
+    { "gate": "Each child is marked internal or leaf-parent.", "status": "n/a", "note": "not exercised by this step" },
+    { "gate": "Mermaid DAG matches the dependency table.", "status": "n/a", "note": "not exercised by this step" },
+    { "gate": "`conventions.md` exists/updated at the root.", "status": "pass", "note": "hsdd/conventions.md exists; the touch introduces no new layout, naming or protocol convention, so it is unchanged." },
+    { "gate": "The decomposition axis at each level matches ownership stated by the human, not assumed <U+2014 EM DASH> no node is owned by two teams.", "status": "pass", "note": "The axis and the three children are kept, as the invocation says. PRD v2 Team and delivery (approved) and the owner's facts state it: the backend developer builds the service and owns the database, the frontend developer builds the web app. The gate's dash is written as <U+2014 EM DASH> because the run's prose rules ban the character." },
+    { "gate": "Every child node has its own `hsdd/spec/{child-id}.md` file.", "status": "pass", "note": "simple-login.backend.md, simple-login.web.md and simple-login.integration.md exist; none was added or removed." },
+    { "gate": "Every input source appears in the Sources of at least one node, or is marked in the root `## Sources` as \"informative only <U+2014 EM DASH> not decomposed\", with a reason.", "status": "n/a", "note": "not exercised by this step: the invocation leaves source citations to the citation touch, so PRD v2 is not yet in any node's Sources field; H10 to H13 move the PRD 1 and Update 1 entries to it (intake record, Sources and Scope). The gate's dash is written as <U+2014 EM DASH>." },
+    { "gate": "No node's Sources lists a document that does not govern it.", "status": "n/a", "note": "not exercised by this step: the root's Sources field and ## Sources section are unchanged and still name PRD 1 and Update 1, which H10 moves (DEC-067)." },
+    { "gate": "Field blocks are bullet lists and empty lists say \"none\".", "status": "pass", "note": "The header stays a bullet list; Consumes and Produces say none." },
+    { "gate": "Every open question is defined once, in its owning spec, with a table row and a `### {ID}` detail subsection; child views carry `[inherits …]`; no cited ID lacks a definition.", "status": "pass", "note": "OQ1 is unchanged, with its row and detail subsection; the touch cites and defines no other OQ. PRD v2 Scope puts deployment beyond the laptop out, which leaves OQ1 OPEN on product." },
+    { "gate": "OQ prefixes used by node specs are declared in `conventions.md`.", "status": "n/a", "note": "not exercised by this step" },
+    { "gate": "Under `multi-team`, every node whose team differs from its parent's carries `- **Team:**`; no node is owned by two teams.", "status": "n/a", "note": "not exercised by this step" },
+    { "gate": "Where children exchange contracts, an integration node exists or the decision not to add one is stated in the parent (one line).", "status": "pass", "note": "simple-login.integration is kept, as the invocation and the owner's facts require." },
+    { "gate": "A graft kept every existing child id and touched only the new child's file, the parent's summaries and the parent's DAG.", "status": "n/a", "note": "not exercised by this step" },
+    { "gate": "A retired node's file is kept; its contracts' retirement went through `hsdd-reconcile`.", "status": "n/a", "note": "not exercised by this step" },
+    { "gate": "Promotion: the human confirmed before `- **Adopted:** promoted` was written; `## Observed surface` kept; `v0` contracts unchanged unless redesigned.", "status": "n/a", "note": "not exercised by this step" }
+  ],
+  "routed": [
+    {
+      "target": "H18",
+      "kind": "consider",
+      "text": "The root's success criteria now follow PRD v2 Success only (DEC-073): 20 simultaneous attempts give one booking; every acceptance criterion passes in a scripted test, London's clock-change days included; a restart keeps every booking. PRD 1's 'Home within 3 seconds of Sign in' is gone. It is still asserted by the shipped simple-login.integration.1 (its Scope names 'the PRD's success metric') in e2e/login.spec.ts ('AC-1.1: the right password reaches Home within 3 seconds'). That phase is history; the integration node's touch (H9) should not name the 3-second check as a PRD criterion, and its appended plan decides whether a new phase keeps the assertion as a regression check or drops it."
+    },
+    {
+      "target": "H10",
+      "kind": "consider",
+      "text": "This touch restated Purpose, Owns, Does not own, the Overview's lead paragraph, flows, hard constraints and success criteria, the Isolation strategy's list and the Decisions section, each citing PRD v2 by section (DEC-067). The citations it left for H10: the header's Sources field (PRD 1 and Update 1 paths); the ## Sources section, which lists PRD 1 and RFC-001 but has no Update 1 entry; the Decomposition axis's 'The PRD answers', whose content PRD v2 Team and delivery keeps and extends with the backend developer owning the database; the Assumption line's AC-1.2, unchanged in PRD v2; and OQ1's 'The PRD scopes delivery to a local demo' and 'Nothing in v1', which PRD v2 Constraints (local laptop only) and Scope (deployment beyond the laptop out) keep true, so OQ1 stays OPEN."
+    }
+  ],
+  "closes": [
+    { "id": "Q-007", "outcome": "addressed", "note": "The header's Governed by line was not edited and still reads [ADR-001, ADR-002], matching ADR-001's affects. The ADR-001 bullet keeps its decision clause (in-memory sessions, 30 minutes, sign-out on the client), adds what the 2026-10-31 amendments kept under PRD v2, and its span now names the backend, the web app and every contract that issues or takes the token instead of 'both nodes and both contracts' (DEC-075)." },
+    { "id": "Q-012", "outcome": "addressed", "note": "The root header's Governed by and the three embedded summaries' Governed by lines (simple-login.integration's [ADR-002] included) were not edited. A new Decisions bullet states ADR-002: instants on the wire and as timestamptz in PostgreSQL, the account's IANA zone and each room's office zone, the web app converts and formats, the backend's clock decides, with its origin (DEC-009, DEC-037) and why it is an ADR (DEC-076)." }
+  ],
+  "reads_outside": [
+    { "path": "hsdd/judgement/decisions.jsonl", "why": "DEC-005, DEC-006, DEC-008 to DEC-016, DEC-022, DEC-035 to DEC-037, which the invocation, the routed items and this step's decisions rest on." },
+    { "path": "hsdd/auto/queue.jsonl", "why": "The full text of Q-007 and Q-012." },
+    { "path": "hsdd/auto/steps/S07.json", "why": "The report shape, the handoff-id form of routed targets, and how an em dash in a quoted gate was written." },
+    { "path": "hsdd/contract/booking-api.md", "why": "Front matter (owner, consumers, status) for the Isolation strategy's list, and its endpoints and limits, so the root names no endpoint the contract owns." },
+    { "path": "hsdd/contract/auth-api.md, hsdd/contract/profile-api.md, hsdd/contract/profile-api.v2.md, hsdd/contract/INDEX.md", "why": "Front matter: which contract versions are stable and who consumes them (profile-api@v1 still has live consumers, DEC-071)." },
+    { "path": "hsdd/spec/simple-login.web.md, hsdd/spec/simple-login.backend.md", "why": "A search for the D{n} ids the Decisions section names (web D4 'No router')." },
+    { "path": "hsdd/spec/simple-login.integration.md, e2e/login.spec.ts", "why": "A search for the 3-second success metric the restated criteria drop (DEC-073, routed to H18)." },
+    { "path": "hsdd/scripts/auto/gate.mjs, hsdd/scripts/auto/lib/checks.mjs, hsdd/scripts/auto/lib/kinds.mjs, hsdd/scripts/auto/lib/report-rules.mjs, hsdd/scripts/auto/routed.mjs, hsdd/scripts/auto/decide.mjs, hsdd/scripts/auto/schema/decision.schema.json, hsdd/scripts/auto/schema/step-report.schema.json", "why": "What gate C3 and C5 check on the root, the prose check's scope, how routed targets match, and the report and decision shapes." }
+  ],
+  "notes": [
+    "Decisions DEC-067 to DEC-077, one per change in hsdd/spec/simple-login.md. Only that file changed; no Phase Plan exists in it, and the Decomposition axis, child table, embedded summaries, DAG, dependency table, Dev flow, contract matrix, Sources, the Assumption line and Open questions are untouched.",
+    "Until hsdd-reconcile runs, the root's Isolation strategy names booking-api@v1 while its child table, embedded Produces and Consumes lines, DAG, dependency table and contract matrix do not. The invocation leaves those to the version ripple; H15, H17 and H19 should close the gap.",
+    "The Overview's lead paragraph was restated along with the three bullets, since it held 'nothing is persisted' and 'an API of exactly two endpoints' (DEC-072). Its endpoint names POST /api/login and GET /api/me were removed; the contracts name endpoints.",
+    "The new RFC-001 bullet in Decisions records DEC-013's local resolution; DEC-013 already carries the upstream flag, so this step's DEC-077 does not set would_upstream again.",
+    "DEC-073 (dropping the 3-second criterion) is medium confidence: PRD v2 Success omits it and PRD v2 supersedes PRD 1, but product may not have meant to drop it. The owner may want to confirm it when reviewing."
+  ],
+  "read_check": "9b1b36b6"
+}

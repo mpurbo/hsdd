@@ -1,0 +1,215 @@
+# Mutant E, inserted before the file's first const:
+// MUTANT E (never committed): every cancel is refused before it reaches the service.
+test.beforeEach(async ({ page }) => {
+  await page.route("**/api/bookings/*", async (route) => {
+    if (route.request().method() !== "DELETE") return route.continue();
+    await route.fulfill({ status: 422, json: { error: { code: "BOOKING_STARTED", message: "That time has already started." } } });
+  });
+});
+
+
+> @simple-login/backend@1.0.0 db:up
+> node scripts/db-up.mjs up
+
+ Container meeting-rooms-postgres-1 Running 
+ Container meeting-rooms-postgres-1 Waiting 
+ Container meeting-rooms-postgres-1 Healthy 
+
+Running 3 tests using 1 worker
+
+  ✓  1 e2e/home.spec.ts:158:1 › AC-6.1: budi's bookings show soonest first, each with Cancel, and none of ayu's (645ms)
+  ✘  2 e2e/home.spec.ts:175:1 › AC-6.2: Cancel removes the booking's lines at once and frees its range (5.5s)
+  ✓  3 e2e/home.spec.ts:190:1 › AC-6.1: with every booking of budi's cancelled, Home shows (no bookings) under My bookings (548ms)
+
+
+  1) e2e/home.spec.ts:175:1 › AC-6.2: Cancel removes the booking's lines at once and frees its range 
+
+    Error: expect(locator).not.toContainText(expected) failed
+
+    Locator: locator('body')
+    Expected substring: not "Mon 4 Jan 09:00 to 10:00 Bromo · Cancel me"
+    Received string: "Hello, Budi Santoso
+    Username
+    budi
+    Email
+    budi@example.com
+    Phone
+    +62 813 9876 5432
+    Time zone
+    Europe/London
+    Member since
+    9 January 2025
+    My bookings
+    
+    That booking has already started, so it cannot be cancelled.
+    
+    Sat 2 Jan  09:00 to 10:00
+    
+    Kew · Order 1
+    Cancel
+    
+    Sat 2 Jan  14:00 to 15:00
+    
+    Kew · Order 2
+    Cancel
+    
+    Sun 3 Jan  09:00 to 10:00
+    
+    Kew · Order 3
+    Cancel
+    
+    Mon 4 Jan  09:00 to 10:00
+    
+    Bromo · Cancel me
+    Cancel
+    
+    Mon 4 Jan  11:00 to 12:00
+    
+    Bromo · Keep me
+    Cancel
+    
+    Book a room
+    Sign ouudi@example.com
+    Phone
+    +62 813 9876 5432
+    Time zone
+    Europe/London
+    Member since
+    9 January 2025
+    My bookings
+    
+    That booking has already started, so it cannot be cancelled.
+    
+    Sat 2 Jan  09:00 to 10:00
+    
+    Kew · Order 1
+    Cancel
+    
+    Sat 2 Jan  14:00 to 15:00
+    
+    Kew · Order 2
+    Cancel
+    
+    Sun 3 Jan  09:00 to 10:00
+    
+    Kew · Order 3
+    Cancel
+    
+    Mon 4 Jan  09:00 to 10:00
+    
+    Bromo · Cancel me
+    Cancel
+    
+    Mon 4 Jan  11:00 to 12:00
+    
+    Bromo · Keep me
+    Cancel
+    
+    Book a room
+    Sign out"
+    Timeout: 5000ms
+
+    Call log:
+      - Expect "not toContainText" locator('body') with timeout 5000ms
+      - waiting for locator('body')
+        - locator resolved to <body>…</body>
+        - unexpected value "Hello, Budi Santoso
+    Username
+    budi
+    Email
+    budi@example.com
+    Phone
+    +62 813 9876 5432
+    Time zone
+    Europe/London
+    Member since
+    9 January 2025
+    My bookings
+    
+    Sat 2 Jan  09:00 to 10:00
+    
+    Kew · Order 1
+    Cancel
+    
+    Sat 2 Jan  14:00 to 15:00
+    
+    Kew · Order 2
+    Cancel
+    
+    Sun 3 Jan  09:00 to 10:00
+    
+    Kew · Order 3
+    Cancel
+    
+    Mon 4 Jan  09:00 to 10:00
+    
+    Bromo · Cancel me
+    Cancelling…
+    
+    Mon 4 Jan  11:00 to 12:00
+    
+    Bromo · Keep me
+    Cancel
+    
+    Book a room
+    Sign out"
+        13 × locator resolved to <body>…</body>
+           - unexpected value "Hello, Budi Santoso
+    Username
+    budi
+    Email
+    budi@example.com
+    Phone
+    +62 813 9876 5432
+    Time zone
+    Europe/London
+    Member since
+    9 January 2025
+    My bookings
+    
+    That booking has already started, so it cannot be cancelled.
+    
+    Sat 2 Jan  09:00 to 10:00
+    
+    Kew · Order 1
+    Cancel
+    
+    Sat 2 Jan  14:00 to 15:00
+    
+    Kew · Order 2
+    Cancel
+    
+    Sun 3 Jan  09:00 to 10:00
+    
+    Kew · Order 3
+    Cancel
+    
+    Mon 4 Jan  09:00 to 10:00
+    
+    Bromo · Cancel me
+    Cancel
+    
+    Mon 4 Jan  11:00 to 12:00
+    
+    Bromo · Keep me
+    Cancel
+    
+    Book a room
+    Sign out"
+
+
+      181 |   await cancelButton(page, goneLine).click();
+      182 |   // No reload: the lines leave the page itself.
+    > 183 |   await expect(page.locator("body")).not.toContainText(normalize(`${goneLine} Bromo · Cancel me`), { useInnerText: true });
+          |                                          ^
+      184 |   await expect(page.getByText("Bromo · Cancel me")).toHaveCount(0);
+      185 |   await expectLines(page, homeLine(kept.start, kept.end, LONDON), "Bromo · Keep me");
+      186 |   const ayu = await postBooking(await tokenFor("ayu"), { roomId: "bromo", start: gone.start, end: gone.end, title: "Ayu after cancel" });
+        at <repo>/e2e/home.spec.ts:183:42
+
+    Error Context: test-results/home-AC-6-2-Cancel-removes-9eb7b-at-once-and-frees-its-range/error-context.md
+
+  1 failed
+    e2e/home.spec.ts:175:1 › AC-6.2: Cancel removes the booking's lines at once and frees its range 
+  2 passed (11.6s)
+exit 1

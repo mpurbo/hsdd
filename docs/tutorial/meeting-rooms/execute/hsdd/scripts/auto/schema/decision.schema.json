@@ -1,0 +1,88 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "hsdd-auto/decision/1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "at", "segment", "step", "step_ref", "by", "artifact", "question", "options", "chosen", "why", "evidence", "blast_radius", "confidence", "would_have_asked", "stop_class", "would_upstream", "commit"],
+  "properties": {
+    "id": { "$ref": "#/$defs/id" },
+    "at": { "$ref": "#/$defs/time" },
+    "segment": { "type": "string", "minLength": 1 },
+    "step": { "$ref": "#/$defs/type" },
+    "step_ref": { "type": "string", "pattern": "^S[0-9]{2,}$" },
+    "by": { "$ref": "#/$defs/by" },
+    "artifact": { "$ref": "#/$defs/artifact" },
+    "question": { "type": "string", "minLength": 1 },
+    "options": { "$ref": "#/$defs/options" },
+    "chosen": { "type": "string", "minLength": 1 },
+    "why": { "type": "string", "minLength": 1 },
+    "evidence": { "$ref": "#/$defs/evidence" },
+    "blast_radius": { "$ref": "#/$defs/blast" },
+    "confidence": { "$ref": "#/$defs/confidence" },
+    "would_have_asked": { "type": "boolean" },
+    "stop_class": { "$ref": "#/$defs/stopClassOrNull" },
+    "would_upstream": { "type": "boolean" },
+    "model": { "type": "string", "minLength": 1 },
+    "commit": { "type": "string", "pattern": "^[0-9a-f]{7,64}$" }
+  },
+  "$defs": {
+    "id": { "type": "string", "pattern": "^DEC-[0-9]{3,}$" },
+    "time": { "type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$" },
+    "type": { "enum": ["setup", "plan", "intake", "root-spec", "mid-level-spec", "adr", "contract", "phase-plan", "reconcile"] },
+    "by": { "enum": ["subagent", "orchestrator", "owner"] },
+    "artifact": { "type": ["string", "null"], "pattern": "^(?!/)(?!(?:.*/)?\\.\\.(?:/|$)).+$" },
+    "options": {
+      "type": "array", "minItems": 2,
+      "items": {
+        "type": "object", "additionalProperties": false, "required": ["label", "consequence"],
+        "properties": { "label": { "type": "string", "minLength": 1 }, "consequence": { "type": "string", "minLength": 1 } }
+      }
+    },
+    "evidence": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+    "blast": { "enum": ["node-local", "contract", "tree", "upstream"] },
+    "confidence": { "enum": ["high", "medium", "low"] },
+    "stopClassOrNull": {
+      "enum": ["axis", "shape", "promotion", "breaking-amend", "collision", "external", "gate-twice", "upstream", "procedural", "judgement", null]
+    },
+    "sidecarDecision": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "at", "by", "step", "artifact", "question", "options", "chosen", "why", "evidence", "blast_radius", "confidence", "would_have_asked", "stop_class", "would_upstream"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "at": { "$ref": "#/$defs/time" },
+        "by": { "$ref": "#/$defs/by" },
+        "step": { "$ref": "#/$defs/type" },
+        "artifact": { "$ref": "#/$defs/artifact" },
+        "question": { "type": "string", "minLength": 1 },
+        "options": { "$ref": "#/$defs/options" },
+        "chosen": { "type": "string", "minLength": 1 },
+        "why": { "type": "string", "minLength": 1 },
+        "evidence": { "$ref": "#/$defs/evidence" },
+        "blast_radius": { "$ref": "#/$defs/blast" },
+        "confidence": { "$ref": "#/$defs/confidence" },
+        "would_have_asked": { "type": "boolean" },
+        "stop_class": { "$ref": "#/$defs/stopClassOrNull" },
+        "would_upstream": { "type": "boolean" },
+        "model": { "type": "string", "minLength": 1 }
+      }
+    },
+    "decisionInput": {
+      "type": "object", "additionalProperties": false,
+      "required": ["artifact", "question", "options", "chosen", "why", "evidence", "blast_radius", "confidence", "would_have_asked", "stop_class", "would_upstream"],
+      "properties": {
+        "artifact": { "$ref": "#/$defs/artifact" },
+        "question": { "type": "string", "minLength": 1 },
+        "options": { "$ref": "#/$defs/options" },
+        "chosen": { "type": "string", "minLength": 1 },
+        "why": { "type": "string", "minLength": 1 },
+        "evidence": { "$ref": "#/$defs/evidence" },
+        "blast_radius": { "$ref": "#/$defs/blast" },
+        "confidence": { "$ref": "#/$defs/confidence" },
+        "would_have_asked": { "type": "boolean" },
+        "stop_class": { "$ref": "#/$defs/stopClassOrNull" },
+        "would_upstream": { "type": "boolean" },
+        "model": { "type": "string", "minLength": 1 }
+      }
+    }
+  }
+}

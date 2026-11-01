@@ -1,0 +1,77 @@
+/* Wraps inside the card, so nothing scrolls sideways at 360 px. */
+.booking-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 8px 12px;
+  font-size: 0.9375rem;
+}
+
+.booking-form > span {
+  flex-basis: 100%;
+  font-weight: 600;
+}
+
+.booking-form label {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.booking-form select,
+.booking-form input {
+  font: inherit;
+  font-size: 1rem; /* under 16px, iOS Safari zooms on focus */
+  max-width: 100%;
+  box-sizing: border-box;
+  padding: 8px 10px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+}
+
+/* The title field takes the rest of the row. */
+.booking-form label:has(input) {
+  flex: 1 1 10rem;
+}
+
+.booking-form input {
+  min-width: 0;
+}
+
+.booking-form p {
+  margin: 0;
+  color: #64748b;
+}
+
+/* The answer to Book takes its own line under the controls, in the card's text colour. */
+.booking-form p[role='alert'] {
+  flex-basis: 100%;
+  color: #1e293b;
+}
+
+.booking-form button {
+  font: inherit;
+  font-weight: 600;
+  padding: 10px 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: #fff;
+  color: #1e293b;
+  cursor: pointer;
+}
+
+.booking-form button:hover:not(:disabled) {
+  background: #f1f5f9;
+}
+
+.booking-form button:disabled {
+  color: #94a3b8;
+  cursor: not-allowed;
+}
+
+.booking-form select:focus-visible,
+.booking-form input:focus-visible,
+.booking-form button:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 1px;
+}

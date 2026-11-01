@@ -1,0 +1,136 @@
+.home {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  box-sizing: border-box;
+}
+
+.home-card {
+  width: 100%;
+  max-width: 22rem;
+  box-sizing: border-box;
+  padding: 24px;
+  display: grid;
+  gap: 18px;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgb(15 23 42 / 8%);
+}
+
+.home-card h1 {
+  margin: 0;
+  font-size: 1.375rem;
+}
+
+.home-details {
+  margin: 0;
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 8px 16px;
+  font-size: 0.9375rem;
+}
+
+.home-details dt {
+  color: #64748b;
+}
+
+.home-details dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.home-card button {
+  font: inherit;
+  font-weight: 600;
+  padding: 10px 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: #fff;
+  color: #1e293b;
+  cursor: pointer;
+}
+
+/* A disabled button (a busy Cancel) keeps its look under the pointer. */
+.home-card button:hover:not(:disabled) {
+  background: #f1f5f9;
+}
+
+.home-card button:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 1px;
+}
+
+.home-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.home-bookings {
+  display: grid;
+  gap: 8px;
+}
+
+.home-bookings h2 {
+  margin: 0;
+  font-size: 1.0625rem;
+}
+
+.home-bookings p {
+  margin: 0;
+}
+
+.home-booking-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 12px;
+  font-size: 0.9375rem;
+}
+
+.home-booking-when {
+  white-space: pre-wrap;
+  color: #64748b;
+}
+
+.home-booking-what {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.home-booking-what span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  /* The title is shown as received, its spaces included. */
+  white-space: pre-wrap;
+}
+
+.home-booking-what button {
+  flex: none;
+  /* Wide enough for "Cancelling…", so the label change does not move the row. */
+  min-width: 8em;
+  padding: 6px 10px;
+}
+
+.home-booking-what button:disabled {
+  color: #94a3b8;
+  border-color: #e2e8f0;
+  cursor: default;
+}
+
+/* A Cancel's refusal or failure, coloured as Login's failure message is. */
+.home-bookings-notice {
+  font-size: 0.875rem;
+  color: #b91c1c;
+}
+
+.home-bookings-unavailable {
+  margin: 0;
+  font-size: 0.9375rem;
+  color: #64748b;
+}

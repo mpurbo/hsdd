@@ -1,0 +1,26 @@
+
+Running 1 test using 1 worker
+
+  ✘  1 e2e/rig.spec.ts:5:1 › the run is in Asia/Kolkata: the worker and the browser (167ms)
+
+
+  1) e2e/rig.spec.ts:5:1 › the run is in Asia/Kolkata: the worker and the browser ──────────────────
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: "Asia/Kolkata"
+    Received: "UTC"
+
+      4 |
+      5 | test("the run is in Asia/Kolkata: the worker and the browser", async ({ page }) => {
+    > 6 |   expect(process.env.TZ).toBe("Asia/Kolkata");
+        |                          ^
+      7 |   expect(Intl.DateTimeFormat().resolvedOptions().timeZone).toBe("Asia/Kolkata");
+      8 |   expect(new Date("2026-11-05T00:00:00.000Z").getHours()).toBe(5); // +05:30
+      9 |   expect(await page.evaluate(() => Intl.DateTimeFormat().resolvedOptions().timeZone)).toBe("Asia/Kolkata");
+        at <repo>/e2e/rig.spec.ts:6:26
+
+    Error Context: test-results/rig-the-run-is-in-Asia-Kolkata-the-worker-and-the-browser/error-context.md
+
+  1 failed
+    e2e/rig.spec.ts:5:1 › the run is in Asia/Kolkata: the worker and the browser ───────────────────

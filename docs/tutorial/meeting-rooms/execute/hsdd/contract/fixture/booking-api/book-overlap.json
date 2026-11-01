@@ -1,0 +1,47 @@
+{
+  "name": "book-overlap",
+  "description": "02:30Z to 03:30Z overlaps Sprint planning in the same room; the refusal carries it, so the web writes 'Merapi is already booked from 09:00 to 10:00.' for a Jakarta user (AC-5.3).",
+  "clock": "2026-11-04T12:00:00.000Z",
+  "given": [
+    {
+      "id": "00000000-0000-4000-8000-000000000023",
+      "account": "budi",
+      "roomId": "merapi",
+      "title": "Sprint planning",
+      "start": "2026-11-05T02:00:00.000Z",
+      "end": "2026-11-05T03:00:00.000Z"
+    }
+  ],
+  "request": {
+    "method": "POST",
+    "path": "/api/bookings",
+    "headers": {
+      "authorization": "Bearer {{token:ayu}}",
+      "content-type": "application/json"
+    },
+    "body": {
+      "roomId": "merapi",
+      "start": "2026-11-05T02:30:00.000Z",
+      "end": "2026-11-05T03:30:00.000Z",
+      "title": "Retro"
+    }
+  },
+  "response": {
+    "status": 409,
+    "body": {
+      "error": {
+        "code": "BOOKING_CONFLICT",
+        "message": "The room is already booked for part of that time.",
+        "conflict": {
+          "id": "00000000-0000-4000-8000-000000000023",
+          "roomId": "merapi",
+          "roomName": "Merapi",
+          "title": "Sprint planning",
+          "start": "2026-11-05T02:00:00.000Z",
+          "end": "2026-11-05T03:00:00.000Z"
+        }
+      }
+    }
+  },
+  "replay": "exact"
+}

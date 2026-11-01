@@ -1,0 +1,206 @@
+{
+  "step_ref": "S20",
+  "skill": "hsdd-phase-plan",
+  "target": "simple-login.integration",
+  "status": "completed",
+  "stop": null,
+  "artifacts": [
+    "hsdd/spec/simple-login.integration.md"
+  ],
+  "experiments": [
+    {
+      "path": "hsdd/auto/experiments/integration-replay-fixtures/",
+      "question": "Which booking-api@v1 fixtures can simple-login.integration replay exactly through the dev proxy against the real service on the real clock and a database whose bookings it does not fix (Q-069 counted 14)?",
+      "finding": "15 of 35: the eight 400 VALIDATION_FAILED, the four 401 UNAUTHORIZED (my-bookings-expired-token through the restart), cancel-unknown and cancel-malformed-id (404), and book-too-long (422 BOOKING_TOO_LONG, order 3 of POST, before the clock's orders 4 and 5). A reference model of the check orders gave each the same answer under 7 clocks from 2026-11-01 to 2028-11-01 and two stored states (none; 78,912 random-id bookings); the other 20 changed under at least one."
+    },
+    {
+      "path": "hsdd/auto/experiments/integration-clock-change-days/",
+      "question": "Can the browser tests book on both the next last Sunday of March and of October after the real clock within booking-api@v1's 365 days, and which strings will those bookings show?",
+      "finding": "Scanning every hour from 2026-11-01 to 2032, the nearer change day's planned booking is at most 217.02 days ahead; the farther one is beyond 365 days only for about six days in some years (2029-03-25 to 03-31, 2031-10-25 to 11-01). From 2026-11-01 both 2027-03-28 (147 days, 23 h, 92 quarter hours, no 01:xx) and 2027-10-31 (364 days, 25 h, 100, 01:00 to 01:45 BST then GMT) are bookable. budi sees '00:30 to 02:30' and '01:30 BST to 01:30 GMT'; ayu sees '07:30 to 08:30' then '(00:30 to 02:30 in London)' and '(01:30 BST to 01:30 GMT in London)'; budi's Home lines 'Sun 28 Mar  00:30 to 02:30' and 'Sun 31 Oct  01:30 BST to 01:30 GMT'."
+    },
+    {
+      "path": "hsdd/auto/experiments/integration-browser-clock/",
+      "question": "In the installed Chrome under Playwright 1.64.1, does a context's timezoneId set the page's ambient zone, and does page.clock.setFixedTime hold only the browser's clock behind the real one while timers run (for the AC-5.5 browser test)?",
+      "finding": "Yes to both: timezoneId Asia/Kolkata gives the page Asia/Calcutta, offset -330, 02:00Z at hour 7; setFixedTime five minutes before the current quarter hour, set before goto, holds Date.now() and new Date() at that instant while setInterval still fires (19 ticks a second), and the test process keeps the real clock. The current quarter hour was after the page's clock and already started on the real one."
+    }
+  ],
+  "self_check": [
+    {
+      "gate": "Phase 1 defines all shared types and contract-bounded interfaces.",
+      "status": "pass",
+      "note": "Append mode: simple-login.integration.3, the first appended phase, builds the shared rig (database of its own, the service started through npm --prefix backend start with restart(), the Asia/Kolkata zone) and e2e/api.ts, the suite's only contract-bounded calls (auth-api@v1 sign-in, booking-api@v1's four endpoints). e2e/time.ts, a pure helper used by .4 and .5 only, lands in .4 with its first user to keep .3 inside one sitting (DEC-181); .5 names it in Dependencies. The node produces no contract."
+    },
+    {
+      "gate": "Phases 2..N-1 are maximally independent (parallelizable where possible).",
+      "status": "pass",
+      "note": "simple-login.integration.4 is the only middle appended phase. .3 drives no new screen, so it can run while the web lane is still building (DEC-193). .4 and .5 add separate files with no collision; .5 follows .4 only for e2e/time.ts."
+    },
+    {
+      "gate": "Each phase has <= 8 OpenSpec tasks (split if more).",
+      "status": "pass",
+      "note": "simple-login.integration.3 7, .4 6, .5 7."
+    },
+    {
+      "gate": "Adjacent same-tier phases were checked against the sizing floor; every merge candidate kept separate names its reason (tier boundary, parallel lane, isolated risk).",
+      "status": "pass",
+      "note": "Over the appended phases only: .3 (full-review) and .4 (spot-check), and .4 and .5 (full-review), differ in tier, and .4 with .5 would come to about 550 lines. No merge-candidate pair, so nothing is recorded. The four-phase alternative (clock-change days apart from Rooms) would have made a candidate pair and was rejected (DEC-181)."
+    },
+    {
+      "gate": "Contract ids are defined before the phase that implements them.",
+      "status": "pass",
+      "note": "auth-api@v1 and profile-api@v2 are stable; booking-api@v1 is draft with its schema and 35 fixtures; this node produces none."
+    },
+    {
+      "gate": "Phase N is testable against contract fixtures even if Phase N-1 is not implemented.",
+      "status": "pass",
+      "note": "The node's Isolation strategy is none by design (hard edges), so its browser tests need the real producers, which each phase names in Dependencies; where fixtures apply, the proxy replay in .3 replays the contracts' own 24 exact fixtures. No appended phase needs a later one, and each uses an earlier one only through the files its Dependencies name."
+    },
+    {
+      "gate": "No phase couples to another phase's internals.",
+      "status": "pass",
+      "note": ".4 and .5 use .3's e2e/api.ts, restart() and database, and .5 uses .4's e2e/time.ts, all named in Dependencies. Across nodes only the contracts and the commands the conventions document (npm --prefix backend run db:up, npm --prefix backend start); the rig stops naming backend/src/server.ts (DEC-183), and the tests never import web code (DEC-190)."
+    },
+    {
+      "gate": "Each phase has a concrete gate, a verification description, and a review tier.",
+      "status": "pass",
+      "note": "Gate npm test for each; Verification lines name observable checks; tiers full-review, spot-check, full-review (DEC-192)."
+    },
+    {
+      "gate": "The phase dependency graph is included as a Mermaid flowchart and matches the Dependencies fields.",
+      "status": "pass",
+      "note": "Nodes B4, B7, W9, I3, I4, I5 added; edges I2 to I3, B4 and B7 dashed to I3, I3 to I4 and I5, I4 to I5, W9 dashed to I4 and I5; existing edges not redrawn."
+    },
+    {
+      "gate": "Summary table opens the section and matches the phase sections.",
+      "status": "pass",
+      "note": "Three rows appended to the table that opens ## Phase Plan; names, tiers, sizes and Depends on match the sections."
+    },
+    {
+      "gate": "Field blocks are bullet lists; empty lists say \"none\".",
+      "status": "pass",
+      "note": "Every field is a bullet; each Produces reads none."
+    },
+    {
+      "gate": "Every contingent phase names the OQ id it waits on; no contingency without a minted OQ.",
+      "status": "pass",
+      "note": "No appended phase is contingent; the one request entry (booking-api@v1, DATABASE_URL on an empty database) lists contingent phases none, because either answer keeps the phase set (DEC-182)."
+    },
+    {
+      "gate": "The plan names the ordering policy it followed, matching the conventions line (or `interfaces-first` when absent, `fp-progression` when only the pre-v0.10 `FP ordering:` bullet is present).",
+      "status": "pass",
+      "note": "The existing first line after the table names interfaces-first from hsdd/conventions.md; the PRD v2 paragraph appends under the same policy, the shared rig first."
+    },
+    {
+      "gate": "Every producing phase's Gate includes the contract replay for each contract it produces.",
+      "status": "n/a",
+      "note": "not exercised by this step"
+    },
+    {
+      "gate": "In append mode: no existing id changed, no shipped phase edited, numbering continued from the highest existing id, the node header untouched, the floor run over the appended phases only.",
+      "status": "pass",
+      "note": "simple-login.integration.1 and .2 (both with verification docs on main) are untouched; numbering continues at .3; the header's Consumes and Produces are unchanged (booking-api@v1 reaches them through the confirm entry at reconcile); the only header edit is the Sources entry the change-request rule appends to (DEC-194); the floor ran over .3 to .5."
+    },
+    {
+      "gate": "No Scope or Verification line leans on a pointer to text the phase context does not carry (a source's section, another phase's text); the binding detail is in the line itself.",
+      "status": "pass",
+      "note": "Scope lines carry the commands, URLs, database names, the 15 fixture names, the counts, the strings (room lines, messages, Home lines, clock-change labels) and the labels PRD v2 Screens shows; citations follow as provenance. The request entry is described in .3's own line."
+    }
+  ],
+  "routed": [
+    {
+      "target": "simple-login.backend",
+      "kind": "consider",
+      "text": "From S20 (simple-login.integration's PRD v2 append, DEC-182, DEC-183). simple-login.integration.3 starts the service with `npm --prefix backend start`, PORT=3000 and DATABASE_URL=postgres://meeting_rooms:meeting_rooms@127.0.0.1:55432/meeting_rooms_e2e, a database its Playwright global setup has just dropped and re-created through the `pg` package on the backend's Compose service, and assumes the service creates its tables and the four pre-loaded rooms in that empty database at start. The integration plan's pending section asks this as a request on booking-api@v1; if the answer is a separate command, the integration's global setup runs it with the same DATABASE_URL. The rig never names a path under backend/ any more."
+    },
+    {
+      "target": "simple-login.backend",
+      "kind": "consider",
+      "text": "From S20. The shipped integration rig (simple-login.integration.1 and .2) spawns backend/src/server.ts directly with PORT=3000, no `db:up` and no DATABASE_URL. From the backend phase that makes the service need PostgreSQL until simple-login.integration.3 merges, the root `npm test` passes only while an earlier step (the backend's gate or replay) has left PostgreSQL running; simple-login.integration.3's Dependencies say to land it with that work."
+    }
+  ],
+  "closes": [
+    {
+      "id": "Q-065",
+      "outcome": "explained",
+      "note": "The appended phases consume auth-api@v1, profile-api@v2 and booking-api@v1; none cites profile-api@v1. The citations of profile-api@v1 in the header's Consumes and in simple-login.integration.1 and .2 are shipped history and stay; the confirm entries name only the appended phases, and profile-api@v1's deprecation stays with C-1 and Sync A."
+    },
+    {
+      "id": "Q-066",
+      "outcome": "addressed",
+      "note": "The Sources entry for hsdd/context/prd-simple-login.v2.md keeps its six sections and gains US-1, AC-2.2, AC-2.3, AC-2.5, US-3, US-4, US-5, US-6, Rooms and Screens, which covers AC-4.4, AC-5.5 and AC-6.2 (DEC-194). H19's version ripple copies it into the root's embedded summary."
+    },
+    {
+      "id": "Q-067",
+      "outcome": "addressed",
+      "note": "The restart stays the AC-2.3 expired-token stand-in (ADR-001 keeps sessions in memory). simple-login.integration.3's restart test sees each old token answer 401 and signs in again before listing the bookings; .4's browser version does the same through Login."
+    },
+    {
+      "id": "Q-068",
+      "outcome": "addressed",
+      "note": "The browser runs in Asia/Kolkata (DEC-191); the change-day tests take the next last Sunday of March and of October strictly after today's date in London and book where booking-api@v1's 365 days allow (DEC-189); the started cases are named (DEC-187); ADR-002 Decision 7's strings, including '23:00 to Fri 6 Nov 02:00' and '01:30 BST'/'01:30 GMT', are in .4's and .5's Scope."
+    },
+    {
+      "id": "Q-069",
+      "outcome": "addressed",
+      "note": "The 365-day horizon keeps the nearer change day bookable (at most 217.02 days, experiment integration-clock-change-days); 20 simultaneous attempts give one 201 and nineteen 409 naming the winner (DEC-186); the restart test signs in again and finds every booking with its id. The proxy replay takes 15 booking-api@v1 fixtures, not 14: book-too-long also answers before any clock or state rule (DEC-185). The confirm entry names simple-login.integration.3, .4 and .5 as consumers."
+    },
+    {
+      "id": "Q-070",
+      "outcome": "addressed",
+      "note": "simple-login.integration.3's Scope cites auth-api@v1 G3 for the restart (every token ends, bookings stay) and booking-api@v1 G17; sign-out stays client-side (G4), so no test calls a logout endpoint."
+    },
+    {
+      "id": "Q-071",
+      "outcome": "addressed",
+      "note": "simple-login.integration.4's AC-2.5 test reads each account's zone from profile-api@v2's me-ayu and me-budi fixtures; .3's Dependencies record that the shipped replay of those two fixtures fails until simple-login.backend.4 serves timeZone."
+    },
+    {
+      "id": "Q-072",
+      "outcome": "addressed",
+      "note": "simple-login.integration.4 drops the 3-second assertion from e2e/login.spec.ts; the AC-1.1 test asserts AC-1.1 only (DEC-188). No line names the 3 seconds as a PRD criterion."
+    },
+    {
+      "id": "Q-073",
+      "outcome": "addressed",
+      "note": "Each browser run uses a database of its own, meeting_rooms_e2e, re-created through `pg` on the backend's Compose service, never the backend's tables (DEC-182); the Playwright config sets the Asia/Kolkata zone and the service runs on the real clock; the started booking is the backend's replay's (DEC-187), and booking a started time is tested at the service and, with only the browser's clock held back, in the browser."
+    },
+    {
+      "id": "Q-074",
+      "outcome": "addressed",
+      "note": "The root scripts and the global setup start PostgreSQL only with `npm --prefix backend run db:up`, never `docker compose` (DEC-184); the service starts with `npm --prefix backend start` after it (DEC-183); the tests set DATABASE_URL to meeting_rooms_e2e and never write meeting_rooms; booking-api@v1's producer simple-login.backend.7 is .3's dependency."
+    },
+    {
+      "id": "Q-077",
+      "outcome": "addressed",
+      "note": "simple-login.integration.4 and .5 select by the visible strings listed (Time zone, My bookings, Cancel, (no bookings), Book a room, Rooms on, Home, room/start/end/title, Book) and assert the messages ('Booked.', AC-5.3's sentence, 'That time has already started.', the AC-2.3 message after a 401 at a booking call); a started-time refusal through the UI holds the browser's clock back, since the form leaves passed starts out."
+    }
+  ],
+  "reads_outside": [
+    { "path": "package.json", "why": "this node's shipped root scripts, which simple-login.integration.3 changes" },
+    { "path": "playwright.config.ts", "why": "this node's shipped Playwright config, which .3 changes" },
+    { "path": "README.md", "why": "this node's shipped run instructions, which .3 rewrites" },
+    { "path": "scripts/dev.mjs", "why": "this node's dev runner: how it starts and stops npm children in process groups (DEC-183, DEC-184)" },
+    { "path": "scripts/dev.test.mjs", "why": "this node's dev runner test, to see what it needs once the service needs PostgreSQL" },
+    { "path": "e2e/fixtures.ts", "why": "this node's backend fixture and helpers, which .3 changes" },
+    { "path": "e2e/home.spec.ts", "why": "this node's shipped Home tests, which .4 extends" },
+    { "path": "e2e/login.spec.ts", "why": "the 3-second assertion Q-072 names" },
+    { "path": "e2e/proxy-replay.spec.ts", "why": "the shipped proxy replay and its count check, which .3 extends" },
+    { "path": "hsdd/auto/experiments/booking-api-fixtures/", "why": "README and check.mjs: the reference model the replay experiment copies, and the 217-day horizon finding Q-069 cites" },
+    { "path": "hsdd/auto/experiments/booking-store-postgres/README.md", "why": "the Compose and per-database facts Q-074 cites" },
+    { "path": "hsdd/auto/experiments/web-time-display/", "why": "README, output.txt and probe.mjs: the display rules and strings Q-077 cites, reused by the clock-change experiment" },
+    { "path": "hsdd/auto/experiments/time-model-intl/README.md", "why": "the Intl facts ADR-002 rests on" },
+    { "path": "hsdd/auto/steps/S18.json", "why": "the head of the file, as an example of the report format; it carries the web plan's self-check notes, which this plan does not rely on (its cross-node ids come from the contracts' front matter)" },
+    { "path": "hsdd/scripts/auto/gate.mjs", "why": "with lib/checks.mjs, lib/report-rules.mjs, part of lib/tree.mjs, the head of decide.mjs and schema/step-report.schema.json: what the step gate checks" },
+    { "path": ".gitignore", "why": "whether the experiments' node_modules are ignored" },
+    { "path": "git log b33b424 67f2701 d86830b", "why": "the S16, S18 and S19 commit subjects, for the sibling phase ranges; only S18's (web.5 to web.9) named one" }
+  ],
+  "notes": [
+    "Appended simple-login.integration.3 (full-review), .4 (spot-check) and .5 (full-review); decisions DEC-181 to DEC-194. DEC-187 (which scripted test covers a booking that has started) is marked would_have_asked, class judgement.",
+    "Q-069's count of replayable booking-api@v1 fixtures was 14; the experiment found 15 (book-too-long). The proxy replay's count check becomes 24.",
+    "The pending section has one request entry, on booking-api@v1 (does the service create its tables and rooms in an empty database named by DATABASE_URL at start), with contingent phases none, and one note for the conventions' Local database section (the integration's own database meeting_rooms_e2e and the root devDependency pg). H19's reconcile answers the request and folds the note.",
+    "The emission date line reads 2026-11-01, the date the run's reconciles already use (conventions: reconciled 2026-11-01); the decide stamps read 2026-10-31 in UTC.",
+    "The node header's Consumes still reads [auth-api@v1, profile-api@v1, profile-api@v2]; booking-api@v1 reaches it through the confirm entry at H19, which also copies the new Sources into the root's embedded summary.",
+    "The integration-browser-clock experiment installed @playwright/test 1.64.1 in its own directory (node_modules is git-ignored) and used the installed Google Chrome; nothing was installed globally."
+  ],
+  "read_check": "6323cec4"
+}

@@ -1,0 +1,53 @@
+{
+  "step_ref": "S21",
+  "skill": "hsdd-reconcile",
+  "target": "simple-login.integration",
+  "status": "completed",
+  "stop": null,
+  "artifacts": [
+    "hsdd/spec/simple-login.integration.md",
+    "hsdd/spec/simple-login.md",
+    "hsdd/contract/booking-api.md",
+    "hsdd/contract/auth-api.md",
+    "hsdd/contract/profile-api.v2.md",
+    "hsdd/contract/INDEX.md",
+    "hsdd/conventions.md"
+  ],
+  "experiments": [],
+  "self_check": [
+    { "gate": "Every pending section drained, or explicitly deferred with a reason.", "status": "pass", "note": "simple-login.integration's five entries (three confirms, one note, one request) were drained and stamped `Reconciled 2026-11-01`. simple-login.backend's and simple-login.web's sections hold only earlier stamps and no entries, so the tree has no pending entry left." },
+    { "gate": "No contract with both sides fully planned remains `phase_ids: provisional`; none with `phase_ids: final`, no open request and an existing validation artifact remains `status: draft`; none was flipped without its artifact.", "status": "pass", "note": "booking-api@v1: producer simple-login.backend.7 (confirmed at S17) and consumers simple-login.web.5, .7, .8, .9 (S19) and simple-login.integration.3, .4, .5 (this step) are all planned phases, so phase_ids flipped to final; its only request was answered (DEC-198), and hsdd/contract/schema/booking-api.schema.json and hsdd/contract/fixture/booking-api/ (35 files) exist, so status flipped draft to stable. auth-api@v1, profile-api@v1 and profile-api@v2 were already stable and final and are not re-examined." },
+    { "gate": "Grandfather marks were added only to pre-existing fixtureless `stable` contracts named by the plan step (the upgrade step or one carrying it forward), none re-marked after a discharge, and removed wherever the artifact now exists.", "status": "n/a", "note": "not exercised by this step" },
+    { "gate": "No contract was retired while a consumer or external consumer still names it.", "status": "n/a", "note": "not exercised by this step" },
+    { "gate": "Every version a drained `confirm` names is in its node's header, every copy above a drained node matches its header (`Produces`, `Consumes`, `Sources`), and every change request a node's `Sources` gained is in the root's `## Sources`.", "status": "pass", "note": "booking-api@v1 joined simple-login.integration's Consumes; auth-api@v1 and profile-api@v2 were already there, and profile-api@v1 stays because simple-login.integration.1 names it. In hsdd/spec/simple-login.md the embedded summary of simple-login.integration now matches its header line for line (diffed: Consumes gained booking-api@v1, Sources gained US-1, AC-2.2, AC-2.3, AC-2.5, US-3, US-4, US-5, US-6, Rooms, Screens), and the child-node table's Consumes cell gained booking-api@v1. The DAG carries the integration's edges as `hard` (the running service, the running web app), not as contract versions, so neither it nor its edge table copies the header; the contract matrix already listed simple-login.integration for booking-api@v1. The Sources gained only sections of PRD v2, already in the root's ## Sources." },
+    { "gate": "Migrated consumers named by the plan step are under `former_consumers`; none was deleted.", "status": "n/a", "note": "not exercised by this step" },
+    { "gate": "Every collision was decided by the human, and the losing plan was updated to match.", "status": "n/a", "note": "not exercised by this step: no collision was found (DEC-197). The integration's own database meeting_rooms_e2e sits on simple-login.backend's Compose service beside the backend's own test databases (D8), and the request's assumption is what the backend's drained D3 and D6 state." },
+    { "gate": "Contract edits follow hsdd-contract versioning (breaking change = a new version file beside the old one + a migration note naming its mode).", "status": "pass", "note": "The only body edit is booking-api@v1's Development address, which now names DATABASE_URL and the start behavior in an empty database; it changes no endpoint, shape, status, code, schema or fixture and refuses nothing v1 accepted, so by the contract's own Versioning list it is compatible and v1 stays, with a dated Versioning line (DEC-199). It was made while v1 was still draft, before the flip. The other edits are consumer ids in front matter." },
+    { "gate": "`node hsdd/scripts/gen-registry.mjs` ran after the last contract edit.", "status": "pass", "note": "Ran after the last edit to booking-api.md; contract/INDEX.md now reads booking-api v1 stable with 7 consumers, auth-api 10, profile-api v2 8; adr/INDEX.md is unchanged." },
+    { "gate": "No artifact still cites a resolved OQ as open; sweep locations reported.", "status": "n/a", "note": "not exercised by this step: no drained entry resolved an open question; the tree's only one, OQ1 in hsdd/spec/simple-login.md, stays OPEN." },
+    { "gate": "Every change align made is a citation or a gate argument.", "status": "n/a", "note": "not exercised by this step" }
+  ],
+  "routed": [
+    { "target": "simple-login.backend", "kind": "consider", "text": "From S21 (DEC-198, DEC-199), adding to S20's consider on the same request. booking-api@v1's Development address now states that `npm --prefix backend start`, with DATABASE_URL naming an existing empty database on the Compose service, creates the service's tables there before it listens, a database that holds them keeps its bookings, and the rooms need no loading, as D3, D6 and simple-login.backend.7 plan. The backend's own tests run on databases its D8 helper creates with the schema already applied, so none starts the service on an empty one; simple-login.backend.7's `start` test in server.test.ts could start on a database created without the schema and list the four rooms, so the producer's gate proves what simple-login.integration.3's global setup relies on." },
+    { "target": "simple-login.integration", "kind": "consider", "text": "From S21 (DEC-198). The request on booking-api@v1 was answered yes and the answer is in booking-api@v1's Development address. simple-login.integration.3 Scope (b) still says the rig's assumption is one \"this plan's request entry on booking-api@v1 asks the backend to confirm\", with a fallback for a separate command; that entry is drained and the fallback cannot arise. A later touch of the phase can cite booking-api@v1's Development address instead; nothing in the phase's work changes." }
+  ],
+  "closes": [],
+  "reads_outside": [
+    { "path": "hsdd/management/2026-10-31-intake-prd-simple-login-v2.md", "why": "The H19 handoff and its insert rule, to decide whether the request's answer or the flip triggers an inserted step (DEC-201)." },
+    { "path": "hsdd/auto/steps/S17.json, hsdd/auto/steps/S19.json, hsdd/auto/steps/S20.json, hsdd/auto/steps/S17.decisions.jsonl, hsdd/auto/steps/S19.decisions.jsonl", "why": "How this segment's earlier reconciles treated the version ripple, the DAG and the Local database section, and what S20 already routed about the request, so this step stays consistent and does not duplicate a routed item." },
+    { "path": "hsdd/auto/experiments/booking-store-postgres/ (README.md, per-file-database.mjs, compose.yaml)", "why": "Evidence for the request's answer: the Compose user creates a database and then btree_gist and the booking table in it (DEC-198)." },
+    { "path": ".claude/skills/hsdd-contract/SKILL.md (Versioning Policy)", "why": "Step 5 applies the request's answer under hsdd-contract rules; read to classify the edit." },
+    { "path": "hsdd/scripts/auto/schema/step-report.schema.json", "why": "The report's required fields." }
+  ],
+  "notes": [
+    "Collisions: none (DEC-197). All five entries came from simple-login.integration; the backend's and the web's sections are empty.",
+    "Contract front matter after the confirms: booking-api@v1 consumers [simple-login.web.5, simple-login.web.7, simple-login.web.8, simple-login.web.9, simple-login.integration.3, simple-login.integration.4, simple-login.integration.5], phase_ids final, status stable; profile-api@v2 consumers gained simple-login.integration.3, .4, .5 (now 8); auth-api@v1 consumers gained the same three (now 10). profile-api@v1 is unchanged: no appended phase consumes it.",
+    "Request on booking-api@v1: the assumption held (yes). The service, started by `npm --prefix backend start` with DATABASE_URL naming an existing empty database, creates its tables there before it listens, and the rooms are data in the service (DEC-198). It landed in booking-api@v1's Development address as a compatible clarification with a dated Versioning line (DEC-199). The request named contingent phases: none, so nothing was blocked; simple-login.integration.3 runs as planned.",
+    "booking-api@v1 is now stable under compatibility: versioned. From here, a change its Versioning lists as breaking needs v2 and a migration note; the in-place route DEC-154 took for D9 is closed. hsdd-config's warning that booking-api@v1 is draft and provisional should stop for every consumer phase.",
+    "Note: applied to hsdd/conventions.md's Local database section as one bullet reserving meeting_rooms_e2e for simple-login.integration's browser suite; the pg package and the postgres maintenance connection stay in the integration's plan (DEC-200).",
+    "Insert rule: no phase-plan-append is inserted (DEC-201). The answer is the integration's own assumption and what simple-login.backend.7 already plans; the flip changes status and phase_ids only; no version was made superseded, so no citation-touch either. Two considers are routed instead.",
+    "Planning-time text that still says booking-api@v1 was draft (simple-login.backend.4 Dependencies, \"as drafted (`draft`)\"; booking-api@v1's own D9 Versioning line) describes the state when it was written and was left as history.",
+    "The stamp and the Versioning line are dated 2026-11-01, the local (WIB) date at the time of the step, as S17's and S19's were; UTC was still 2026-10-31."
+  ],
+  "read_check": "61edcdf0"
+}

@@ -1,0 +1,58 @@
+{
+  "step_ref": "S24",
+  "skill": "hsdd-phase-plan",
+  "target": "simple-login.backend",
+  "status": "completed",
+  "stop": null,
+  "artifacts": ["hsdd/spec/simple-login.backend.md"],
+  "experiments": [
+    {
+      "path": "hsdd/auto/experiments/backend-start-empty-database/",
+      "question": "Can simple-login.backend.7's `start` test run the service on a test database created without the schema, start it again on that database, and still leave no database behind?",
+      "finding": "D6's schema, sent as one query on a new pool, makes the `booking` table in a database created empty; sent again by a second pool on the same database it raises only notices (42710, 42P07) and the booking keeps its id. DROP DATABASE fails with 55006 while a pool still holds a connection and succeeds once the pool ends; WITH (FORCE) drops it anyway but the pool's idle client then emits 57P01 as an error event."
+    }
+  ],
+  "self_check": [
+    { "gate": "Phase 1 defines all shared types and contract-bounded interfaces.", "status": "n/a", "note": "not exercised by this step" },
+    { "gate": "Phases 2..N-1 are maximally independent (parallelizable where possible).", "status": "n/a", "note": "not exercised by this step" },
+    { "gate": "Each phase has <= 8 OpenSpec tasks (split if more).", "status": "pass", "note": "The rewritten simple-login.backend.7 stays <= 7 tasks: the start test replaces the second-buildApp restart test in the same task (DEC-212)." },
+    { "gate": "Adjacent same-tier phases were checked against the sizing floor; every merge candidate kept separate names its reason (tier boundary, parallel lane, isolated risk).", "status": "pass", "note": "No phase is appended, so the floor has nothing new to run over (recorded under the summary table). Phases 6 and 7 stay split for the reason already recorded; phase 7 at ~400 lines would bring a merge to about 730." },
+    { "gate": "Contract ids are defined before the phase that implements them.", "status": "pass", "note": "booking-api@v1 is stable with phase_ids final; the rewrite changes no contract." },
+    { "gate": "Phase N is testable against contract fixtures even if Phase N-1 is not implemented.", "status": "n/a", "note": "not exercised by this step" },
+    { "gate": "No phase couples to another phase's internals.", "status": "pass", "note": "Phase 7 extends the D8 test-database helper with an option and calls the shipped `start` entry; it reaches into no other phase's code beyond those named surfaces." },
+    { "gate": "Each phase has a concrete gate, a verification description, and a review tier.", "status": "pass", "note": "Phase 7 keeps its gate and tier; its Verification gains the empty-database start." },
+    { "gate": "The phase dependency graph is included as a Mermaid flowchart and matches the Dependencies fields.", "status": "pass", "note": "Unchanged: phase 7 still depends on 5 and 6, matching the B5 and B6 edges into B7." },
+    { "gate": "Summary table opens the section and matches the phase sections.", "status": "pass", "note": "Row 7's size updated to ~9 files (~400 lines), <= 7 tasks, matching the section." },
+    { "gate": "Field blocks are bullet lists; empty lists say \"none\".", "status": "pass", "note": "Phase 7's fields stay a bullet list." },
+    { "gate": "Every contingent phase names the OQ id it waits on; no contingency without a minted OQ.", "status": "pass", "note": "The rewritten phase is contingent on no question." },
+    { "gate": "The plan names the ordering policy it followed, matching the conventions line (or `interfaces-first` when absent, `fp-progression` when only the pre-v0.10 `FP ordering:` bullet is present).", "status": "pass", "note": "interfaces-first, as hsdd/conventions.md says; the rewrite changes no order." },
+    { "gate": "Every producing phase's Gate includes the contract replay for each contract it produces.", "status": "pass", "note": "Phase 7's Gate still replays booking-api, profile-api.v2 and auth-api." },
+    { "gate": "In append mode: no existing id changed, no shipped phase edited, numbering continued from the highest existing id, the node header untouched, the floor run over the appended phases only.", "status": "pass", "note": "Only the unshipped simple-login.backend.7 was rewritten, keeping its id (DEC-210); phases 1 to 3 (verification docs on main) untouched; no phase appended; header, Sources and graph untouched; the pending section gained an emission line naming the rewrite, with no entry (DEC-214)." },
+    { "gate": "No Scope or Verification line leans on a pointer to text the phase context does not carry (a source's section, another phase's text); the binding detail is in the line itself.", "status": "pass", "note": "The test's steps, the room order, the expected statuses and the 55006 cleanup reason are in the line; D3, D4, D6 and D8 are cited node decisions the phase context carries; booking-api@v1 and auth-api@v1 are the phase's own contracts." }
+  ],
+  "routed": [],
+  "closes": [],
+  "reads_outside": [
+    { "path": "hsdd/auto/queue.jsonl", "why": "Q-084, the insert-step this step was inserted for (front matter queue_item), and Q-080 behind it" },
+    { "path": "hsdd/auto/plan.md", "why": "DEC-209 in the change log, which accepted Q-084 as an in-place rewrite of simple-login.backend.7" },
+    { "path": "hsdd/auto/run.yaml", "why": "the segment's sources and the request path, to confirm the Sources entry" },
+    { "path": "hsdd/judgement/decisions.jsonl", "why": "DEC-198, DEC-199, DEC-205, DEC-206 and DEC-209, the decisions that led to this step" },
+    { "path": ".claude/skills/hsdd-auto/scripts/templates/steps/phase-plan-append.md", "why": "to see why the invocation names no phase: it is the kind's default text" },
+    { "path": ".claude/skills/hsdd-auto/scripts/dispatch.mjs", "why": "how the invocation is rendered for a step with no handoff (lines 330 to 410)" },
+    { "path": ".claude/skills/hsdd-auto/scripts/gate.mjs", "why": "the check list and the closes rule, so the report does not close the accepted Q-084" },
+    { "path": ".claude/skills/hsdd-reconcile/SKILL.md", "why": "how reconcile treats a pending section with no entry, for DEC-214" },
+    { "path": "hsdd/auto/steps/S16.json", "why": "the report shape of the earlier append on this node" },
+    { "path": "backend/src/server.ts", "why": "the shipped `start(port)` the rewrite extends (DEC-211)" },
+    { "path": "backend/test/server.test.ts", "why": "the shipped `start` test the rewrite folds in" },
+    { "path": "backend/package.json", "why": "the shipped `start` script" },
+    { "path": "hsdd/auto/experiments/booking-store-postgres/", "why": "S16's experiment: what it already settled about a database per test file, and its Compose setup reused for this step's experiment" }
+  ],
+  "notes": [
+    "The invocation rendered as the phase-plan-append template's default ('Append phases to `simple-login.backend` per ...'), which carries none of Q-084's text; the step's own rule allows an in-place rewrite only when the invocation says so. DEC-210 reads Q-084, named in the dispatch's front matter and accepted by DEC-209, as the instruction naming simple-login.backend.7. For an inserted phase-plan-append that rewrites a phase, the template could render the queue item's text as the invocation.",
+    "Beyond Q-084's ask, the second `start` now is phase 7's restart test and the second-`buildApp` restart test is gone (DEC-212), keeping the phase at about 400 lines; the old token's 401 and the booking's id moved with it.",
+    "Sources unchanged: the PRD v2 sections that govern the rewrite (Rooms, Constraints, Success) are already in the node's Sources entry for hsdd/context/prd-simple-login.v2.md.",
+    "The pending section carries only an emission line naming the rewrite (DEC-214), so Q-085's reconcile has no entry to apply and no governance file to change.",
+    "Phase 7's Dependencies line still reads 'booking-api@v1 `stable`, which hsdd-reconcile sets once its producer and consumers are confirmed'; that has happened (status stable, phase_ids final) and the line stays true, so it was left as written."
+  ],
+  "read_check": "a37a63af"
+}

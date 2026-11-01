@@ -1,0 +1,14 @@
+{
+  "name": "me-no-token",
+  "description": "No Authorization header at all.",
+  "request": {
+    "method": "GET",
+    "path": "/api/me",
+    "headers": {}
+  },
+  "response": {
+    "status": 401,
+    "body": { "error": { "code": "UNAUTHORIZED", "message": "Sign in to continue." } }
+  },
+  "replay": "exact"
+}

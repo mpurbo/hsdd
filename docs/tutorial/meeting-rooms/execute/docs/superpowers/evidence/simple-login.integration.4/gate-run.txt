@@ -1,0 +1,208 @@
+# 2026-11-01T00:29:28Z npm test (after the clean install above), HEAD 34f17ce
+
+> @simple-login/root@1.0.0 test
+> npm --prefix backend run gate && npm --prefix backend run replay && npm --prefix web run gate && npm --prefix backend run db:up && node --test "scripts/*.test.mjs" && npm run e2e
+
+
+> @simple-login/backend@1.0.0 gate
+> npm run db:up && tsc --noEmit && TZ=Asia/Kolkata vitest run
+
+
+> @simple-login/backend@1.0.0 db:up
+> node scripts/db-up.mjs up
+
+ Container meeting-rooms-postgres-1 Running 
+ Container meeting-rooms-postgres-1 Waiting 
+ Container meeting-rooms-postgres-1 Healthy 
+
+ RUN  v5.0.5 <repo>/backend
+
+{"level":30,"time":1793492972169,"pid":19223,"hostname":"Mohamad-Purbo.local","msg":"Server listening at http://127.0.0.1:52315"}
+{"level":30,"time":1793492972184,"pid":19223,"hostname":"Mohamad-Purbo.local","reqId":"req-1","req":{"method":"POST","url":"/api/login","host":"127.0.0.1:52315","remoteAddress":"127.0.0.1","remotePort":52316},"msg":"incoming request"}
+{"level":30,"time":1793492972209,"pid":19223,"hostname":"Mohamad-Purbo.local","reqId":"req-1","res":{"statusCode":200},"responseTime":24.693291000000045,"msg":"request completed"}
+{"level":30,"time":1793492972213,"pid":19223,"hostname":"Mohamad-Purbo.local","reqId":"req-2","req":{"method":"GET","url":"/api/rooms?from=2026-11-02T00%3A30%3A00.000Z&to=2026-11-02T01%3A30%3A00.000Z","host":"127.0.0.1:52315","remoteAddress":"127.0.0.1","remotePort":52319},"msg":"incoming request"}
+{"level":30,"time":1793492972216,"pid":19223,"hostname":"Mohamad-Purbo.local","reqId":"req-2","res":{"statusCode":200},"responseTime":3.12074999999993,"msg":"request completed"}
+{"level":30,"time":1793492972219,"pid":19223,"hostname":"Mohamad-Purbo.local","reqId":"req-3","req":{"method":"POST","url":"/api/bookings","host":"127.0.0.1:52315","remoteAddress":"127.0.0.1","remotePort":52316},"msg":"incoming request"}
+{"level":30,"time":1793492972225,"pid":19223,"hostname":"Mohamad-Purbo.local","reqId":"req-3","res":{"statusCode":201},"responseTime":5.959874999999897,"msg":"request completed"}
+{"level":30,"time":1793492972236,"pid":19223,"hostname":"Mohamad-Purbo.local","msg":"Server listening at http://127.0.0.1:52321"}
+{"level":30,"time":1793492972237,"pid":19223,"hostname":"Mohamad-Purbo.local","reqId":"req-1","req":{"method":"GET","url":"/api/me/bookings","host":"127.0.0.1:52321","remoteAddress":"127.0.0.1","remotePort":52322},"msg":"incoming request"}
+{"level":30,"time":1793492972237,"pid":19223,"hostname":"Mohamad-Purbo.local","reqId":"req-1","res":{"statusCode":401},"responseTime":0.223041999999964,"msg":"request completed"}
+{"level":30,"time":1793492972239,"pid":19223,"hostname":"Mohamad-Purbo.local","reqId":"req-2","req":{"method":"POST","url":"/api/login","host":"127.0.0.1:52321","remoteAddress":"127.0.0.1","remotePort":52323},"msg":"incoming request"}
+{"level":30,"time":1793492972262,"pid":19223,"hostname":"Mohamad-Purbo.local","reqId":"req-2","res":{"statusCode":200},"responseTime":23.00562500000001,"msg":"request completed"}
+{"level":30,"time":1793492972264,"pid":19223,"hostname":"Mohamad-Purbo.local","reqId":"req-3","req":{"method":"GET","url":"/api/rooms?from=2026-11-02T00%3A30%3A00.000Z&to=2026-11-02T01%3A30%3A00.000Z","host":"127.0.0.1:52321","remoteAddress":"127.0.0.1","remotePort":52322},"msg":"incoming request"}
+{"level":30,"time":1793492972266,"pid":19223,"hostname":"Mohamad-Purbo.local","reqId":"req-3","res":{"statusCode":200},"responseTime":2.1227910000000065,"msg":"request completed"}
+{"level":30,"time":1793492972268,"pid":19223,"hostname":"Mohamad-Purbo.local","reqId":"req-4","req":{"method":"GET","url":"/api/me/bookings","host":"127.0.0.1:52321","remoteAddress":"127.0.0.1","remotePort":52323},"msg":"incoming request"}
+{"level":30,"time":1793492972269,"pid":19223,"hostname":"Mohamad-Purbo.local","reqId":"req-4","res":{"statusCode":200},"responseTime":1.2231249999999818,"msg":"request completed"}
+{"level":30,"time":1793492972562,"pid":19223,"hostname":"Mohamad-Purbo.local","msg":"Server listening at http://127.0.0.1:52351"}
+{"level":30,"time":1793492972564,"pid":19223,"hostname":"Mohamad-Purbo.local","reqId":"req-1","req":{"method":"POST","url":"/api/login","host":"127.0.0.1:52351","remoteAddress":"127.0.0.1","remotePort":52352},"msg":"incoming request"}
+{"level":30,"time":1793492972586,"pid":19223,"hostname":"Mohamad-Purbo.local","reqId":"req-1","res":{"statusCode":200},"responseTime":22.69020899999998,"msg":"request completed"}
+{"level":30,"time":1793492972587,"pid":19223,"hostname":"Mohamad-Purbo.local","reqId":"req-2","req":{"method":"GET","url":"/api/rooms?from=2026-11-05T00%3A00%3A00.000Z&to=2026-11-06T00%3A00%3A00.000Z","host":"127.0.0.1:52351","remoteAddress":"127.0.0.1","remotePort":52353},"msg":"incoming request"}
+{"level":30,"time":1793492972589,"pid":19223,"hostname":"Mohamad-Purbo.local","reqId":"req-2","res":{"statusCode":200},"responseTime":1.795833000000016,"msg":"request completed"}
+{"level":40,"time":1793492972591,"pid":19223,"hostname":"Mohamad-Purbo.local","code":"57P01","message":"terminating connection due to administrator command","msg":"idle database connection lost"}
+{"level":30,"time":1793492972593,"pid":19223,"hostname":"Mohamad-Purbo.local","reqId":"req-3","req":{"method":"GET","url":"/api/rooms?from=2026-11-05T00%3A00%3A00.000Z&to=2026-11-06T00%3A00%3A00.000Z","host":"127.0.0.1:52351","remoteAddress":"127.0.0.1","remotePort":52352},"msg":"incoming request"}
+{"level":30,"time":1793492972600,"pid":19223,"hostname":"Mohamad-Purbo.local","reqId":"req-3","res":{"statusCode":200},"responseTime":7.167249999999967,"msg":"request completed"}
+{"level":30,"time":1793492972711,"pid":19223,"hostname":"Mohamad-Purbo.local","msg":"Server listening at http://127.0.0.1:52364"}
+{"level":30,"time":1793492972712,"pid":19223,"hostname":"Mohamad-Purbo.local","reqId":"req-1","req":{"method":"POST","url":"/api/login","host":"127.0.0.1:52364","remoteAddress":"127.0.0.1","remotePort":52365},"msg":"incoming request"}
+{"level":30,"time":1793492972735,"pid":19223,"hostname":"Mohamad-Purbo.local","reqId":"req-1","res":{"statusCode":200},"responseTime":22.386749999999893,"msg":"request completed"}
+{"level":30,"time":1793492972738,"pid":19223,"hostname":"Mohamad-Purbo.local","reqId":"req-2","req":{"method":"POST","url":"/api/bookings","host":"127.0.0.1:52364","remoteAddress":"127.0.0.1","remotePort":52365},"msg":"incoming request"}
+{"level":50,"time":1793492972746,"pid":19223,"hostname":"Mohamad-Purbo.local","reqId":"req-2","req":{"method":"POST","url":"/api/bookings","host":"127.0.0.1:52364","remoteAddress":"127.0.0.1","remotePort":52365},"res":{"statusCode":500},"err":{"type":"DatabaseError","message":"terminating connection due to administrator command","stack":"error: terminating connection due to administrator command\n    at <repo>/backend/node_modules/pg/lib/client.js:694:17\n    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)\n    at attemptInsert (<repo>/backend/src/booking-store.ts:33:3)\n    at inTransaction (<repo>/backend/src/booking-store.ts:67:22)\n    at Object.insert (<repo>/backend/src/booking-store.ts:85:18)\n    at Object.<anonymous> (<repo>/backend/src/booking-routes.ts:70:20)","length":116,"name":"error","severity":"FATAL","code":"57P01","file":"postgres.c","line":"3316","routine":"ProcessInterrupts"},"msg":"terminating connection due to administrator command"}
+{"level":30,"time":1793492972747,"pid":19223,"hostname":"Mohamad-Purbo.local","reqId":"req-2","res":{"statusCode":500},"responseTime":9.123582999999826,"msg":"request completed"}
+{"level":30,"time":1793492972756,"pid":19223,"hostname":"Mohamad-Purbo.local","reqId":"req-3","req":{"method":"POST","url":"/api/bookings","host":"127.0.0.1:52364","remoteAddress":"127.0.0.1","remotePort":52365},"msg":"incoming request"}
+{"level":30,"time":1793492972766,"pid":19223,"hostname":"Mohamad-Purbo.local","reqId":"req-3","res":{"statusCode":201},"responseTime":9.811791999999969,"msg":"request completed"}
+
+ Test Files  19 passed (19)
+      Tests  299 passed (299)
+   Start at  05:59:31
+   Duration  1.82s (tests 86%, import 11%, transform 3%, worker 1%)
+
+
+> @simple-login/backend@1.0.0 replay
+> npm run db:up && TZ=Asia/Kolkata vitest run test/contract.replay.test.ts
+
+
+> @simple-login/backend@1.0.0 db:up
+> node scripts/db-up.mjs up
+
+ Container meeting-rooms-postgres-1 Running 
+ Container meeting-rooms-postgres-1 Waiting 
+ Container meeting-rooms-postgres-1 Healthy 
+
+ RUN  v5.0.5 <repo>/backend
+
+
+ Test Files  1 passed (1)
+      Tests  46 passed (46)
+   Start at  05:59:34
+   Duration  1.26s (tests 88%, import 10%, transform 2%)
+
+
+> simple-login-web@0.0.0 gate
+> tsc --noEmit && TZ=Asia/Kolkata vitest run && vite build
+
+
+ RUN  v5.0.5 <repo>/web
+
+
+ Test Files  18 passed (18)
+      Tests  387 passed (387)
+   Start at  05:59:37
+   Duration  2.75s (environment 62%, tests 19%, setup 14%, import 3%, transform 2%)
+
+vite v8.3.5 building client environment for production...
+transforming...
+✓ 34 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                   0.39 kB │ gzip:  0.26 kB
+dist/assets/index-xAfh5BHB.css    4.87 kB │ gzip:  1.16 kB
+dist/assets/index-BZ2jqL6x.js   239.95 kB │ gzip: 75.08 kB
+
+✓ built in 231ms
+
+> @simple-login/backend@1.0.0 db:up
+> node scripts/db-up.mjs up
+
+ Container meeting-rooms-postgres-1 Running 
+ Container meeting-rooms-postgres-1 Waiting 
+ Container meeting-rooms-postgres-1 Healthy 
+✔ starts both servers, and Ctrl-C stops both (671.146584ms)
+✔ when one server cannot start, stops the other and exits non-zero (421.908ms)
+✔ ignores an exported PORT: the backend stays on the contract's address (614.519625ms)
+ℹ tests 3
+ℹ suites 0
+ℹ pass 3
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1754.360542
+
+> @simple-login/root@1.0.0 e2e
+> playwright test
+
+
+> @simple-login/backend@1.0.0 db:up
+> node scripts/db-up.mjs up
+
+ Container meeting-rooms-postgres-1 Running 
+ Container meeting-rooms-postgres-1 Waiting 
+ Container meeting-rooms-postgres-1 Healthy 
+
+Running 68 tests using 1 worker
+
+  ✓   1 e2e/home.spec.ts:63:1 › AC-2.1: Home shows the signed-in user's details (424ms)
+  ✓   2 e2e/home.spec.ts:75:1 › AC-2.5: each account's Home shows its zone as its name, the whole text (468ms)
+  ✓   3 e2e/home.spec.ts:86:1 › AC-2.5: ayu's Thames booking shows on her Home in Jakarta time (351ms)
+  ✓   4 e2e/home.spec.ts:94:1 › AC-2.5: budi's Merapi booking shows on his Home in London time (355ms)
+  ✓   5 e2e/home.spec.ts:102:1 › AC-2.4: Home shows each account's phone number exactly as stored (485ms)
+  ✓   6 e2e/home.spec.ts:111:1 › Budi sees Budi's profile, not Ayu's (324ms)
+  ✓   7 e2e/home.spec.ts:121:1 › AC-2.2: reloading keeps the user signed in (353ms)
+  ✓   8 e2e/home.spec.ts:129:1 › AC-3.1: Sign out returns to Login, and a reload stays there (361ms)
+  ✓   9 e2e/home.spec.ts:139:1 › AC-2.3: a session the backend no longer knows returns to Login with the expiry message (866ms)
+  ✓  10 e2e/home.spec.ts:151:1 › AC-6.1: budi's bookings show soonest first, each with Cancel, and none of ayu's (449ms)
+  ✓  11 e2e/home.spec.ts:168:1 › AC-6.2: Cancel removes the booking's lines at once and frees its range (438ms)
+  ✓  12 e2e/home.spec.ts:183:1 › AC-6.1: with every booking of budi's cancelled, Home shows (no bookings) under My bookings (370ms)
+  ✓  13 e2e/home.spec.ts:194:1 › Success: after a restart, Login says the session expired and Home still lists the booking (1.0s)
+  ✓  14 e2e/login.spec.ts:5:1 › AC-1.1: the right password reaches Home (317ms)
+  ✓  15 e2e/login.spec.ts:11:1 › AC-1.2: a wrong password shows the message and stays on Login (268ms)
+  ✓  16 e2e/login.spec.ts:18:1 › AC-1.2: an unknown user gets the same message (270ms)
+  ✓  17 e2e/login.spec.ts:24:1 › AC-1.3: Sign in is disabled while either field is empty (216ms)
+  ✓  18 e2e/proxy-replay.spec.ts:11:1 › replays 24 exact fixtures: 4 of auth-api@v1, 5 of profile-api@v2, 15 of booking-api@v1, none of profile-api@v1 (9ms)
+  ✓  19 e2e/proxy-replay.spec.ts:21:3 › replay through the proxy: auth-api/login-empty-username (70ms)
+  ✓  20 e2e/proxy-replay.spec.ts:21:3 › replay through the proxy: auth-api/login-missing-password (2ms)
+  ✓  21 e2e/proxy-replay.spec.ts:21:3 › replay through the proxy: auth-api/login-unknown-user (23ms)
+  ✓  22 e2e/proxy-replay.spec.ts:21:3 › replay through the proxy: auth-api/login-wrong-password (24ms)
+  ✓  23 e2e/proxy-replay.spec.ts:21:3 › replay through the proxy: profile-api.v2/me-ayu (27ms)
+  ✓  24 e2e/proxy-replay.spec.ts:21:3 › replay through the proxy: profile-api.v2/me-budi (25ms)
+  ✓  25 e2e/proxy-replay.spec.ts:21:3 › replay through the proxy: profile-api.v2/me-expired-token (543ms)
+  ✓  26 e2e/proxy-replay.spec.ts:21:3 › replay through the proxy: profile-api.v2/me-no-token (2ms)
+  ✓  27 e2e/proxy-replay.spec.ts:21:3 › replay through the proxy: profile-api.v2/me-unknown-token (2ms)
+  ✓  28 e2e/proxy-replay.spec.ts:21:3 › replay through the proxy: booking-api/book-end-not-after-start (27ms)
+  ✓  29 e2e/proxy-replay.spec.ts:21:3 › replay through the proxy: booking-api/book-instant-with-offset (26ms)
+  ✓  30 e2e/proxy-replay.spec.ts:21:3 › replay through the proxy: booking-api/book-not-on-a-quarter-hour (25ms)
+  ✓  31 e2e/proxy-replay.spec.ts:21:3 › replay through the proxy: booking-api/book-title-blank (25ms)
+  ✓  32 e2e/proxy-replay.spec.ts:21:3 › replay through the proxy: booking-api/book-title-too-long (25ms)
+  ✓  33 e2e/proxy-replay.spec.ts:21:3 › replay through the proxy: booking-api/book-too-long (25ms)
+  ✓  34 e2e/proxy-replay.spec.ts:21:3 › replay through the proxy: booking-api/book-unknown-room (24ms)
+  ✓  35 e2e/proxy-replay.spec.ts:21:3 › replay through the proxy: booking-api/book-unknown-token (2ms)
+  ✓  36 e2e/proxy-replay.spec.ts:21:3 › replay through the proxy: booking-api/cancel-malformed-id (25ms)
+  ✓  37 e2e/proxy-replay.spec.ts:21:3 › replay through the proxy: booking-api/cancel-no-token (2ms)
+  ✓  38 e2e/proxy-replay.spec.ts:21:3 › replay through the proxy: booking-api/cancel-unknown (26ms)
+  ✓  39 e2e/proxy-replay.spec.ts:21:3 › replay through the proxy: booking-api/my-bookings-expired-token (541ms)
+  ✓  40 e2e/proxy-replay.spec.ts:21:3 › replay through the proxy: booking-api/rooms-from-not-before-to (27ms)
+  ✓  41 e2e/proxy-replay.spec.ts:21:3 › replay through the proxy: booking-api/rooms-instant-without-milliseconds (25ms)
+  ✓  42 e2e/proxy-replay.spec.ts:21:3 › replay through the proxy: booking-api/rooms-no-token (2ms)
+  ✓  43 e2e/rig.spec.ts:19:1 › the run is in Asia/Kolkata: the worker and the browser (133ms)
+  ✓  44 e2e/rig.spec.ts:34:1 › api.ts: instants are toISOString() strings on quarter hours of UTC (2ms)
+  ✓  45 e2e/rig.spec.ts:43:1 › api.ts: sign in, book, list, cancel against the service (63ms)
+  ✓  46 e2e/rig.spec.ts:63:1 › a run starts with no bookings: a slot only this test books is free (27ms)
+  ✓  47 e2e/rig.spec.ts:70:1 › startService refuses a port already in use (0ms)
+  ✓  48 e2e/rig.spec.ts:74:1 › startService fails at once, with the service's words, when the service exits before it listens (36ms)
+round 1: ayu won, booking bf9c8a20-aa1b-49d8-ae93-461534330c53
+  ✓  49 e2e/success.spec.ts:49:3 › 20 simultaneous attempts, round 1 of 5: one 201, nineteen 409 (87ms)
+round 2: ayu won, booking 1426aff9-3c49-400e-ad2e-2e3f14c116ac
+  ✓  50 e2e/success.spec.ts:49:3 › 20 simultaneous attempts, round 2 of 5: one 201, nineteen 409 (73ms)
+round 3: ayu won, booking 197fab17-1cdb-4b3f-82d7-55410520aeab
+  ✓  51 e2e/success.spec.ts:49:3 › 20 simultaneous attempts, round 3 of 5: one 201, nineteen 409 (73ms)
+round 4: budi won, booking bf0b43e1-655e-4ee2-b131-ea0c4b596c12
+  ✓  52 e2e/success.spec.ts:49:3 › 20 simultaneous attempts, round 4 of 5: one 201, nineteen 409 (73ms)
+round 5: budi won, booking 3015bc3c-53f3-4921-ac3e-3c746f1777c7
+  ✓  53 e2e/success.spec.ts:49:3 › 20 simultaneous attempts, round 5 of 5: one 201, nineteen 409, twenty ranges sharing one quarter hour (72ms)
+  ✓  54 e2e/success.spec.ts:98:1 › a restart keeps every booking with its id and ends every token (632ms)
+  ✓  55 e2e/success.spec.ts:143:1 › AC-5.5 at the service: the current quarter hour has started (25ms)
+  ✓  56 e2e/success.spec.ts:150:1 › AC-6.3: budi cannot cancel ayu's booking (54ms)
+  ✓  57 e2e/time.spec.ts:13:1 › time.ts: a date's range runs from its start to the next date's start, in the zone given (0ms)
+  ✓  58 e2e/time.spec.ts:18:1 › time.ts: London's March change day is 23 hours, with no 01:00 to 01:45 (1ms)
+  ✓  59 e2e/time.spec.ts:26:1 › time.ts: London's October change day is 25 hours, with 01:00 to 01:45 first BST, then GMT (1ms)
+  ✓  60 e2e/time.spec.ts:38:1 › time.ts: the next change days are strictly after today's date in London (0ms)
+  ✓  61 e2e/time.spec.ts:43:1 › time.ts: today's date depends on the zone, never on the ambient one (0ms)
+  ✓  62 e2e/time.spec.ts:49:1 › time.ts: a date in British winter time is wholly GMT and never a change day (83ms)
+  ✓  63 e2e/time.spec.ts:56:1 › time.ts: a wall time off the quarter hours is refused (1ms)
+  ✓  64 e2e/time.spec.ts:63:1 › time.ts: a time is 24-hour HH:mm in the zone given; a date is en-GB weekday, day and month (0ms)
+  ✓  65 e2e/time.spec.ts:69:1 › time.ts: a time off its line's date carries its own date (1ms)
+  ✓  66 e2e/time.spec.ts:75:1 › time.ts: a time in an hour the clocks repeat carries the zone's short name (2ms)
+  ✓  67 e2e/time.spec.ts:81:1 › time.ts: a room in another zone adds its own times and office; one in the user's zone does not (2ms)
+  ✓  68 e2e/time.spec.ts:89:1 › time.ts: Home's line is the start's date, two spaces, then the range in the user's zone (5ms)
+
+  68 passed (13.3s)
+exit 0

@@ -26,10 +26,13 @@ const doc = (path, note, body) =>
 const rgn = (cls, on, body) => `<span class="rgn ${cls}${on === true ? " on" : on === false ? " out" : ""}">${body}</span>`;
 
 const SPEC = "../../spec/hsdd-spec-v0_10.md";
+// v0.11 is a delta on v0.10: it adds hsdd-auto and nothing else, so only chapter 10 cites it.
+const SPEC11 = "../../spec/hsdd-spec-v0_11.md";
 const UG = "../users-guide.md";
 const deeper = (links) =>
   `<p class="deeper"><span>Go deeper:</span>${links.map(([label, href]) => `<a href="${href}">${label}</a>`).join("")}</p>`;
 const spec = (label, anchor) => [`spec ${label}`, `${SPEC}#${anchor}`];
+const spec11 = (label, anchor) => [`v0.11 spec ${label}`, `${SPEC11}#${anchor}`];
 const guide = (label, anchor) => [`user's guide: ${label}`, `${UG}#${anchor}`];
 
 // SVG primitives. Boxes take their top-left corner; edges are cubic curves.
@@ -98,6 +101,12 @@ const GLOSSARY = [
   ["atlas", "Atlas", "hsdd/management/atlas.md: a regenerated bird's-eye view of the tree with phase status, the contract graph, and ADR coverage. Derived only; if it disagrees with the artifacts, the atlas is wrong."],
   ["milestone", "Milestone", "A stakeholder checkpoint: a demo someone can watch work, plus a gate of yes/no checkboxes. Work that waits on outside parties goes to a contingent tail outside the launch gate."],
   ["reading-aid", "Reading aid", "An optional offline HTML page rendered by hsdd-summary over the canonical files: the plan page for reviewers and the checkpoint page for the weekly sync. Derived, never edited."],
+  ["segment", "Run and segment", "An unattended run is one hsdd-auto effort on one branch, configured by hsdd/auto/run.yaml. A segment is one stretch of it, opened by one owner instruction (the first /hsdd-auto, an intake, or an answer to STOP.md), with one mode, one stop policy and one report."],
+  ["orchestrator", "Orchestrator", "The agent session that runs hsdd-auto. It launches one fresh subagent per step, answers stops as the owner's stand-in or ends the run, reviews each step, and runs the scripts that gate, commit and record. It never runs a planning skill in its own context."],
+  ["ledger", "Decision ledger", "hsdd/judgement/decisions.jsonl: one decision per line, append-only. Each line holds the question, the options and their consequences, the choice, why, the evidence, the blast radius and the confidence, pinned to the commit that holds the artifact it landed in."],
+  ["stop-policy", "Stop policy", "Chosen per segment. stop: a condition in the stop set (axis, shape, promotion, breaking-amend, collision, external, gate-twice) ends the run with STOP.md. decide-and-record: the run decides it and records the decision with would_have_asked: true. Hard stops, such as a need outside the repository, end the run under either policy."],
+  ["would-have-asked", "would_have_asked", "A decision field: true when a skill stopped for a human, or a careful engineer would have asked the owner first. The segment report lists these decisions first."],
+  ["predecided", "Predecided answer", "The answer to a stop class, decided once before any step meets it and carried in every later prompt. A subagent that meets the class applies it, records its own decision citing it, and does not stop."],
 ];
 
 const FAQ = [
@@ -113,8 +122,9 @@ const FAQ = [
   ["What about hotfixes that skip the process?", "Ship the fix. The next checkpoint finds code that no phase covers and files a backfill finding; a retro phase with a retroactive verification doc closes it. A backfill left open for two checkpoints in a row escalates. A recorded bypass beats a hidden one."],
   ["What does done mean?", "A phase is done when its verification doc, signed by a human, is merged to the spec repo's main branch. Progress reports list anything else as a claim, not as done."],
   ["Our backend and frontend live in separate repos.", "Use the standalone-spec-repo profile. The tree lives in its own repo, mounted as a git submodule at hsdd/ in each implementation repo, so every path stays the same. Skills run from an implementation repo, where the code they reason about is present."],
-  ["Is there a CLI or a server to run?", "No. HSDD is a set of agent skills with optional slash commands. Scripts exist only where a skill bundles them: the registry generator, the seam extractor, and the reading-aid renderer."],
-  ["How proven is it?", "The core model was field-tested on a production monorepo (14 planned phases across two nodes) and held up in an adversarial pressure campaign. Most of the newer brownfield and steady-state rules are reasoned rather than field-tested, and the spec's decision table marks which is which. A published end-to-end case study with a baseline comparison is the v1.0 release criterion."],
+  ["Is there a CLI or a server to run?", "No. HSDD is a set of agent skills with optional slash commands. Scripts exist only where a skill bundles them: the registry generator, the seam extractor, the reading-aid renderer, and hsdd-auto's run scripts. Nothing starts a run on a timer."],
+  ["Can an agent plan the whole tree without me?", "Yes, with hsdd-auto. It runs the planning skills one fresh subagent at a time, gates and commits every step, and records every decision with its options and evidence. You choose per segment whether a stop condition ends the run or is decided and recorded. Your review moves from each question to one sitting over the decisions. It never implements a phase or passes a review gate."],
+  ["How proven is it?", "The core model was field-tested on a production monorepo (14 planned phases across two nodes) and held up in an adversarial pressure campaign. Most of the newer brownfield and steady-state rules are reasoned rather than field-tested, and the spec's decision table marks which is which. hsdd-auto packages a protocol that one field test ran by hand; its stop path has not been exercised in the field. A published end-to-end case study with a baseline comparison is the v1.0 release criterion."],
 ];
 
 // ---------------------------------------------------------------- example: acme (greenfield)
@@ -226,6 +236,9 @@ const SKILLS = [
     ["hsdd-milestone", "Generate the stakeholder milestone document once a campaign is phase-planned; re-baseline it when dates move.", "/hsdd-milestone generate the milestone document."],
     ["hsdd-summary", "Render the offline reading aids: the plan page and the checkpoint page.", "/hsdd-summary render the plan page."],
   ]],
+  ["Automate", [
+    ["hsdd-auto", "Run the planning chain unattended: one fresh subagent per skill invocation, every step gated and committed, every decision recorded for one review sitting.", "/hsdd-auto plan the whole tree without asking me, and record the decisions."],
+  ]],
 ];
 
 // ---------------------------------------------------------------- chapter: start
@@ -248,6 +261,9 @@ function mapView() {
     + B(600, 195, 160, "source", "A change request", "PRD, ticket, incident", "")
     + B(410, 195, 160, "internal", "hsdd-intake", "route into the tree", "change", true)
     + B(410, 275, 554, "gate", "hsdd-checkpoint · one evidence pass a week across spec and code", "", "manage", false, 40)
+    + B(530, 6, 434, "internal", "hsdd-auto", "runs the planning skills unattended, records each decision", "auto", true, 44)
+    + `<path class="edge dashed" d="M550 50 L550 71" marker-end="url(#ah-map)"/>`
+    + `<path class="edge dashed" d="M680 50 L680 71" marker-end="url(#ah-map)"/>`
     + `<path class="edge" d="M184 47 L206 47" marker-end="url(#ah-map)"/>`
     + `<path class="edge" d="M184 157 L206 157" marker-end="url(#ah-map)"/>`
     + hEdge(378, 47, 406, 96, "", "ah-map")
@@ -266,7 +282,7 @@ function mapView() {
 function homeView() {
   return `<div class="home">
     <header class="ch-head">
-      <p class="eyebrow">An interactive guide · HSDD v0.10</p>
+      <p class="eyebrow">An interactive guide · HSDD v0.11</p>
       <h1>Build large systems with AI agents, one reviewed phase at a time.</h1>
       <p class="lede">HSDD (Hierarchical Spec-Driven Development) splits a large spec into a tree of small pieces that meet only at versioned contracts. An agent builds one small piece per session, and a human reviews each one before the next begins.</p>
     </header>
@@ -275,7 +291,7 @@ function homeView() {
       ${mapView()}
     </section>
     <div class="ways">
-      <div class="way"><h2>New to HSDD?</h2><p>Take the tour from the problem it solves to running a project week to week. Nine short chapters, each a few steps.</p><div class="cta-row"><button class="btn primary" ${act("goto", "why")}>Start the tour →</button></div></div>
+      <div class="way"><h2>New to HSDD?</h2><p>Take the tour from the problem it solves to running a project week to week, then handing planning to an agent. Ten short chapters, each a few steps.</p><div class="cta-row"><button class="btn primary" ${act("goto", "why")}>Start the tour →</button></div></div>
       <div class="way"><h2>Have a codebase already?</h2><p>Most systems exist before their spec. See how HSDD adopts existing code, then routes every change into one tree.</p><div class="cta-row"><button class="btn" ${act("goto", "adopt")}>Start with brownfield →</button></div></div>
       <div class="way"><h2>Just want to try it?</h2><p>The skills, the install command, and the first prompts to type, for a new system or an existing one.</p><div class="cta-row"><button class="btn" ${act("goto", "begin")}>Get started →</button></div></div>
     </div>
@@ -327,9 +343,63 @@ const IDEAS = [
   ["Contracts as the only coupling", "Nodes depend on named, versioned contracts, never on each other's internals.", "Context becomes a dependency graph instead of a monolith. Think of each node as a function: consumed contracts are its typed inputs, produced contracts its outputs, and the dependency graph is the composition. Nodes are built against contract fixtures, not live implementations."],
   ["Human review at every leaf", "Each phase is sized so the agent run plus a human's review fits one sitting.", "Agents produce faster than people can read, so review is the pacing unit. The human owns correctness; the agent owns throughput. This holds as models improve, because the reviewer does not get a bigger context window."],
 ];
+// One small tree carries all three ideas: it grows a level (01), a contract joins two of its
+// nodes (02), and a person reviews one of its phases (03). Every render rebuilds the SVG, so a
+// card click replays its animation; with reduced motion the final picture shows at once.
+const IDEA_MID = [{ id: "acme.backend", cx: 230 }, { id: "acme.web", cx: 560 }];
+const IDEA_LEAVES = [
+  { id: "acme.backend.auth", cx: 130, parent: 230, phases: 3 },
+  { id: "acme.backend.billing", cx: 330, parent: 230, phases: 3 },
+  { id: "acme.web.signup", cx: 560, parent: 560, phases: 2 },
+];
+const IDEA_LABELS = [
+  "The acme tree grows: the root splits into backend and web, those split into leaf-parents, and the leaf-parents' children are phases.",
+  "acme.backend produces the auth-token@v1 contract and acme.web consumes it; neither sees the other's internals.",
+  "One reviewer examines one phase, acme.backend.auth.2, and signs it off in one sitting.",
+];
+function ideaDiagram(i) {
+  const grow = i === 0;
+  const wire = i === 1;
+  const review = i === 2;
+  // In 01 the third level and its phases arrive in sequence; elsewhere they are already there.
+  const enter = (body, delay) => (grow ? `<g class="appear" style="animation-delay:${delay}s">${body}</g>` : body);
+  const chipX = (leaf, n) => leaf.cx + (n - (leaf.phases - 1) / 2) * 42;
+  let tree = box({ x: 305, y: 14, w: 150, h: 40, kind: "root", title: "acme" });
+  for (const m of IDEA_MID) {
+    tree += elbow(380, 54, m.cx, 86, "", "ah-idea");
+    tree += box({ x: m.cx - 80, y: 88, w: 160, h: 40, kind: "internal", title: m.id, selected: wire });
+  }
+  let lower = "";
+  IDEA_LEAVES.forEach((leaf, k) => {
+    lower += enter(elbow(leaf.parent, 128, leaf.cx, 164, "", "ah-idea") + box({ x: leaf.cx - 88, y: 166, w: 176, h: 40, kind: "leafparent", title: leaf.id }), 0.3 + k * 0.15);
+    for (let n = 0; n < leaf.phases; n++) {
+      const x = chipX(leaf, n);
+      const picked = review && k === 0 && n === 1;
+      lower += enter(elbow(leaf.cx, 206, x, 220) + box({ x: x - 18, y: 222, w: 36, h: 18, kind: "phase", title: `.${n + 1}`, selected: picked, label: `${leaf.id}.${n + 1}` }), 0.9 + k * 0.15 + n * 0.08);
+    }
+  });
+  const legend = [["root", 38], ["internal", 112], ["leaf-parent", 190], ["phases", 235]]
+    .map(([text, y], n) => (n < 2 ? `<text x="752" y="${y}" text-anchor="end" class="t-label">${text}</text>` : enter(`<text x="752" y="${y}" text-anchor="end" class="t-label">${text}</text>`, n === 2 ? 0.6 : 1.3)))
+    .join("");
+  const contract = wire
+    ? `<path class="edge draw" d="M310 108 L480 108"/>`
+      + `<path class="edge hot flowing" d="M310 108 L476 108" marker-end="url(#ah-idea)"/>`
+      + `<text x="395" y="100" text-anchor="middle" class="t-id">auth-token@v1</text>`
+      + `<text x="316" y="124" class="t-label">produces</text><text x="474" y="124" text-anchor="end" class="t-label">consumes</text>`
+    : "";
+  const reviewer = review
+    ? `<rect class="pulse" x="108" y="218" width="44" height="26" rx="8"/>`
+      + `<g class="reviewer appear"><circle class="head" cx="238" cy="258" r="9"/><path d="M238 267 V290 M238 290 L227 308 M238 290 L249 308 M238 275 L253 286 M238 275 L221 265"/><circle cx="215" cy="259" r="7"/></g>`
+      + `<path class="edge dashed appear" style="animation-delay:.5s" d="M209 253 L154 240"/>`
+      + `<text x="264" y="282" class="t-label appear" style="animation-delay:.3s">one reviewer, one phase, one sitting</text>`
+      + `<text x="264" y="300" class="t-ok appear" style="animation-delay:1.3s">✓ signed, then the next phase</text>`
+    : "";
+  return svg("0 0 760 314", IDEA_LABELS[i], marker("ah-idea") + tree + `<g class="${wire ? "dimmed" : ""}">${lower}</g>` + legend + contract + reviewer, "ideas");
+}
 function ideasView(s) {
   const i = s.idea;
   return `<div class="cards">${IDEAS.map(([title, sum], n) => `<button class="card" ${act("idea", n)} aria-pressed="${i === n}"><span class="num">0${n + 1}</span><h3>${title}</h3><p>${sum}</p></button>`).join("")}</div>
+    ${ideaDiagram(i)}
     <div class="detail"><h3>${IDEAS[i][0]}</h3><p>${IDEAS[i][2]}</p></div>`;
 }
 
@@ -951,7 +1021,7 @@ function firstSessionView(s) {
     ? [["Write a high-level spec for acme from docs/onboarding-prd.md: a merchant onboarding platform with a backend, a mobile app, and a web console.", "hsdd-spec asks who builds what, then splits the root"], ["Break down @hsdd/spec/acme.backend.md into auth, billing, and catalog.", "hsdd-spec again, one level down"], ["Define the auth-token contract: auth produces it, billing and mobile consume it.", "hsdd-contract, with schema and fixtures"], ["acme.backend.auth is small enough to phase. Write its phase plan.", "hsdd-phase-plan"], ["Drain the pending governance updates.", "hsdd-reconcile"], ["Set up OpenSpec config for this project.", "hsdd-config, once per project: the gate and verification-doc rules"], ["/hsdd-phase acme.backend.auth.1", "hsdd-config's switch, before every phase; then run your coding cycle"]]
     : [["Adopt this codebase into HSDD.", "hsdd-adopt extracts seams and stops at the tree for you to confirm"], ["Here's the payout-scheduling PRD, docs/prd-payout-scheduling.md. Where does it go?", "hsdd-intake writes the record and the handoff"], ["/hsdd-spec promote legacy-pay.payouts using docs/prd-payout-scheduling.md", "promotion, with your confirmation"], ["/hsdd-phase-plan legacy-pay.payouts per hsdd/management/2026-10-10-intake-payout-scheduling.md", "phases that cite the intake record"], ["Drain the pending governance updates.", "hsdd-reconcile"], ["Set up OpenSpec config for this project.", "hsdd-config, once per project"], ["/hsdd-phase legacy-pay.payouts.1", "the switch, before every phase"], ["/hsdd-checkpoint full checkpoint before Monday's sync. Repos: ~/git/legacy-pay.", "the weekly evidence pass, with drift checks"]];
   return `<div class="bar"><span class="label">Install</span></div>
-    ${promptBox("npx skills add mpurbo/hsdd", "All eleven skills, for Claude Code, Cursor, Codex and other agents. Recommended companion: the superpowers plugin.")}
+    ${promptBox("npx skills add mpurbo/hsdd", "All twelve skills, for Claude Code, Cursor, Codex and other agents. Recommended companion: the superpowers plugin.")}
     <p class="caveat">The skills CLI does not install the optional slash commands such as ${c("/hsdd-phase")}. To use them, copy ${c("commands/*.md")} from this repository into your project's ${c(".claude/commands/")}; otherwise ask in words, as in the skill map.</p>
     <div class="bar"><span class="label">First session</span>${seg("path", s.path, [["green", "New system"], ["brown", "Existing codebase"]], "Starting point")}</div>
     <div class="learn">${steps.map(([p, n]) => promptBox(p, n)).join("")}</div>`;
@@ -963,13 +1033,260 @@ function claimsView() {
     <tr><td>Tokens</td><td>Bounded per session, in proportion to the phase. The project total still grows with the number of phases, plus planning overhead.</td></tr>
     <tr><td>Evidence</td><td>Field-tested on a production monorepo and pressure-tested adversarially. Newer rules, including most of brownfield, are marked reasoned-only in the spec. A published case study with a baseline is the v1.0 criterion.</td></tr>
     <tr><td>Ceremony</td><td>Depth and artifacts are costs. A small project is one leaf-parent and a few phases.</td></tr>
+    <tr><td>Unattended planning</td><td>Moves review from each question to one sitting over the decision ledger; it does not remove it. One field test ran the protocol by hand. The packaged skill and its stop path are reasoned, not field-tested.</td></tr>
   </tbody></table></div>
   <div class="tbl-wrap"><table class="tbl"><thead><tr><th>Not part of HSDD</th><th>Why</th></tr></thead><tbody>
     <tr><td>A CLI or a server</td><td>Skills are the surface; scripts ship only bundled with a skill.</td></tr>
     <tr><td>Its own TDD, debugging, or review</td><td>Companion skills already do that; HSDD wires them in.</td></tr>
     <tr><td>Scheduling and dashboards</td><td>The weekly cadence is a convention; the atlas stays a markdown file.</td></tr>
     <tr><td>Refactoring proposals during adoption</td><td>The tree fits the system, not the other way round.</td></tr>
+    <tr><td>Unattended execution</td><td>hsdd-auto plans. Every phase still runs as its own coding cycle and ends at a human review gate.</td></tr>
   </tbody></table></div>`;
+}
+
+// ---------------------------------------------------------------- chapter: auto
+
+const LOOP = [
+  ["script", "next.mjs", "picks the next step from the repository's state"],
+  ["script", "dispatch.mjs", "renders the prompt from templates and files"],
+  ["subagent", "A fresh subagent", "one skill on one target; records each decision"],
+  ["orchestrator", "The orchestrator", "reads the report and the diff; handles any stop"],
+  ["script", "gate.mjs, commit.mjs", "check the step, then two commits: artifacts, then records"],
+];
+const ROLES = {
+  script: {
+    cls: "k-obs", label: "The scripts",
+    does: ["which step runs next, with its kind, target and write set", "the step's prompt, with facts read from files, open routed items and predecided answers", "every decision id and timestamp, taken at the moment the decision is made", "the gate, both commits, the ledger, the run log, and the report's tables"],
+    never: "make a judgement call. Anything with one right answer is a script, so no agent types a timestamp or restates a fact from memory.",
+  },
+  subagent: {
+    cls: "k-process", label: "The step subagent",
+    does: ["starts with no context except its dispatch file", "invokes exactly one HSDD skill on one target", "writes that skill's artifacts, any experiments, and a step report", "records each decision the moment it takes it"],
+    never: "commit, or answer a stop. At an ask point it returns the stop with its options and ends its launch.",
+  },
+  orchestrator: {
+    cls: "k-gate", label: "The orchestrator",
+    does: ["launches each step's subagent and waits for the hand-back, without polling", "answers a stop as your stand-in, or ends the run, as the stop policy says", "reviews each step beyond the gate: every sentence the diff touches is true against what it cites", "writes the plan's change log and the report's prose"],
+    never: "run a planning skill in its own context, implement a phase, run hsdd-config, or pass a review gate.",
+  },
+};
+function autoLoopView(s) {
+  const r = s.autoRole;
+  const sel = ROLES[r];
+  const items = LOOP.map(([role, title, sub], i) => [`${ROLES[role].cls}${sel && r !== role ? " dim" : ""}`, title, sub, String(i + 1)]);
+  return `<div class="bar"><span class="label">One step, start to finish</span>${seg("autoRole", r, [["all", "All"], ["script", "Scripts"], ["subagent", "Subagent"], ["orchestrator", "Orchestrator"]], "Who does what")}</div>
+    ${flow(items)}
+    ${sel
+      ? `<div class="detail"><h3>${sel.label}</h3><ul>${sel.does.map((d) => `<li>${d}</li>`).join("")}</ul></div>
+        <div class="verdict bad"><b>Never:</b> ${sel.never}</div>`
+      : `<div class="verdict neutral">The loop repeats until next.mjs reports the segment done, or a stop ends the run. Steps run one at a time, each in a subagent that has never seen the others.</div>`}`;
+}
+
+const MODES = {
+  plan: {
+    cmd: "/hsdd-auto", note: "plan mode on acme: an empty tree through reconcile",
+    rows: [
+      ["0 Setup", "S00 setup", "committed"],
+      ["1 Plan", "S01 plan", "committed"],
+      ["2 Root decomposition", "S02 root-spec on acme", "the root spec exists"],
+      ["3 Root ADRs", "S03 adr ADR-001", "every cited ADR has a file"],
+      ["4 Root contracts", "S04 to S06 contract auth-token, merchant-model, onboarding-events", "every named contract has a file"],
+      ["5 Mid-level decomposition", "mid-level-spec on acme.backend, acme.mobile, acme.web, then the ADRs and contracts they name", "no internal node is left unsplit"],
+      ["6 Phase plans", "phase-plan acme.backend.auth, reconcile, phase-plan acme.backend.billing, reconcile, and on, producer-first", "every leaf-parent has phases and no pending entries"],
+      ["7 Consistency", "one touch per open routed item, then align on all", "no open item, and an align ran last"],
+      ["8 Report", "report", "committed"],
+    ],
+  },
+  intake: {
+    cmd: "/hsdd-auto intake docs/prd-payout-scheduling.md", note: "intake mode on legacy-pay: one PRD into the planned tree",
+    rows: [
+      ["0 Setup", "S00 setup", "committed"],
+      ["1 Plan", "S01 plan", "committed"],
+      ["2 Route", "S02 intake on docs/prd-payout-scheduling.md", "the intake record exists, with its handoff block"],
+      ["3 Handoffs", "S03 promote legacy-pay.payouts, S04 phase-plan legacy-pay.payouts", "every handoff ran or was skipped"],
+      ["4 Consistency", "one touch per open routed item", "no open item"],
+      ["5 Align", "align on legacy-pay.billing and legacy-pay.merchant", "an align ran on every leaf-parent this intake did not re-plan"],
+      ["6 Report", "report", "committed"],
+    ],
+  },
+};
+function modesView(s) {
+  const m = MODES[s.autoMode];
+  return `<div class="bar"><span class="label">Mode</span>${seg("autoMode", s.autoMode, [["plan", "plan"], ["intake", "intake"]], "Run mode")}</div>
+    ${promptBox(m.cmd, m.note)}
+    <div class="tbl-wrap"><table class="tbl"><thead><tr><th>Stage</th><th>Steps in this example</th><th>Done when</th></tr></thead><tbody>${m.rows.map(([stage, steps, done]) => `<tr><td>${stage}</td><td>${esc(steps)}</td><td>${done}</td></tr>`).join("")}</tbody></table></div>
+    <p class="caveat">${s.autoMode === "plan"
+      ? "Steps are numbered across the whole run and take their id when they start, so an inserted step never renumbers another."
+      : "The steps come from the record's handoff block. The run never closes the intake record: it stays open until its phases ship."}</p>`;
+}
+
+const DEC_PARTS = {
+  choice: ["Question, options, chosen", "Every real choice between at least two options becomes a line, small ones included: a name, an id, a default. Each option states its consequence, so you can judge the option the run did not take."],
+  why: ["Why and evidence", "The reason is written for you, reading cold, and names the signal that would have changed it. Evidence cites source sections, artifacts, other decisions, and experiments: throwaway programs a subagent ran to settle a runtime fact. Empty evidence means judgement alone, and why says so."],
+  radius: ["Blast radius and confidence", "What the choice can change: node-local, contract, tree, or upstream (a read-only source would change). With would_have_asked and confidence, they decide which decisions the report shows you first."],
+  stamp: ["Who, when, and the commit", "decide.mjs mints the id and stamps the time when the decision is taken, never later. commit is the step's artifact commit, so git show on it gives the artifact exactly as the decision left it."],
+};
+function decisionView(s) {
+  const p = s.decPart;
+  const on = (k) => p === k;
+  const k = (name) => `<span class="k">"${name}":</span>`;
+  return `<div class="bar"><span class="label">Highlight</span>${seg("decPart", p, [["choice", "Choice"], ["why", "Why"], ["radius", "Blast radius"], ["stamp", "Stamp"]], "Decision part")}</div>
+    ${doc("hsdd/judgement/decisions.jsonl", "one line in the file, shown wrapped",
+      rgn("", on("stamp"), `{ ${k("id")} "DEC-019", ${k("at")} "2026-07-02T09:41:07Z",
+  ${k("segment")} "2026-07-02-plan", ${k("step")} "contract", ${k("step_ref")} "S04",
+  ${k("by")} "subagent", ${k("artifact")} "hsdd/contract/auth-token.md",`)
+      + rgn("", on("choice"), `  ${k("question")} "Does an expired token return 401 or 403?",
+  ${k("options")} [
+    { "label": "401", "consequence": "Clients treat expiry like a
+       missing token and refresh." },
+    { "label": "403", "consequence": "Clients cannot tell expiry from
+       a missing scope; mobile needs a second check to refresh." } ],
+  ${k("chosen")} "401",`)
+      + rgn("", on("why"), `  ${k("why")} "PRD §3 sends an expired session back through login,
+    the 401 path, and the experiment shows provider X raising
+    TokenExpired. A source that told expiry from revocation would
+    have changed this.",
+  ${k("evidence")} ["PRD §3", "hsdd/auto/experiments/S04-token-expiry/"],`)
+      + rgn("", on("radius"), `  ${k("blast_radius")} "contract", ${k("confidence")} "high",
+  ${k("would_have_asked")} false, ${k("stop_class")} null, ${k("would_upstream")} false,`)
+      + rgn("", on("stamp"), `  ${k("commit")} "3f6878f..." }`))}
+    <div class="verdict neutral"><b>${DEC_PARTS[p][0]}</b><span>${DEC_PARTS[p][1]}</span></div>`;
+}
+
+const STOPS = {
+  shape: {
+    title: "Two defensible trees", where: "hsdd-spec on acme.backend",
+    id: "S07", kind: "mid-level-spec", skill: "hsdd-spec", target: "acme.backend", segment: "2026-07-02-plan", dec: "027",
+    question: "Is catalog its own leaf-parent, or part of billing? Both fit one owner, and no source, owner fact or HSDD rule gives either a reason to lead.",
+    options: [["catalog as its own leaf-parent", "one more node, consuming merchant-model; catalog plans its phases on its own"], ["catalog inside billing", "one node fewer; billing's phase plan grows by about three phases"]],
+    blocks: "every ADR, contract and phase plan under acme.backend",
+  },
+  promotion: {
+    title: "payouts is still as-built", where: "the first handoff of an intake",
+    id: "S03", kind: "promote", skill: "hsdd-spec", target: "legacy-pay.payouts", segment: "2026-10-10-intake-prd-payout-scheduling", dec: "006",
+    question: "legacy-pay.payouts is as-built. Promote it, with its observed surface and docs/prd-payout-scheduling.md as its primary sources?",
+    options: [["promote as proposed", "the node becomes governed, and the intake's phase plan can run"], ["keep it as-built", "no phases can be planned on payouts; the intake record stays open"]],
+    blocks: "S04 phase-plan on legacy-pay.payouts, the align, the report",
+  },
+  "breaking-amend": {
+    title: "auth-token needs a breaking change", where: "a stable contract, compatibility: versioned",
+    id: "S12", kind: "contract-touch", skill: "hsdd-contract", target: "auth-token", segment: "2026-08-04-intake-rfc-scoped-tokens", dec: "211",
+    question: "Scopes become objects with their own expiry. That breaks auth-token@v1, which is stable and versioned. Mint auth-token@v2 with a migration note?",
+    options: [["mint auth-token@v2", "consumers migrate on their own schedule; v1 stays until the last one moves"], ["keep v1 and drop the per-scope expiry", "no migration; the RFC's per-scope expiry is not delivered"]],
+    blocks: "the phase-plan-append steps for billing and mobile, the align, the report",
+  },
+  external: {
+    title: "The run needs a sandbox key", where: "an experiment on provider X",
+    id: "S04", kind: "contract", skill: "hsdd-contract", target: "auth-token", segment: "2026-07-02-plan",
+    question: "The experiment that settles token expiry needs provider X's sandbox API key, which is not in the repository.",
+    options: [["supply a sandbox key outside the repository", "the experiment runs, and the decision cites its output"], ["decide from the provider's documentation", "no runtime evidence; the decision's confidence drops"]],
+    blocks: "S04 and every step after it",
+  },
+};
+function stopDoc(x) {
+  const opts = x.options.map(([label, cons], i) => esc(wrap(`- ${label}${i === 0 ? " (recommended)" : ""}: ${cons}`, 68)).replace(/\n/g, "\n  ")).join("\n");
+  return doc("hsdd/judgement/STOP.md", "committed with the stopped step", `<span class="h"># Run stopped at ${x.id}</span>
+
+- <span class="k">Segment:</span> ${x.segment}
+- <span class="k">Stop class:</span> ${x.cls}
+- <span class="k">Step:</span> ${x.id} (${x.kind}, ${x.skill} on ${x.target})
+
+<span class="h">## Question</span>
+${esc(wrap(x.question, 70))}
+
+<span class="h">## Options</span>
+${opts}
+
+<span class="h">## What it blocks</span>
+${esc(wrap(x.blocks, 70))}
+
+<span class="h">## How to resume</span>
+Answer in one message, then run /hsdd-auto. The answer opens a new
+segment and is recorded as your decision; a continuation of ${x.id}
+finishes the step with it.`);
+}
+function stopDecisionDoc(x) {
+  return doc("hsdd/judgement/decisions.jsonl", "the orchestrator's answer, abridged", `{ "id": "DEC-${x.dec}", "step_ref": "${x.id}", "by": "orchestrator",
+  "question": "${esc(wrap(x.question, 62)).replace(/\n/g, "\n    ")}",
+  "chosen": "${esc(x.options[0][0])}",
+  <span class="k">"would_have_asked":</span> true, <span class="k">"stop_class":</span> "${x.cls}", ... }`);
+}
+function stopsView(s) {
+  const x = { ...STOPS[s.stopPick], cls: s.stopPick };
+  const hard = x.cls === "external";
+  const ends = hard || s.policy === "stop";
+  const verdict = hard
+    ? `<div class="verdict bad"><b>A hard stop, under either policy.</b><span>A need outside the repository ends the run unless an in-repository alternative exists, such as a project-local dependency instead of a global one. A credential has none.</span></div>`
+    : ends
+      ? `<div class="verdict warn"><b>The run ends, with a clean tree.</b><span>The step's partial artifacts are committed as a stopped step, with STOP.md in its records commit. Your answer opens a new segment, and a continuation of ${x.id} finishes the work.</span></div>`
+      : `<div class="verdict ok"><b>Decided and recorded.</b><span>The orchestrator answers as your stand-in, records the answer with would_have_asked: true and the class ${x.cls}, and resumes the same subagent. Nothing is committed in between, and the report lists the decision first.${x.cls === "breaking-amend" ? " A segment that will meet this class on many contracts can decide it once, as a predecided answer that every later prompt carries." : ""}</span></div>`;
+  return `<div class="bar"><span class="label">Stop policy</span>${seg("policy", s.policy, [["stop", "stop"], ["decide-and-record", "decide-and-record"]], "Stop policy")}</div>
+    <div class="req-list">${Object.entries(STOPS).map(([id, v]) => `<button class="card" ${act("stopPick", id)} aria-pressed="${s.stopPick === id}"><h3>${v.title}</h3><p>${chip(id === "external" ? "bad" : "warn", id)} ${esc(v.where)}</p></button>`).join("")}</div>
+    ${verdict}
+    ${ends ? stopDoc(x) : stopDecisionDoc(x)}`;
+}
+
+const RUN_LOG = [
+  ["28d15d1", "auto: S00 setup: 2026-07-02-plan"], ["f3c7647", "judgement: S00"],
+  ["66a8254", "auto: S01 plan: 2026-07-02-plan"], ["0a3e23f", "judgement: S01"],
+  ["95938e7", "hsdd: S02 root-spec acme: three teams, three children"], ["008bb05", "judgement: S02"],
+  ["eabc196", "hsdd: S03 adr ADR-001: provider X with rotating keys"], ["dac01e3", "judgement: S03"],
+  ["3f6878f", "hsdd: S04 contract auth-token: expired tokens return 401"], ["1bad262", "judgement: S04"],
+];
+const TOP_DECISIONS = [
+  ["Decision", "Step", "Question", "Chosen"],
+  ["DEC-027", "S07 mid-level-spec", "Does catalog consume merchant-model", "consume it"],
+  ["", "", "or keep its own merchant fields?", ""],
+  ["DEC-044", "S15 phase-plan", "Split key rotation out of token", "one phase"],
+  ["", "", "issuance?", ""],
+  ["DEC-001", "S00 setup", "How does \"stop on anything", "policy stop"],
+  ["", "", "structural\" apply to this segment?", ""],
+];
+// A fixed-width markdown table for a doc view: every column padded to its widest cell.
+const fixedTable = (rows) => {
+  const widths = rows[0].map((_, i) => Math.max(...rows.map((r) => r[i].length)));
+  return rows.map((r) => `| ${r.map((cell, i) => esc(cell.padEnd(widths[i]))).join(" | ")} |`).join("\n");
+};
+const REVIEW_VIEWS = {
+  history: () => doc("$ git log --oneline --reverse main..auto/acme", "the run branch", `<span class="c"># each step: its artifacts, then its records (ledger lines, run line, report)</span>
+${RUN_LOG.map(([sha, subject]) => `${sha} ${subject.startsWith("judgement") ? `<span class="c">${subject}</span>` : subject}`).join("\n")}
+...
+993099f auto: S41 report: 2026-07-02-plan
+<span class="c">5d8bcc2 judgement: S41</span>
+
+<span class="c"># the contract exactly as DEC-019 left it:</span>
+$ git show 3f6878f:hsdd/contract/auth-token.md`),
+  report: () => doc("hsdd/auto/report/2026-07-02-plan.md", "read this first (abridged)", `<span class="h"># Segment report: 2026-07-02-plan</span>
+
+<span class="h">## Outcome</span>
+The acme tree is planned through reconcile. Every contract is stable
+with final phase ids, and the final gate is clean. Nine decisions are
+marked would_have_asked; nothing stopped.
+
+<span class="h">## What changed</span>          one row per node: kind, phases, contracts
+<span class="h">## Decisions to look at first</span>
+${fixedTable(TOP_DECISIONS)}
+<span class="h">## Upstream</span>                 decisions that would change a read-only source
+<span class="h">## Every decision by blast radius</span>
+<span class="h">## Experiments</span> · <span class="h">## Assumptions about the owner's intent</span>
+<span class="h">## Record gaps</span> · <span class="h">## Deferred findings</span> · <span class="h">## How to review</span>`),
+  review: () => doc("hsdd/judgement/decision-reviews.jsonl", "written by you, never by the run", `{"decision": "DEC-019", "at": "2026-07-03T08:12:40Z", "review": "agree"}
+{"decision": "DEC-027", "at": "2026-07-03T08:20:05Z", "review": "disagree",
+ "reason": "catalog keeps its own merchant fields until web ships",
+ "preferred": "keep its own fields"}
+{"decision": "DEC-044", "at": "2026-07-03T08:31:52Z",
+ "review": "should-have-asked",
+ "reason": "key rotation timing is a security call; ask me"}`),
+};
+function reviewView(s) {
+  const v = s.autoView;
+  return `<div class="bar"><span class="label">After the segment</span>${seg("autoView", v, [["history", "Run branch"], ["report", "Report"], ["review", "Your review"]], "Review artifact")}</div>
+    ${REVIEW_VIEWS[v]()}
+    ${v === "review"
+      ? `<div class="verdict neutral"><b>To reverse a decision</b><span>Write the reversal as a short request and route it with /hsdd-auto intake, or run the owning skill yourself. The run never writes this file: your verdicts sit beside the decisions they judge.</span></div>`
+      : v === "history"
+        ? `<div class="verdict neutral"><b>Before each artifact commit, a gate.</b><span>Nothing outside the step's write set changed, your files match their snapshot, the tree's ids still resolve, and the prose rules hold. A step that fails is reworked by the same subagent, within a limit.</span></div>`
+        : `<div class="verdict neutral"><b>Decisions to look at first</b><span>Every answer given on your behalf, then low-confidence decisions and those that change the tree or a read-only source, then the setup decisions.</span></div>`}`;
 }
 
 // ---------------------------------------------------------------- chapters
@@ -1179,7 +1496,7 @@ const CHAPTERS = [
   },
   {
     id: "begin", group: "Run it", short: "Get started", eyebrow: "09 · Get started",
-    title: "Eleven skills, two ways in.",
+    title: "Twelve skills, two ways in.",
     lede: "HSDD ships as agent skills for Claude Code, Cursor, Codex and other agents. You talk to your agent; the skills trigger on what you ask for.",
     steps: [
       { title: "The skill map", visual: skillsView, body: () => `
@@ -1193,6 +1510,39 @@ const CHAPTERS = [
         <p>The specification states its claims in one place and qualifies them there. The short version is on the left.</p>
         <p>If you want the reasoning behind a rule, the spec's settled-decisions table records each decision with its provenance: field-tested, pressure-tested, or reasoned-only.</p>
         ${deeper([spec("§16 claims", "16-claims-and-non-goals"), spec("§17 evidence", "17-evidence"), ["methodology spec", SPEC]])}` },
+    ],
+  },
+  {
+    id: "auto", group: "Going further", short: "Run unattended", eyebrow: "10 · Unattended",
+    title: "Hand the planning chain to an agent, then review it in one sitting.",
+    lede: "hsdd-auto runs the planning skills without you at each question: one fresh subagent per skill invocation, every step gated and committed, every decision recorded. It plans; it never implements a phase or passes a review gate.",
+    steps: [
+      { title: "Who does what", visual: autoLoopView, body: () => `
+        <p>Planning is paced by its questions: who builds what, accept this ADR, answer this request. For a tree of nine nodes that is a few hundred questions spread over days, and the sources already imply most of the answers.</p>
+        <p>${c("hsdd-auto")} splits a run three ways. The ${t("orchestrator", "orchestrator")} is the session you start it in; each step is a fresh subagent running one skill; scripts do everything that has one right answer. Select each role.</p>
+        ${key("The model is used only where judgement is needed. The next step, every prompt, id and timestamp, the gate and the commits come from scripts.")}
+        <p class="caveat">On Claude Code, an optional adapter adds permission rules and a hook that keep the run inside the paths you declared. Without it those rules are instructions in every prompt, and the gate still catches every write.</p>
+        ${deeper([spec11("§3.4", "34-who-does-what"), spec11("§14 evidence", "14-evidence-informative")])}` },
+      { title: "Two modes, one loop", visual: modesView, body: () => `
+        <p>Each ${t("segment", "segment")} of a run has one mode. ${c("plan")} plans an empty tree through reconcile. ${c("intake")} routes one change request through ${c("hsdd-intake")} and every handoff its record names.</p>
+        <p>A script walks the mode's stages and computes each next step from what is in the repository. A segment on a partly planned tree starts at its first unfinished stage, and an interrupted run resumes from disk.</p>
+        <p>The first ${c("/hsdd-auto")} in a project asks its setup questions once, including who builds what, and writes ${c("hsdd/auto/run.yaml")}. Every later run reads that file and asks nothing.</p>
+        ${deeper([spec11("§9", "9-modes"), spec11("§5.3", "53-the-first-run-questions")])}` },
+      { title: "Every question becomes a decision", visual: decisionView, body: () => `
+        <p>Where a skill would have asked you, the run decides and writes the decision to the ${t("ledger", "decision ledger")}, one line per real choice. Highlight each part.</p>
+        <p>The ledger is append-only. A correction is a new decision, never an edit, so the record shows what the run believed at every step.</p>
+        ${key("A decision you can audit carries the options it rejected, the evidence it used, and the commit it landed in.")}
+        ${deeper([spec11("§6.2", "62-the-decision-record")])}` },
+      { title: "You choose when it stops", visual: stopsView, body: () => `
+        <p>Some questions should still reach you. Each has a stop class, and the ${t("stop-policy", "stop policy")}, chosen per segment, says what happens to it. Pick a stop, then switch the policy.</p>
+        <p>Under ${c("stop")}, a class in the stop set ends the run with ${c("STOP.md")}. Under ${c("decide-and-record")}, the run decides it and marks the decision ${t("would-have-asked", "would_have_asked")}. A class you can answer ahead of time becomes a ${t("predecided", "predecided answer")}.</p>
+        <p class="caveat">Choices no skill stops for, and fixes that belong in a read-only source, never stop the run. They are decided, recorded, and listed for you.</p>
+        ${deeper([spec11("§8.2", "82-stop-classes-and-the-stop-policy"), spec11("§8.4", "84-deciding-in-advance")])}` },
+      { title: "Two commits per step, one sitting to review", visual: reviewView, body: () => `
+        <p>Each step ends in two commits on the run branch: its artifacts, then its records. A gate checks the step before the first.</p>
+        <p>When the segment is done, read its report. Every answer the run gave on your behalf is listed first. Record the ones you disagree with in ${c("decision-reviews.jsonl")}, and route a reversal as a change request.</p>
+        ${key("Unattended planning moves your review from each question to one sitting. It does not remove it.")}
+        ${deeper([spec11("§10.9", "109-reportmjs"), guide("Unattended runs", "unattended-runs")])}` },
     ],
   },
 ];
@@ -1247,6 +1597,7 @@ const initial = (saved) => ({
   quiz: "", confirmed: false, moved: false, region: "observed", v0part: "completeness",
   request: "schedule", promoted: false, openSched: true,
   skill: "hsdd-spec", path: "green",
+  autoRole: "all", autoMode: "plan", decPart: "choice", stopPick: "promotion", policy: "stop", autoView: "history",
   theme: saved.theme || "system",
 });
 
@@ -1396,6 +1747,12 @@ const ACTIONS = {
   openSched: (v) => update({ openSched: v === "open" }),
   skill: (v) => update({ skill: v }),
   path: (v) => update({ path: v }),
+  autoRole: (v) => update({ autoRole: v }),
+  autoMode: (v) => update({ autoMode: v }),
+  decPart: (v) => update({ decPart: v }),
+  stopPick: (v) => update({ stopPick: v }),
+  policy: (v) => update({ policy: v }),
+  autoView: (v) => update({ autoView: v }),
 };
 
 document.addEventListener("click", (e) => {

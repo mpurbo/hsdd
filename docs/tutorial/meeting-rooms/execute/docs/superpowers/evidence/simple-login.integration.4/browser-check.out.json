@@ -1,0 +1,127 @@
+{
+  "ranAt": "2026-11-01T00:30:53.458Z",
+  "date": "2027-01-30",
+  "results": [
+    {
+      "check": "ayu signs in on the Login screen of npm run dev and Home shows her profile",
+      "pass": true,
+      "heading": true,
+      "zone": true
+    },
+    {
+      "check": "budi's Home shows Europe/London and his bookings soonest first in London time",
+      "pass": true,
+      "zone": true,
+      "positions": [
+        145,
+        196,
+        248
+      ],
+      "lines": [
+        "Sat 30 Jan 08:00 to 09:00 Kew · Check early",
+        "Sat 30 Jan 11:00 to 12:00 Kew · Check middle",
+        "Sat 30 Jan 15:00 to 16:00 Kew · Check late"
+      ]
+    },
+    {
+      "check": "the browser's time zone does not move a time on screen (Asia/Kolkata, America/New_York, Pacific/Auckland)",
+      "pass": true,
+      "myBookings": {
+        "Asia/Kolkata": "My bookings Sat 30 Jan 08:00 to 09:00 Kew · Check early Cancel Sat 30 Jan 11:00 to 12:00 Kew · Check middle Cancel Sat 30 Jan 15:00 to 16:00 Kew · Check late Cancel ",
+        "America/New_York": "My bookings Sat 30 Jan 08:00 to 09:00 Kew · Check early Cancel Sat 30 Jan 11:00 to 12:00 Kew · Check middle Cancel Sat 30 Jan 15:00 to 16:00 Kew · Check late Cancel ",
+        "Pacific/Auckland": "My bookings Sat 30 Jan 08:00 to 09:00 Kew · Check early Cancel Sat 30 Jan 11:00 to 12:00 Kew · Check middle Cancel Sat 30 Jan 15:00 to 16:00 Kew · Check late Cancel "
+      }
+    },
+    {
+      "check": "360 px: no horizontal scroll and every Cancel inside the viewport",
+      "pass": true,
+      "scrollWidth": 360,
+      "clientWidth": 360,
+      "cancelBoxes": [
+        {
+          "x": 199,
+          "y": 411.59375,
+          "width": 120,
+          "height": 35
+        },
+        {
+          "x": 199,
+          "y": 479.59375,
+          "width": 120,
+          "height": 35
+        },
+        {
+          "x": 199,
+          "y": 547.59375,
+          "width": 120,
+          "height": 35
+        }
+      ]
+    },
+    {
+      "check": "Cancel keeps its width and its row stays put while it reads Cancelling…",
+      "pass": true,
+      "before": {
+        "button": {
+          "x": 199,
+          "y": 411.59375,
+          "width": 120,
+          "height": 35
+        },
+        "line": {
+          "x": 41,
+          "y": 390.59375,
+          "width": 278,
+          "height": 21
+        },
+        "label": "Cancel"
+      },
+      "during": {
+        "button": {
+          "x": 199,
+          "y": 411.59375,
+          "width": 120,
+          "height": 35
+        },
+        "line": {
+          "x": 41,
+          "y": 390.59375,
+          "width": 278,
+          "height": 21
+        },
+        "label": "Cancelling…",
+        "disabled": true
+      }
+    },
+    {
+      "check": "Cancel removes the booking from Home at once (no reload)",
+      "pass": true,
+      "removed": "Check early"
+    },
+    {
+      "check": "a refused Cancel shows its notice in a role=alert element, and focus does not fall to the body",
+      "pass": true,
+      "serviceDelete": 204,
+      "alerts": [
+        "That booking was already cancelled."
+      ],
+      "ariaLive": [
+        {
+          "role": "alert",
+          "live": null,
+          "text": "That booking was already cancelled."
+        }
+      ],
+      "focus": {
+        "tag": "H2",
+        "text": "My bookings",
+        "tabIndex": "-1"
+      }
+    },
+    {
+      "check": "cleanup: no booking this script made is left",
+      "pass": true,
+      "left": []
+    }
+  ]
+}

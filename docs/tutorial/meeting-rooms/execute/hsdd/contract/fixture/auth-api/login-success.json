@@ -1,0 +1,19 @@
+{
+  "name": "login-success",
+  "description": "A demo user signs in with the right password.",
+  "request": {
+    "method": "POST",
+    "path": "/api/login",
+    "headers": { "content-type": "application/json" },
+    "body": { "username": "ayu", "password": "sunrise-42" }
+  },
+  "response": {
+    "status": 200,
+    "body": {
+      "token": "q8Vn3xR2bT0kLw7YcZ1pHs5mJd9fAe4uGi6oNr2vXyQ",
+      "tokenType": "Bearer",
+      "expiresAt": "2026-10-29T10:30:00.000Z"
+    }
+  },
+  "replay": "schema"
+}

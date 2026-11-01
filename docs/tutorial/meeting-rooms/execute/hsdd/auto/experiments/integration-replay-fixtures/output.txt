@@ -1,0 +1,42 @@
+node v24.18.0; 35 fixtures; 7 clocks x 2 stored states (dense: 78912 bookings)
+
+  not         book-365-days-ahead (POST 201): 10 of 14 conditions differ, e.g. 2026-11-01T00:00:00.000Z / no bookings: 422 BOOKING_TOO_FAR_AHEAD
+  not         book-a-room (POST 201): 13 of 14 conditions differ, e.g. 2026-11-01T00:00:00.000Z / dense random-id bookings: 409 BOOKING_CONFLICT
+  not         book-eight-hours (POST 201): 13 of 14 conditions differ, e.g. 2026-11-01T00:00:00.000Z / dense random-id bookings: 409 BOOKING_CONFLICT
+  replayable  book-end-not-after-start (POST 400 VALIDATION_FAILED)
+  not         book-in-the-repeated-hour (POST 201): 10 of 14 conditions differ, e.g. 2026-11-01T00:00:00.000Z / dense random-id bookings: 409 BOOKING_CONFLICT
+  replayable  book-instant-with-offset (POST 400 VALIDATION_FAILED)
+  replayable  book-not-on-a-quarter-hour (POST 400 VALIDATION_FAILED)
+  not         book-overlap-several (POST 409 BOOKING_CONFLICT): 14 of 14 conditions differ, e.g. 2026-11-01T00:00:00.000Z / no bookings: 201
+  not         book-overlap (POST 409 BOOKING_CONFLICT): 14 of 14 conditions differ, e.g. 2026-11-01T00:00:00.000Z / no bookings: 201
+  not         book-same-time-other-room (POST 201): 13 of 14 conditions differ, e.g. 2026-11-01T00:00:00.000Z / dense random-id bookings: 409 BOOKING_CONFLICT
+  not         book-started-and-overlapping (POST 422 BOOKING_STARTED): 2 of 14 conditions differ, e.g. 2026-11-01T00:00:00.000Z / no bookings: 201
+  not         book-started (POST 422 BOOKING_STARTED): 2 of 14 conditions differ, e.g. 2026-11-01T00:00:00.000Z / no bookings: 201
+  not         book-title-80-characters (POST 201): 13 of 14 conditions differ, e.g. 2026-11-01T00:00:00.000Z / dense random-id bookings: 409 BOOKING_CONFLICT
+  replayable  book-title-blank (POST 400 VALIDATION_FAILED)
+  replayable  book-title-too-long (POST 400 VALIDATION_FAILED)
+  not         book-too-far-ahead (POST 422 BOOKING_TOO_FAR_AHEAD): 12 of 14 conditions differ, e.g. 2026-11-05T02:30:00.000Z / no bookings: 201
+  replayable  book-too-long (POST 422 BOOKING_TOO_LONG)
+  not         book-touching (POST 201): 12 of 14 conditions differ, e.g. 2026-11-01T00:00:00.000Z / dense random-id bookings: 409 BOOKING_CONFLICT
+  replayable  book-unknown-room (POST 400 VALIDATION_FAILED)
+  replayable  book-unknown-token (POST 401 UNAUTHORIZED)
+  replayable  cancel-malformed-id (DELETE 404 BOOKING_NOT_FOUND)
+  not         cancel-my-booking (DELETE 204): 14 of 14 conditions differ, e.g. 2026-11-01T00:00:00.000Z / no bookings: 404 BOOKING_NOT_FOUND
+  replayable  cancel-no-token (DELETE 401 UNAUTHORIZED)
+  not         cancel-someone-elses (DELETE 403 BOOKING_NOT_YOURS): 14 of 14 conditions differ, e.g. 2026-11-01T00:00:00.000Z / no bookings: 404 BOOKING_NOT_FOUND
+  not         cancel-started (DELETE 422 BOOKING_STARTED): 14 of 14 conditions differ, e.g. 2026-11-01T00:00:00.000Z / no bookings: 404 BOOKING_NOT_FOUND
+  replayable  cancel-unknown (DELETE 404 BOOKING_NOT_FOUND)
+  not         my-bookings-budi (GET 200): 14 of 14 conditions differ, e.g. 2026-11-01T00:00:00.000Z / no bookings: 200
+  replayable  my-bookings-expired-token (GET 401 UNAUTHORIZED)
+  not         my-bookings-none (GET 200): 7 of 14 conditions differ, e.g. 2026-11-01T00:00:00.000Z / dense random-id bookings: 200
+  replayable  rooms-from-not-before-to (GET 400 VALIDATION_FAILED)
+  replayable  rooms-instant-without-milliseconds (GET 400 VALIDATION_FAILED)
+  replayable  rooms-no-token (GET 401 UNAUTHORIZED)
+  not         rooms-on-a-clock-change-day (GET 200): 14 of 14 conditions differ, e.g. 2026-11-01T00:00:00.000Z / no bookings: 200
+  not         rooms-on-a-date (GET 200): 14 of 14 conditions differ, e.g. 2026-11-01T00:00:00.000Z / no bookings: 200
+  not         rooms-range-edges (GET 200): 14 of 14 conditions differ, e.g. 2026-11-01T00:00:00.000Z / no bookings: 200
+
+replayable: 15 of 35
+  400 VALIDATION_FAILED: 8; 401 UNAUTHORIZED: 4; 404 BOOKING_NOT_FOUND: 2; 422 BOOKING_TOO_LONG: 1
+  placeholders: {{expired-token:budi}}, {{token:ayu}}
+  names: book-end-not-after-start, book-instant-with-offset, book-not-on-a-quarter-hour, book-title-blank, book-title-too-long, book-too-long, book-unknown-room, book-unknown-token, cancel-malformed-id, cancel-no-token, cancel-unknown, my-bookings-expired-token, rooms-from-not-before-to, rooms-instant-without-milliseconds, rooms-no-token

@@ -1,0 +1,39 @@
+# Green: same command and same temporary e2e/aa-thames.spec.ts as final-fix-red-thames.txt, after the fix.
+
+
+> @simple-login/backend@1.0.0 db:up
+> node scripts/db-up.mjs up
+
+ Container meeting-rooms-postgres-1 Running 
+ Container meeting-rooms-postgres-1 Waiting 
+ Container meeting-rooms-postgres-1 Healthy 
+
+Running 15 tests using 1 worker
+
+  ✓   1 e2e/aa-thames.spec.ts:5:1 › budi books Thames on three days the other specs use (46ms)
+  ✓   2 e2e/rig.spec.ts:19:1 › the run is in Asia/Kolkata: the worker and the browser (192ms)
+  ✓   3 e2e/rig.spec.ts:34:1 › api.ts: instants are toISOString() strings on quarter hours of UTC (1ms)
+  ✓   4 e2e/rig.spec.ts:43:1 › api.ts: sign in, book, list, cancel against the service (69ms)
+  ✓   5 e2e/rig.spec.ts:63:1 › a run starts with no bookings: a slot only this test books is free (28ms)
+  ✓   6 e2e/rig.spec.ts:70:1 › startService refuses a port already in use (0ms)
+  ✓   7 e2e/rig.spec.ts:74:1 › startService fails at once, with the service's words, when the service exits before it listens (40ms)
+round 1: ayu won, booking 2e5d1ab7-3f2d-48ce-b68d-c0c38d6d6865
+  ✓   8 e2e/success.spec.ts:49:3 › 20 simultaneous attempts, round 1 of 5: one 201, nineteen 409 (82ms)
+round 2: budi won, booking a9eaf796-3f57-4650-b916-12e7b0ec80e7
+  ✓   9 e2e/success.spec.ts:49:3 › 20 simultaneous attempts, round 2 of 5: one 201, nineteen 409 (69ms)
+round 3: ayu won, booking 53b84c84-bae0-4ccd-92b3-2c56add9e01e
+  ✓  10 e2e/success.spec.ts:49:3 › 20 simultaneous attempts, round 3 of 5: one 201, nineteen 409 (67ms)
+round 4: ayu won, booking 0d84dca3-a106-4d3d-89ff-efa1ee765d26
+  ✓  11 e2e/success.spec.ts:49:3 › 20 simultaneous attempts, round 4 of 5: one 201, nineteen 409 (65ms)
+round 5: ayu won, booking e5300c23-04a3-457d-a801-d31c3ab66148
+  ✓  12 e2e/success.spec.ts:49:3 › 20 simultaneous attempts, round 5 of 5: one 201, nineteen 409, twenty ranges sharing one quarter hour (68ms)
+  ✓  13 e2e/success.spec.ts:98:1 › a restart keeps every booking with its id and ends every token (739ms)
+  ✓  14 e2e/success.spec.ts:143:1 › AC-5.5 at the service: the current quarter hour has started (24ms)
+  ✓  15 e2e/success.spec.ts:150:1 › AC-6.3: budi cannot cancel ayu's booking (50ms)
+
+  15 passed (5.1s)
+
+$ git status --short e2e
+ M e2e/api.ts
+ M e2e/rig.spec.ts
+ M e2e/success.spec.ts

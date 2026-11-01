@@ -1,0 +1,30 @@
+{
+  "name": "book-unknown-token",
+  "description": "A token the backend never issued.",
+  "clock": "2026-11-04T12:00:00.000Z",
+  "given": [],
+  "request": {
+    "method": "POST",
+    "path": "/api/bookings",
+    "headers": {
+      "authorization": "Bearer bm90LWEtcmVhbC10b2tlbi1ub3QtYS1yZWFsLXRva2Vu",
+      "content-type": "application/json"
+    },
+    "body": {
+      "roomId": "merapi",
+      "start": "2026-11-05T02:00:00.000Z",
+      "end": "2026-11-05T03:00:00.000Z",
+      "title": "Retro"
+    }
+  },
+  "response": {
+    "status": 401,
+    "body": {
+      "error": {
+        "code": "UNAUTHORIZED",
+        "message": "Sign in to continue."
+      }
+    }
+  },
+  "replay": "exact"
+}

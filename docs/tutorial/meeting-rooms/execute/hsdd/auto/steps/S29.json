@@ -1,0 +1,131 @@
+{
+  "step_ref": "S29",
+  "skill": "hsdd-spec",
+  "target": "simple-login.web",
+  "status": "completed",
+  "stop": null,
+  "artifacts": [
+    "hsdd/spec/simple-login.web.md"
+  ],
+  "experiments": [],
+  "self_check": [
+    {
+      "gate": "The spec stays high-level; it is not an implementation plan.",
+      "status": "pass",
+      "note": "The touch changes one citation in the Overview; it adds no route, schema or code (DEC-230)."
+    },
+    {
+      "gate": "Every node has explicit consumed/produced contract ids.",
+      "status": "pass",
+      "note": "The Consumes and Produces lines are unchanged: [auth-api@v1, profile-api@v1, profile-api@v2, booking-api@v1] and none."
+    },
+    {
+      "gate": "Every node is testable in isolation (fixtures, mocks, schemas).",
+      "status": "n/a",
+      "note": "not exercised by this step"
+    },
+    {
+      "gate": "Every dependency edge is typed; parallel lanes are called out.",
+      "status": "n/a",
+      "note": "not exercised by this step"
+    },
+    {
+      "gate": "Each child is marked internal or leaf-parent.",
+      "status": "n/a",
+      "note": "not exercised by this step: the Kind line still reads leaf-parent."
+    },
+    {
+      "gate": "Mermaid DAG matches the dependency table.",
+      "status": "n/a",
+      "note": "not exercised by this step"
+    },
+    {
+      "gate": "`conventions.md` exists/updated at the root.",
+      "status": "pass",
+      "note": "hsdd/conventions.md exists; the touch adds no layout, naming or protocol convention, so it is unchanged."
+    },
+    {
+      "gate": "The decomposition axis at each level matches ownership stated by the human, not assumed <U+2014 EM DASH> no node is owned by two teams.",
+      "status": "n/a",
+      "note": "not exercised by this step: the axis and the node's ownership are unchanged. The gate's dash is written as <U+2014 EM DASH> because the run's prose rules ban the character."
+    },
+    {
+      "gate": "Every child node has its own `hsdd/spec/{child-id}.md` file.",
+      "status": "n/a",
+      "note": "not exercised by this step: simple-login.web is a leaf-parent and its file is the one touched."
+    },
+    {
+      "gate": "Every input source appears in the Sources of at least one node, or is marked in the root `## Sources` as \"informative only <U+2014 EM DASH> not decomposed\", with a reason.",
+      "status": "n/a",
+      "note": "not exercised by this step: the Sources line is unchanged and already lists PRD v2 US-1 and Screens, the two sections the new citation names. The gate's dash is written as <U+2014 EM DASH>."
+    },
+    {
+      "gate": "No node's Sources lists a document that does not govern it.",
+      "status": "n/a",
+      "note": "not exercised by this step"
+    },
+    {
+      "gate": "Field blocks are bullet lists and empty lists say \"none\".",
+      "status": "pass",
+      "note": "No field block was touched; Produces still says none."
+    },
+    {
+      "gate": "Every open question is defined once, in its owning spec, with a table row and a `### {ID}` detail subsection; child views carry `[inherits …]`; no cited ID lacks a definition.",
+      "status": "n/a",
+      "note": "not exercised by this step: the touched sentence cites no OQ."
+    },
+    {
+      "gate": "OQ prefixes used by node specs are declared in `conventions.md`.",
+      "status": "n/a",
+      "note": "not exercised by this step"
+    },
+    {
+      "gate": "Under `multi-team`, every node whose team differs from its parent's carries `- **Team:**`; no node is owned by two teams.",
+      "status": "n/a",
+      "note": "not exercised by this step"
+    },
+    {
+      "gate": "Where children exchange contracts, an integration node exists or the decision not to add one is stated in the parent (one line).",
+      "status": "n/a",
+      "note": "not exercised by this step"
+    },
+    {
+      "gate": "A graft kept every existing child id and touched only the new child's file, the parent's summaries and the parent's DAG.",
+      "status": "n/a",
+      "note": "not exercised by this step"
+    },
+    {
+      "gate": "A retired node's file is kept; its contracts' retirement went through `hsdd-reconcile`.",
+      "status": "n/a",
+      "note": "not exercised by this step"
+    },
+    {
+      "gate": "Promotion: the human confirmed before `- **Adopted:** promoted` was written; `## Observed surface` kept; `v0` contracts unchanged unless redesigned.",
+      "status": "n/a",
+      "note": "not exercised by this step"
+    }
+  ],
+  "routed": [],
+  "closes": [
+    {
+      "id": "Q-083",
+      "outcome": "addressed",
+      "note": "The Overview now reads 'with three screens (PRD v2 US-1, Screens)' (DEC-230). PRD v2 Screens draws Home and Rooms; PRD v2 US-1 (AC-1.2) names the Login screen. git diff shows that one line of hsdd/spec/simple-login.web.md only; the Phase Plan, the header block and the parent's embedded summary, which holds no Overview, are untouched."
+    }
+  ],
+  "reads_outside": [
+    {
+      "path": "hsdd/auto/queue.jsonl (Q-064, Q-076, Q-083)",
+      "why": "The routed item's full text and its history from S14 and S18."
+    },
+    {
+      "path": "hsdd/auto/steps/S28.json, hsdd/auto/steps/S28.decisions.jsonl",
+      "why": "The report shape and how an earlier report quotes gates whose text holds a banned character."
+    }
+  ],
+  "notes": [
+    "Decision DEC-230. Changed: line 17 of hsdd/spec/simple-login.web.md, the citation '(PRD v2 Screens)' becomes '(PRD v2 US-1, Screens)'. The line was not reflowed, so no other line moved.",
+    "The next sentence's '(PRD v2 US-1)' for Login now repeats a section the preceding clause also cites; it was left because the routed item names only the screen-count citation."
+  ],
+  "read_check": "3a86330b"
+}

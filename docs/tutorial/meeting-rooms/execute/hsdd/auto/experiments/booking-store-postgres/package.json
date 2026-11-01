@@ -1,0 +1,9 @@
+{
+  "name": "experiment-booking-store-postgres",
+  "private": true,
+  "type": "module",
+  "description": "Throwaway: how PostgreSQL 17 and node-postgres behave under simultaneous overlapping bookings, and at the edges of booking-api@v1's values. Not part of any build.",
+  "devDependencies": {
+    "pg": "^8.23.1"
+  }
+}

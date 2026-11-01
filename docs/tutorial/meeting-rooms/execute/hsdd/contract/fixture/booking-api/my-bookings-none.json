@@ -1,0 +1,29 @@
+{
+  "name": "my-bookings-none",
+  "description": "Ayu has no bookings; Budi's is not hers.",
+  "clock": "2026-11-05T09:30:00.000Z",
+  "given": [
+    {
+      "id": "00000000-0000-4000-8000-000000000017",
+      "account": "budi",
+      "roomId": "thames",
+      "title": "Design review",
+      "start": "2026-11-05T10:00:00.000Z",
+      "end": "2026-11-05T11:00:00.000Z"
+    }
+  ],
+  "request": {
+    "method": "GET",
+    "path": "/api/me/bookings",
+    "headers": {
+      "authorization": "Bearer {{token:ayu}}"
+    }
+  },
+  "response": {
+    "status": 200,
+    "body": {
+      "bookings": []
+    }
+  },
+  "replay": "exact"
+}

@@ -1,0 +1,137 @@
+{
+  "name": "rooms-range-edges",
+  "description": "Ayu (Asia/Jakarta) asks for her 5 November, [2026-11-04T17:00Z, 2026-11-05T17:00Z): a booking ending at from and one starting at to only touch the range and are left out; bookings across either end are in; each room's bookings come earliest first, not in the order they were made.",
+  "clock": "2026-11-04T12:00:00.000Z",
+  "given": [
+    {
+      "id": "00000000-0000-4000-8000-000000000003",
+      "account": "ayu",
+      "roomId": "merapi",
+      "title": "Standup",
+      "start": "2026-11-05T01:00:00.000Z",
+      "end": "2026-11-05T01:30:00.000Z"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000004",
+      "account": "budi",
+      "roomId": "merapi",
+      "title": "Planning",
+      "start": "2026-11-04T23:00:00.000Z",
+      "end": "2026-11-05T00:00:00.000Z"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000005",
+      "account": "budi",
+      "roomId": "thames",
+      "title": "Late review",
+      "start": "2026-11-04T16:00:00.000Z",
+      "end": "2026-11-04T17:00:00.000Z"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000006",
+      "account": "budi",
+      "roomId": "kew",
+      "title": "Handover",
+      "start": "2026-11-04T16:30:00.000Z",
+      "end": "2026-11-04T17:30:00.000Z"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000007",
+      "account": "ayu",
+      "roomId": "bromo",
+      "title": "Wrap-up",
+      "start": "2026-11-05T16:45:00.000Z",
+      "end": "2026-11-05T17:15:00.000Z"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000008",
+      "account": "ayu",
+      "roomId": "merapi",
+      "title": "Evening call",
+      "start": "2026-11-05T17:00:00.000Z",
+      "end": "2026-11-05T18:00:00.000Z"
+    }
+  ],
+  "request": {
+    "method": "GET",
+    "path": "/api/rooms?from=2026-11-04T17:00:00.000Z&to=2026-11-05T17:00:00.000Z",
+    "headers": {
+      "authorization": "Bearer {{token:ayu}}"
+    }
+  },
+  "response": {
+    "status": 200,
+    "body": {
+      "rooms": [
+        {
+          "id": "merapi",
+          "name": "Merapi",
+          "office": "Jakarta",
+          "timeZone": "Asia/Jakarta",
+          "seats": 8,
+          "bookings": [
+            {
+              "id": "00000000-0000-4000-8000-000000000004",
+              "roomId": "merapi",
+              "roomName": "Merapi",
+              "title": "Planning",
+              "start": "2026-11-04T23:00:00.000Z",
+              "end": "2026-11-05T00:00:00.000Z"
+            },
+            {
+              "id": "00000000-0000-4000-8000-000000000003",
+              "roomId": "merapi",
+              "roomName": "Merapi",
+              "title": "Standup",
+              "start": "2026-11-05T01:00:00.000Z",
+              "end": "2026-11-05T01:30:00.000Z"
+            }
+          ]
+        },
+        {
+          "id": "bromo",
+          "name": "Bromo",
+          "office": "Jakarta",
+          "timeZone": "Asia/Jakarta",
+          "seats": 4,
+          "bookings": [
+            {
+              "id": "00000000-0000-4000-8000-000000000007",
+              "roomId": "bromo",
+              "roomName": "Bromo",
+              "title": "Wrap-up",
+              "start": "2026-11-05T16:45:00.000Z",
+              "end": "2026-11-05T17:15:00.000Z"
+            }
+          ]
+        },
+        {
+          "id": "thames",
+          "name": "Thames",
+          "office": "London",
+          "timeZone": "Europe/London",
+          "seats": 10,
+          "bookings": []
+        },
+        {
+          "id": "kew",
+          "name": "Kew",
+          "office": "London",
+          "timeZone": "Europe/London",
+          "seats": 4,
+          "bookings": [
+            {
+              "id": "00000000-0000-4000-8000-000000000006",
+              "roomId": "kew",
+              "roomName": "Kew",
+              "title": "Handover",
+              "start": "2026-11-04T16:30:00.000Z",
+              "end": "2026-11-04T17:30:00.000Z"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "replay": "exact"
+}

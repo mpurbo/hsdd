@@ -1,0 +1,8 @@
+1. created probe_start_32107 empty; public tables before the first start: []
+2. first start: schema applied, tables ["booking"], bookings before 0, booked id 2c20fbee-1621-4ac6-ad25-d5ba2682149b, notices []
+3. second start: rows [{"id":"2c20fbee-1621-4ac6-ad25-d5ba2682149b","room":"merapi","start":"2026-11-05T02:00:00.000Z"}]; same id kept: true; notices ["42710 extension \"btree_gist\" already exists, skipping","42P07 relation \"booking\" already exists, skipping"]
+4. DROP DATABASE with an open pool: 55006 database "probe_start_32107" is being accessed by other users
+   after the pool ended: DROP DATABASE succeeded
+   the open pool's client then reports: 57P01 terminating connection due to administrator command
+5. DROP DATABASE WITH (FORCE) with an open pool: succeeded
+6. probe databases left: []

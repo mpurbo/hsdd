@@ -1,0 +1,1 @@
+{"session_id":"s1","transcript_path":"/tmp/t.jsonl","cwd":"/work/shop","hook_event_name":"PreToolUse","tool_name":"Bash","tool_input":{"command":"git commit -m x"},"agent_id":"a1b2","agent_type":"hsdd-auto-step"}

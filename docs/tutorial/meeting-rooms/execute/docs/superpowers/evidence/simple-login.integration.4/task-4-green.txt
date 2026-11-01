@@ -1,0 +1,24 @@
+
+> @simple-login/backend@1.0.0 db:up
+> node scripts/db-up.mjs up
+
+ Container meeting-rooms-postgres-1 Running 
+ Container meeting-rooms-postgres-1 Waiting 
+ Container meeting-rooms-postgres-1 Healthy 
+
+Running 12 tests using 1 worker
+
+  ✓   1 e2e/home.spec.ts:62:1 › AC-2.1: Home shows the signed-in user's details (478ms)
+  ✓   2 e2e/home.spec.ts:74:1 › AC-2.5: each account's Home shows its zone as its name, the whole text (502ms)
+  ✓   3 e2e/home.spec.ts:85:1 › AC-2.5: ayu's Thames booking shows on her Home in Jakarta time (400ms)
+  ✓   4 e2e/home.spec.ts:93:1 › AC-2.5: budi's Merapi booking shows on his Home in London time (395ms)
+  ✓   5 e2e/home.spec.ts:101:1 › AC-2.4: Home shows each account's phone number exactly as stored (537ms)
+  ✓   6 e2e/home.spec.ts:110:1 › Budi sees Budi's profile, not Ayu's (371ms)
+  ✓   7 e2e/home.spec.ts:120:1 › AC-2.2: reloading keeps the user signed in (398ms)
+  ✓   8 e2e/home.spec.ts:128:1 › AC-3.1: Sign out returns to Login, and a reload stays there (431ms)
+  ✓   9 e2e/home.spec.ts:138:1 › AC-2.3: a session the backend no longer knows returns to Login with the expiry message (908ms)
+  ✓  10 e2e/home.spec.ts:150:1 › AC-6.1: budi's bookings show soonest first, each with Cancel, and none of ayu's (511ms)
+  ✓  11 e2e/home.spec.ts:167:1 › AC-6.2: Cancel removes the booking's lines at once and frees its range (516ms)
+  ✓  12 e2e/home.spec.ts:182:1 › AC-6.1: with every booking of budi's cancelled, Home shows (no bookings) under My bookings (407ms)
+
+  12 passed (9.3s)

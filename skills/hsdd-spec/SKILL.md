@@ -83,14 +83,15 @@ intermediate internal node (a "feature") rather than forcing a fixed tier.
    **Inventory the sources.** When the input includes or references
    documents (PRD, RFC, design doc, ticket), list each in a `## Sources`
    section of the root spec — path or URL, its authority (accepted RFC |
-   draft | braindump | ticket), and one line on what it governs:
+   approved PRD | draft | braindump | ticket | incident), and one line on
+   what it governs:
 
    ```markdown
    ## Sources
 
    - `docs/rfc-042-ingestion-api.md` — accepted RFC — ingestion API: batch
      endpoint, idempotency, pagination, error envelope, rate limits, retention
-   - `docs/prd-fieldlog.md` — PRD — product scope, teams, v1 features
+   - `docs/prd-fieldlog.md` — approved PRD — product scope, teams, v1 features
    ```
 
    Sources trickle down: when a node is split, each child's `Sources` field
@@ -181,6 +182,8 @@ governed node, one node at a time, when a change actually lands on it
    authoritative, the same shape as the "who builds what?" stop. Show the
    as-built header, the proposed decomposition and every `unknown:` line
    the decomposition resolves or leaves open.
+   The question is always this one: "Promote `{node}` from as-built to
+   governed with this decomposition?"
 4. After confirmation, set `- **Adopted:** promoted`. **Keep the
    `## Observed surface` section** as provenance; never delete it.
 5. Promotion happens once and is shared: a second change needing the same
@@ -212,6 +215,64 @@ from the atlas's active view. Contracts the node solely produced go to
 `retired` through `hsdd-reconcile`, where the live-consumer rule applies
 (a version with a remaining consumer is a checkpoint finding, not a
 retirement). Never delete the spec file, and never reuse its id.
+
+## Touch and Citation Touch
+
+**Touch.** Invoked as `touch {node}: {reason}`, change only what the
+invocation and the routed items name, in the node's own file and, when named,
+the parent's embedded summary of it. Never edit the node's `## Phase Plan`,
+except under the Citation touch paragraph; keep every id, the heading rule
+and the section order; record each change as a decision.
+
+**Citation touch.** When a source document moves to a new version, or a
+contract version is superseded, every artifact that cites the old version is
+touched once, by its owning skill. A contract version is superseded once its
+file is `deprecated` or `retired` (`lockstep` deprecates it in the run that
+drafts the next version), or when it has no file of its own (a bump in
+place, before 0.10.2). Invoked as
+`citation touch {file}: move its citations to the current versions`, change
+only citations and the sentences they sit in:
+
+- A **live** citation of a superseded version moves to the current one: an
+  unshipped phase's boundary or delivery line, a guarantee citation, a
+  fixture header comment, a node's `Sources` entry for a source document,
+  any sentence that states what holds now.
+- Never move a contract version in a node header's `Produces` or `Consumes`
+  line, or in a copy of that line above the node (a parent's embedded
+  summary, child-node table or DAG, the root's contract matrix):
+  `hsdd-reconcile`'s version ripple writes those, keeping every version the
+  node's phases name. Never edit an ADR's `affects`: `hsdd-adr` adds the
+  new version there.
+- A copy of a child node's header lines in its parent's spec (the parent's
+  embedded summary of the child, child-node table or DAG) is the parent's
+  text: the citation touch on the parent moves the source citations in it,
+  matching the child's own `Sources` entry when that has already moved, and
+  a citation touch on the child changes only the child's own file.
+- An earlier contract version that is neither `deprecated` nor `retired`
+  stays live beside the new one (`coexisting`): leave every citation of it,
+  and route one `consider` item, naming the new version, to the node whose
+  plan would move to it (the node of the citing phase, or the producer or
+  consumer the citing sentence is about), so that node's own planning
+  decides when it moves.
+- A **shipped phase** (one whose verification doc is on the spec repo's
+  main line, the conventions' `**Main line:**`, `main` when absent) is
+  history in full: nothing in it moves, and the touch reports each such
+  reference as kept.
+- **Historical** text keeps the version it describes: a dated amendment
+  entry, a migration note, a "Corrected" paragraph, an account of what an
+  earlier version did.
+- When a moved citation sits in a sentence the new version makes false,
+  restate the sentence to match the cited artifact's current text, and record
+  one decision per sentence: what it said, what it says now, which part of
+  the new version it follows. That is a compatible wording change in the
+  touched file.
+- Never change the touched artifact's own declarations, guarantees, cases or
+  fixture behavior in a citation touch. When keeping a sentence true would
+  need that, leave it, route it as a finding, and name the step it needs.
+- Classify the touch against the touched artifact's own versioning rules
+  (it normally stays at its version) and record that as one decision.
+- Report how many citations moved and how many were kept, as history or
+  as a live earlier version.
 
 ## Dependency Types
 
@@ -298,6 +359,58 @@ exist (omit the section only when there are none):
   on*) · `RESOLVED (date)` (row points at where the decision landed — an
   ADR, a contract, a spec `D{n}`). `ext:` under *Waits on* marks an
   external party.
+
+## Unattended runs
+
+When your arguments contain `--unattended {step}`, you run as step
+`{step}` of an `hsdd-auto` run, and your dispatch file
+`hsdd/auto/dispatch/{step}.md` names your report. Then:
+
+1. At each ask point in the table below, act on its disposition.
+   `return`: write your report with `status: "stopped"` and a `stop`
+   object (the question verbatim, the rule of this skill that requires it,
+   the stop class, the options with their consequences, your
+   recommendation, what it blocks), leave your partial artifacts in place,
+   and end your turn. Never answer it yourself. `decide`: take the decision
+   and record it with `would_have_asked: true` and the class the table
+   gives, or `false` where the table gives none, unless a careful engineer
+   would have asked the owner first: then `true` with class `judgement`.
+2. Record every decision when you take it, with
+   `node hsdd/scripts/auto/decide.mjs --step {step} --stdin` and the
+   decision as JSON in the shape your dispatch file shows. Never write a
+   time or an id yourself.
+3. Do not invoke interactive companion skills such as brainstorming; the
+   run's decision policy replaces their dialogue.
+4. Copy each of this skill's quality gates (for `hsdd-phase-plan`, the
+   items of its Phase Design Checklist) verbatim into the report's
+   `self_check`, with `pass`, `fail` or `n/a` and a note. A gate that
+   requires a human act (the human confirmed, decided or stated) is `n/a`,
+   and its note names the decision that stood in for that act. So is a
+   gate that a give-way rule of the table below overrides, its note naming
+   the decision that applied the rule, and a gate whose subject this step
+   did not touch, its note reading `not exercised by this step`.
+5. A predecided answer in your dispatch file for a class in the table
+   replaces the `return` for that class: apply it, record your decision
+   citing the predecided decision's id, and continue. The exception is a
+   breaking change under `compatibility: frozen` or at `v0`, which you
+   report as a run-stop candidate whatever the predecided answers say
+   (§8.2).
+6. Where the table says a rule of this skill gives way, the recorded
+   decision replaces the human act that rule requires, and the owner's
+   later review of that decision is the act.
+
+| Ask point | Disposition | Class |
+|-----------|-------------|-------|
+| "Who builds what?" when no owner fact or `**Teams:**` line answers it | return; when `axis` is not in the run's stop set, decide (the rule "ownership stated by the human" gives way) | `axis` |
+| A decomposition-changing unknown: two defensible shapes, nothing gives one a stated reason to lead (this covers the skill's one clarifying question) | return | `shape` |
+| Promotion confirmation | return | `promotion` |
+| Accepting a proposed ADR, the ordering policy, the coding method, teams mode, a decomposition the sources imply | decide | `judgement` when a careful engineer would ask |
+| Resolving an open question; a resolution that changes a read-only source sets `would_upstream` | decide | `judgement` or `upstream` |
+
+Promotion mode's confirmation stop asks one fixed question, "Promote `{node}`
+from as-built to governed with this decomposition?", which an unattended run
+returns verbatim. The gate "informative only, not decomposed" is matched on
+its words, whatever separator the project's prose rules put between them.
 
 ## Quality Gates
 

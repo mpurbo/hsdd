@@ -1,0 +1,355 @@
+// US-4 and US-5 on Rooms: the rooms in order, the default date, the bookings
+// of a date in the user's zone, and the booking form.
+//
+// Bookings a test needs beforehand go through e2e/api.ts on dates of their
+// own: London dates wholly in GMT (never a clock-change day). home.spec.ts
+// owns britishWinterDays(addDays(todayIn(LONDON), 60), 6); this file
+// recomputes those six with the same expression and continues from the day
+// after the last (see roomsDates). Every booking made here lies between 00:00
+// and 17:00 London time on its date, so ayu's Jakarta view of a date (from
+// 17:00 UTC the day before) holds only that date's bookings; the one
+// exception, AC-4.2's 16:00 to 19:00 London booking, spills into the next
+// calendar date, and roomsDates keeps DATES[1] as DATES[0]'s next date, so
+// that spill lands on DATES[1] (never a clock-change day, and no other file's
+// Thames booking) and AC-4.2 owns both. Rooms shows every user's
+// bookings, so a test reads exact lines only on dates and rooms it owns.
+//
+// | Test                      | Date index | Rooms         | Accounts |
+// |---------------------------|-----------:|---------------|----------|
+// | AC-4.1: order and default |       none | all           | both     |
+// | AC-4.2: a date's bookings |       0, 1 | Merapi to Kew | ayu      |
+// | AC-4.3: room-local times  |          2 | all           | both     |
+// | AC-5.1, AC-5.2: the form  |          3 | Bromo         | budi     |
+// | AC-5.3: overlap, touching |          4 | Merapi        | ayu, budi |
+// | AC-5.4: two at once       |          5 | Thames        | both     |
+// | AC-5.5: already started   |       none | Bromo, today  | budi     |
+// | AC-5.6: title rules       |          6 | Kew           | budi     |
+// | AC-2.3: expired session   |          7 | Merapi        | budi     |
+import { JAKARTA, LONDON, addDays, britishWinterDays, dateIn, dayRange, formatDate, quarterHours, timeLabel, todayIn, wallTimeInstants, type IsoDate } from "./time.ts";
+import { currentQuarterHour, getMyBookings, getRooms, tokenFor, type Booking } from "./api.ts";
+import { expect, test } from "./fixtures.ts";
+import {
+  ROOMS, ZONES, bookThroughForm, bookViaApi, expectedLines, fillBookingForm, labelInstants, openRooms, optionLabels, overlapMessage,
+  roomLines, showDate,
+  type RoomId,
+} from "./rooms.ts";
+
+/**
+ * The dates of this file for London's `today` (see the header's date rule):
+ * home.spec.ts's six, then eight of our own, the second the day after the
+ * first. When the Saturday before the March change is the first, the next
+ * winter date jumps over the summer, so the eight restart from the second
+ * (after the jump the winter dates are consecutive).
+ */
+function roomsDates(today: IsoDate): IsoDate[] {
+  const home = britishWinterDays(addDays(today, 60), 6);
+  const own = britishWinterDays(addDays(home[5], 1), 8);
+  return own[1] === addDays(own[0], 1) ? own : britishWinterDays(own[1], 8);
+}
+
+const DATES: IsoDate[] = roomsDates(todayIn(LONDON));
+
+const ORDER: RoomId[] = ["merapi", "bromo", "thames", "kew"];
+const DAY = 24 * 60 * 60 * 1000;
+
+test("the date rule: DATES[1] is DATES[0]'s next date, even before London's March change", () => {
+  for (const today of ["2027-01-20", todayIn(LONDON)]) {
+    const dates = roomsDates(today);
+    expect(dates).toHaveLength(8);
+    expect(dates[1]).toBe(addDays(dates[0], 1));
+    for (const date of dates) {
+      const { start, end } = dayRange(date, LONDON);
+      expect(Date.parse(end) - Date.parse(start)).toBe(DAY);
+    }
+  }
+});
+
+/** The latest instant not after `now` whose UTC time of day is `hours:minutes`. */
+function latestPast(hours: number, minutes: number, now: number = Date.now()): number {
+  const today = new Date(now);
+  const at = Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate(), hours, minutes);
+  return at <= now ? at : at - DAY;
+}
+
+// The default date depends only on the browser's clock and the user's zone
+// (ADR-002 Decision 5), so the browser's clock is held at an instant where the
+// user's date differs from the browser zone's (Asia/Kolkata).
+const CLOCKS = [
+  { who: "ayu", at: latestPast(17, 45), greeting: "Hello, Ayu Lestari" },
+  { who: "budi", at: latestPast(20, 0), greeting: "Hello, Budi Santoso" },
+] as const;
+
+for (const { who, at, greeting } of CLOCKS) {
+  test(`AC-4.1: Rooms lists the four rooms in order, opens on today in ${who}'s zone, and Home returns`, async ({ page }) => {
+    const today = todayIn(ZONES[who], at);
+    expect(today).not.toBe(todayIn("Asia/Kolkata", at));
+    await page.clock.setFixedTime(at);
+    await openRooms(page, who);
+    await expect(page.getByLabel("Rooms on")).toHaveValue(today);
+    await expect
+      .poll(async () => {
+        const text = await page.getByRole("main").innerText();
+        return ORDER.map((room) => ({ room, index: text.indexOf(ROOMS[room].heading) }))
+          .filter(({ index }) => index >= 0)
+          .sort((a, b) => a.index - b.index)
+          .map(({ room }) => room);
+      })
+      .toEqual(ORDER);
+    await page.getByRole("button", { name: "Home" }).click();
+    await expect(page.getByRole("heading", { name: greeting })).toBeVisible();
+  });
+}
+
+test("AC-4.2: a date in ayu's zone shows each room's overlapping bookings, earliest first, and (no bookings)", async ({ page }) => {
+  const zone = ZONES.ayu;
+  const date = DATES[0];
+  const next = addDays(date, 1);
+  // Kew out of order: 08:00 first.
+  const later = await bookViaApi("ayu", "kew", date, LONDON, "08:00", "09:00", "Kew later");
+  const earlier = await bookViaApi("ayu", "kew", date, LONDON, "03:00", "04:00", "Kew earlier");
+  const thames = await bookViaApi("ayu", "thames", date, LONDON, "16:00", "19:00", "Thames late");
+
+  await openRooms(page, "ayu");
+  await showDate(page, date);
+  await expect.poll(() => roomLines(page, "kew")).toEqual([
+    ...expectedLines(earlier, "kew", zone, date),
+    ...expectedLines(later, "kew", zone, date),
+  ]);
+  await expect.poll(() => roomLines(page, "thames")).toEqual(expectedLines(thames, "thames", zone, date));
+  // Kew and Thames only match once the date has loaded, so "(no bookings)" is read after them.
+  await expect.poll(() => roomLines(page, "merapi")).toEqual(["(no bookings)"]);
+  await expect.poll(() => roomLines(page, "bromo")).toEqual(["(no bookings)"]);
+  // Pin: 16:00 to 19:00 in London is 23:00 to 02:00 the next day in Jakarta.
+  expect((await roomLines(page, "thames"))[0]).toContain(`23:00 to ${formatDate(next)} 02:00`);
+
+  await showDate(page, next);
+  const onNext = expectedLines(thames, "thames", zone, next);
+  await expect.poll(async () => (await roomLines(page, "thames")).join("\n")).toContain(onNext.join("\n"));
+  expect((await roomLines(page, "thames"))[0]).toMatch(new RegExp(`^${formatDate(date)} 23:00 to 02:00`));
+});
+
+test("AC-4.3: another office's bookings also show the room's local times; the user's own zone shows none", async ({ page }) => {
+  const date = DATES[2];
+  const merapi = await bookViaApi("ayu", "merapi", date, JAKARTA, "09:00", "10:00", "Merapi morning");
+  const bromo = await bookViaApi("ayu", "bromo", date, JAKARTA, "11:00", "12:00", "Bromo late morning");
+  const thames = await bookViaApi("budi", "thames", date, LONDON, "10:00", "11:00", "Thames morning");
+  const kew = await bookViaApi("budi", "kew", date, LONDON, "13:00", "14:00", "Kew afternoon");
+
+  // Budi, in London: Jakarta's rooms show London times, then Jakarta's own.
+  await openRooms(page, "budi");
+  await showDate(page, date);
+  await expect.poll(() => roomLines(page, "merapi")).toEqual(expectedLines(merapi, "merapi", ZONES.budi, date));
+  const merapiLines = await roomLines(page, "merapi");
+  expect(merapiLines[0]).toContain("02:00 to 03:00");
+  expect(merapiLines[1]).toBe("(09:00 to 10:00 in Jakarta)");
+  await expect.poll(() => roomLines(page, "kew")).toEqual(expectedLines(kew, "kew", ZONES.budi, date));
+  expect(await roomLines(page, "kew")).toHaveLength(1);
+
+  // Ayu, in Jakarta, in a context of her own.
+  const ayu = await (await page.context().browser()!.newContext()).newPage();
+  try {
+    await openRooms(ayu, "ayu");
+    await showDate(ayu, date);
+    await expect.poll(() => roomLines(ayu, "thames")).toEqual(expectedLines(thames, "thames", ZONES.ayu, date));
+    expect((await roomLines(ayu, "thames"))[1]).toBe("(10:00 to 11:00 in London)");
+    await expect.poll(() => roomLines(ayu, "bromo")).toEqual(expectedLines(bromo, "bromo", ZONES.ayu, date));
+    expect(await roomLines(ayu, "bromo")).toHaveLength(1);
+  } finally {
+    await ayu.context().close();
+  }
+});
+
+test("AC-5.1 and AC-5.2: budi books through the form; starts and ends fall on quarter hours, every end after its start", async ({ page }) => {
+  const date = DATES[3];
+  const zone = ZONES.budi;
+  const instants = labelInstants(date, zone);
+  await openRooms(page, "budi");
+  await showDate(page, date);
+
+  const starts = quarterHours(date, zone).map((at) => timeLabel(at, zone, date));
+  await expect.poll(() => optionLabels(page, "start")).toEqual(starts);
+  expect(starts).toHaveLength(96);
+
+  for (const start of ["09:00", "23:00"]) {
+    await page.getByRole("combobox", { name: "start", exact: true }).selectOption({ label: start });
+    const startAt = Date.parse(instants.get(start)!);
+    await expect
+      .poll(async () => {
+        const ends = await optionLabels(page, "end");
+        return ends.length > 0 && ends.every((label) => instants.has(label) && Date.parse(instants.get(label)!) > startAt);
+      })
+      .toBe(true);
+  }
+
+  await bookThroughForm(page, { room: "Bromo", start: "09:00", end: "10:00", title: "Form booking" });
+  await expect(page.getByText("Booked.", { exact: true })).toBeVisible();
+  const [start] = wallTimeInstants(date, "09:00", zone);
+  const [end] = wallTimeInstants(date, "10:00", zone);
+  const booking = { start, end, title: "Form booking" };
+  await expect.poll(() => roomLines(page, "bromo")).toEqual(expectedLines(booking, "bromo", zone, date));
+  // Pin: 09:00 to 10:00 in London is 16:00 to 17:00 in Jakarta.
+  expect((await roomLines(page, "bromo"))[1]).toBe("(16:00 to 17:00 in Jakarta)");
+
+  const mine = await getMyBookings(await tokenFor("budi"));
+  expect(mine.status).toBe(200);
+  const held = (mine.body as { bookings: { title: string; start: string; end: string }[] }).bookings;
+  expect(held.filter((b) => b.title === "Form booking")).toEqual([expect.objectContaining({ start, end })]);
+});
+
+test("AC-5.3: an overlap is refused with the other booking's times in budi's zone; touching books", async ({ page }) => {
+  const date = DATES[4];
+  const zone = ZONES.budi;
+  const ayus = await bookViaApi("ayu", "merapi", date, JAKARTA, "09:00", "10:00", "Ayu in Merapi");
+  const [start] = wallTimeInstants(date, "03:00", zone);
+  const [end] = wallTimeInstants(date, "04:00", zone);
+  const budis = { start, end, title: "Budi touching" };
+
+  await openRooms(page, "budi");
+  await showDate(page, date);
+  // The new date has loaded once ayu's booking shows.
+  await expect.poll(() => roomLines(page, "merapi")).toEqual(expectedLines(ayus, "merapi", zone, date));
+
+  await bookThroughForm(page, { room: "Merapi", start: "02:30", end: "03:30", title: "Budi overlapping" });
+  const message = overlapMessage("merapi", ayus, zone, date);
+  await expect(page.getByText(message)).toBeVisible();
+  // Pin: 09:00 to 10:00 in Jakarta is 02:00 to 03:00 in London.
+  expect(message).toContain("02:00 to 03:00");
+  await expect(page.getByText("Booked.", { exact: true })).toHaveCount(0);
+  await expect.poll(() => roomLines(page, "merapi")).toEqual(expectedLines(ayus, "merapi", zone, date));
+
+  await bookThroughForm(page, { room: "Merapi", start: "03:00", end: "04:00", title: budis.title });
+  await expect(page.getByText("Booked.", { exact: true })).toBeVisible();
+  await expect.poll(() => roomLines(page, "merapi")).toEqual([
+    ...expectedLines(ayus, "merapi", zone, date),
+    ...expectedLines(budis, "merapi", zone, date),
+  ]);
+});
+
+test("AC-5.4: two users pressing Book together get one booking; the other sees the overlap message in their own zone", async ({ page, browser }) => {
+  const date = DATES[5];
+  const entries = [
+    { who: "budi", from: "10:00", to: "11:00", title: "Race budi" },
+    { who: "ayu", from: "17:00", to: "18:00", title: "Race ayu" },
+  ] as const;
+  const [start] = wallTimeInstants(date, "10:00", LONDON);
+  const [end] = wallTimeInstants(date, "11:00", LONDON);
+  const range = { start, end };
+
+  const other = await browser.newContext();
+  try {
+    const pages = { budi: page, ayu: await other.newPage() };
+    for (const { who } of entries) {
+      await openRooms(pages[who], who);
+      await showDate(pages[who], date);
+      const starts = quarterHours(date, ZONES[who]).map((at) => timeLabel(at, ZONES[who], date));
+      await expect.poll(() => optionLabels(pages[who], "start")).toEqual(starts);
+      await expect.poll(() => roomLines(pages[who], "thames")).toEqual(["(no bookings)"]);
+    }
+    for (const { who, from, to, title } of entries) {
+      await fillBookingForm(pages[who], { room: "Thames", start: from, end: to, title });
+    }
+    await Promise.all(entries.map(({ who }) => pages[who].getByRole("button", { name: "Book", exact: true }).click()));
+
+    const booked: string[] = [];
+    for (const { who, title } of entries) {
+      const refused = pages[who].getByText(overlapMessage("thames", range, ZONES[who], date));
+      const done = pages[who].getByText("Booked.", { exact: true });
+      await expect(done.or(refused)).toBeVisible();
+      if (await done.isVisible()) booked.push(title);
+    }
+    expect(booked).toHaveLength(1);
+    const winner = entries.find(({ title }) => title === booked[0])!;
+
+    const rooms = await getRooms(await tokenFor("ayu"), dayRange(date, LONDON).start, dayRange(date, LONDON).end);
+    expect(rooms.status).toBe(200);
+    const thames = (rooms.body as { rooms: Array<{ id: string; bookings: Booking[] }> }).rooms.find((r) => r.id === "thames")!;
+    expect(thames.bookings.map((b) => b.title)).toEqual([winner.title]);
+
+    const mine = { ...range, title: winner.title };
+    await expect.poll(() => roomLines(pages[winner.who], "thames")).toEqual(expectedLines(mine, "thames", ZONES[winner.who], date));
+  } finally {
+    await other.close();
+  }
+});
+
+test("AC-5.5: with only the browser's clock five minutes before the current quarter hour, booking it shows That time has already started.", async ({ page }) => {
+  const zone = ZONES.budi;
+  const q = currentQuarterHour();
+  const date = dateIn(q, zone);
+  const end = new Date(Date.parse(q) + 15 * 60_000).toISOString();
+  const from = timeLabel(q, zone, date);
+  const to = timeLabel(end, zone, date);
+
+  await page.clock.setFixedTime(Date.parse(q) - 5 * 60_000);
+  await openRooms(page, "budi");
+  await showDate(page, date);
+  await expect.poll(() => optionLabels(page, "start")).toContain(from);
+
+  await bookThroughForm(page, { room: "Bromo", start: from, end: to, title: "Started" });
+  await expect(page.getByText("That time has already started.", { exact: true })).toBeVisible();
+  await expect(page.getByText("Booked.", { exact: true })).toHaveCount(0);
+
+  const rooms = await getRooms(await tokenFor("budi"), q, end);
+  expect(rooms.status).toBe(200);
+  const bromo = (rooms.body as { rooms: Array<{ id: string; bookings: Booking[] }> }).rooms.find((r) => r.id === "bromo")!;
+  expect(bromo.bookings).toEqual([]);
+});
+
+test("AC-5.6: blank, spaces-only and 81-character titles book nothing; 80 characters book exactly as typed", async ({ page }) => {
+  const date = DATES[6];
+  const zone = ZONES.budi;
+  const typed = " 😀 Retro  and planning, " + "x".repeat(56);
+  expect([...typed].length).toBe(80);
+  const tooLong = "y".repeat(81);
+  expect([...tooLong].length).toBe(81);
+
+  await openRooms(page, "budi");
+  await showDate(page, date);
+  await expect.poll(() => optionLabels(page, "start")).toContain("10:00");
+  const choice = { room: "Kew", start: "10:00", end: "11:00" };
+  const title = page.getByRole("textbox", { name: "title" });
+  const book = page.getByRole("button", { name: "Book", exact: true });
+
+  for (const refused of ["", "   ", tooLong]) {
+    await fillBookingForm(page, { ...choice, title: refused });
+    if (await book.isEnabled()) await book.click();
+    else await title.press("Enter");
+    await expect(page.getByText("Booked.", { exact: true })).toHaveCount(0);
+  }
+  await expect.poll(() => roomLines(page, "kew")).toEqual(["(no bookings)"]);
+
+  await bookThroughForm(page, { ...choice, title: typed });
+  await expect(page.getByText("Booked.", { exact: true })).toBeVisible();
+  const [start] = wallTimeInstants(date, "10:00", zone);
+  const [end] = wallTimeInstants(date, "11:00", zone);
+  await expect.poll(() => roomLines(page, "kew")).toEqual(expectedLines({ start, end, title: typed }, "kew", zone, date));
+
+  const rooms = await getRooms(await tokenFor("budi"), dayRange(date, LONDON).start, dayRange(date, LONDON).end);
+  expect(rooms.status).toBe(200);
+  const kew = (rooms.body as { rooms: Array<{ id: string; bookings: Booking[] }> }).rooms.find((r) => r.id === "kew")!;
+  expect(kew.bookings).toHaveLength(1);
+  expect(kew.bookings[0].title).toBe(typed);
+});
+
+// Last in the file: backend.restart() ends every token, and no later test may depend on an earlier session.
+test("AC-2.3: after a restart, pressing Book lands on Login with the expiry message", async ({ page, backend }) => {
+  const date = DATES[7];
+  const zone = ZONES.budi;
+  await openRooms(page, "budi");
+  await showDate(page, date);
+  await expect.poll(() => optionLabels(page, "start")).toContain("09:00");
+  await fillBookingForm(page, { room: "Merapi", start: "09:00", end: "10:00", title: "After restart" });
+
+  await backend.restart();
+  // The service itself must refuse the call: a local answer would not.
+  const call = page.waitForResponse((r) => r.url().endsWith("/api/bookings") && r.request().method() === "POST");
+  await page.getByRole("button", { name: "Book", exact: true }).click();
+  expect((await call).status()).toBe(401);
+  await expect(page.getByText("Your session has expired. Please sign in again.", { exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Sign in" })).toBeVisible();
+
+  const rooms = await getRooms(await tokenFor("budi"), dayRange(date, zone).start, dayRange(date, zone).end);
+  expect(rooms.status).toBe(200);
+  const merapi = (rooms.body as { rooms: Array<{ id: string; bookings: Booking[] }> }).rooms.find((r) => r.id === "merapi")!;
+  expect(merapi.bookings).toEqual([]);
+});
