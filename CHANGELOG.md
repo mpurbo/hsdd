@@ -52,6 +52,16 @@ Specification: `spec/hsdd-spec-v0_11.md`. Settled build decisions:
   inputs.
 - `docs/guide/`: chapter 10, "Run unattended", on handing planning to an
   agent and reviewing its decisions afterwards.
+- `docs/tutorial/meeting-rooms/`: a third recorded run, the first planned
+  by `hsdd-auto`. PRD version 2 grows simple-login into meeting-room
+  booking for two offices in different time zones, with PostgreSQL in
+  Docker; an intake segment plans it unattended (31 steps, 231 recorded
+  decisions, no stop), the owner's review follows in one sitting over the
+  ledger, twelve phases are built in a backend, a web and an integration
+  lane, and a checkpoint closes the intake. The `template/`, the
+  `execute/` repository with its full history, and an interactive
+  `walkthrough/` with the process log, including the findings about HSDD
+  the run surfaced.
 - **Test coverage:** script tests for every script and
   `test/auto-e2e.test.mjs`, which drives the scripts through simulated plan,
   stop, procedural-stop, intake, rework and interruption runs.
@@ -70,6 +80,45 @@ Specification: `spec/hsdd-spec-v0_11.md`. Settled build decisions:
 - The contract file gains the optional front-matter field `governed_by`.
   Open-question and `Collides with` separators admit `:`, an en dash or
   ` - ` beside the em dash, and an empty cell admits `none` and `-`.
+
+### Fixed
+
+hsdd-auto was built against 0.10.0. Before the tutorial run, a check
+against 0.10.1 and 0.10.2 found fifteen gaps (build decisions B-40 to
+B-51), and the run itself showed six more defects (B-52 to B-57). All are
+fixed here; the 775 tests the branch had grew to 815.
+
+- Contracts are indexed by front-matter `id`, so a later version in its
+  own file (`{slug}.v{n}.md`, 0.10.2) is the same contract: the gate's C4
+  and C5, the facts a step receives, the target lines, C3 and the
+  `## Produced` append all read the version a citation names.
+- `approved-prd` is an authority, rendered in `hsdd-intake`'s words
+  wherever it reaches a prompt or a record.
+- A lower contract version counts as superseded only when it is
+  `deprecated` or `retired`; citation touch and align never edit a node
+  header's Produces or Consumes or an ADR's `affects`, so a `coexisting`
+  version keeps its live citations.
+- A bump's migration mode (`coexisting` or `lockstep`) has an unattended
+  disposition under `breaking-amend`, and a predecided answer names it;
+  hsdd-contract and hsdd-reconcile route the lockstep consumers' phases
+  and the ADR `affects` update as inserted steps.
+- "Shipped" reads the conventions' `**Main line:**`, not `origin/HEAD`.
+- A baseline source's version matches only with its citation name, never
+  as a bare token (`"1"` matched every `minLength: 1`).
+- An item on a handoff waits for that handoff's own step instead of being
+  handed to every earlier step on the same node.
+- An inserted step's invocation carries its item's text; an accepted
+  insert-step can be withdrawn while no step has run it.
+- `## Produced` lists new contracts and proposed ADRs and drops its
+  placeholder.
+- The parent's citation touch owns its copies of a child's lines.
+- v0.11 reads against v0.10.2; its "v0.10.0 §n" prefix names the v0_10
+  document as of 0.10.2.
+
+The tutorial's process log lists eleven further findings about HSDD
+(hsdd-config's referenced-contract closure and self-contained check, the
+verification template, the superpowers derivative, sizing, evidence),
+left unchanged for the owner.
 
 ### Notes for the owner
 

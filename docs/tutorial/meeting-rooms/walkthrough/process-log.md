@@ -589,6 +589,12 @@ the build follows ADR-002 as written.
 
 ## The build
 
+> **On times.** The orchestrator wrote this section's times as it went,
+> and from backend.7 on they run 18 to 40 minutes later than the commits;
+> the commit times in `execute/`'s history are authoritative. Commit ids
+> in this log are the sandbox's; the imported history in this repository
+> has new ids, as the tutorial's README explains.
+
 hsdd-auto plans and stops there, so the twelve phases go through the
 ordinary per-phase path: `hsdd-config`'s switch, then the superpowers
 derivative it writes (planning, the execution skill the review tier names,
@@ -801,7 +807,7 @@ product improvements for a later intake.
 
 ### 05:04 · web.9 (full-review), with integration.3 still running
 
-### 05:30 to 06:50 · paused on the account's usage limit
+### 05:16 to 06:54 · paused on the account's usage limit
 
 Both running phase agents (integration.3 and web.9) stopped on the
 account's five-hour usage limit. Their work was committed or left in their
