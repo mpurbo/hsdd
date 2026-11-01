@@ -1,0 +1,96 @@
+{
+ "numTotalTests": 387,
+ "numPassedTests": 387,
+ "files": [
+  {
+   "file": "web/src/App.expiry.test.tsx",
+   "tests": 2,
+   "passed": 2
+  },
+  {
+   "file": "web/src/App.test.tsx",
+   "tests": 20,
+   "passed": 20
+  },
+  {
+   "file": "web/src/viteConfig.test.ts",
+   "tests": 1,
+   "passed": 1
+  },
+  {
+   "file": "web/src/api/client.test.ts",
+   "tests": 124,
+   "passed": 124
+  },
+  {
+   "file": "web/src/rooms/BookingForm.test.tsx",
+   "tests": 27,
+   "passed": 27
+  },
+  {
+   "file": "web/src/rooms/RoomsScreen.test.tsx",
+   "tests": 19,
+   "passed": 19
+  },
+  {
+   "file": "web/src/rooms/bookingRules.test.ts",
+   "tests": 21,
+   "passed": 21
+  },
+  {
+   "file": "web/src/rooms/roomViews.test.ts",
+   "tests": 8,
+   "passed": 8
+  },
+  {
+   "file": "web/src/home/HomeScreen.test.tsx",
+   "tests": 8,
+   "passed": 8
+  },
+  {
+   "file": "web/src/home/MyBookings.test.tsx",
+   "tests": 20,
+   "passed": 20
+  },
+  {
+   "file": "web/src/home/bookingLines.test.ts",
+   "tests": 5,
+   "passed": 5
+  },
+  {
+   "file": "web/src/home/memberSince.test.ts",
+   "tests": 8,
+   "passed": 8
+  },
+  {
+   "file": "web/src/login/LoginScreen.test.tsx",
+   "tests": 16,
+   "passed": 16
+  },
+  {
+   "file": "web/src/session/flow.test.ts",
+   "tests": 22,
+   "passed": 22
+  },
+  {
+   "file": "web/src/session/store.test.ts",
+   "tests": 12,
+   "passed": 12
+  },
+  {
+   "file": "web/src/time/time.test.ts",
+   "tests": 63,
+   "passed": 63
+  },
+  {
+   "file": "web/src/test/ambientZone.test.ts",
+   "tests": 1,
+   "passed": 1
+  },
+  {
+   "file": "web/src/test/fetchStub.test.ts",
+   "tests": 10,
+   "passed": 10
+  }
+ ]
+}

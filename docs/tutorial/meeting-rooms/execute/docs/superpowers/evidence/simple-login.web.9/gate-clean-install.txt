@@ -1,0 +1,27 @@
+$ rm -rf web/node_modules web/dist web/package-lock.json && npm --prefix web install && npm --prefix web run gate   # 5fadce3, 2026-11-01T00:05:45Z
+
+added 105 packages in 12s
+
+> simple-login-web@0.0.0 gate
+> tsc --noEmit && TZ=Asia/Kolkata vitest run && vite build
+
+
+ RUN  v5.0.5 <repo>/web
+
+
+ Test Files  18 passed (18)
+      Tests  387 passed (387)
+   Start at  05:35:59
+   Duration  2.71s (environment 61%, tests 19%, setup 13%, import 4%, transform 3%)
+
+vite v8.3.5 building client environment for production...
+transforming...
+✓ 34 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                   0.39 kB │ gzip:  0.26 kB
+dist/assets/index-xAfh5BHB.css    4.87 kB │ gzip:  1.16 kB
+dist/assets/index-BZ2jqL6x.js   239.95 kB │ gzip: 75.08 kB
+
+✓ built in 297ms
+exit: 0
