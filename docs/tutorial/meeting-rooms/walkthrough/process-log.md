@@ -891,3 +891,142 @@ build decisions B-52 to B-57:
 The tutorial's own run keeps the skills it was recorded with
 (`.claude/skills/` copied at 6fa66cb); its records show the defects these
 fixes address.
+
+**integration.5, 08:23 to 09:30 (agent), signed 09:33.** Rooms' browser
+tests: the rooms and a date's bookings in the user's zone, room-local
+times, booking through the form, the overlap refusal, two users booking
+at once in two browsers (AC-5.4), started times and title rules, an
+expired session at Book, and London's clock-change days on Rooms and Home
+(AC-4.4) on the next last Sunday of March and of October. Browser suite
+69 to 85; the README's coverage text made true. Full review: on one London
+date a year, an AC-4.2 booking fell inside the clock-change test's view
+and only file order hid it (Important, fixed red-then-green). Final root
+`npm test`, rerun by the orchestrator: backend 299, replay 46, web 387,
+browser 85.
+
+- **Open item for the owner (product).** In the two-browser check the
+  user who lost the race saw `(no bookings)` under Thames beside "Thames
+  is already booked from 19:00 to 20:00.": web.9 refetches the date after
+  a 201 but not after a 409. A web change request, not fixed in this run.
+- **Open item for the owner (flake).** `web/src/App.test.tsx`'s AC-2.2
+  test failed once on a clean install and passed in every later run.
+
+All twelve phases are signed and merged on the sandbox's `main`
+(0a618de).
+
+### 09:35 · hsdd-checkpoint
+
+**The checkpoint, 09:35 to 09:55 (agent).** The intake record closed: all
+twelve phases cite it in their Scope, each has a verification doc on
+`main`, a green gate, and a named delegated sign-off, which v0.10.2 counts
+as done. 21 of 21 phases done. It re-ran the root `npm test` from a fresh
+install (green), wrote `2026-11-01-progress.md` and
+`2026-11-01-execution-plan.md`, regenerated the atlas, ticked the earlier
+plan's C-2 and C-3 (absorbed by the run, DEC-022 and DEC-056), and wrote
+findings F-10 to F-22 with a Sync A agenda of eleven items (A-1 to A-11)
+for the owner, asking nothing. Two of its findings judge the proxy itself:
+the twelve sign-offs dropped all 53 Learnings and took 10 waivers (F-10,
+F-11), and the review sitting's disagreement with DEC-032 never landed,
+so web.8 shipped the repeated-date form the proxy rejected (F-12).
+
+**Fresh clone, 09:58.** `git clone` of the sandbox, `npm run
+install:all && npm test`: backend 299, replay 46, web 387, runner 3,
+browser 85, all green.
+
+### 10:05 · into this repository
+
+The sandbox's `main` (226 commits) was cloned, every commit's files and
+message scrubbed of local absolute paths (phase agents' evidence logs
+held 138 of them; they now read `<repo>`, `<scratch>` or `~`), rewritten
+under `docs/tutorial/meeting-rooms/execute/`, and merged into
+`feat/v0.11.0` with its history (e5f8641), so the walkthrough reads each
+stage from git like the earlier tutorials. `template/` is the run's
+starting commit: simple-login after update 1, plus PRD v2.
+
+## Closing notes for the owner
+
+### Decisions taken as owner proxy
+
+1. The change request itself: PRD v2 was written by Claude as product.
+   It dropped version 1's 3-second target by accident (DEC-073, DEC-195;
+   agenda A-10).
+2. The first run's ten answers (`hsdd/auto/run.yaml`) and the segment's
+   instruction.
+3. Two hsdd-auto design choices made before the run (build decisions
+   B-41 and B-49): a lower contract version is superseded only when
+   deprecated or retired, and a bump's migration mode folds into
+   `breaking-amend`.
+4. The review sitting: 32 agree, 1 disagree (DEC-032), not acted on
+   (checkpoint F-12, agenda A-8).
+5. Twelve sign-offs, each "Claude for Purbo Mohamad (owner proxy)", with
+   their dispositions (agenda A-6). Product rulings inside them: a
+   cancel gets no success message (web.7); focus on a screen change and a
+   retry on Rooms are later work (web.8); a failed refetch after a 201
+   and an unrefreshed date after `unavailable` (web.9) and the stale
+   Rooms list after a 409 (integration.5) are left for a change request
+   (agenda A-9).
+
+### Findings about HSDD
+
+Fixed in v0.11.0, before or after the run: the fifteen gaps between
+hsdd-auto and v0.10.2 (G-1 to G-15; B-40 to B-51), and six defects the
+run showed (R-1 to R-6; B-52 to B-57): a bare-token `cites-superseded`,
+items on a handoff handed to every step on its node, an inserted step's
+invocation without its item's text, no way to withdraw an accepted
+insert-step, a mislabelled `## Produced`, and a child's citation touch
+unable to reach its root copy.
+
+Open, for the owner (none changed in this release):
+
+1. **hsdd-auto: planner isolation is a prompt rule only.** Two planners
+   read a sibling's phase plan (S18, S27); nothing in the gate sees it.
+2. **hsdd-auto and every skill: verbatim quotes meet prose rules.**
+   Steps copy skill text that holds an em dash into `self_check` and
+   decisions; one step edited a minted decision to remove it (S18).
+3. **hsdd-config: the referenced-contract closure cascades.** The filling
+   rule takes contracts from the Phase block and contract subsections;
+   step 9 and rule 2 take every `@v` in the file. Inlined decisions that
+   cite contracts pull in more, so phases that consume nothing carried
+   500 to 700 lines of contract text, and the contract order ("first
+   named") is circular when the first naming is in Decisions.
+4. **hsdd-config: the self-contained check counts ids only.** Handoff
+   ids (H17, H19), behavior references ("as for sign-in"), source
+   documents (PRD v2 Screens, cited by four phases), the intake record
+   and experiment paths all slipped through; agents either worked without
+   them or read outside their context.
+5. **Deferred items do not travel.** A sign-off that defers an item to a
+   later phase writes the phase id, and nothing carries the item into
+   that phase's context; here the orchestrator's brief did.
+6. **The verification template.** Its title holds an em dash; it has no
+   heading for spot-check's "what to eyeball"; the project's copy lacks
+   v0.10.2's delegated sign-off line, and the switch leaves it.
+7. **The superpowers derivative.** The Gate is wrapped in backticks it
+   may already carry; a contract's own `###` headings collide with the
+   context's; bold labels without blank lines merge into a preceding
+   list; constraint 11 is unclear for a stack skill that is not a
+   language; `writing-plans`' header names both execution skills against
+   the Plan check; both execution skills put the final review after the
+   last task, which in HSDD is the verification doc; constraint 1's
+   "commit before that phase" red does not fit an integration phase.
+8. **Sizing.** Phases landed at 1.5 to 2.5 times their Size estimate
+   once tests count; the conventions do not say whether they do.
+9. **Evidence.** No convention names where phase evidence lives; agents
+   first cited git-ignored workspace logs, then settled on
+   `docs/superpowers/evidence/{phase}/`.
+10. **A Verification line can name a symptom.** backend.6's "no
+    `deadlock detected`" could not catch a read-before-lock mutant that
+    logged 183 errors and no deadlock.
+11. **superpowers (upstream):** its task-brief script leaves the plan's
+    Global Constraints out of each subagent's brief.
+
+### The numbers
+
+- **Planning (hsdd-auto):** 31 steps (27 subagents), 231 decisions, 65
+  commits, 12 experiments, one rework, three inserted steps, no stop;
+  19:20 to 01:54 WIB including the gap fixes beforehand.
+- **Build:** twelve phases in two lanes then integration, 02:05 to 09:33
+  WIB with an 80-minute pause for the usage limit. Backend gate 72 to
+  299 tests, contract replay 10 to 46, web gate 90 to 387, browser suite
+  20 to 85. Every phase review found at least one real defect the plan's
+  own tests missed; each was fixed with a test seen failing first.
+- **Sandbox history:** 226 commits.

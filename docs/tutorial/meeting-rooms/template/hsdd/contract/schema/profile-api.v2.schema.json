@@ -1,0 +1,132 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:simple-login:contract:profile-api:v2",
+  "title": "profile-api@v2: responses of GET /api/me",
+  "description": "Validates one response as { status, body }.",
+  "type": "object",
+  "required": [
+    "status",
+    "body"
+  ],
+  "properties": {
+    "status": {
+      "type": "integer"
+    },
+    "body": true
+  },
+  "additionalProperties": false,
+  "oneOf": [
+    {
+      "type": "object",
+      "properties": {
+        "status": {
+          "const": 200
+        },
+        "body": {
+          "$ref": "#/$defs/Profile"
+        }
+      }
+    },
+    {
+      "type": "object",
+      "properties": {
+        "status": {
+          "const": 401
+        },
+        "body": {
+          "$ref": "#/$defs/Unauthorized"
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "Profile": {
+      "type": "object",
+      "required": [
+        "id",
+        "username",
+        "displayName",
+        "email",
+        "phone",
+        "memberSince"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "username": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "displayName": {
+          "type": "string",
+          "minLength": 1
+        },
+        "email": {
+          "type": "string",
+          "format": "email"
+        },
+        "phone": {
+          "type": "string",
+          "pattern": "^\\+[0-9]{1,3}( [0-9]{1,4})+$"
+        },
+        "memberSince": {
+          "type": "string",
+          "format": "date"
+        }
+      },
+      "additionalProperties": false
+    },
+    "ErrorEnvelope": {
+      "type": "object",
+      "required": [
+        "error"
+      ],
+      "properties": {
+        "error": {
+          "type": "object",
+          "required": [
+            "code",
+            "message"
+          ],
+          "properties": {
+            "code": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "Unauthorized": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/ErrorEnvelope"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "error": {
+              "type": "object",
+              "properties": {
+                "code": {
+                  "const": "UNAUTHORIZED"
+                },
+                "message": {
+                  "const": "Sign in to continue."
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}
