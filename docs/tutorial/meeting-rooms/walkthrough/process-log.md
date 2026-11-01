@@ -807,3 +807,42 @@ Both running phase agents (integration.3 and web.9) stopped on the
 account's five-hour usage limit. Their work was committed or left in their
 worktrees; after the reset each was resumed with a message telling it to
 read `git log` and `git status` first and carry on. Nothing was lost.
+
+**web.9, 05:04 to 07:20 (agent, paused for the limit), signed 07:24.**
+The booking form: a pure core for its choices, the form itself with the
+room, start, end and title, D10's answers, and Rooms fetching the date
+again after a booking. Gate 331 to 387. Full review: the final reviewer
+found that the no-break-space test cases had silently become ASCII spaces
+(an editor tool turned the plan's `\u` escapes into literal characters,
+and an implementer copied the text), plus four smaller fixes. The agent
+ran the real app in Chrome against a backend on its own database at 360
+and 1280 px. Product 313 lines, tests 583: two and a half times the Size
+estimate. Two owner decisions carried as open items, both needing a
+network failure at that exact moment: a failed refetch right after a 201
+hides `Booked.`, and an `unavailable` answer on Book does not refetch.
+
+The web lane is done (web.5 to web.9); the web gate went from 90 to 387
+tests.
+
+**integration.3, 04:44 to 07:35 (agent, paused for the limit), signed
+07:42.** The browser suite on PostgreSQL: a `meeting_rooms_e2e` database
+re-created per run, the service in its own process group, the browser in
+Asia/Kolkata, the proxy replay grown by 15 booking-api fixtures, and PRD
+v2's two Success tests against the service: 20 simultaneous attempts in
+five rounds (one winner each), and a restart that keeps every booking.
+Browser suite 20 to 49. Full review: tests asserting Thames would fail
+about 14 days a year, on the days integration.5 books it for London's
+clock change (Important, fixed by deriving each test's window from its
+own day), and the README claimed full coverage (fixed). Before signing,
+the orchestrator merged `main` (web.8 and web.9) into the lane and ran the
+root `npm test`: backend 299, replay 46, web 387, browser 49, all green.
+
+- **Finding (HSDD).** The runtime reports `Asia/Kolkata` as
+  `Asia/Calcutta`; the context names the literal, so a test comparing
+  names fails. A context that pins a zone name should say canonical or
+  alias.
+- **Finding (HSDD).** Conventions name no directory for phase evidence;
+  backend.7 chose `docs/superpowers/evidence/{phase}/` and every later
+  phase followed it.
+
+### 07:43 · integration.4 (spot-check)
