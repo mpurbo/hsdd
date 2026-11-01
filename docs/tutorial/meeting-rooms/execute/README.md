@@ -58,8 +58,10 @@ In order:
 
 The browser suite starts the real backend and the web dev server. It covers:
 
-- in the browser, AC-1.1 to AC-1.3, AC-2.1 to AC-2.4 and AC-3.1 (the login and
-  home specs); it does not drive booking, Home's bookings or Rooms;
+- in the browser, AC-1.1 to AC-1.3, AC-2.1 to AC-2.5, AC-3.1, AC-4.1 to AC-4.4
+  (London's clock-change days in `clock-change.spec.ts`), AC-5.1 to AC-5.6,
+  AC-6.1 and AC-6.2, and AC-2.3 at a booking call (the login, home, rooms and
+  clock-change specs);
 - at the service, through `e2e/api.ts`, the PRD v2 Success tests (20
   simultaneous attempts to book one room, in five rounds; a restart keeps
   every booking and ends every token), AC-5.5 (booking the current quarter
@@ -83,7 +85,7 @@ bookings. Stop `npm run dev` first: the browser suite needs ports 3000 and
 |------|------------|
 | `backend/` | the service: sign-in, the profile, and the booking endpoints (rooms, your bookings, book, cancel) |
 | `web/` | the web app: Login, Home and Rooms screens |
-| `e2e/`, `playwright.config.ts` | the browser suite: `api.ts` (the service's calls), `global-setup.ts` (the database), `fixtures.ts` (the service and its restart), the spec files |
+| `e2e/`, `playwright.config.ts` | the browser suite: `api.ts` (the service's calls), `global-setup.ts` (the database), `fixtures.ts` (the service and its restart), `rooms.ts` (the Rooms driver), the spec files |
 | `scripts/dev.mjs` | runs both servers for `npm run dev` |
 | `hsdd/` | the HSDD tree: inputs, specs, contracts, ADRs, verification docs |
 | `hsdd-context/` | the context each phase was built from |
