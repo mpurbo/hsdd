@@ -624,7 +624,7 @@ rerunning the gate (199 green); five Learnings dropped with reasons.
 Findings about HSDD from the phase:
 
 - The verification template's title carries an em dash
-  (`{phase-id} — {Phase Name}`), which collides with the owner's prose
+  (between `{phase-id}` and `{Phase Name}`), which collides with the owner's prose
   rule; the project's copy is also stale (no delegated sign-off line),
   and the switch leaves it alone.
 - "What to eyeball", which spot-check depth asks for, has no heading in
