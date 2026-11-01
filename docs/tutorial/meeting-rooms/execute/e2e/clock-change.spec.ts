@@ -4,9 +4,10 @@
 // screen shows in London's own zone.
 //
 // No other spec file meets these two days with Thames: rooms.spec.ts and
-// home.spec.ts book only on British winter dates (never a clock-change day),
-// and rig.spec.ts and success.spec.ts assert only their own rooms on these
-// days. So Thames holds exactly the booking each test below makes on its day,
+// home.spec.ts book only on British winter dates, and rooms.spec.ts keeps its
+// one booking that spills into a next date (AC-4.2) on dates that are never a
+// clock-change day; rig.spec.ts and success.spec.ts assert only their own
+// rooms on these days. So Thames holds exactly the booking each test below makes on its day,
 // and its lines can be compared exactly. Each day gets its own title.
 //
 // booking-api@v1 G10 refuses a start more than 365 days after the real clock.
@@ -101,6 +102,7 @@ for (const day of dayCases()) {
         description: `${date} starts more than 365 days after the real clock (booking-api@v1 G10)`,
       });
       await roomsOn(page, "budi", date);
+      await expect.poll(() => optionLabels(page, "start")).toEqual(startLabels(date));
       await expect.poll(() => roomLines(page, "thames")).toEqual(["(no bookings)"]);
       const main = await page.getByRole("main").innerText();
       for (const room of Object.values(ROOMS)) expect(main).toContain(room.heading);
@@ -126,7 +128,7 @@ for (const day of dayCases()) {
     // Budi's Rooms.
     const budi = expectedLines(booking, "thames", ZONES.budi, date);
     await expect.poll(() => roomLines(page, "thames")).toEqual(budi);
-    if (date.startsWith("2027-")) expect(budi[0]).toBe(`${day.from} to ${day.to}  ${day.title}`);
+    expect(budi[0]).toBe(`${day.from} to ${day.to}  ${day.title}`);
 
     // Budi's Home.
     await page.getByRole("button", { name: "Home" }).click();
@@ -140,10 +142,8 @@ for (const day of dayCases()) {
       await roomsOn(ayu, "ayu", date);
       const lines = expectedLines(booking, "thames", JAKARTA, date);
       await expect.poll(() => roomLines(ayu, "thames")).toEqual(lines);
-      if (date.startsWith("2027-")) {
-        expect(lines[0]).toBe(`${day.ayu}  ${day.title}`);
-        expect(lines[1]).toBe(day.room);
-      }
+      expect(lines[0]).toBe(`${day.ayu}  ${day.title}`);
+      expect(lines[1]).toBe(day.room);
     } finally {
       await ayu.context().close();
     }

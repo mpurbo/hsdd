@@ -5,20 +5,22 @@
 // own: London dates wholly in GMT (never a clock-change day). home.spec.ts
 // owns britishWinterDays(addDays(todayIn(LONDON), 60), 6); this file
 // recomputes those six with the same expression and continues from the day
-// after the last: britishWinterDays(addDays(HOME_DATES[5], 1), 8). Every
-// booking made here lies between 00:00 and 17:00 London time on its date, so
-// ayu's Jakarta view of a date (from 17:00 UTC the day before) holds only that
-// date's bookings; the one exception, AC-4.2's 16:00 to 19:00 London booking,
-// owns the next date too (DATES[1] is never used). Rooms shows every user's
+// after the last (see roomsDates). Every booking made here lies between 00:00
+// and 17:00 London time on its date, so ayu's Jakarta view of a date (from
+// 17:00 UTC the day before) holds only that date's bookings; the one
+// exception, AC-4.2's 16:00 to 19:00 London booking, spills into the next
+// calendar date, and roomsDates keeps DATES[1] as DATES[0]'s next date, so
+// that spill lands on DATES[1] (never a clock-change day, and no other file's
+// Thames booking) and AC-4.2 owns both. Rooms shows every user's
 // bookings, so a test reads exact lines only on dates and rooms it owns.
 //
 // | Test                      | Date index | Rooms         | Accounts |
 // |---------------------------|-----------:|---------------|----------|
 // | AC-4.1: order and default |       none | all           | both     |
-// | AC-4.2: a date's bookings |          0 | Merapi to Kew | ayu      |
+// | AC-4.2: a date's bookings |       0, 1 | Merapi to Kew | ayu      |
 // | AC-4.3: room-local times  |          2 | all           | both     |
 // | AC-5.1, AC-5.2: the form  |          3 | Bromo         | budi     |
-// | AC-5.3: overlap, touching |          4 | Merapi        | ayu, budi|
+// | AC-5.3: overlap, touching |          4 | Merapi        | ayu, budi |
 // | AC-5.4: two at once       |          5 | Thames        | both     |
 // | AC-5.5: already started   |       none | Bromo, today  | budi     |
 // | AC-5.6: title rules       |          6 | Kew           | budi     |
@@ -32,11 +34,35 @@ import {
   type RoomId,
 } from "./rooms.ts";
 
-const HOME_DATES: IsoDate[] = britishWinterDays(addDays(todayIn(LONDON), 60), 6);
-const DATES: IsoDate[] = britishWinterDays(addDays(HOME_DATES[5], 1), 8);
+/**
+ * The dates of this file for London's `today` (see the header's date rule):
+ * home.spec.ts's six, then eight of our own, the second the day after the
+ * first. When the Saturday before the March change is the first, the next
+ * winter date jumps over the summer, so the eight restart from the second
+ * (after the jump the winter dates are consecutive).
+ */
+function roomsDates(today: IsoDate): IsoDate[] {
+  const home = britishWinterDays(addDays(today, 60), 6);
+  const own = britishWinterDays(addDays(home[5], 1), 8);
+  return own[1] === addDays(own[0], 1) ? own : britishWinterDays(own[1], 8);
+}
+
+const DATES: IsoDate[] = roomsDates(todayIn(LONDON));
 
 const ORDER: RoomId[] = ["merapi", "bromo", "thames", "kew"];
 const DAY = 24 * 60 * 60 * 1000;
+
+test("the date rule: DATES[1] is DATES[0]'s next date, even before London's March change", () => {
+  for (const today of ["2027-01-20", todayIn(LONDON)]) {
+    const dates = roomsDates(today);
+    expect(dates).toHaveLength(8);
+    expect(dates[1]).toBe(addDays(dates[0], 1));
+    for (const date of dates) {
+      const { start, end } = dayRange(date, LONDON);
+      expect(Date.parse(end) - Date.parse(start)).toBe(DAY);
+    }
+  }
+});
 
 /** The latest instant not after `now` whose UTC time of day is `hours:minutes`. */
 function latestPast(hours: number, minutes: number, now: number = Date.now()): number {
@@ -85,13 +111,14 @@ test("AC-4.2: a date in ayu's zone shows each room's overlapping bookings, earli
 
   await openRooms(page, "ayu");
   await showDate(page, date);
-  await expect.poll(() => roomLines(page, "merapi")).toEqual(["(no bookings)"]);
-  await expect.poll(() => roomLines(page, "bromo")).toEqual(["(no bookings)"]);
   await expect.poll(() => roomLines(page, "kew")).toEqual([
     ...expectedLines(earlier, "kew", zone, date),
     ...expectedLines(later, "kew", zone, date),
   ]);
   await expect.poll(() => roomLines(page, "thames")).toEqual(expectedLines(thames, "thames", zone, date));
+  // Kew and Thames only match once the date has loaded, so "(no bookings)" is read after them.
+  await expect.poll(() => roomLines(page, "merapi")).toEqual(["(no bookings)"]);
+  await expect.poll(() => roomLines(page, "bromo")).toEqual(["(no bookings)"]);
   // Pin: 16:00 to 19:00 in London is 23:00 to 02:00 the next day in Jakarta.
   expect((await roomLines(page, "thames"))[0]).toContain(`23:00 to ${formatDate(next)} 02:00`);
 
@@ -155,7 +182,7 @@ test("AC-5.1 and AC-5.2: budi books through the form; starts and ends fall on qu
   }
 
   await bookThroughForm(page, { room: "Bromo", start: "09:00", end: "10:00", title: "Form booking" });
-  await expect(page.getByText("Booked.")).toBeVisible();
+  await expect(page.getByText("Booked.", { exact: true })).toBeVisible();
   const [start] = wallTimeInstants(date, "09:00", zone);
   const [end] = wallTimeInstants(date, "10:00", zone);
   const booking = { start, end, title: "Form booking" };
@@ -187,11 +214,11 @@ test("AC-5.3: an overlap is refused with the other booking's times in budi's zon
   await expect(page.getByText(message)).toBeVisible();
   // Pin: 09:00 to 10:00 in Jakarta is 02:00 to 03:00 in London.
   expect(message).toContain("02:00 to 03:00");
-  await expect(page.getByText("Booked.")).toHaveCount(0);
+  await expect(page.getByText("Booked.", { exact: true })).toHaveCount(0);
   await expect.poll(() => roomLines(page, "merapi")).toEqual(expectedLines(ayus, "merapi", zone, date));
 
   await bookThroughForm(page, { room: "Merapi", start: "03:00", end: "04:00", title: budis.title });
-  await expect(page.getByText("Booked.")).toBeVisible();
+  await expect(page.getByText("Booked.", { exact: true })).toBeVisible();
   await expect.poll(() => roomLines(page, "merapi")).toEqual([
     ...expectedLines(ayus, "merapi", zone, date),
     ...expectedLines(budis, "merapi", zone, date),
@@ -221,12 +248,12 @@ test("AC-5.4: two users pressing Book together get one booking; the other sees t
     for (const { who, from, to, title } of entries) {
       await fillBookingForm(pages[who], { room: "Thames", start: from, end: to, title });
     }
-    await Promise.all(entries.map(({ who }) => pages[who].getByRole("button", { name: "Book" }).click()));
+    await Promise.all(entries.map(({ who }) => pages[who].getByRole("button", { name: "Book", exact: true }).click()));
 
     const booked: string[] = [];
     for (const { who, title } of entries) {
       const refused = pages[who].getByText(overlapMessage("thames", range, ZONES[who], date));
-      const done = pages[who].getByText("Booked.");
+      const done = pages[who].getByText("Booked.", { exact: true });
       await expect(done.or(refused)).toBeVisible();
       if (await done.isVisible()) booked.push(title);
     }
@@ -301,7 +328,7 @@ test("AC-5.6: blank, spaces-only and 81-character titles book nothing; 80 charac
   expect(rooms.status).toBe(200);
   const kew = (rooms.body as { rooms: Array<{ id: string; bookings: Booking[] }> }).rooms.find((r) => r.id === "kew")!;
   expect(kew.bookings).toHaveLength(1);
-  expect(kew.bookings[0].title === typed).toBe(true);
+  expect(kew.bookings[0].title).toBe(typed);
 });
 
 // Last in the file: backend.restart() ends every token, and no later test may depend on an earlier session.

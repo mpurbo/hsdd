@@ -95,7 +95,7 @@ export async function bookThroughForm(
   page: Page, choice: { room: string; start: string; end: string; title: string },
 ): Promise<void> {
   await fillBookingForm(page, choice);
-  await page.getByRole("button", { name: "Book" }).click();
+  await page.getByRole("button", { name: "Book", exact: true }).click();
 }
 
 /** The message Rooms shows when `room` is already booked over `other`: its times in `userZone`, against the line date `lineDate`. */

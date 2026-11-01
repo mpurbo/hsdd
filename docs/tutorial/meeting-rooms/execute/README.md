@@ -69,7 +69,8 @@ The browser suite starts the real backend and the web dev server. It covers:
 - the proxy replay, which sends 24 exact fixtures through the web dev server
   to the real service: 4 of `auth-api@v1`, 5 of `profile-api@v2` and 15 of
   `booking-api@v1`;
-- the rig's own tests (`e2e/rig.spec.ts`).
+- the rig's own tests (`e2e/rig.spec.ts`);
+- the suite's own time model against ADR-002's examples (`e2e/time.spec.ts`).
 
 Playwright, its workers, the service they start and the browser run in the
 Asia/Kolkata time zone, which is neither
@@ -85,7 +86,7 @@ bookings. Stop `npm run dev` first: the browser suite needs ports 3000 and
 |------|------------|
 | `backend/` | the service: sign-in, the profile, and the booking endpoints (rooms, your bookings, book, cancel) |
 | `web/` | the web app: Login, Home and Rooms screens |
-| `e2e/`, `playwright.config.ts` | the browser suite: `api.ts` (the service's calls), `global-setup.ts` (the database), `fixtures.ts` (the service and its restart), `rooms.ts` (the Rooms driver), the spec files |
+| `e2e/`, `playwright.config.ts` | the browser suite: `api.ts` (the service's calls), `global-setup.ts` (the database), `fixtures.ts` (the service and its restart), `rooms.ts` (the Rooms driver), `time.ts` (the time model for expected strings and dates), the spec files |
 | `scripts/dev.mjs` | runs both servers for `npm run dev` |
 | `hsdd/` | the HSDD tree: inputs, specs, contracts, ADRs, verification docs |
 | `hsdd-context/` | the context each phase was built from |
