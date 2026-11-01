@@ -197,16 +197,12 @@ test("AC-5.3: an overlap is refused with the other booking's times in budi's zon
 
 test("AC-5.4: two users pressing Book together get one booking; the other sees the overlap message in their own zone", async ({ page, browser }) => {
   const date = DATES[5];
-  // The database lives for one run, so a repeated run (--repeat-each) takes the next hour's slot: 10:00 London, then 11:00, and so on.
-  const hour = test.info().repeatEachIndex;
-  const at = (h: number) => `${String(h).padStart(2, "0")}:00`;
-  const tag = hour === 0 ? "" : ` ${hour}`; // titles stay distinct across repeats
   const entries = [
-    { who: "budi", from: at(10 + hour), to: at(11 + hour), title: `Race budi${tag}` },
-    { who: "ayu", from: at(17 + hour), to: at(18 + hour), title: `Race ayu${tag}` },
+    { who: "budi", from: "10:00", to: "11:00", title: "Race budi" },
+    { who: "ayu", from: "17:00", to: "18:00", title: "Race ayu" },
   ] as const;
-  const [start] = wallTimeInstants(date, at(10 + hour), LONDON);
-  const [end] = wallTimeInstants(date, at(11 + hour), LONDON);
+  const [start] = wallTimeInstants(date, "10:00", LONDON);
+  const [end] = wallTimeInstants(date, "11:00", LONDON);
   const range = { start, end };
 
   const other = await browser.newContext();
@@ -217,7 +213,7 @@ test("AC-5.4: two users pressing Book together get one booking; the other sees t
       await showDate(pages[who], date);
       const starts = quarterHours(date, ZONES[who]).map((at) => timeLabel(at, ZONES[who], date));
       await expect.poll(() => optionLabels(pages[who], "start")).toEqual(starts);
-      await expect.poll(async () => (await roomLines(pages[who], "thames")).length).toBeGreaterThan(0);
+      await expect.poll(() => roomLines(pages[who], "thames")).toEqual(["(no bookings)"]);
     }
     for (const { who, from, to, title } of entries) {
       await fillBookingForm(pages[who], { room: "Thames", start: from, end: to, title });
@@ -237,12 +233,10 @@ test("AC-5.4: two users pressing Book together get one booking; the other sees t
     const rooms = await getRooms(await tokenFor("ayu"), dayRange(date, LONDON).start, dayRange(date, LONDON).end);
     expect(rooms.status).toBe(200);
     const thames = (rooms.body as { rooms: Array<{ id: string; bookings: Booking[] }> }).rooms.find((r) => r.id === "thames")!;
-    expect(thames.bookings.filter((b) => b.start < end && b.end > start).map((b) => b.title)).toEqual([winner.title]);
+    expect(thames.bookings.map((b) => b.title)).toEqual([winner.title]);
 
     const mine = { ...range, title: winner.title };
-    const shown = async () => (await roomLines(pages[winner.who], "thames")).join("\n");
-    await expect.poll(shown).toContain(expectedLines(mine, "thames", ZONES[winner.who], date).join("\n"));
-    expect(await shown()).not.toContain(entries.find(({ title }) => title !== winner.title)!.title);
+    await expect.poll(() => roomLines(pages[winner.who], "thames")).toEqual(expectedLines(mine, "thames", ZONES[winner.who], date));
   } finally {
     await other.close();
   }
