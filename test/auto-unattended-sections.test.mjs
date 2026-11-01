@@ -102,6 +102,13 @@ test("hsdd-intake carries the handoff block section with the kind table", () => 
   assert.ok(n.includes("ticket | incident | braindump"));
 });
 
+test("hsdd-intake's record template lists what the report step appends to ## Produced (run finding R-5)", () => {
+  const n = norm(skill("hsdd-intake"));
+  assert.ok(n.includes("{a ledger: nodes grafted, contracts bumped (id@v), contracts added (id@v), ADRs proposed, ADRs amended, phases appended (ids)."), "the ledger line");
+  const s = norm(spec);
+  assert.ok(s.includes("the contracts bumped (`id@v`), the contracts added (`id@v`), the ADRs proposed and amended, and the nodes grafted"), "spec 10.9");
+});
+
 // The ask-point table of each skill, as spec 12.1 gives it: the bold skill heading, then its pipe lines.
 const specLines = spec.split("\n");
 const specTable = (s) => {

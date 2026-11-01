@@ -318,12 +318,16 @@ const versionAt = (ctx, rev, slug, entry) => {
   return then.length > 0 ? Math.max(...then) : NaN;
 };
 
+// Whether any file the contract id has now was there at `rev`.
+const contractExistedAt = (ctx, rev, entry) => versionsOf(entry).some((c) => showFile(ctx.repoRoot, rev, c.file) !== null);
+
 // What the intake segment produced, mechanically: contract ids whose current version is above the
 // highest version any file of the id held at the setup commit, a later version in a file of its own
-// (v0.10.0 §3.1) or a bump in place (an id with no file then is new, not bumped); ADR files changed in
-// the segment; and the nodes of completed graft steps whose spec file exists.
+// (v0.10.0 §3.1) or a bump in place (`contracts`); contract ids with no file then (`addedContracts`,
+// B-56); ADR files changed in the segment that were there at the setup commit (`adrs`, amended) and
+// those that were not (`proposedAdrs`); and the nodes of completed graft steps whose spec file exists.
 export const producedAdditions = (ctx, segmentId) => {
-  const none = { contracts: [], adrs: [], nodes: [] };
+  const none = { contracts: [], addedContracts: [], adrs: [], proposedAdrs: [], nodes: [] };
   const { segment } = segmentOf(ctx, segmentId);
   if (segment.mode !== "intake") return none;
   const same = coveredSegments(ctx, segmentId).filter((id) => segmentOf(ctx, id).segment.request === segment.request
@@ -331,13 +335,17 @@ export const producedAdditions = (ctx, segmentId) => {
   const first = same.find((id) => ctx.setupCommit(id) !== null);
   if (first === undefined) return none;
   const base = ctx.setupCommit(first);
-  const contracts = [...ctx.tree.contracts].flatMap(([slug, c]) => (versionNumber(c.version) > versionAt(ctx, base, slug, c) ? [`${slug}@${c.version}`] : [])).sort();
+  const entries = [...ctx.tree.contracts];
+  const contracts = entries.flatMap(([slug, c]) => (versionNumber(c.version) > versionAt(ctx, base, slug, c) ? [`${slug}@${c.version}`] : [])).sort();
+  const addedContracts = entries.flatMap(([slug, c]) => (c.version && !contractExistedAt(ctx, base, c) ? [`${slug}@${c.version}`] : [])).sort();
   const changed = ctx.changedSinceSetup(first);
-  const adrs = [...ctx.tree.adrs.values()].filter((a) => changed.has(a.file)).map((a) => a.id ?? a.file).sort();
+  const touched = [...ctx.tree.adrs.values()].filter((a) => changed.has(a.file));
+  const isNew = (a) => showFile(ctx.repoRoot, base, a.file) === null;
+  const ids = (as) => as.map((a) => a.id ?? a.file).sort();
   const nodes = unique(ctx.committedRunLines
     .filter((l) => l.kind === "graft" && l.status === "completed" && same.includes(l.segment) && ctx.tree.nodes.has(l.target))
     .map((l) => l.target)).sort();
-  return { contracts, adrs, nodes };
+  return { contracts, addedContracts, adrs: ids(touched.filter((a) => !isNew(a))), proposedAdrs: ids(touched.filter(isNew)), nodes };
 };
 
 const joined = (xs) => xs.join(", ");
@@ -362,13 +370,40 @@ const appendToSection = (text, name, title, lines, before) => {
   return [...body, "", `## ${title}`, "", ...lines, ""].join("\n");
 };
 
+// A block of the ## Produced section that says nothing is produced yet (B-56): a list item or paragraph,
+// with its continuation lines, whose first word is "none" (after a list marker, emphasis or a
+// parenthesis), or the record template's own `{a ledger: ...}` text.
+const PLACEHOLDER = /^(?:[-*+]\s+)?[_*(\s]*none\b|^\{a ledger\b/i;
+
+const withoutPlaceholder = (text) => {
+  const ls = toLines(text);
+  const hs = headings(ls);
+  const h = hs.find((x) => x.level === 2 && /^produced\b/i.test(plain(x.text)));
+  if (!h) return text;
+  const end = sectionEnd(hs, h, ls.length);
+  const drop = new Set();
+  for (let i = h.line + 1; i < end; i++) {
+    if (ls[i].trim() === "" || /^\s/.test(ls[i]) || !PLACEHOLDER.test(ls[i])) continue;
+    let j = i + 1;
+    while (j < end && ls[j].trim() !== "" && !/^[-*+]\s/.test(ls[j])) j++;
+    // A block set off by blank lines takes the blank lines after it too, so no blank run is left.
+    if (ls[i - 1].trim() === "") while (j < end && ls[j].trim() === "") j++;
+    for (let k = i; k < j; k++) drop.add(k);
+    i = j - 1;
+  }
+  return drop.size === 0 ? text : ls.filter((_, i) => !drop.has(i)).join("\n");
+};
+
 // The record text with the additions and one change-log line, or null when there is nothing to add or
-// the segment's change-log line is already there.
+// the segment's change-log line is already there. A placeholder saying nothing is produced yet goes.
 export const appendedRecord = (text, add, segmentId, date) => {
-  const parts = [["Contracts bumped", "contracts bumped", add.contracts], ["ADRs amended", "ADRs amended", add.adrs], ["Nodes grafted", "nodes grafted", add.nodes]]
-    .filter(([, , xs]) => xs.length > 0);
+  const parts = [
+    ["Contracts bumped", "contracts bumped", add.contracts], ["Contracts added", "contracts added", add.addedContracts ?? []],
+    ["ADRs proposed", "ADRs proposed", add.proposedAdrs ?? []], ["ADRs amended", "ADRs amended", add.adrs],
+    ["Nodes grafted", "nodes grafted", add.nodes],
+  ].filter(([, , xs]) => xs.length > 0);
   if (parts.length === 0 || text.includes(`hsdd-auto segment ${segmentId}:`)) return null;
-  const withProduced = appendToSection(text, /^produced\b/i, "Produced", parts.map(([label, , xs]) => `- ${label}: ${joined(xs)}`), /^change log\b/i);
+  const withProduced = appendToSection(withoutPlaceholder(text), /^produced\b/i, "Produced", parts.map(([label, , xs]) => `- ${label}: ${joined(xs)}`), /^change log\b/i);
   const summary = parts.map(([, label, xs]) => `${label} ${joined(xs)}`).join("; ");
   return appendToSection(withProduced, /^change log\b/i, "Change log", [`- ${date}: hsdd-auto segment ${segmentId}: ${summary}`]);
 };

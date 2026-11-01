@@ -111,9 +111,9 @@ nodes, what each receiving skill will do, the exact handoff prompt; for
 structural, the options and what the human must decide}
 
 ## Produced
-{a ledger: nodes grafted, contracts bumped (id@v), ADRs proposed, phases
-appended (ids). hsdd-checkpoint appends phases from Scope citations; grafts
-and bumps may be appended by hand}
+{a ledger: nodes grafted, contracts bumped (id@v), contracts added (id@v),
+ADRs proposed, ADRs amended, phases appended (ids). hsdd-checkpoint appends
+phases from Scope citations; grafts and bumps may be appended by hand}
 
 ## Change log
 - YYYY-MM-DD: created, routed {class}

@@ -1913,13 +1913,20 @@ and kept across re-runs. Both modes have, in order:
     commits, `{artifact}: {step} ...` then `{judgement}: {step}`.
 
 For an intake segment the `report` step also appends to the intake record's
-`## Produced` the contracts bumped (`id@v`), the ADRs amended and the nodes
-grafted, and one change-log line. A contract `id` counts as bumped when its
+`## Produced` the contracts bumped (`id@v`), the contracts added (`id@v`),
+the ADRs proposed and amended, and the nodes grafted, and one change-log
+line. A contract `id` counts as bumped when its
 current version is above the highest version any of its files held at the
 setup commit: a later version in a file of its own (v0.10.0 §3.1), or a bump
-in place; an `id` with no file then is new, not bumped. This is the hand append `hsdd-intake`'s
+in place; an `id` with no file then is added, not bumped. An ADR changed in
+the segment is proposed when its file did not exist at the setup commit, and
+amended otherwise. The first append replaces a placeholder the record's
+`## Produced` holds (a list item or paragraph whose first word is "none",
+or the template's own `{a ledger: ...}` text), so no "none yet" line stays
+beside real entries. This is the hand append `hsdd-intake`'s
 template allows for grafts and bumps; §15.3 adds the report step to the
-conventions template's writers of `hsdd/management/`. Phases are not
+conventions template's writers of `hsdd/management/`, and the contracts
+added and ADRs amended to the template's ledger. Phases are not
 appended: `hsdd-checkpoint` appends them from their Scope citations (v0.10.0
 §11.2).
 
@@ -2574,6 +2581,11 @@ with a migration the skill performs in a `setup` step.
 - `hsdd-spec`'s `conventions.md` template, the `hsdd/management/` bullet:
   its writers gain "and `hsdd-auto`'s report step, for an intake record's
   `## Produced`".
+- `hsdd-intake`'s record template, `## Produced`: the ledger gains
+  "contracts added (id@v)" and "ADRs amended", the two lines `hsdd-auto`'s
+  report step appends beside the bumps, proposals and grafts (§10.9);
+  v0.10.0 §11.2's "a ledger of the nodes, contracts, ADRs and phases the
+  change produced" already covers both.
 - v0.10.0 §16.3: the "An `hsdd-review` skill" row reads "Deferred, together
   with the judge that would gate unattended runs (v0.11 §16.2)". The
   "Back-application" row also covers v0.11.0's rules. The "Scheduling" row
