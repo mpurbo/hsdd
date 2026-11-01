@@ -2,7 +2,10 @@
 // The run's ambient zone is Asia/Kolkata (playwright.config.ts), so a helper
 // that read it would miss every exact instant below.
 import { expect, test } from "./fixtures.ts";
-import { JAKARTA, LONDON, britishWinterDate, dayRange, nextClockChangeDays, quarterHours, timeIn, todayIn, wallTimeInstants, zoneName } from "./time.ts";
+import {
+  JAKARTA, LONDON, bookingTimes, britishWinterDate, dayRange, formatDate, formatTime, homeLine, nextClockChangeDays, quarterHours, rangeLabel,
+  timeIn, timeLabel, todayIn, wallTimeInstants, zoneName,
+} from "./time.ts";
 
 const HOUR = 60 * 60 * 1000;
 const hours = (range: { start: string; end: string }) => (Date.parse(range.end) - Date.parse(range.start)) / HOUR;
@@ -52,4 +55,42 @@ test("time.ts: a date in British winter time is wholly GMT and never a change da
 
 test("time.ts: a wall time off the quarter hours is refused", () => {
   expect(() => wallTimeInstants("2026-11-05", "10:10", LONDON)).toThrow(RangeError);
+});
+
+// ADR-002 Decision 7: the strings every browser test expects.
+const at = (date: string, time: string, zone: string) => wallTimeInstants(date, time, zone)[0];
+
+test("time.ts: a time is 24-hour HH:mm in the zone given; a date is en-GB weekday, day and month", () => {
+  expect(formatDate("2026-11-05")).toBe("Thu 5 Nov");
+  expect(formatTime("2026-11-05T09:05:00.000Z", LONDON)).toBe("09:05");
+  expect(formatTime("2026-11-05T13:00:00.000Z", JAKARTA)).toBe("20:00");
+});
+
+test("time.ts: a time off its line's date carries its own date", () => {
+  const start = at("2026-11-05", "16:00", LONDON);
+  const end = at("2026-11-05", "19:00", LONDON);
+  expect(rangeLabel(start, end, JAKARTA, "2026-11-05")).toBe("23:00 to Fri 6 Nov 02:00");
+});
+
+test("time.ts: a time in an hour the clocks repeat carries the zone's short name", () => {
+  expect(timeLabel("2027-10-31T00:30:00.000Z", LONDON, "2027-10-31")).toBe("01:30 BST");
+  expect(timeLabel("2027-10-31T01:30:00.000Z", LONDON, "2027-10-31")).toBe("01:30 GMT");
+  expect(rangeLabel("2027-10-31T00:30:00.000Z", "2027-10-31T01:30:00.000Z", LONDON, "2027-10-31")).toBe("01:30 BST to 01:30 GMT");
+});
+
+test("time.ts: a room in another zone adds its own times and office; one in the user's zone does not", () => {
+  const merapi = { timeZone: JAKARTA, office: "Jakarta" };
+  const thames = { timeZone: LONDON, office: "London" };
+  expect(bookingTimes("2026-11-05T02:00:00.000Z", "2026-11-05T03:00:00.000Z", LONDON, "2026-11-05", merapi))
+    .toBe("02:00 to 03:00 (09:00 to 10:00 in Jakarta)");
+  expect(bookingTimes("2026-11-05T02:00:00.000Z", "2026-11-05T03:00:00.000Z", LONDON, "2026-11-05", thames)).toBe("02:00 to 03:00");
+});
+
+test("time.ts: Home's line is the start's date, two spaces, then the range in the user's zone", () => {
+  const thames = [at("2026-11-05", "10:00", LONDON), at("2026-11-05", "11:00", LONDON)] as const;
+  expect(homeLine(...thames, JAKARTA)).toBe("Thu 5 Nov  17:00 to 18:00");
+  const merapi = [at("2026-11-05", "09:00", JAKARTA), at("2026-11-05", "10:00", JAKARTA)] as const;
+  expect(homeLine(...merapi, LONDON)).toBe("Thu 5 Nov  02:00 to 03:00");
+  const evening = [at("2026-11-05", "16:00", LONDON), at("2026-11-05", "19:00", LONDON)] as const;
+  expect(homeLine(...evening, JAKARTA)).toBe("Thu 5 Nov  23:00 to Fri 6 Nov 02:00");
 });

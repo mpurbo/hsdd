@@ -136,3 +136,53 @@ export function britishWinterDate(from: IsoDate): IsoDate {
   }
   throw new RangeError(`no date wholly in GMT within a year of ${from}`);
 }
+
+// ADR-002 Decision 7: the strings the web app shows, as the tests expect them.
+
+/** A time as 24-hour `HH:mm` in `zone`. */
+export function formatTime(at: Instant, zone: string): string {
+  return timeIn(at, zone);
+}
+
+const dateFormat = new Intl.DateTimeFormat("en-GB", { weekday: "short", day: "numeric", month: "short", timeZone: "UTC" });
+/** A date as `en-GB` writes weekday, day and month: `Thu 5 Nov`. */
+export function formatDate(date: IsoDate): string {
+  return dateFormat.format(utcMidnight(date));
+}
+
+/**
+ * A time as shown on a line about `lineDate`: prefixed with its own date when
+ * that differs in `zone`, followed by the zone's short name when the clocks
+ * show its wall time twice on its date.
+ */
+export function timeLabel(at: Instant, zone: string, lineDate: IsoDate): string {
+  const date = dateIn(at, zone);
+  const time = timeIn(at, zone);
+  const prefix = date === lineDate ? "" : `${formatDate(date)} `;
+  const suffix = wallTimeInstants(date, time, zone).length === 2 ? ` ${zoneName(at, zone)}` : "";
+  return `${prefix}${time}${suffix}`;
+}
+
+/** `{start} to {end}`, each as `timeLabel` writes it. */
+export function rangeLabel(start: Instant, end: Instant, zone: string, lineDate: IsoDate): string {
+  return `${timeLabel(start, zone, lineDate)} to ${timeLabel(end, zone, lineDate)}`;
+}
+
+/** A room's zone and its office's name, as booking-api@v1's rooms carry them. */
+export type RoomZone = { timeZone: string; office: string };
+
+/**
+ * A booking's times on a line about `lineDate` in `userZone`; for a room whose
+ * zone is not the user's (compared as names), followed by
+ * `({start} to {end} in {office})` in the room's zone, against the same line date.
+ */
+export function bookingTimes(start: Instant, end: Instant, userZone: string, lineDate: IsoDate, room: RoomZone): string {
+  const mine = rangeLabel(start, end, userZone, lineDate);
+  return room.timeZone === userZone ? mine : `${mine} (${rangeLabel(start, end, room.timeZone, lineDate)} in ${room.office})`;
+}
+
+/** Home's line for a booking: `{date}  {start} to {end}`, the line's date being the start's in `zone`. */
+export function homeLine(start: Instant, end: Instant, zone: string): string {
+  const date = dateIn(start, zone);
+  return `${formatDate(date)}  ${rangeLabel(start, end, zone, date)}`;
+}

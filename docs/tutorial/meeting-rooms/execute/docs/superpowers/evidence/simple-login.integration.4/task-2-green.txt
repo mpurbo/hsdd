@@ -1,0 +1,24 @@
+
+> @simple-login/backend@1.0.0 db:up
+> node scripts/db-up.mjs up
+
+ Container meeting-rooms-postgres-1 Running 
+ Container meeting-rooms-postgres-1 Waiting 
+ Container meeting-rooms-postgres-1 Healthy 
+
+Running 12 tests using 1 worker
+
+  ✓   1 e2e/time.spec.ts:13:1 › time.ts: a date's range runs from its start to the next date's start, in the zone given (5ms)
+  ✓   2 e2e/time.spec.ts:18:1 › time.ts: London's March change day is 23 hours, with no 01:00 to 01:45 (5ms)
+  ✓   3 e2e/time.spec.ts:26:1 › time.ts: London's October change day is 25 hours, with 01:00 to 01:45 first BST, then GMT (3ms)
+  ✓   4 e2e/time.spec.ts:38:1 › time.ts: the next change days are strictly after today's date in London (1ms)
+  ✓   5 e2e/time.spec.ts:43:1 › time.ts: today's date depends on the zone, never on the ambient one (0ms)
+  ✓   6 e2e/time.spec.ts:49:1 › time.ts: a date in British winter time is wholly GMT and never a change day (105ms)
+  ✓   7 e2e/time.spec.ts:56:1 › time.ts: a wall time off the quarter hours is refused (1ms)
+  ✓   8 e2e/time.spec.ts:63:1 › time.ts: a time is 24-hour HH:mm in the zone given; a date is en-GB weekday, day and month (0ms)
+  ✓   9 e2e/time.spec.ts:69:1 › time.ts: a time off its line's date carries its own date (2ms)
+  ✓  10 e2e/time.spec.ts:75:1 › time.ts: a time in an hour the clocks repeat carries the zone's short name (2ms)
+  ✓  11 e2e/time.spec.ts:81:1 › time.ts: a room in another zone adds its own times and office; one in the user's zone does not (3ms)
+  ✓  12 e2e/time.spec.ts:89:1 › time.ts: Home's line is the start's date, two spaces, then the range in the user's zone (5ms)
+
+  12 passed (3.0s)
