@@ -486,12 +486,10 @@ sign-off.
 - Escaped defects: none found yet.
 
 ## Sign-off
-- Reviewer / date:
-- Review tier applied:
-- Disposition of each Outstanding item: verified | waived (reason) |
-  deferred to {phase-id}
-- Disposition of each Learning: spec-updated | contract-bumped (id@v) |
-  adr-proposed (ADR-nnn) | dropped (reason)
+- Reviewer / date: Claude for Purbo Mohamad (owner proxy, delegated by the owner before the run), 2026-11-01
+- Review tier applied: full-review: task reviewers and a final whole-branch reviewer read (final: 2 Important, tests asserting Thames would fail on the days integration.5 books it, and a README claiming full coverage, both fixed and re-reviewed); the committed evidence under docs/superpowers/evidence/simple-login.integration.3/ read; the root npm test rerun green by the orchestrator after merging main into the lane (backend 299, replay 46, web 387, browser 49)
+- Disposition of each Outstanding item: re-run the gate after the lanes merge: verified by the orchestrator (all suites green with web.8 and web.9 merged); the README's booking and Rooms claims: verified (web.9 merged); ayu signing in through the Login screen and a fresh clone: deferred to simple-login.integration.4 (Home browser tests) and the tutorial's fresh-clone run
+- Disposition of each Learning: the reads-across-tests Learning dropped (each test reads only its own room and window, and integration.5 owns its own rooms' days); the template and plan-header findings carried to the checkpoint; the rest dropped as recorded
 
 > The review gate is not passed while an Outstanding item or a Learning
 > lacks a disposition. Dispositions execute at the root through the owning
