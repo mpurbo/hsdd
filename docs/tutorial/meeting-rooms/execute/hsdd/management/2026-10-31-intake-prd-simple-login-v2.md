@@ -6,7 +6,7 @@
 - **Lands on:** [simple-login, simple-login.backend, simple-login.web, simple-login.integration] · **Contracts:** [booking-api@v1, auth-api@v1, profile-api@v2]
 - **Promotes:** none
 - **Collisions:** none
-- **Status:** open
+- **Status:** closed (2026-11-01)
 
 ## Request
 Product (approved 2026-10-31) grows Simple Login into meeting-room booking for the Jakarta and London
@@ -211,7 +211,14 @@ Handoff prompts, in order:
 - none yet: grafts, bumps and ADRs are appended as the handoffs land;
   `hsdd-checkpoint` appends phases from their Scope citations
 - ADRs amended: ADR-001, ADR-002
+- phases appended: `simple-login.backend.4`, `simple-login.backend.5`,
+  `simple-login.backend.6`, `simple-login.backend.7`, `simple-login.web.5`,
+  `simple-login.web.6`, `simple-login.web.7`, `simple-login.web.8`,
+  `simple-login.web.9`, `simple-login.integration.3`,
+  `simple-login.integration.4`, `simple-login.integration.5` (each phase's
+  Scope cites this record; appended by hsdd-checkpoint)
 
 ## Change log
 - 2026-10-31: created, routed cross-node (S02; DEC-005 to DEC-016)
 - 2026-10-31: hsdd-auto segment 2026-10-31-intake-prd-simple-login-v2: ADRs amended ADR-001, ADR-002
+- 2026-11-01: hsdd-checkpoint appended the twelve phases to Produced; each has its verification doc on `main` at 0a618de, signed by the owner proxy under delegation; closed. The proxy sign-offs, the open profile-api@v1 deprecation and the follow-ups are routed in 2026-11-01-execution-plan.md
