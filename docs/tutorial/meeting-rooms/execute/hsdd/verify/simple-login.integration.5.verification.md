@@ -150,12 +150,10 @@ Before Task 3's review, the controller reverted its implementer's change that sh
 - Escaped defects: none known.
 
 ## Sign-off
-- Reviewer / date:
-- Review tier applied:
-- Disposition of each Outstanding item: verified | waived (reason) |
-  deferred to {phase-id}
-- Disposition of each Learning: spec-updated | contract-bumped (id@v) |
-  adr-proposed (ADR-nnn) | dropped (reason)
+- Reviewer / date: Claude for Purbo Mohamad (owner proxy, delegated by the owner before the run), 2026-11-01
+- Review tier applied: full-review: five task reviewers and a final whole-branch reviewer read (final: 1 Important, on one London date a year a Thames booking fell inside clock-change.spec's exact view and only file order hid it, fixed red-then-green; five Minors fixed and re-reviewed); the browser checks against npm run dev and the network-mutant reds in docs/superpowers/evidence/simple-login.integration.5/ read; the root npm test rerun green by the orchestrator (browser 85)
+- Disposition of each Outstanding item: the clock-change skip branch: waived (it runs only when a change day is beyond 365 days, next in 2029; its condition is unit-tested in e2e/time.ts); the OS time-zone change and a fresh clone: deferred to the tutorial's fresh-clone run, with TZ overrides and an America/Los_Angeles browser as stand-ins
+- Disposition of each Learning: all dropped from this tree and carried as open items for the owner: the Rooms list is not refreshed after a 409 (the loser sees '(no bookings)' beside the overlap message; a web change request), the once-seen flake of web/src/App.test.tsx's AC-2.2 test, and the HSDD findings on context Links and the template's em dash
 
 > The review gate is not passed while an Outstanding item or a Learning
 > lacks a disposition. Dispositions execute at the root through the owning
