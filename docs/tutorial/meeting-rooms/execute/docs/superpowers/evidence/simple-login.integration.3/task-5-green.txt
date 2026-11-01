@@ -1,0 +1,29 @@
+
+> @simple-login/backend@1.0.0 db:up
+> node scripts/db-up.mjs up
+
+ Container meeting-rooms-postgres-1 Running 
+ Container meeting-rooms-postgres-1 Waiting 
+ Container meeting-rooms-postgres-1 Healthy 
+
+Running 5 tests using 1 worker
+
+round 1: budi won, booking b79023c7-949b-40e0-ab0e-a62ebf24d140
+  ✓  1 e2e/success.spec.ts:36:3 › 20 simultaneous attempts, round 1 of 5: one 201, nineteen 409 (103ms)
+round 2: budi won, booking a0503207-6a93-4052-afbb-54deace0703c
+  ✓  2 e2e/success.spec.ts:36:3 › 20 simultaneous attempts, round 2 of 5: one 201, nineteen 409 (69ms)
+round 3: budi won, booking 8caeabd9-1656-4669-bfd8-3dda82b794bc
+  ✓  3 e2e/success.spec.ts:36:3 › 20 simultaneous attempts, round 3 of 5: one 201, nineteen 409 (69ms)
+round 4: budi won, booking bd4b21a9-7dfc-4b8b-875e-b1fe6c1a4a74
+  ✓  4 e2e/success.spec.ts:36:3 › 20 simultaneous attempts, round 4 of 5: one 201, nineteen 409 (67ms)
+round 5: budi won, booking b6a7cfa4-3bea-4503-8a52-a70f3e3927c0
+  ✓  5 e2e/success.spec.ts:36:3 › 20 simultaneous attempts, round 5 of 5: one 201, nineteen 409, twenty ranges sharing one quarter hour (66ms)
+
+  5 passed (3.1s)
+# ---- Cleanup checks ----
+$ lsof -nP -iTCP:3000 -sTCP:LISTEN
+(exit 1, output above is empty)
+$ lsof -nP -iTCP:5173 -sTCP:LISTEN
+(exit 1, output above is empty)
+$ pgrep -fl "backend/src/server.ts"
+(exit 1, output above is empty)

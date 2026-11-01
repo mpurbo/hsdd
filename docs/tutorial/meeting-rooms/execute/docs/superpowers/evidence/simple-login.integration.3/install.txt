@@ -1,0 +1,32 @@
+$ rm -rf node_modules backend/node_modules web/node_modules && npm run install:all
+
+> @simple-login/root@1.0.0 install:all
+> npm --prefix backend install && npm --prefix web install && npm install
+
+
+added 103 packages, and audited 104 packages in 811ms
+
+31 packages are looking for funding
+  run `npm fund` for details
+
+found 0 vulnerabilities
+npm warn allow-scripts 1 package has install scripts not yet covered by allowScripts:
+npm warn allow-scripts   fsevents@2.3.3 (install: (install scripts present))
+npm warn allow-scripts
+npm warn allow-scripts Run `npm approve-scripts --allow-scripts-pending` to review, or `npm approve-scripts <pkg>` to allow.
+
+added 106 packages, and audited 107 packages in 931ms
+
+21 packages are looking for funding
+  run `npm fund` for details
+
+found 0 vulnerabilities
+npm warn allow-scripts 1 package has install scripts not yet covered by allowScripts:
+npm warn allow-scripts   fsevents@2.3.3 (install: (install scripts present))
+npm warn allow-scripts
+npm warn allow-scripts Run `npm approve-scripts --allow-scripts-pending` to review, or `npm approve-scripts <pkg>` to allow.
+
+added 17 packages, and audited 18 packages in 1s
+
+found 0 vulnerabilities
+exit 0

@@ -1,0 +1,339 @@
+# Red run: e2e/success.spec.ts against the backend before booking-api (b5d93b6, Merge simple-login.backend.4)
+# Commands run from the worktree:
+#   git restore --source=b5d93b6 --worktree -- backend
+#   npm --prefix backend install --no-audit --no-fund
+#   FORCE_COLOR=0 npx playwright test e2e/success.spec.ts 2>&1 | tee docs/superpowers/evidence/simple-login.integration.3/task-5-red-before-booking-api.txt
+# ---- Playwright output ----
+
+> @simple-login/backend@1.0.0 db:up
+> node scripts/db-up.mjs up
+
+ Container meeting-rooms-postgres-1 Running 
+ Container meeting-rooms-postgres-1 Waiting 
+ Container meeting-rooms-postgres-1 Healthy 
+
+Running 5 tests using 1 worker
+
+  ✘  1 e2e/success.spec.ts:36:3 › 20 simultaneous attempts, round 1 of 5: one 201, nineteen 409 (60ms)
+  ✘  2 e2e/success.spec.ts:36:3 › 20 simultaneous attempts, round 2 of 5: one 201, nineteen 409 (65ms)
+  ✘  3 e2e/success.spec.ts:36:3 › 20 simultaneous attempts, round 3 of 5: one 201, nineteen 409 (62ms)
+  ✘  4 e2e/success.spec.ts:36:3 › 20 simultaneous attempts, round 4 of 5: one 201, nineteen 409 (60ms)
+  ✘  5 e2e/success.spec.ts:36:3 › 20 simultaneous attempts, round 5 of 5: one 201, nineteen 409, twenty ranges sharing one quarter hour (62ms)
+
+
+  1) e2e/success.spec.ts:36:3 › 20 simultaneous attempts, round 1 of 5: one 201, nineteen 409 ──────
+
+    Error: expect(received).toEqual(expected) // deep equality
+
+    - Expected  - 20
+    + Received  + 20
+
+      Array [
+    -   201,
+    -   409,
+    -   409,
+    -   409,
+    -   409,
+    -   409,
+    -   409,
+    -   409,
+    -   409,
+    -   409,
+    -   409,
+    -   409,
+    -   409,
+    -   409,
+    -   409,
+    -   409,
+    -   409,
+    -   409,
+    -   409,
+    -   409,
+    +   404,
+    +   404,
+    +   404,
+    +   404,
+    +   404,
+    +   404,
+    +   404,
+    +   404,
+    +   404,
+    +   404,
+    +   404,
+    +   404,
+    +   404,
+    +   404,
+    +   404,
+    +   404,
+    +   404,
+    +   404,
+    +   404,
+    +   404,
+      ]
+
+      46 |     const replies = await Promise.all(pending);
+      47 |
+    > 48 |     expect(replies.map((r) => r.status).sort()).toEqual([201, ...Array(ATTEMPTS - 1).fill(409)]);
+         |                                                 ^
+      49 |     const winnerIndex = replies.findIndex((r) => r.status === 201);
+      50 |     const winner = replies[winnerIndex].body as Booking;
+      51 |     expect(winner).toEqual({ ...requests[winnerIndex], id: winner.id, roomName: "Merapi" });
+        at <repo>/e2e/success.spec.ts:48:49
+
+    Error Context: test-results/success-20-simultaneous-at-82d54-1-of-5-one-201-nineteen-409/error-context.md
+
+  2) e2e/success.spec.ts:36:3 › 20 simultaneous attempts, round 2 of 5: one 201, nineteen 409 ──────
+
+    Error: expect(received).toEqual(expected) // deep equality
+
+    - Expected  - 20
+    + Received  + 20
+
+      Array [
+    -   201,
+    -   409,
+    -   409,
+    -   409,
+    -   409,
+    -   409,
+    -   409,
+    -   409,
+    -   409,
+    -   409,
+    -   409,
+    -   409,
+    -   409,
+    -   409,
+    -   409,
+    -   409,
+    -   409,
+    -   409,
+    -   409,
+    -   409,
+    +   404,
+    +   404,
+    +   404,
+    +   404,
+    +   404,
+    +   404,
+    +   404,
+    +   404,
+    +   404,
+    +   404,
+    +   404,
+    +   404,
+    +   404,
+    +   404,
+    +   404,
+    +   404,
+    +   404,
+    +   404,
+    +   404,
+    +   404,
+      ]
+
+      46 |     const replies = await Promise.all(pending);
+      47 |
+    > 48 |     expect(replies.map((r) => r.status).sort()).toEqual([201, ...Array(ATTEMPTS - 1).fill(409)]);
+         |                                                 ^
+      49 |     const winnerIndex = replies.findIndex((r) => r.status === 201);
+      50 |     const winner = replies[winnerIndex].body as Booking;
+      51 |     expect(winner).toEqual({ ...requests[winnerIndex], id: winner.id, roomName: "Merapi" });
+        at <repo>/e2e/success.spec.ts:48:49
+
+    Error Context: test-results/success-20-simultaneous-at-59ef4-2-of-5-one-201-nineteen-409/error-context.md
+
+  3) e2e/success.spec.ts:36:3 › 20 simultaneous attempts, round 3 of 5: one 201, nineteen 409 ──────
+
+    Error: expect(received).toEqual(expected) // deep equality
+
+    - Expected  - 20
+    + Received  + 20
+
+      Array [
+    -   201,
+    -   409,
+    -   409,
+    -   409,
+    -   409,
+    -   409,
+    -   409,
+    -   409,
+    -   409,
+    -   409,
+    -   409,
+    -   409,
+    -   409,
+    -   409,
+    -   409,
+    -   409,
+    -   409,
+    -   409,
+    -   409,
+    -   409,
+    +   404,
+    +   404,
+    +   404,
+    +   404,
+    +   404,
+    +   404,
+    +   404,
+    +   404,
+    +   404,
+    +   404,
+    +   404,
+    +   404,
+    +   404,
+    +   404,
+    +   404,
+    +   404,
+    +   404,
+    +   404,
+    +   404,
+    +   404,
+      ]
+
+      46 |     const replies = await Promise.all(pending);
+      47 |
+    > 48 |     expect(replies.map((r) => r.status).sort()).toEqual([201, ...Array(ATTEMPTS - 1).fill(409)]);
+         |                                                 ^
+      49 |     const winnerIndex = replies.findIndex((r) => r.status === 201);
+      50 |     const winner = replies[winnerIndex].body as Booking;
+      51 |     expect(winner).toEqual({ ...requests[winnerIndex], id: winner.id, roomName: "Merapi" });
+        at <repo>/e2e/success.spec.ts:48:49
+
+    Error Context: test-results/success-20-simultaneous-at-e98b1-3-of-5-one-201-nineteen-409/error-context.md
+
+  4) e2e/success.spec.ts:36:3 › 20 simultaneous attempts, round 4 of 5: one 201, nineteen 409 ──────
+
+    Error: expect(received).toEqual(expected) // deep equality
+
+    - Expected  - 20
+    + Received  + 20
+
+      Array [
+    -   201,
+    -   409,
+    -   409,
+    -   409,
+    -   409,
+    -   409,
+    -   409,
+    -   409,
+    -   409,
+    -   409,
+    -   409,
+    -   409,
+    -   409,
+    -   409,
+    -   409,
+    -   409,
+    -   409,
+    -   409,
+    -   409,
+    -   409,
+    +   404,
+    +   404,
+    +   404,
+    +   404,
+    +   404,
+    +   404,
+    +   404,
+    +   404,
+    +   404,
+    +   404,
+    +   404,
+    +   404,
+    +   404,
+    +   404,
+    +   404,
+    +   404,
+    +   404,
+    +   404,
+    +   404,
+    +   404,
+      ]
+
+      46 |     const replies = await Promise.all(pending);
+      47 |
+    > 48 |     expect(replies.map((r) => r.status).sort()).toEqual([201, ...Array(ATTEMPTS - 1).fill(409)]);
+         |                                                 ^
+      49 |     const winnerIndex = replies.findIndex((r) => r.status === 201);
+      50 |     const winner = replies[winnerIndex].body as Booking;
+      51 |     expect(winner).toEqual({ ...requests[winnerIndex], id: winner.id, roomName: "Merapi" });
+        at <repo>/e2e/success.spec.ts:48:49
+
+    Error Context: test-results/success-20-simultaneous-at-614cb-4-of-5-one-201-nineteen-409/error-context.md
+
+  5) e2e/success.spec.ts:36:3 › 20 simultaneous attempts, round 5 of 5: one 201, nineteen 409, twenty ranges sharing one quarter hour 
+
+    Error: expect(received).toEqual(expected) // deep equality
+
+    - Expected  - 20
+    + Received  + 20
+
+      Array [
+    -   201,
+    -   409,
+    -   409,
+    -   409,
+    -   409,
+    -   409,
+    -   409,
+    -   409,
+    -   409,
+    -   409,
+    -   409,
+    -   409,
+    -   409,
+    -   409,
+    -   409,
+    -   409,
+    -   409,
+    -   409,
+    -   409,
+    -   409,
+    +   404,
+    +   404,
+    +   404,
+    +   404,
+    +   404,
+    +   404,
+    +   404,
+    +   404,
+    +   404,
+    +   404,
+    +   404,
+    +   404,
+    +   404,
+    +   404,
+    +   404,
+    +   404,
+    +   404,
+    +   404,
+    +   404,
+    +   404,
+      ]
+
+      46 |     const replies = await Promise.all(pending);
+      47 |
+    > 48 |     expect(replies.map((r) => r.status).sort()).toEqual([201, ...Array(ATTEMPTS - 1).fill(409)]);
+         |                                                 ^
+      49 |     const winnerIndex = replies.findIndex((r) => r.status === 201);
+      50 |     const winner = replies[winnerIndex].body as Booking;
+      51 |     expect(winner).toEqual({ ...requests[winnerIndex], id: winner.id, roomName: "Merapi" });
+        at <repo>/e2e/success.spec.ts:48:49
+
+    Error Context: test-results/success-20-simultaneous-at-4d3ca-es-sharing-one-quarter-hour/error-context.md
+
+  5 failed
+    e2e/success.spec.ts:36:3 › 20 simultaneous attempts, round 1 of 5: one 201, nineteen 409 ───────
+    e2e/success.spec.ts:36:3 › 20 simultaneous attempts, round 2 of 5: one 201, nineteen 409 ───────
+    e2e/success.spec.ts:36:3 › 20 simultaneous attempts, round 3 of 5: one 201, nineteen 409 ───────
+    e2e/success.spec.ts:36:3 › 20 simultaneous attempts, round 4 of 5: one 201, nineteen 409 ───────
+    e2e/success.spec.ts:36:3 › 20 simultaneous attempts, round 5 of 5: one 201, nineteen 409, twenty ranges sharing one quarter hour 
+# ---- Restore ----
+#   git restore --worktree -- backend
+#   npm --prefix backend install --no-audit --no-fund
+#   git status --short backend    # printed:
+# (empty)

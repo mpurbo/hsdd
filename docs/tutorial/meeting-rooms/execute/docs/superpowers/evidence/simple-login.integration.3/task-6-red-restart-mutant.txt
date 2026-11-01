@@ -1,0 +1,110 @@
+# Red run: the restart test against the named mutant 'restart onto an empty database'
+# Why: the 25ed989 red only shows a missing endpoint. This mutant makes restart() lose every booking while the tokens still end:
+# it stops the group, drops and re-creates meeting_rooms_e2e, then starts the service. The edit to e2e/fixtures.ts is temporary and never committed.
+# ---- git diff e2e/fixtures.ts ----
+diff --git a/e2e/fixtures.ts b/e2e/fixtures.ts
+index b713c47..5aa673c 100644
+--- a/e2e/fixtures.ts
++++ b/e2e/fixtures.ts
+@@ -94,6 +94,12 @@ export const test = base.extend<object, { backend: Backend }>({
+       await use({
+         restart: async () => {
+           await stopService(child, SERVICE_PORT);
++          const { default: pg } = await import("pg");
++          const admin = new pg.Client({ connectionString: "postgres://meeting_rooms:meeting_rooms@127.0.0.1:55432/postgres" });
++          await admin.connect();
++          await admin.query("DROP DATABASE IF EXISTS meeting_rooms_e2e WITH (FORCE)");
++          await admin.query("CREATE DATABASE meeting_rooms_e2e");
++          await admin.end();
+           child = await start();
+         },
+       });
+# ---- Playwright output: FORCE_COLOR=0 npx playwright test e2e/success.spec.ts -g "a restart keeps" ----
+
+> @simple-login/backend@1.0.0 db:up
+> node scripts/db-up.mjs up
+
+ Container meeting-rooms-postgres-1 Running 
+ Container meeting-rooms-postgres-1 Waiting 
+ Container meeting-rooms-postgres-1 Healthy 
+
+Running 1 test using 1 worker
+
+  ✘  1 e2e/success.spec.ts:84:1 › a restart keeps every booking with its id and ends every token (790ms)
+
+
+  1) e2e/success.spec.ts:84:1 › a restart keeps every booking with its id and ends every token ─────
+
+    Error: expect(received).toEqual(expected) // deep equality
+
+    - Expected  - 18
+    + Received  +  1
+
+    - Array [
+    -   Object {
+    -     "end": "2026-12-16T03:00:00.000Z",
+    -     "id": "584ff799-d7c5-4d34-a678-4d28dfdb87b8",
+    -     "roomId": "merapi",
+    -     "roomName": "Merapi",
+    -     "start": "2026-12-16T02:00:00.000Z",
+    -     "title": "Restart merapi",
+    -   },
+    -   Object {
+    -     "end": "2026-12-16T05:00:00.000Z",
+    -     "id": "6331b1d2-de6f-4512-a966-124211b188e8",
+    -     "roomId": "bromo",
+    -     "roomName": "Bromo",
+    -     "start": "2026-12-16T04:00:00.000Z",
+    -     "title": "Restart bromo",
+    -   },
+    - ]
+    + Array []
+
+      110 |
+      111 |   const fresh: Record<Username, string> = { ayu: await tokenFor("ayu"), budi: await tokenFor("budi") };
+    > 112 |   expect(await bookingsOn(fresh.ayu, day)).toEqual(before.ayu);
+          |                                            ^
+      113 |   expect(await bookingsOn(fresh.budi, day)).toEqual(before.budi);
+      114 |   const after = await rangeOf(fresh.ayu);
+      115 |   expect(after).toEqual(before.rooms);
+        at <repo>/e2e/success.spec.ts:112:44
+
+    Error Context: test-results/success-a-restart-keeps-ev-7e686-its-id-and-ends-every-token/error-context.md
+
+  1 failed
+    e2e/success.spec.ts:84:1 › a restart keeps every booking with its id and ends every token ──────
+# Reading: the old-token 401 checks (lines 106-107) passed; the failure is at line 112, the new token's list is empty where it held 2 bookings (bookings lost, tokens ended).
+# ---- Revert ----
+#   git checkout -- e2e/fixtures.ts
+#   git diff --stat e2e/fixtures.ts
+# (end of git diff --stat output; empty means fixtures.ts is restored)
+# ---- Reverted file: FORCE_COLOR=0 npx playwright test e2e/success.spec.ts ----
+
+> @simple-login/backend@1.0.0 db:up
+> node scripts/db-up.mjs up
+
+ Container meeting-rooms-postgres-1 Running 
+ Container meeting-rooms-postgres-1 Waiting 
+ Container meeting-rooms-postgres-1 Healthy 
+
+Running 8 tests using 1 worker
+
+round 1: ayu won, booking 64f48542-ec4a-43bd-b495-ca4ed69d38f0
+  ✓  1 e2e/success.spec.ts:36:3 › 20 simultaneous attempts, round 1 of 5: one 201, nineteen 409 (107ms)
+round 2: budi won, booking 9abaef03-8e65-4a77-85c2-be1cbbadfa32
+  ✓  2 e2e/success.spec.ts:36:3 › 20 simultaneous attempts, round 2 of 5: one 201, nineteen 409 (70ms)
+round 3: budi won, booking 3390ac65-e0a9-4ec4-b758-9f07f3510fec
+  ✓  3 e2e/success.spec.ts:36:3 › 20 simultaneous attempts, round 3 of 5: one 201, nineteen 409 (69ms)
+round 4: ayu won, booking 63d359ac-8c4f-4333-a2aa-669722db09db
+  ✓  4 e2e/success.spec.ts:36:3 › 20 simultaneous attempts, round 4 of 5: one 201, nineteen 409 (69ms)
+round 5: ayu won, booking a4f2d974-63ba-4945-b61b-c4458c162feb
+  ✓  5 e2e/success.spec.ts:36:3 › 20 simultaneous attempts, round 5 of 5: one 201, nineteen 409, twenty ranges sharing one quarter hour (68ms)
+  ✓  6 e2e/success.spec.ts:84:1 › a restart keeps every booking with its id and ends every token (734ms)
+  ✓  7 e2e/success.spec.ts:121:1 › AC-5.5 at the service: the current quarter hour has started (22ms)
+  ✓  8 e2e/success.spec.ts:128:1 › AC-6.3: budi cannot cancel ayu's booking (51ms)
+
+  8 passed (4.0s)
+# ---- Cleanup checks ----
+$ lsof -nP -iTCP:3000 -sTCP:LISTEN
+$ lsof -nP -iTCP:5173 -sTCP:LISTEN
+$ pgrep -fl "backend/src/server.ts"

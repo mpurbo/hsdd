@@ -1,0 +1,117 @@
+$ node docs/superpowers/evidence/simple-login.integration.3/verify-dev.mjs book
+# verify-dev.mjs book at 2026-10-31T23:56:40.882Z
+$ npm run dev   (detached: a process group of its own)
+  | > @simple-login/root@1.0.0 dev
+  | > npm --prefix backend run db:up && node scripts/dev.mjs
+  | > @simple-login/backend@1.0.0 db:up
+  | > node scripts/db-up.mjs up
+  |  Container meeting-rooms-postgres-1 Running 
+  |  Container meeting-rooms-postgres-1 Waiting 
+  |  Container meeting-rooms-postgres-1 Healthy 
+  | [backend] 
+  | [backend] > @simple-login/backend@1.0.0 start
+  | [backend] > node src/server.ts
+  | [backend] 
+  | [web] 
+  | [web] > simple-login-web@0.0.0 dev
+  | [web] > vite --strictPort
+  | [web] 
+  | [web] 
+  | [web]   [32m[1mVITE[22m v8.3.5[39m  [2mready in [0m[1m89[22m[2m[0m ms[22m
+  | [web] 
+  | [web]   [32m➜[39m  [1mLocal[22m:   [36mhttp://localhost:[1m5173[22m/[39m
+  | [web] [2m  [32m➜[39m  [1mNetwork[22m[2m: use [22m[1m--host[22m[2m to expose[22m
+  | [backend] {"level":30,"time":1793491002417,"pid":48057,"hostname":"Mohamad-Purbo.local","msg":"Server listening at http://127.0.0.1:3000"}
+# 127.0.0.1:3000 is listening
+# localhost:5173 is listening
+  | [backend] {"level":30,"time":1793491002698,"pid":48057,"hostname":"Mohamad-Purbo.local","reqId":"req-1","req":{"method":"POST","url":"/api/login","host":"localhost:5173","remoteAddress":"127.0.0.1","remotePort":60670},"msg":"incoming request"}
+  | [backend] {"level":30,"time":1793491002732,"pid":48057,"hostname":"Mohamad-Purbo.local","reqId":"req-1","res":{"statusCode":200},"responseTime":34.02087499999999,"msg":"request completed"}
+POST http://localhost:5173/api/login as ayu -> 200
+  | [backend] {"level":30,"time":1793491002737,"pid":48057,"hostname":"Mohamad-Purbo.local","reqId":"req-2","req":{"method":"GET","url":"/api/me","host":"localhost:5173","remoteAddress":"127.0.0.1","remotePort":60672},"msg":"incoming request"}
+GET http://localhost:5173/api/me -> 200, username "ayu"
+  | [backend] {"level":30,"time":1793491002737,"pid":48057,"hostname":"Mohamad-Purbo.local","reqId":"req-2","res":{"statusCode":200},"responseTime":0.208500000000015,"msg":"request completed"}
+  | [backend] {"level":30,"time":1793491002739,"pid":48057,"hostname":"Mohamad-Purbo.local","reqId":"req-3","req":{"method":"POST","url":"/api/bookings","host":"localhost:5173","remoteAddress":"127.0.0.1","remotePort":60674},"msg":"incoming request"}
+  | [backend] {"level":30,"time":1793491002745,"pid":48057,"hostname":"Mohamad-Purbo.local","reqId":"req-3","res":{"statusCode":201},"responseTime":5.442084000000023,"msg":"request completed"}
+POST http://localhost:5173/api/bookings {"roomId":"kew","start":"2026-12-18T06:00:00.000Z","end":"2026-12-18T07:00:00.000Z","title":"Dev check"} -> 201
+booking: {"id":"bcf4fa7c-7d77-40e5-a7b2-2697204677d2","roomId":"kew","roomName":"Kew","title":"Dev check","start":"2026-12-18T06:00:00.000Z","end":"2026-12-18T07:00:00.000Z"}
+BOOKED id bcf4fa7c-7d77-40e5-a7b2-2697204677d2
+# stopping npm run dev: SIGTERM to process group -47853
+# npm run dev exited (code null, signal SIGTERM)
+# 127.0.0.1:3000 and localhost:5173 are closed
+# verify-dev.mjs book: OK
+exit 0
+
+# ---- npm test ran here: gate-run-2.txt (exit 0) ----
+
+$ node docs/superpowers/evidence/simple-login.integration.3/verify-dev.mjs check bcf4fa7c-7d77-40e5-a7b2-2697204677d2
+# verify-dev.mjs check bcf4fa7c-7d77-40e5-a7b2-2697204677d2 at 2026-10-31T23:57:41.693Z
+$ npm run dev   (detached: a process group of its own)
+  | > @simple-login/root@1.0.0 dev
+  | > npm --prefix backend run db:up && node scripts/dev.mjs
+  | > @simple-login/backend@1.0.0 db:up
+  | > node scripts/db-up.mjs up
+  |  Container meeting-rooms-postgres-1 Running 
+  |  Container meeting-rooms-postgres-1 Waiting 
+  |  Container meeting-rooms-postgres-1 Healthy 
+  | [web] 
+  | [web] > simple-login-web@0.0.0 dev
+  | [web] > vite --strictPort
+  | [web] 
+  | [backend] 
+  | [backend] > @simple-login/backend@1.0.0 start
+  | [backend] > node src/server.ts
+  | [backend] 
+  | [web] 
+  | [web]   [32m[1mVITE[22m v8.3.5[39m  [2mready in [0m[1m91[22m[2m[0m ms[22m
+  | [web] 
+  | [web]   [32m➜[39m  [1mLocal[22m:   [36mhttp://localhost:[1m5173[22m/[39m
+  | [web] [2m  [32m➜[39m  [1mNetwork[22m[2m: use [22m[1m--host[22m[2m to expose[22m
+  | [backend] {"level":30,"time":1793491063252,"pid":49858,"hostname":"Mohamad-Purbo.local","msg":"Server listening at http://127.0.0.1:3000"}
+# 127.0.0.1:3000 is listening
+# localhost:5173 is listening
+  | [backend] {"level":30,"time":1793491063508,"pid":49858,"hostname":"Mohamad-Purbo.local","reqId":"req-1","req":{"method":"POST","url":"/api/login","host":"localhost:5173","remoteAddress":"127.0.0.1","remotePort":61370},"msg":"incoming request"}
+  | [backend] {"level":30,"time":1793491063542,"pid":49858,"hostname":"Mohamad-Purbo.local","reqId":"req-1","res":{"statusCode":200},"responseTime":33.856250000000045,"msg":"request completed"}
+POST http://localhost:5173/api/login as ayu -> 200
+  | [backend] {"level":30,"time":1793491063547,"pid":49858,"hostname":"Mohamad-Purbo.local","reqId":"req-2","req":{"method":"GET","url":"/api/me","host":"localhost:5173","remoteAddress":"127.0.0.1","remotePort":61372},"msg":"incoming request"}
+GET http://localhost:5173/api/me -> 200, username "ayu"
+  | [backend] {"level":30,"time":1793491063547,"pid":49858,"hostname":"Mohamad-Purbo.local","reqId":"req-2","res":{"statusCode":200},"responseTime":0.19724999999999682,"msg":"request completed"}
+  | [backend] {"level":30,"time":1793491063549,"pid":49858,"hostname":"Mohamad-Purbo.local","reqId":"req-3","req":{"method":"GET","url":"/api/me/bookings","host":"localhost:5173","remoteAddress":"127.0.0.1","remotePort":61374},"msg":"incoming request"}
+  | [backend] {"level":30,"time":1793491063552,"pid":49858,"hostname":"Mohamad-Purbo.local","reqId":"req-3","res":{"statusCode":200},"responseTime":2.5645000000000095,"msg":"request completed"}
+GET http://localhost:5173/api/me/bookings -> 200; bookings titled "Dev check": [{"id":"bcf4fa7c-7d77-40e5-a7b2-2697204677d2","roomId":"kew","roomName":"Kew","title":"Dev check","start":"2026-12-18T06:00:00.000Z","end":"2026-12-18T07:00:00.000Z"}]
+KEPT id bcf4fa7c-7d77-40e5-a7b2-2697204677d2: the same id as booked
+  | [backend] {"level":30,"time":1793491063553,"pid":49858,"hostname":"Mohamad-Purbo.local","reqId":"req-4","req":{"method":"DELETE","url":"/api/bookings/bcf4fa7c-7d77-40e5-a7b2-2697204677d2","host":"localhost:5173","remoteAddress":"127.0.0.1","remotePort":61376},"msg":"incoming request"}
+  | [backend] {"level":30,"time":1793491063556,"pid":49858,"hostname":"Mohamad-Purbo.local","reqId":"req-4","res":{"statusCode":204},"responseTime":3.1983749999999986,"msg":"request completed"}
+DELETE http://localhost:5173/api/bookings/bcf4fa7c-7d77-40e5-a7b2-2697204677d2 -> 204
+  | [backend] {"level":30,"time":1793491063558,"pid":49858,"hostname":"Mohamad-Purbo.local","reqId":"req-5","req":{"method":"GET","url":"/api/me/bookings","host":"localhost:5173","remoteAddress":"127.0.0.1","remotePort":61378},"msg":"incoming request"}
+  | [backend] {"level":30,"time":1793491063559,"pid":49858,"hostname":"Mohamad-Purbo.local","reqId":"req-5","res":{"statusCode":200},"responseTime":0.6477499999999736,"msg":"request completed"}
+GET http://localhost:5173/api/me/bookings -> 200; booking bcf4fa7c-7d77-40e5-a7b2-2697204677d2 still listed: false
+# stopping npm run dev: SIGTERM to process group -49648
+# npm run dev exited (code null, signal SIGTERM)
+# 127.0.0.1:3000 and localhost:5173 are closed
+# verify-dev.mjs check: OK
+exit 0
+
+# ---- Cleanup checks, 2026-10-31T23:58:02Z ----
+$ lsof -nP -iTCP:3000 -sTCP:LISTEN
+(exit 1, output empty)
+$ lsof -nP -iTCP:5173 -sTCP:LISTEN
+(exit 1, output empty)
+$ pgrep -fl "npm --prefix backend start"
+45955 /bin/zsh -c source ~/.claude-personal/shell-snapshots/snapshot-zsh-1793447390171-1jukpf.sh 2>/dev/null || true && setopt NO_EXTENDED_GLOB NO_BARE_GLOB_QUAL 2>/dev/null || true && { \builtin unalias -- 'which'; \builtin unset -f -- 'which'; } >/dev/null 2>&1 || true && { \builtin unalias -- 'unsetenv'; \builtin unset -f -- 'unsetenv'; } >/dev/null 2>&1 || true && eval 'cd <repo> && PORT=3109 DATABASE_URL=postgres://meeting_rooms:meeting_rooms@127.0.0.1:55432/meeting_rooms_web9 npm --prefix backend start > ../web9-switch/backend.log 2>&1' < /dev/null && pwd -P >| /tmp/claude-85a9-cwd
+(exit 0)
+# The hit above is another lane's shell (worktree mr-web, PORT=3109, database meeting_rooms_web9), not this run.
+# npm sets its process title to "npm start", so this pattern matches only a shell whose command line holds it,
+# never the npm process itself; the checks below are the ones that scope to this worktree.
+$ pgrep -fl "scripts/dev.mjs"
+(exit 1, output empty)
+$ for p in $(pgrep -f "node src/server.ts"); do echo "pid $p cwd $(lsof -a -p $p -d cwd -Fn | sed -n s/^n//p)"; done
+pid 45984 cwd <repo>/backend
+(exit 0)
+$ pgrep -fl "mr-int/web/node_modules"
+(exit 1, output empty)
+# The other lane's process group 45955, to show the npm process title (its shell, then "npm start", then node):
+$ ps -ax -o pid,pgid,command | awk '$2 == 45955' | cut -c1-80
+45955 45955 /bin/zsh -c source ~/.claude-personal/shell-snaps
+45957 45955 npm start    
+45984 45955 node src/server.ts
+(exit 0)

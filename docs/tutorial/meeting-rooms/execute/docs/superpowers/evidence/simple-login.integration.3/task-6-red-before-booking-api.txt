@@ -1,0 +1,78 @@
+# Red run: the AC-5.5 and AC-6.3 tests against the backend of b5d93b6
+# Commands run from the worktree:
+#   git restore --source=b5d93b6 --worktree -- backend
+#   npm --prefix backend install --no-audit --no-fund
+#   FORCE_COLOR=0 npx playwright test e2e/success.spec.ts -g "AC-5.5|AC-6.3" 2>&1 | tee docs/superpowers/evidence/simple-login.integration.3/task-6-red-before-booking-api.txt
+# ---- Playwright output ----
+
+> @simple-login/backend@1.0.0 db:up
+> node scripts/db-up.mjs up
+
+ Container meeting-rooms-postgres-1 Running 
+ Container meeting-rooms-postgres-1 Waiting 
+ Container meeting-rooms-postgres-1 Healthy 
+
+Running 2 tests using 1 worker
+
+  ✘  1 e2e/success.spec.ts:121:1 › AC-5.5 at the service: the current quarter hour has started (35ms)
+  ✘  2 e2e/success.spec.ts:128:1 › AC-6.3: budi cannot cancel ayu's booking (56ms)
+
+
+  1) e2e/success.spec.ts:121:1 › AC-5.5 at the service: the current quarter hour has started ───────
+
+    Error: expect(received).toEqual(expected) // deep equality
+
+    - Expected  - 5
+    + Received  + 4
+
+      Object {
+        "body": Object {
+    -     "error": Object {
+    -       "code": "BOOKING_STARTED",
+    -       "message": "That time has already started.",
+    -     },
+    +     "error": "Not Found",
+    +     "message": "Route POST:/api/bookings not found",
+    +     "statusCode": 404,
+        },
+    -   "status": 422,
+    +   "status": 404,
+      }
+
+      123 |   const end = new Date(Date.parse(start) + 15 * 60 * 1000).toISOString();
+      124 |   const reply = await postBooking(await tokenFor("ayu"), { roomId: "bromo", start, end, title: "Already started" });
+    > 125 |   expect(reply).toEqual({ status: 422, body: { error: { code: "BOOKING_STARTED", message: "That time has already started." } } });
+          |                 ^
+      126 | });
+      127 |
+      128 | test("AC-6.3: budi cannot cancel ayu's booking", async () => {
+        at <repo>/e2e/success.spec.ts:125:17
+
+    Error Context: test-results/success-AC-5-5-at-the-serv-aee37-nt-quarter-hour-has-started/error-context.md
+
+  2) e2e/success.spec.ts:128:1 › AC-6.3: budi cannot cancel ayu's booking ──────────────────────────
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 201
+    Received: 404
+
+      131 |   const budi = await tokenFor("budi");
+      132 |   const made = await postBooking(ayu, { roomId: "kew", start: instant(day, 5), end: instant(day, 6), title: "Ayu's Kew" });
+    > 133 |   expect(made.status).toBe(201);
+          |                       ^
+      134 |   const booking = made.body as Booking;
+      135 |   expect(await deleteBooking(budi, booking.id)).toEqual({
+      136 |     status: 403,
+        at <repo>/e2e/success.spec.ts:133:23
+
+    Error Context: test-results/success-AC-6-3-budi-cannot-cancel-ayu-s-booking/error-context.md
+
+  2 failed
+    e2e/success.spec.ts:121:1 › AC-5.5 at the service: the current quarter hour has started ────────
+    e2e/success.spec.ts:128:1 › AC-6.3: budi cannot cancel ayu's booking ───────────────────────────
+# ---- Restore ----
+#   git restore --worktree -- backend
+#   npm --prefix backend install --no-audit --no-fund
+#   git status --short backend
+# (end of git status output; empty means backend/ is restored)

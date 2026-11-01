@@ -9,11 +9,12 @@
   },
   "scripts": {
     "install:all": "npm --prefix backend install && npm --prefix web install && npm install",
-    "dev": "node scripts/dev.mjs",
+    "dev": "npm --prefix backend run db:up && node scripts/dev.mjs",
     "e2e": "playwright test",
-    "test": "npm --prefix backend run gate && npm --prefix backend run replay && npm --prefix web run gate && node --test \"scripts/*.test.mjs\" && npm run e2e"
+    "test": "npm --prefix backend run gate && npm --prefix backend run replay && npm --prefix web run gate && npm --prefix backend run db:up && node --test \"scripts/*.test.mjs\" && npm run e2e"
   },
   "devDependencies": {
-    "@playwright/test": "^1.64.1"
+    "@playwright/test": "^1.64.1",
+    "pg": "^8.23.1"
   }
 }
