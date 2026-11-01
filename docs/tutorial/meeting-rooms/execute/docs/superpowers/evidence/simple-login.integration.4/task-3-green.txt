@@ -1,0 +1,25 @@
+
+> @simple-login/backend@1.0.0 db:up
+> node scripts/db-up.mjs up
+
+ Container meeting-rooms-postgres-1 Running 
+ Container meeting-rooms-postgres-1 Waiting 
+ Container meeting-rooms-postgres-1 Healthy 
+
+Running 13 tests using 1 worker
+
+  ✓   1 e2e/home.spec.ts:51:1 › AC-2.1: Home shows the signed-in user's details (421ms)
+  ✓   2 e2e/home.spec.ts:63:1 › AC-2.5: each account's Home shows its zone as its name, the whole text (420ms)
+  ✓   3 e2e/home.spec.ts:74:1 › AC-2.5: ayu's Thames booking shows on her Home in Jakarta time (378ms)
+  ✓   4 e2e/home.spec.ts:82:1 › AC-2.5: budi's Merapi booking shows on his Home in London time (352ms)
+  ✓   5 e2e/home.spec.ts:90:1 › AC-2.4: Home shows each account's phone number exactly as stored (436ms)
+  ✓   6 e2e/home.spec.ts:99:1 › Budi sees Budi's profile, not Ayu's (323ms)
+  ✓   7 e2e/home.spec.ts:109:1 › AC-2.2: reloading keeps the user signed in (355ms)
+  ✓   8 e2e/home.spec.ts:117:1 › AC-3.1: Sign out returns to Login, and a reload stays there (384ms)
+  ✓   9 e2e/home.spec.ts:127:1 › AC-2.3: a session the backend no longer knows returns to Login with the expiry message (881ms)
+  ✓  10 e2e/login.spec.ts:5:1 › AC-1.1: the right password reaches Home (321ms)
+  ✓  11 e2e/login.spec.ts:11:1 › AC-1.2: a wrong password shows the message and stays on Login (266ms)
+  ✓  12 e2e/login.spec.ts:18:1 › AC-1.2: an unknown user gets the same message (274ms)
+  ✓  13 e2e/login.spec.ts:24:1 › AC-1.3: Sign in is disabled while either field is empty (246ms)
+
+  13 passed (7.7s)
