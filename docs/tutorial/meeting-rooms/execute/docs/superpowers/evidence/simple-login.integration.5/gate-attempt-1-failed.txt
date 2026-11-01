@@ -1,0 +1,148 @@
+rm -rf node_modules backend/node_modules web/node_modules test-results && npm run install:all && npm test at 987003e, 2026-11-01T01:24:43Z
+
+> @simple-login/root@1.0.0 install:all
+> npm --prefix backend install && npm --prefix web install && npm install
+
+
+added 103 packages, and audited 104 packages in 811ms
+
+31 packages are looking for funding
+  run `npm fund` for details
+
+found 0 vulnerabilities
+npm warn allow-scripts 1 package has install scripts not yet covered by allowScripts:
+npm warn allow-scripts   fsevents@2.3.3 (install: (install scripts present))
+npm warn allow-scripts
+npm warn allow-scripts Run `npm approve-scripts --allow-scripts-pending` to review, or `npm approve-scripts <pkg>` to allow.
+
+added 106 packages, and audited 107 packages in 949ms
+
+21 packages are looking for funding
+  run `npm fund` for details
+
+found 0 vulnerabilities
+npm warn allow-scripts 1 package has install scripts not yet covered by allowScripts:
+npm warn allow-scripts   fsevents@2.3.3 (install: (install scripts present))
+npm warn allow-scripts
+npm warn allow-scripts Run `npm approve-scripts --allow-scripts-pending` to review, or `npm approve-scripts <pkg>` to allow.
+
+added 17 packages, and audited 18 packages in 528ms
+
+found 0 vulnerabilities
+
+> @simple-login/root@1.0.0 test
+> npm --prefix backend run gate && npm --prefix backend run replay && npm --prefix web run gate && npm --prefix backend run db:up && node --test "scripts/*.test.mjs" && npm run e2e
+
+
+> @simple-login/backend@1.0.0 gate
+> npm run db:up && tsc --noEmit && TZ=Asia/Kolkata vitest run
+
+
+> @simple-login/backend@1.0.0 db:up
+> node scripts/db-up.mjs up
+
+ Container meeting-rooms-postgres-1 Running 
+ Container meeting-rooms-postgres-1 Waiting 
+ Container meeting-rooms-postgres-1 Healthy 
+
+ RUN  v5.0.5 <repo>/backend
+
+{"level":30,"time":1793496291397,"pid":97983,"hostname":"Mohamad-Purbo.local","msg":"Server listening at http://127.0.0.1:58757"}
+{"level":30,"time":1793496291410,"pid":97983,"hostname":"Mohamad-Purbo.local","reqId":"req-1","req":{"method":"POST","url":"/api/login","host":"127.0.0.1:58757","remoteAddress":"127.0.0.1","remotePort":58760},"msg":"incoming request"}
+{"level":30,"time":1793496291434,"pid":97983,"hostname":"Mohamad-Purbo.local","reqId":"req-1","res":{"statusCode":200},"responseTime":23.4649169999999,"msg":"request completed"}
+{"level":30,"time":1793496291438,"pid":97983,"hostname":"Mohamad-Purbo.local","reqId":"req-2","req":{"method":"GET","url":"/api/rooms?from=2026-11-02T01%3A30%3A00.000Z&to=2026-11-02T02%3A30%3A00.000Z","host":"127.0.0.1:58757","remoteAddress":"127.0.0.1","remotePort":58761},"msg":"incoming request"}
+{"level":30,"time":1793496291446,"pid":97983,"hostname":"Mohamad-Purbo.local","reqId":"req-2","res":{"statusCode":200},"responseTime":8.22791600000005,"msg":"request completed"}
+{"level":30,"time":1793496291450,"pid":97983,"hostname":"Mohamad-Purbo.local","reqId":"req-3","req":{"method":"POST","url":"/api/bookings","host":"127.0.0.1:58757","remoteAddress":"127.0.0.1","remotePort":58760},"msg":"incoming request"}
+{"level":30,"time":1793496291459,"pid":97983,"hostname":"Mohamad-Purbo.local","reqId":"req-3","res":{"statusCode":201},"responseTime":9.155458000000067,"msg":"request completed"}
+{"level":30,"time":1793496291473,"pid":97983,"hostname":"Mohamad-Purbo.local","msg":"Server listening at http://127.0.0.1:58763"}
+{"level":30,"time":1793496291474,"pid":97983,"hostname":"Mohamad-Purbo.local","reqId":"req-1","req":{"method":"GET","url":"/api/me/bookings","host":"127.0.0.1:58763","remoteAddress":"127.0.0.1","remotePort":58764},"msg":"incoming request"}
+{"level":30,"time":1793496291474,"pid":97983,"hostname":"Mohamad-Purbo.local","reqId":"req-1","res":{"statusCode":401},"responseTime":0.1679589999999962,"msg":"request completed"}
+{"level":30,"time":1793496291475,"pid":97983,"hostname":"Mohamad-Purbo.local","reqId":"req-2","req":{"method":"POST","url":"/api/login","host":"127.0.0.1:58763","remoteAddress":"127.0.0.1","remotePort":58765},"msg":"incoming request"}
+{"level":30,"time":1793496291497,"pid":97983,"hostname":"Mohamad-Purbo.local","reqId":"req-2","res":{"statusCode":200},"responseTime":22.01912500000003,"msg":"request completed"}
+{"level":30,"time":1793496291499,"pid":97983,"hostname":"Mohamad-Purbo.local","reqId":"req-3","req":{"method":"GET","url":"/api/rooms?from=2026-11-02T01%3A30%3A00.000Z&to=2026-11-02T02%3A30%3A00.000Z","host":"127.0.0.1:58763","remoteAddress":"127.0.0.1","remotePort":58764},"msg":"incoming request"}
+{"level":30,"time":1793496291502,"pid":97983,"hostname":"Mohamad-Purbo.local","reqId":"req-3","res":{"statusCode":200},"responseTime":2.4511250000000473,"msg":"request completed"}
+{"level":30,"time":1793496291503,"pid":97983,"hostname":"Mohamad-Purbo.local","reqId":"req-4","req":{"method":"GET","url":"/api/me/bookings","host":"127.0.0.1:58763","remoteAddress":"127.0.0.1","remotePort":58765},"msg":"incoming request"}
+{"level":30,"time":1793496291505,"pid":97983,"hostname":"Mohamad-Purbo.local","reqId":"req-4","res":{"statusCode":200},"responseTime":1.3675829999999678,"msg":"request completed"}
+{"level":30,"time":1793496291791,"pid":97983,"hostname":"Mohamad-Purbo.local","msg":"Server listening at http://127.0.0.1:58806"}
+{"level":30,"time":1793496291792,"pid":97983,"hostname":"Mohamad-Purbo.local","reqId":"req-1","req":{"method":"POST","url":"/api/login","host":"127.0.0.1:58806","remoteAddress":"127.0.0.1","remotePort":58807},"msg":"incoming request"}
+{"level":30,"time":1793496291813,"pid":97983,"hostname":"Mohamad-Purbo.local","reqId":"req-1","res":{"statusCode":200},"responseTime":21.402375000000006,"msg":"request completed"}
+{"level":30,"time":1793496291814,"pid":97983,"hostname":"Mohamad-Purbo.local","reqId":"req-2","req":{"method":"GET","url":"/api/rooms?from=2026-11-05T00%3A00%3A00.000Z&to=2026-11-06T00%3A00%3A00.000Z","host":"127.0.0.1:58806","remoteAddress":"127.0.0.1","remotePort":58808},"msg":"incoming request"}
+{"level":30,"time":1793496291817,"pid":97983,"hostname":"Mohamad-Purbo.local","reqId":"req-2","res":{"statusCode":200},"responseTime":2.842292000000043,"msg":"request completed"}
+{"level":40,"time":1793496291819,"pid":97983,"hostname":"Mohamad-Purbo.local","code":"57P01","message":"terminating connection due to administrator command","msg":"idle database connection lost"}
+{"level":30,"time":1793496291823,"pid":97983,"hostname":"Mohamad-Purbo.local","reqId":"req-3","req":{"method":"GET","url":"/api/rooms?from=2026-11-05T00%3A00%3A00.000Z&to=2026-11-06T00%3A00%3A00.000Z","host":"127.0.0.1:58806","remoteAddress":"127.0.0.1","remotePort":58807},"msg":"incoming request"}
+{"level":30,"time":1793496291828,"pid":97983,"hostname":"Mohamad-Purbo.local","reqId":"req-3","res":{"statusCode":200},"responseTime":5.205540999999926,"msg":"request completed"}
+{"level":30,"time":1793496291915,"pid":97983,"hostname":"Mohamad-Purbo.local","msg":"Server listening at http://127.0.0.1:58818"}
+{"level":30,"time":1793496291915,"pid":97983,"hostname":"Mohamad-Purbo.local","reqId":"req-1","req":{"method":"POST","url":"/api/login","host":"127.0.0.1:58818","remoteAddress":"127.0.0.1","remotePort":58819},"msg":"incoming request"}
+{"level":30,"time":1793496291937,"pid":97983,"hostname":"Mohamad-Purbo.local","reqId":"req-1","res":{"statusCode":200},"responseTime":21.3515000000001,"msg":"request completed"}
+{"level":30,"time":1793496291939,"pid":97983,"hostname":"Mohamad-Purbo.local","reqId":"req-2","req":{"method":"POST","url":"/api/bookings","host":"127.0.0.1:58818","remoteAddress":"127.0.0.1","remotePort":58819},"msg":"incoming request"}
+{"level":50,"time":1793496291946,"pid":97983,"hostname":"Mohamad-Purbo.local","reqId":"req-2","req":{"method":"POST","url":"/api/bookings","host":"127.0.0.1:58818","remoteAddress":"127.0.0.1","remotePort":58819},"res":{"statusCode":500},"err":{"type":"DatabaseError","message":"terminating connection due to administrator command","stack":"error: terminating connection due to administrator command\n    at <repo>/backend/node_modules/pg/lib/client.js:694:17\n    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)\n    at attemptInsert (<repo>/backend/src/booking-store.ts:33:3)\n    at inTransaction (<repo>/backend/src/booking-store.ts:67:22)\n    at Object.insert (<repo>/backend/src/booking-store.ts:85:18)\n    at Object.<anonymous> (<repo>/backend/src/booking-routes.ts:70:20)","length":116,"name":"error","severity":"FATAL","code":"57P01","file":"postgres.c","line":"3316","routine":"ProcessInterrupts"},"msg":"terminating connection due to administrator command"}
+{"level":30,"time":1793496291947,"pid":97983,"hostname":"Mohamad-Purbo.local","reqId":"req-2","res":{"statusCode":500},"responseTime":8.033916999999974,"msg":"request completed"}
+{"level":30,"time":1793496291950,"pid":97983,"hostname":"Mohamad-Purbo.local","reqId":"req-3","req":{"method":"POST","url":"/api/bookings","host":"127.0.0.1:58818","remoteAddress":"127.0.0.1","remotePort":58819},"msg":"incoming request"}
+{"level":30,"time":1793496291957,"pid":97983,"hostname":"Mohamad-Purbo.local","reqId":"req-3","res":{"statusCode":201},"responseTime":7.535250000000133,"msg":"request completed"}
+
+ Test Files  19 passed (19)
+      Tests  299 passed (299)
+   Start at  06:54:50
+   Duration  2.00s (tests 84%, import 12%, transform 4%, worker 1%)
+
+
+> @simple-login/backend@1.0.0 replay
+> npm run db:up && TZ=Asia/Kolkata vitest run test/contract.replay.test.ts
+
+
+> @simple-login/backend@1.0.0 db:up
+> node scripts/db-up.mjs up
+
+ Container meeting-rooms-postgres-1 Running 
+ Container meeting-rooms-postgres-1 Waiting 
+ Container meeting-rooms-postgres-1 Healthy 
+
+ RUN  v5.0.5 <repo>/backend
+
+
+ Test Files  1 passed (1)
+      Tests  46 passed (46)
+   Start at  06:54:54
+   Duration  1.23s (tests 85%, import 13%, transform 2%)
+
+
+> simple-login-web@0.0.0 gate
+> tsc --noEmit && TZ=Asia/Kolkata vitest run && vite build
+
+
+ RUN  v5.0.5 <repo>/web
+
+ ❯ src/App.test.tsx (20 tests | 1 failed) 511ms
+   ❯ App: the load check (AC-2.2, AC-2.3, D1) (8)
+     × checks a stored session and shows Home (AC-2.2) 23ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/App.test.tsx > App: the load check (AC-2.2, AC-2.3, D1) > checks a stored session and shows Home (AC-2.2)
+AssertionError: expected [ Array(1) ] to deeply equal [ …(2) ]
+
+- Expected
++ Received
+
+  [
+    "Bearer q8Vn3xR2bT0kLw7YcZ1pHs5mJd9fAe4uGi6oNr2vXyQ",
+-   "Bearer q8Vn3xR2bT0kLw7YcZ1pHs5mJd9fAe4uGi6oNr2vXyQ",
+  ]
+
+ ❯ src/App.test.tsx:24:60
+     22|     render(<App />)
+     23|     expect(await screen.findByRole('heading', { name: 'Hello, Ayu Lest…
+     24|     expect(stub.calls.map((c) => c.headers.authorization)).toEqual([`B…
+       |                                                            ^
+     25|   })
+     26|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed | 17 passed (18)
+      Tests  1 failed | 386 passed (387)
+   Start at  06:54:57
+   Duration  2.68s (environment 59%, tests 18%, setup 16%, import 3%, transform 3%)
+
+EXIT=1
