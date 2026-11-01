@@ -636,9 +636,20 @@ test("a handoff step closes the items on its handoff, and a step on a handoff's 
   setHandoff(dir, "S03", "H1");
   writeReport(dir, "S03", reportOf("S03", "hsdd-contract", "order-api"));
   assert.deepEqual(of(gate(dir, "S03"), "B3").map((f) => f.message.slice(0, 5)), ["Q-001", "Q-003"]);
+});
+
+test("an item on a pending handoff is not another step's on the same target; once the handoff ran it is (B-10, run finding R-2)", () => {
+  const dir = intakeBegun();
+  fakeStep(dir, { step: "S02", segment: ISEG, kind: "intake", target: REQUEST, files: { [RECORD]: ORDER } });
+  queueLine(dir, item("Q-002", "must-address", "H2a"));
+  commitAll(dir, "queue");
+  fakeStep(dir, { step: "S03", segment: ISEG, kind: "contract-touch", target: "order-api", handoff: "H1" });
   openStep(dir, { step: "S04", segment: ISEG, kind: "spec-touch", target: "shop.web.app" });
   writeReport(dir, "S04", reportOf("S04", "hsdd-spec", "shop.web.app"));
-  assert.deepEqual(of(gate(dir, "S04"), "B3").map((f) => f.message.slice(0, 5)), ["Q-002"], "H2a's own target is shop.web.app (B-10)");
+  assert.deepEqual(of(gate(dir, "S04"), "B3"), [], "H2a is pending: Q-002 waits for H2a's own step");
+  appendJsonl(dir, P.handoffs, { segment: ISEG, handoff: "H2a", at: nowStamp(), status: "skipped", reason: "cites no superseded version" });
+  commitAll(dir, "auto: skip H2a: test");
+  assert.deepEqual(of(gate(dir, "S04"), "B3").map((f) => f.message.slice(0, 5)), ["Q-002"], "H2a skipped: its own target is shop.web.app (B-10)");
 });
 
 // ---------- D1 ----------

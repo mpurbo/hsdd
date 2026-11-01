@@ -95,7 +95,7 @@ export const pendingStopped = (ctx) => {
 };
 
 // `mode.view(ctx)` adds what only that mode reads (intake: the record, its handoffs and their
-// states) and `handoffTargets`, the matching rule's handoff map (B-10).
+// states) and `handoffTargets`, the matching rule's handoff map (B-10, B-53).
 const derive = (ctx, mode) => {
   const chains = pendingStopped(ctx);
   return {
@@ -466,21 +466,25 @@ const intakeView = (ctx) => {
   const record = wrote ? ctx.intake.record : null;
   const errors = record ? blockErrors(record, ctx.tree) : [];
   const handoffs = record && record.block !== null && errors.length === 0 ? record.block.handoffs : [];
+  const states = statesOf(ctx, segs, lines, handoffs);
+  // B-53: B-10's fallback holds only for a handoff that is executed or skipped; before that, an item on
+  // its id waits for the step that executes it.
+  const settled = new Set(states.filter((h) => SETTLED.has(h.state)).map((h) => h.id));
   return {
     intake: {
       lines, wrote, record, handoffs,
       problems: record ? recordProblems(record, errors) : [],
       unreadable: lines.filter((l) => isSubagent(l.kind)).flatMap((l) => unreadableLine(ctx, l.step_ref) ?? []),
-      states: statesOf(ctx, segs, lines, handoffs),
+      states,
       replanned: replannedOf(ctx, lines),
     },
-    handoffTargets: guardedHandoffTargets(record, ctx.tree),
+    handoffTargets: new Map([...guardedHandoffTargets(record, ctx.tree)].filter(([id]) => settled.has(id))),
   };
 };
 
 // The matching rule's handoff map for the segment, from one call (dispatch and the gate use it):
 // empty outside an intake segment, before a completed intake step wrote the record, and when C8
-// rejects the block.
+// rejects the block; it names only the handoffs that are executed or skipped (B-53).
 export const intakeHandoffTargets = (ctx) => (ctx.segment?.mode === "intake" ? intakeView(ctx).handoffTargets : new Map());
 
 // [{ id, kind, target, state: "executed"|"skipped"|"pending", step }] for the segment's record.

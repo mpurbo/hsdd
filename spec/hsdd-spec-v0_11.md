@@ -739,7 +739,11 @@ drains every pending section in the tree, §7.1); for `intake`, the request
 path. An item
 **matches** a step when its target equals the step's target, is an element of
 the step's target list (`all` matching every leaf-parent), or is the
-handoff id the step executes. `dispatch.mjs` lists every open matching item
+handoff id the step executes. Once that handoff is executed or skipped, an
+item on its id also matches a step on the handoff's own target, so an item
+routed to a skipped handoff, or after its step ran, can still close (§9.1
+stage 7); before then it waits for the handoff's step, and no other step on
+that target takes it. `dispatch.mjs` lists every open matching item
 in the step's prompt, and the step must close each in `closes`.
 
 **Closing.** An item's later events are new lines with its id: `addressed` or

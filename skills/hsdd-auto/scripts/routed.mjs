@@ -40,7 +40,9 @@ export { leafParentsOf };
 // 6.5: an item matches a step when its target equals the step's target, is an element of the
 // step's target list (`all` matching every leaf-parent), or is the handoff id the step executes.
 // B-10: an item on a handoff id also matches a step on that handoff's own target, read from
-// `handoffTargets` (handoff id -> target, lib/intake.mjs handoffTargets of the segment's record).
+// `handoffTargets` (handoff id -> target). B-53: next.mjs intakeHandoffTargets builds the map from the
+// segment's record with only the handoffs that are executed or skipped, so before its handoff runs an
+// item on its id matches only the step executing it.
 // An insert-step item targets `run` and never matches.
 export const matches = (item, step, leafParents, handoffTargets = new Map()) => {
   if (item.kind === "insert-step") return false;
