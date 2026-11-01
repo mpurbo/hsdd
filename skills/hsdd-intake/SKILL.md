@@ -170,7 +170,12 @@ whenever it runs with `--unattended`, and may write it otherwise.
 
 **`cites-superseded`** holds when any of the target's files contains a
 superseded string. The superseded strings are: for every `baseline` source
-in `run.yaml`, its `path` and its `version`; and for every contract `id`
+in `run.yaml`, its `path`, and its `version` tied to its citation name,
+`{cite} {version}` or, when the version does not start with `v`,
+`{cite} v{version}`, with whitespace between the two, the name not inside a
+longer word and the version followed by neither a letter, digit, `_` or
+`-` nor a `.` and a digit (a bare version string is no citation: a version
+`1` would match every number); and for every contract `id`
 whose current version, the highest any file of that `id` holds, is `v{n}`
 with `n` above 0, each `{id}@v{k}` with `k` below `n` that is superseded,
 followed by a character that is not a letter, digit, `_` or `-`, or by the

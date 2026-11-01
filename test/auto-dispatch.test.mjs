@@ -836,3 +836,15 @@ test("phase-plan-append facts in an intake segment name the change request besid
   assert.ok(facts.includes(`The segment's intake record is \`${RECORD}\` (${RECORD})`), facts.join("\n"));
   assert.ok(facts.includes(`The change request is \`${REQUEST}\`; its own path, never the record's, joins the node's Sources (hsdd/auto/run.yaml)`), facts.join("\n"));
 });
+
+test("citation-touch facts give a baseline version as its citation name cites it (run finding R-1)", () => {
+  const config = baseConfig({ sources: {
+    normative: [{ path: "ref/prd-v2.md", cite: "PRD v2", version: "2" }],
+    baseline: [{ path: "ref/prd.md", cite: "PRD", version: "1" }, { path: "ref/spec-old.md", cite: "Spec", version: "v0.9" }],
+  } });
+  const facts = factLines(dispatchContext(planRepo("06-planned", { config })), { kind: "citation-touch", target: "shop.web.app", handoff: null, queue_item: null });
+  assert.ok(facts.includes("Superseded string `ref/prd.md`: the path of a baseline source (hsdd/auto/run.yaml)"), facts.join("\n"));
+  assert.ok(facts.includes("Superseded strings `PRD 1` and `PRD v1`: a baseline source's version, cited by its citation name; a bare `1` is no citation (hsdd/auto/run.yaml)"), facts.join("\n"));
+  assert.ok(facts.includes("Superseded string `Spec v0.9`: a baseline source's version, cited by its citation name; a bare `v0.9` is no citation (hsdd/auto/run.yaml)"), facts.join("\n"));
+  assert.ok(!facts.some((l) => l.startsWith("Superseded string `1`")), facts.join("\n"));
+});

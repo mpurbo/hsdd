@@ -2246,7 +2246,12 @@ A.7):
 
 **`cites-superseded`** holds when any of the target's files contains a
 superseded string. The superseded strings are: for every `baseline` source
-in `run.yaml`, its `path` and its `version`; and for every contract `id`
+in `run.yaml`, its `path`, and its `version` tied to its citation name,
+`{cite} {version}` or, when the version does not start with `v`,
+`{cite} v{version}`, with whitespace between the two, the name not inside a
+longer word and the version followed by neither a letter, digit, `_` or
+`-` nor a `.` and a digit (a bare version string is no citation: a version
+`1` would match every number); and for every contract `id`
 whose current version, the highest any file of that `id` holds (v0.10.0
 §3.1), is `v{n}` with `n` above 0, each `{id}@v{k}` with `k` below `n` that
 is superseded, followed by a character that is not a letter, digit, `_` or
@@ -2670,7 +2675,8 @@ record with a handoff block, and a ledger with legacy lines). At least:
   producer-first order on a three-contract chain; a cycle returns `stop`;
   a pending continuation and an accepted insert-step come before the stage
   rule; intake handoff order, `after`, and `cites-superseded` both ways,
-  including a `baseline` version string and a `{slug}@v{k}` reference;
+  including a `baseline` version cited by its citation name, a bare
+  version token that does not count, and a `{slug}@v{k}` reference;
   `skip`, `waiting`, `blocked`, `close`, `decide`, `stuck` and `done`; an
   item's `after` honoured; a stopped step's item or handoff returned only as
   its continuation; a `promote`

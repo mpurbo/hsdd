@@ -206,9 +206,14 @@ export const segmentRecord = (records, request) =>
 
 const escapeRe = (s) => s.replace(/[.*+?^${}()|[\]\\/]/g, "\\$&");
 
-// A baseline version string counts as a whole token: not inside a longer version
-// (`v10`, `v1.2`), a word or a contract reference (`order-api@v1` is a contract's version).
-const versionRe = (v) => new RegExp(`(?<![A-Za-z0-9_.@-])${escapeRe(v)}(?![A-Za-z0-9_-]|\\.\\d)`);
+// The forms a citation gives a baseline version: `{version}`, and `v{version}` when it does not start with v.
+export const citedVersions = (version) => unique([version, ...(/^v/i.test(version) ? [] : [`v${version}`])]);
+
+// A baseline version counts only tied to its citation name (B-52): `{cite} {version}` or `{cite} v{version}`,
+// whitespace (a line break too) between, the name not inside a longer word, the version not inside a
+// longer one (`PRD 10`, `PRD 1.2`). A bare version is no citation: `1` is any number.
+const citedVersionRe = (cite, version) => new RegExp(`(?<![A-Za-z0-9_])${cite.trim().split(/\s+/).map(escapeRe).join("\\s+")}\\s+`
+  + `(?:${citedVersions(version).map(escapeRe).join("|")})(?![A-Za-z0-9_-]|\\.\\d)`);
 
 // `{slug}@{version}` followed by a character that is not a letter, digit, `_` or `-`, or by the end.
 const contractVersionRe = (slug, version) => new RegExp(`(?<![A-Za-z0-9_-])${escapeRe(slug)}@${version}(?![A-Za-z0-9_-])`);
@@ -216,17 +221,23 @@ const contractVersionRe = (slug, version) => new RegExp(`(?<![A-Za-z0-9_-])${esc
 // A version's own files: its contract file, schema and fixtures, which describe it.
 export const ownFiles = (c) => [c.file, ...(c.schemaFile ? [c.schemaFile] : []), ...(c.fixtureFiles ?? [])];
 
-// `plain`: the baseline paths. `refs`: [{ re, except }], a baseline version, or a superseded version of a
-// contract (lib/contracts.mjs: deprecated or retired, or with no file of its own), `except` the files
-// of that version itself, where the string is not a citation.
+// The baseline sources with a citation name and a version, each pair once.
+export const citedBaseline = (config) => {
+  const nonEmpty = (s) => typeof s === "string" && s.trim() !== "";
+  const pairs = (config?.sources?.baseline ?? []).filter((s) => nonEmpty(s?.cite) && nonEmpty(s?.version));
+  return pairs.filter((s, i) => pairs.findIndex((t) => t.cite === s.cite && t.version === s.version) === i);
+};
+
+// `plain`: the baseline paths. `refs`: [{ re, except }], a baseline version tied to its citation name, or a
+// superseded version of a contract (lib/contracts.mjs: deprecated or retired, or with no file of its own),
+// `except` the files of that version itself, where the string is not a citation.
 export const supersededStrings = (config, tree) => {
   const baseline = config?.sources?.baseline ?? [];
-  const versions = unique(baseline.map((s) => s.version).filter((v) => typeof v === "string" && v !== ""));
   const contractRefs = [...tree.contracts.entries()].flatMap(([slug, entry]) => supersededVersions(entry)
     .map((v) => ({ re: contractVersionRe(slug, v.version), except: new Set(v.file ? ownFiles(v.file) : []) })));
   return {
     plain: unique(baseline.map((s) => s.path).filter((p) => typeof p === "string" && p !== "")),
-    refs: [...versions.map((v) => ({ re: versionRe(v), except: new Set() })), ...contractRefs],
+    refs: [...citedBaseline(config).map((s) => ({ re: citedVersionRe(s.cite, s.version), except: new Set() })), ...contractRefs],
   };
 };
 

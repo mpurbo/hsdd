@@ -533,7 +533,7 @@ const nextHandoff = (v, pending) => {
   const files = targetFiles(h.kind, h.target, ctx.layout, ctx.tree);
   return citesSuperseded(ctx.repoRoot, files, supersededStrings(ctx.config, ctx.tree))
     ? stepResult(v, { kind: h.kind, target: h.target, handoff: h.id, why: `${why}; cites-superseded holds for ${files.join(", ")}` })
-    : { skip: { handoff: h.id, reason: `cites-superseded does not hold: ${files.join(", ") || `no file of ${h.target}`} names no baseline source path or version and no superseded contract version` } };
+    : { skip: { handoff: h.id, reason: `cites-superseded does not hold: ${files.join(", ") || `no file of ${h.target}`} names no baseline source path, no baseline version cited by its citation name and no superseded contract version` } };
 };
 
 const handoffStage = {
