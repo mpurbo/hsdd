@@ -1,0 +1,59 @@
+# Mutant B: /api/login delayed 3.5 s. Run 1: the SHIPPED AC-1.1 (with its 3-second assertion) under the mutant.
+// MUTANT B (never committed): sign-in answers 3.5 s late.
+test.beforeEach(async ({ page }) => {
+  await page.route("**/api/login", async (route) => {
+    await new Promise((r) => setTimeout(r, 3500));
+    await route.continue();
+  });
+});
+
+
+> @simple-login/backend@1.0.0 db:up
+> node scripts/db-up.mjs up
+
+ Container meeting-rooms-postgres-1 Running 
+ Container meeting-rooms-postgres-1 Waiting 
+ Container meeting-rooms-postgres-1 Healthy 
+
+Running 1 test using 1 worker
+
+  ✘  1 e2e/login.spec.ts:12:1 › AC-1.1: the right password reaches Home within 3 seconds (4.2s)
+
+
+  1) e2e/login.spec.ts:12:1 › AC-1.1: the right password reaches Home within 3 seconds ─────────────
+
+    Error: expect(received).toBeLessThan(expected)
+
+    Expected: < 3000
+    Received:   3873
+
+      15 |   await signIn(page, "ayu", "sunrise-42");
+      16 |   await expect(page.getByRole("heading", { name: "Hello, Ayu Lestari" })).toBeVisible();
+    > 17 |   expect(Date.now() - started).toBeLessThan(3000);
+         |                                ^
+      18 | });
+      19 |
+      20 | test("AC-1.2: a wrong password shows the message and stays on Login", async ({ page }) => {
+        at <repo>/e2e/login.spec.ts:17:32
+
+    Error Context: test-results/login-AC-1-1-the-right-pas-ff2b7-aches-Home-within-3-seconds/error-context.md
+
+  1 failed
+    e2e/login.spec.ts:12:1 › AC-1.1: the right password reaches Home within 3 seconds ──────────────
+exit 1
+
+# Run 2: the NEW AC-1.1 under the same mutant.
+
+> @simple-login/backend@1.0.0 db:up
+> node scripts/db-up.mjs up
+
+ Container meeting-rooms-postgres-1 Running 
+ Container meeting-rooms-postgres-1 Waiting 
+ Container meeting-rooms-postgres-1 Healthy 
+
+Running 1 test using 1 worker
+
+  ✓  1 e2e/login.spec.ts:13:1 › AC-1.1: the right password reaches Home (4.1s)
+
+  1 passed (7.2s)
+exit 0

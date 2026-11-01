@@ -1,0 +1,55 @@
+# npm --prefix backend run gate, after rm -rf backend/node_modules backend/package-lock.json && npm --prefix backend install
+# HEAD fb8be52, 2026-10-31T21:18:59Z, node v24.18.0, TZ of the shell: unset (the script sets TZ=Asia/Kolkata)
+
+> @simple-login/backend@1.0.0 gate
+> npm run db:up && tsc --noEmit && TZ=Asia/Kolkata vitest run
+
+
+> @simple-login/backend@1.0.0 db:up
+> node scripts/db-up.mjs up
+
+ Container meeting-rooms-postgres-1 Running 
+ Container meeting-rooms-postgres-1 Waiting 
+ Container meeting-rooms-postgres-1 Healthy 
+
+ RUN  v5.0.5 <repo>/backend
+
+{"level":30,"time":1793481543322,"pid":14025,"hostname":"<host>","msg":"Server listening at http://127.0.0.1:62593"}
+{"level":30,"time":1793481543333,"pid":14025,"hostname":"<host>","reqId":"req-1","req":{"method":"POST","url":"/api/login","host":"127.0.0.1:62593","remoteAddress":"127.0.0.1","remotePort":62594},"msg":"incoming request"}
+{"level":30,"time":1793481543356,"pid":14025,"hostname":"<host>","reqId":"req-1","res":{"statusCode":200},"responseTime":22.056291000000044,"msg":"request completed"}
+{"level":30,"time":1793481543359,"pid":14025,"hostname":"<host>","reqId":"req-2","req":{"method":"GET","url":"/api/rooms?from=2026-11-01T21%3A30%3A00.000Z&to=2026-11-01T22%3A30%3A00.000Z","host":"127.0.0.1:62593","remoteAddress":"127.0.0.1","remotePort":62595},"msg":"incoming request"}
+{"level":30,"time":1793481543361,"pid":14025,"hostname":"<host>","reqId":"req-2","res":{"statusCode":200},"responseTime":1.7617500000000064,"msg":"request completed"}
+{"level":30,"time":1793481543362,"pid":14025,"hostname":"<host>","reqId":"req-3","req":{"method":"POST","url":"/api/bookings","host":"127.0.0.1:62593","remoteAddress":"127.0.0.1","remotePort":62594},"msg":"incoming request"}
+{"level":30,"time":1793481543366,"pid":14025,"hostname":"<host>","reqId":"req-3","res":{"statusCode":201},"responseTime":3.6581659999999943,"msg":"request completed"}
+{"level":30,"time":1793481543374,"pid":14025,"hostname":"<host>","msg":"Server listening at http://127.0.0.1:62597"}
+{"level":30,"time":1793481543375,"pid":14025,"hostname":"<host>","reqId":"req-1","req":{"method":"GET","url":"/api/me/bookings","host":"127.0.0.1:62597","remoteAddress":"127.0.0.1","remotePort":62598},"msg":"incoming request"}
+{"level":30,"time":1793481543375,"pid":14025,"hostname":"<host>","reqId":"req-1","res":{"statusCode":401},"responseTime":0.12537500000001955,"msg":"request completed"}
+{"level":30,"time":1793481543376,"pid":14025,"hostname":"<host>","reqId":"req-2","req":{"method":"POST","url":"/api/login","host":"127.0.0.1:62597","remoteAddress":"127.0.0.1","remotePort":62599},"msg":"incoming request"}
+{"level":30,"time":1793481543398,"pid":14025,"hostname":"<host>","reqId":"req-2","res":{"statusCode":200},"responseTime":21.91908399999994,"msg":"request completed"}
+{"level":30,"time":1793481543400,"pid":14025,"hostname":"<host>","reqId":"req-3","req":{"method":"GET","url":"/api/rooms?from=2026-11-01T21%3A30%3A00.000Z&to=2026-11-01T22%3A30%3A00.000Z","host":"127.0.0.1:62597","remoteAddress":"127.0.0.1","remotePort":62598},"msg":"incoming request"}
+{"level":30,"time":1793481543402,"pid":14025,"hostname":"<host>","reqId":"req-3","res":{"statusCode":200},"responseTime":2.5368330000000014,"msg":"request completed"}
+{"level":30,"time":1793481543404,"pid":14025,"hostname":"<host>","reqId":"req-4","req":{"method":"GET","url":"/api/me/bookings","host":"127.0.0.1:62597","remoteAddress":"127.0.0.1","remotePort":62599},"msg":"incoming request"}
+{"level":30,"time":1793481543405,"pid":14025,"hostname":"<host>","reqId":"req-4","res":{"statusCode":200},"responseTime":0.833417000000054,"msg":"request completed"}
+{"level":30,"time":1793481543686,"pid":14025,"hostname":"<host>","msg":"Server listening at http://127.0.0.1:62640"}
+{"level":30,"time":1793481543687,"pid":14025,"hostname":"<host>","reqId":"req-1","req":{"method":"POST","url":"/api/login","host":"127.0.0.1:62640","remoteAddress":"127.0.0.1","remotePort":62641},"msg":"incoming request"}
+{"level":30,"time":1793481543708,"pid":14025,"hostname":"<host>","reqId":"req-1","res":{"statusCode":200},"responseTime":21.355999999999995,"msg":"request completed"}
+{"level":30,"time":1793481543709,"pid":14025,"hostname":"<host>","reqId":"req-2","req":{"method":"GET","url":"/api/rooms?from=2026-11-05T00%3A00%3A00.000Z&to=2026-11-06T00%3A00%3A00.000Z","host":"127.0.0.1:62640","remoteAddress":"127.0.0.1","remotePort":62642},"msg":"incoming request"}
+{"level":30,"time":1793481543711,"pid":14025,"hostname":"<host>","reqId":"req-2","res":{"statusCode":200},"responseTime":1.9795840000000453,"msg":"request completed"}
+{"level":40,"time":1793481543713,"pid":14025,"hostname":"<host>","code":"57P01","message":"terminating connection due to administrator command","msg":"idle database connection lost"}
+{"level":30,"time":1793481543716,"pid":14025,"hostname":"<host>","reqId":"req-3","req":{"method":"GET","url":"/api/rooms?from=2026-11-05T00%3A00%3A00.000Z&to=2026-11-06T00%3A00%3A00.000Z","host":"127.0.0.1:62640","remoteAddress":"127.0.0.1","remotePort":62641},"msg":"incoming request"}
+{"level":30,"time":1793481543724,"pid":14025,"hostname":"<host>","reqId":"req-3","res":{"statusCode":200},"responseTime":8.150582999999983,"msg":"request completed"}
+{"level":30,"time":1793481543781,"pid":14025,"hostname":"<host>","msg":"Server listening at http://127.0.0.1:62648"}
+{"level":30,"time":1793481543782,"pid":14025,"hostname":"<host>","reqId":"req-1","req":{"method":"POST","url":"/api/login","host":"127.0.0.1:62648","remoteAddress":"127.0.0.1","remotePort":62650},"msg":"incoming request"}
+{"level":30,"time":1793481543803,"pid":14025,"hostname":"<host>","reqId":"req-1","res":{"statusCode":200},"responseTime":21.16541600000005,"msg":"request completed"}
+{"level":30,"time":1793481543806,"pid":14025,"hostname":"<host>","reqId":"req-2","req":{"method":"POST","url":"/api/bookings","host":"127.0.0.1:62648","remoteAddress":"127.0.0.1","remotePort":62650},"msg":"incoming request"}
+{"level":50,"time":1793481543811,"pid":14025,"hostname":"<host>","reqId":"req-2","req":{"method":"POST","url":"/api/bookings","host":"127.0.0.1:62648","remoteAddress":"127.0.0.1","remotePort":62650},"res":{"statusCode":500},"err":{"type":"DatabaseError","message":"terminating connection due to administrator command","stack":"error: terminating connection due to administrator command\n    at <repo>/backend/node_modules/pg/lib/client.js:694:17\n    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)\n    at attemptInsert (<repo>/backend/src/booking-store.ts:33:3)\n    at inTransaction (<repo>/backend/src/booking-store.ts:67:22)\n    at Object.insert (<repo>/backend/src/booking-store.ts:85:18)\n    at Object.<anonymous> (<repo>/backend/src/booking-routes.ts:70:20)","length":116,"name":"error","severity":"FATAL","code":"57P01","file":"postgres.c","line":"3316","routine":"ProcessInterrupts"},"msg":"terminating connection due to administrator command"}
+{"level":30,"time":1793481543812,"pid":14025,"hostname":"<host>","reqId":"req-2","res":{"statusCode":500},"responseTime":6.585291999999981,"msg":"request completed"}
+{"level":30,"time":1793481543814,"pid":14025,"hostname":"<host>","reqId":"req-3","req":{"method":"POST","url":"/api/bookings","host":"127.0.0.1:62648","remoteAddress":"127.0.0.1","remotePort":62650},"msg":"incoming request"}
+{"level":30,"time":1793481543821,"pid":14025,"hostname":"<host>","reqId":"req-3","res":{"statusCode":201},"responseTime":6.685542000000055,"msg":"request completed"}
+
+ Test Files  19 passed (19)
+      Tests  299 passed (299)
+   Start at  02:49:02
+   Duration  1.76s (tests 84%, import 12%, transform 4%, worker 1%)
+
+# exit 0

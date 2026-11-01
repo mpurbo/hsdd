@@ -1,0 +1,242 @@
+{
+  "step_ref": "S13",
+  "skill": "hsdd-spec",
+  "target": "simple-login.backend",
+  "status": "completed",
+  "stop": null,
+  "artifacts": [
+    "hsdd/spec/simple-login.backend.md"
+  ],
+  "experiments": [],
+  "self_check": [
+    {
+      "gate": "The spec stays high-level; it is not an implementation plan.",
+      "status": "pass",
+      "note": "The touch changed one Sources line, two baseline entries to one PRD v2 entry; it adds no mechanism, task or phase (DEC-117, DEC-120)."
+    },
+    {
+      "gate": "Every node has explicit consumed/produced contract ids.",
+      "status": "n/a",
+      "note": "not exercised by this step"
+    },
+    {
+      "gate": "Every node is testable in isolation (fixtures, mocks, schemas).",
+      "status": "n/a",
+      "note": "not exercised by this step"
+    },
+    {
+      "gate": "Every dependency edge is typed; parallel lanes are called out.",
+      "status": "n/a",
+      "note": "not exercised by this step"
+    },
+    {
+      "gate": "Each child is marked internal or leaf-parent.",
+      "status": "n/a",
+      "note": "not exercised by this step"
+    },
+    {
+      "gate": "Mermaid DAG matches the dependency table.",
+      "status": "n/a",
+      "note": "not exercised by this step"
+    },
+    {
+      "gate": "`conventions.md` exists/updated at the root.",
+      "status": "n/a",
+      "note": "not exercised by this step"
+    },
+    {
+      "gate": "The decomposition axis at each level matches ownership stated by the human, not assumed <U+2014 EM DASH> no node is owned by two teams.",
+      "status": "n/a",
+      "note": "not exercised by this step"
+    },
+    {
+      "gate": "Every child node has its own `hsdd/spec/{child-id}.md` file.",
+      "status": "n/a",
+      "note": "not exercised by this step"
+    },
+    {
+      "gate": "Every input source appears in the Sources of at least one node, or is marked in the root `## Sources` as \"informative only <U+2014 EM DASH> not decomposed\", with a reason.",
+      "status": "pass",
+      "note": "The run's normative sources, PRD v2 and RFC-001, are both in this node's Sources and in the root's. PRD 1 and Update 1 are baseline sources that PRD v2 supersedes; this node's entries for them moved to PRD v2 (DEC-117), as the root's did at S12 (DEC-105 to DEC-107)."
+    },
+    {
+      "gate": "No node's Sources lists a document that does not govern it.",
+      "status": "pass",
+      "note": "Each listed PRD v2 section governs the backend: US-1 (sign-in), US-2 (the profile with phone and time zone, AC-2.1, AC-2.4, AC-2.5), Demo accounts (the built-in accounts with their time zones), Scope. The RFC-001 sections are unchanged. Sections that newly govern the node are routed to H14, not listed here (DEC-117)."
+    },
+    {
+      "gate": "Field blocks are bullet lists and empty lists say \"none\".",
+      "status": "pass",
+      "note": "The Sources line stays a bullet item in the header's field block; Consumes still says none."
+    },
+    {
+      "gate": "Every open question is defined once, in its owning spec, with a table row and a `### {ID}` detail subsection; child views carry `[inherits …]`; no cited ID lacks a definition.",
+      "status": "n/a",
+      "note": "not exercised by this step"
+    },
+    {
+      "gate": "OQ prefixes used by node specs are declared in `conventions.md`.",
+      "status": "n/a",
+      "note": "not exercised by this step"
+    },
+    {
+      "gate": "Under `multi-team`, every node whose team differs from its parent's carries `- **Team:**`; no node is owned by two teams.",
+      "status": "n/a",
+      "note": "not exercised by this step"
+    },
+    {
+      "gate": "Where children exchange contracts, an integration node exists or the decision not to add one is stated in the parent (one line).",
+      "status": "n/a",
+      "note": "not exercised by this step"
+    },
+    {
+      "gate": "A graft kept every existing child id and touched only the new child's file, the parent's summaries and the parent's DAG.",
+      "status": "n/a",
+      "note": "not exercised by this step"
+    },
+    {
+      "gate": "A retired node's file is kept; its contracts' retirement went through `hsdd-reconcile`.",
+      "status": "n/a",
+      "note": "not exercised by this step"
+    },
+    {
+      "gate": "Promotion: the human confirmed before `- **Adopted:** promoted` was written; `## Observed surface` kept; `v0` contracts unchanged unless redesigned.",
+      "status": "n/a",
+      "note": "not exercised by this step"
+    }
+  ],
+  "routed": [
+    {
+      "target": "H14",
+      "kind": "consider",
+      "text": "Carried from Q-027 (from S09, itself carried from Q-013, from S04), which matched S13 by its node and was closed there as explained, unaddressed, because a citation touch changes only citations (DEC-119). Original text: ADR-002 for the backend's plan: start and end as timestamptz with the half-open overlap rule; an exclusion constraint on tstzrange(start_at, end_at, '[)') with btree_gist is one way to hold AC-5.4, but its 23P01 DETAIL names one row, so the AC-5.3 body needs a re-read (hsdd/auto/experiments/time-model-postgres/); no zone arithmetic in the service; the quarter-hour check on the UTC instant; the injected clock decides started and ended (start equal to now is started); the account data gains timeZone; the gate's tests run with TZ set to a zone that is neither account's nor UTC."
+    },
+    {
+      "target": "H14",
+      "kind": "must-address",
+      "text": "Carried from Q-028 (from S09, itself carried from Q-017, from S05), which matched S13 by its node and was closed there as explained, unaddressed, because a citation touch changes only citations (DEC-119). Original text: booking-api@v1's fixtures (hsdd/contract/fixture/booking-api/, 35, all replay exact) add two fields the current rig (backend/test/replay.ts) cannot replay: clock, the instant the injected clock reads for the whole fixture, tokens included ({{expired-token:u}} is a token whose expiresAt is before clock); and given, bookings to create before the request, directly and with the fixture's UUIDs (some lie before the clock, which POST refuses), starting each fixture from no bookings. The rig also meets DELETE, and a 204 whose fixture body is null while the real response has no body (res.json() throws on an empty body), and a 201 whose id is checked against the schema and must differ from every given id. Each fixture's response validates against the top-level schema; $defs.GetRoomsResponse, GetMyBookingsResponse, PostBookingResponse and DeleteBookingResponse are per endpoint. Booking ids are lower-case UUIDs (gen_random_uuid in PostgreSQL 17), never reused."
+    },
+    {
+      "target": "H14",
+      "kind": "consider",
+      "text": "Carried from Q-029 (from S09, itself carried from Q-018, from S05), which matched S13 by its node and was closed there as explained, unaddressed, because a citation touch changes only citations (DEC-119). Original text: booking-api@v1 for the backend's plan: G6 needs a re-read after an exclusion refusal (23P01 DETAIL names one row): the room's overlapping bookings ordered by start, the first one; if none remains because it was cancelled meanwhile, try the insert again, never a 409 without error.conflict and never a 5xx from contention (G5; PRD v2 Success, 20 simultaneous attempts). G1: accept an instant only when new Date(s).toISOString() === s; query values percent-decoded. The limits are instant arithmetic: end - start <= 8 h (G9), start - now <= 8,760 h (G10), started when now >= start (G7). The title counts code points (Ajv's maxLength does, JavaScript's .length does not), needs one non-whitespace character and is stored as sent (G8). The check orders of POST and DELETE are part of the contract (G15); a DELETE id that is not a UUID answers 404. Rooms come back in PRD v2 Rooms' order with ids merapi, bromo, thames, kew; lists sort by start, ties by that order (G13, G14). produced_by is the provisional guess simple-login.backend.4 (DEC-053)."
+    },
+    {
+      "target": "H14",
+      "kind": "consider",
+      "text": "Carried from Q-030 (from S09, itself carried from Q-022, from S07), which matched S13 by its node and was closed there as explained, unaddressed, because a citation touch changes only citations (DEC-119). Original text: profile-api@v2 now carries timeZone (G4: every 200 profile; ayu Asia/Jakarta, budi Europe/London), optional in the schema, and the me-ayu and me-budi fixtures carry it with replay exact. Read from the code, not run: backend/test/accounts.test.ts ('profile equals the me-ayu/me-budi fixture', 'exactly the six profile-api@v2 fields') and the exact replay in backend/test/contract.replay.test.ts now fail against the shipped account data until the phase that adds timeZone to the accounts lands; that phase's gate replays both fixtures. simple-login.backend.3's Verification line ('the six profile-api@v2 fields') is shipped history."
+    },
+    {
+      "target": "H14",
+      "kind": "consider",
+      "text": "Carried from Q-031 (from S09), which matched S13 by its node and was closed there as explained, unaddressed, because a citation touch changes only citations (DEC-119). Original text: From S09's touch of the header (DEC-081, DEC-082). Owns now names the PostgreSQL 17 database, its Docker Compose service and that service's Compose file, wherever the file lives; the plan's D{n} places it. simple-login.integration owns the root package.json scripts and will start the database from them (intake record H18): a Compose file under backend/ stays inside this node's `backend/` directory, one at the repository root keeps its single owner only through this Owns line. The Isolation strategy says tests that read or write bookings run against a real PostgreSQL 17 but not which one. A booking-api replay starts each fixture from no bookings (booking-api@v1 Validation), so tests run against the database `npm --prefix backend start` uses would erase a developer's bookings: a separate test database in the same Compose service, or a throwaway container, is the plan's choice, and the gate's command says how the database is up before vitest runs."
+    },
+    {
+      "target": "simple-login.backend",
+      "kind": "consider",
+      "text": "profile-api@v1 is stable, not deprecated, and coexists with profile-api@v2, so this citation touch left every citation of it (DEC-118); the move to profile-api@v2 is this node's, as the producer. hsdd/spec/simple-login.backend.md keeps seven: the header's Produces line; the Overview's 'Everything it promises the web app is in auth-api@v1 and profile-api@v1, which simple-login.backend.3 replaces with profile-api@v2, and in booking-api@v1', true while v1 stays stable; simple-login.backend.2's Produces, simple-login.backend.3's Scope twice and its Verification, all shipped history; and the phase graph's edge from B2 to simple-login.integration.1, two shipped phases. No new phase of this node needs profile-api@v1: GET /api/me has served profile-api@v2 only since simple-login.backend.3 (profile-api@v2 Versioning). Folded in from Q-047 (S12), closed here as explained: hsdd/spec/simple-login.md keeps ten citations of profile-api@v1 (the Isolation strategy's list, the three child-table rows, the three embedded Produces and Consumes lines, the DAG edge, the dependency table and the contract matrix): the version is stable, not deprecated, and coexists with profile-api@v2, so the citation touch leaves them (DEC-114). Every phase that names v1 is shipped (simple-login.backend.2, simple-login.web.1, simple-login.web.3, simple-login.integration.1), and simple-login.backend.3 already serves profile-api@v2 only on GET /api/me. The move to profile-api@v2 is the producer's: once profile-api@v1's file is deprecated (execution plan C-1, waiting on Sync A's A-1, DEC-016), the intake record's insert rule adds a citation-touch on the root, and hsdd-reconcile's version ripple writes the Produces and Consumes copies. Nothing in the backend's plan needs to change for it now."
+    },
+    {
+      "target": "H14",
+      "kind": "consider",
+      "text": "The header's Sources now reads hsdd/context/prd-simple-login.v2.md (US-1, US-2, Demo accounts, Scope), hsdd/context/rfc-simple-login.md (§2 API, §3 Session model, §4 Passwords, §5 Backend stack, §7 Testing, §9 Security notes): each PRD 1 and Update 1 section moved to its PRD v2 counterpart (Update 1's Change, AC-2.1 amended and AC-2.4, sits inside PRD v2 US-2), equal byte for byte to the root's embedded copy (DEC-117, DEC-107). Sections that newly govern the node were not added, because the intake record's Sources and Scope paragraph gives them to each phase-plan-append. The node's own text already cites four that the field lacks: Constraints (Isolation strategy, Overview), Team and delivery (Overview), Rooms (Overview) and US-4 to US-6 (Overview; AC-5.3 and AC-5.4 sit in US-5). Add those, and any section a new phase cites, such as Success for bookings surviving a restart (the intake record's H14 bullet); hsdd-reconcile's version ripple (H15) then copies the header's Sources into the root's embedded summary."
+    }
+  ],
+  "closes": [
+    {
+      "id": "Q-027",
+      "outcome": "explained",
+      "note": "Targets H14, simple-login.backend's phase-plan-append; it is Phase Plan content, and a citation touch changes only citations and the sentences they sit in. Carried to H14 with its original text and kind (DEC-119). Nothing in it is a citation of a superseded version."
+    },
+    {
+      "id": "Q-028",
+      "outcome": "explained",
+      "note": "Targets H14; the replay rig's clock, given, DELETE, empty 204, 201 id and per-endpoint $defs are Phase Plan content a citation touch may not write. Carried to H14 as a must-address with its original text (DEC-119)."
+    },
+    {
+      "id": "Q-029",
+      "outcome": "explained",
+      "note": "Targets H14, simple-login.backend's phase-plan-append; it is Phase Plan content, and a citation touch changes only citations and the sentences they sit in. Carried to H14 with its original text and kind (DEC-119)."
+    },
+    {
+      "id": "Q-030",
+      "outcome": "explained",
+      "note": "Targets H14, simple-login.backend's phase-plan-append; it is Phase Plan content, and a citation touch changes only citations and the sentences they sit in. Carried to H14 with its original text and kind (DEC-119). Its note that simple-login.backend.3's Verification line is shipped history agrees with this touch, which kept that line (DEC-118)."
+    },
+    {
+      "id": "Q-031",
+      "outcome": "explained",
+      "note": "Targets H14, simple-login.backend's phase-plan-append; it is Phase Plan content, and a citation touch changes only citations and the sentences they sit in. Carried to H14 with its original text and kind (DEC-119). The Owns and Isolation strategy sentences it discusses cite PRD v2 already and were not changed."
+    },
+    {
+      "id": "Q-032",
+      "outcome": "addressed",
+      "note": "The header's Sources field moved: the PRD 1 and Update 1 entries became one PRD v2 entry, (US-1, US-2, Demo accounts, Scope) (DEC-117). The embedded copy in hsdd/spec/simple-login.md was moved by S12 (Q-048, DEC-107, DEC-116), and the header now equals it byte for byte, so 'both places' holds. Every other PRD 1 or Update 1 reference was confirmed to sit in shipped phases 1 and 3 or the dated 2026-10-30 append, and was kept as history."
+    },
+    {
+      "id": "Q-047",
+      "outcome": "explained",
+      "note": "It asks nothing of a citation touch: the root's profile-api@v1 citations are a live earlier version and the move is this node's own planning. This file's seven such citations were left for the same reason (DEC-118), and Q-047's text is folded into the one consider item this step routes to simple-login.backend, so H14 and H15 still see it."
+    },
+    {
+      "id": "Q-048",
+      "outcome": "addressed",
+      "note": "The header moved the same way as the embedded copy: hsdd/context/prd-simple-login.v2.md (US-1, US-2, Demo accounts, Scope) and the unchanged RFC-001 entry. A diff of the header's field block against the root's embedded summary shows no difference. The sections left to H14 are routed there (DEC-117)."
+    }
+  ],
+  "reads_outside": [
+    {
+      "path": "hsdd/management/2026-10-31-intake-prd-simple-login-v2.md",
+      "why": "H11 and the Sources and Scope paragraph: who moves the baseline entries and who adds newly governing sections."
+    },
+    {
+      "path": "hsdd/auto/run.yaml",
+      "why": "The baseline and normative sources with their versions, checked against the dispatch's facts."
+    },
+    {
+      "path": "hsdd/auto/queue.jsonl",
+      "why": "The routed items' full texts and kinds, carried verbatim, and the statuses of earlier carries."
+    },
+    {
+      "path": "hsdd/auto/plan.md",
+      "why": "The step log, to see which steps ran before this one."
+    },
+    {
+      "path": "hsdd/auto/steps/S12.json, hsdd/auto/steps/S12.decisions.jsonl, hsdd/auto/steps/S09.decisions.jsonl",
+      "why": "The root's citation touch (the embedded copy's mapping, DEC-107, DEC-114) and this file's spec touch (DEC-079 to DEC-088), and the report shape."
+    },
+    {
+      "path": "hsdd/auto/steps/*.decisions.jsonl",
+      "why": "A search for 'B-10' and 'carried' to find how S09 to S11 and the orchestrator handled items on H14, H16 and H18 (DEC-085, DEC-087, DEC-095, DEC-097, DEC-103, DEC-104); it also returned DEC-082, DEC-091 and DEC-101."
+    },
+    {
+      "path": "hsdd/scripts/auto/gate.mjs, hsdd/scripts/auto/lib/intake.mjs, hsdd/scripts/auto/routed.mjs, hsdd/scripts/auto/decide.mjs, hsdd/scripts/auto/lib/report-rules.mjs",
+      "why": "F2 and the superseded-string rule, the routed-item matching (B-10) and close rules, the decision command, and the report rules."
+    },
+    {
+      "path": "hsdd/spec/simple-login.md",
+      "why": "simple-login.backend's embedded summary, compared with this file's header after the move."
+    },
+    {
+      "path": "hsdd/contract/auth-api.md, hsdd/contract/booking-api.md, hsdd/contract/profile-api.md, hsdd/contract/profile-api.v2.md",
+      "why": "Front matter (current versions, profile-api@v1 stable and not deprecated), profile-api's Versioning sections, and booking-api's clock and given lines, to check the Overview and Isolation strategy sentences against current text."
+    },
+    {
+      "path": "hsdd/adr/001-session-tokens.md, hsdd/adr/002-time-model.md",
+      "why": "Searched for the sessions, restart, instants and clock statements the Overview restates."
+    },
+    {
+      "path": "main:hsdd/verify/",
+      "why": "git ls-tree on main: verification docs for simple-login.backend.1 to .3, so every phase of this node is shipped."
+    }
+  ],
+  "notes": [
+    "Counts: 2 citations moved, 12 kept. Moved: the header's Sources field 2 (the PRD 1 and Update 1 entries, now one PRD v2 entry). Kept as history 9: in shipped phases 8 (simple-login.backend.1's 'the two built-in accounts from the PRD'; simple-login.backend.3's '(AC-2.4)', 'update 1's Demo accounts table' and '(update 1, Scope)'; profile-api@v1 in simple-login.backend.2's Produces, simple-login.backend.3's Scope twice and its Verification), and the dated 'Append, 2026-10-30 (update 1, ...)' paragraph 1. Kept as a live earlier version 3: profile-api@v1 in the header's Produces line (never moved by this rule anyway), the Overview, and the phase graph's B2 to simple-login.integration.1 edge (DEC-118).",
+    "No sentence was restated: the only moved citations are Sources entries. The Overview and Isolation strategy already cite PRD v2, ADR-001, ADR-002 and booking-api@v1 (S09, DEC-079); their sentences were checked against current text and hold (ADR-001 Decision and Consequences: in-memory sessions, 30 minutes, a restart signs users out and keeps bookings; ADR-002 items 1, 4 and 5; booking-api@v1 Validation's clock and given; profile-api@v2 Versioning for 'replaces').",
+    "No baseline path and no superseded contract version remains in hsdd/spec/simple-login.backend.md. The superseded-string rule still matches the bare token 1 nine times, none a citation of a baseline version: phase numbers (the table's Depends on cell, 'Phase 1', 'Phases 1 and 2', 'phase 1'), RFC-001 §1 in D2 (a current source), 'lane 1' in simple-login.backend.3's Dependencies, the dated append's 'update 1' and simple-login.backend.3's two 'update 1' citations (shipped). A later cites-superseded check on this file therefore still holds on the token alone, as S12 noted for the root.",
+    "Every phase of this node (simple-login.backend.1 to .3) has a verification doc on main, so the whole Phase Plan below its opening paragraphs is history; Decisions D1 and D2 cite only RFC-001, which is current.",
+    "Q-027 to Q-031 were closed as explained and carried to H14 as five new items with their original texts, Q-028 still a must-address (DEC-119); Q-047 is folded into the profile-api@v1 consider item to simple-login.backend.",
+    "No contract or ADR changed, so hsdd/contract/INDEX.md and hsdd/adr/INDEX.md were not regenerated. Decisions DEC-117 to DEC-120."
+  ],
+  "read_check": "0ec939b3"
+}

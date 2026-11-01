@@ -1,0 +1,27 @@
+
+Running 1 test using 1 worker
+
+  ✘  1 e2e/rig.spec.ts:44:1 › a run starts with no bookings: a slot only this test books is free (45ms)
+
+
+  1) e2e/rig.spec.ts:44:1 › a run starts with no bookings: a slot only this test books is free ─────
+
+    Error: {"error":{"code":"BOOKING_CONFLICT","message":"The room is already booked for part of that time.","conflict":{"id":"ce71571a-ee94-4777-827b-f911d7cf4d11","roomId":"bromo","roomName":"Bromo","title":"Rig sentinel","start":"2026-12-09T00:00:00.000Z","end":"2026-12-09T00:15:00.000Z"}}}
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: 201
+    Received: 409
+
+      46 |   const day = utcDay(39);
+      47 |   const reply = await postBooking(ayu, { roomId: "bromo", start: instant(day, 0), end: instant(day, 0, 15), title: "Rig sentinel" });
+    > 48 |   expect(reply.status, JSON.stringify(reply.body)).toBe(201);
+         |                                                    ^
+      49 | });
+      50 |
+        at <repo>/e2e/rig.spec.ts:48:52
+
+    Error Context: test-results/rig-a-run-starts-with-no-b-bea99-nly-this-test-books-is-free/error-context.md
+
+  1 failed
+    e2e/rig.spec.ts:44:1 › a run starts with no bookings: a slot only this test books is free ──────

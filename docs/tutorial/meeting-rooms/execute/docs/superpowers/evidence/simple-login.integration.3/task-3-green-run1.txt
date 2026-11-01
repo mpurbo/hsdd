@@ -1,0 +1,18 @@
+
+> @simple-login/backend@1.0.0 db:up
+> node scripts/db-up.mjs up
+
+ Container meeting-rooms-postgres-1 Running 
+ Container meeting-rooms-postgres-1 Waiting 
+ Container meeting-rooms-postgres-1 Healthy 
+
+Running 6 tests using 1 worker
+
+  ✓  1 e2e/rig.spec.ts:10:1 › the run is in Asia/Kolkata: the worker and the browser (180ms)
+  ✓  2 e2e/rig.spec.ts:17:1 › api.ts: instants are toISOString() strings on quarter hours of UTC (2ms)
+  ✓  3 e2e/rig.spec.ts:26:1 › api.ts: sign in, book, list, cancel against the service (71ms)
+  ✓  4 e2e/rig.spec.ts:44:1 › a run starts with no bookings: a slot only this test books is free (26ms)
+  ✓  5 e2e/rig.spec.ts:51:1 › startService refuses a port already in use (0ms)
+  ✓  6 e2e/rig.spec.ts:55:1 › startService fails at once, with the service's words, when the service exits before it listens (49ms)
+
+  6 passed (3.7s)

@@ -1,0 +1,14 @@
+npx playwright test e2e/rooms.spec.ts -g "date rule" @ 6eea2b8 + uncommitted changes (roomsDates fixed)
+
+> @simple-login/backend@1.0.0 db:up
+> node scripts/db-up.mjs up
+
+ Container meeting-rooms-postgres-1 Running 
+ Container meeting-rooms-postgres-1 Waiting 
+ Container meeting-rooms-postgres-1 Healthy 
+
+Running 1 test using 1 worker
+
+  ✓  1 e2e/rooms.spec.ts:55:1 › the date rule: DATES[1] is DATES[0]'s next date, even before London's March change (72ms)
+
+  1 passed (2.3s)

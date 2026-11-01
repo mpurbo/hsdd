@@ -1,0 +1,26 @@
+# PostgreSQL 17 for the meeting-room bookings (simple-login.backend D4).
+# Local laptop only: the credentials are the PRD v2 development defaults.
+# Start it with `npm --prefix backend run db:up`, stop it with `db:down`
+# (the named volume keeps the bookings).
+name: meeting-rooms
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: meeting_rooms
+      POSTGRES_PASSWORD: meeting_rooms
+      POSTGRES_DB: meeting_rooms
+    ports:
+      - "127.0.0.1:55432:5432"
+    volumes:
+      - bookings:/var/lib/postgresql/data
+    healthcheck:
+      # Over TCP: the entrypoint's first-run init server listens on the socket only.
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U meeting_rooms -d meeting_rooms"]
+      interval: 1s
+      timeout: 3s
+      retries: 30
+
+volumes:
+  bookings:

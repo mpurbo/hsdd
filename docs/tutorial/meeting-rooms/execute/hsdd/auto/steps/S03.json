@@ -1,0 +1,66 @@
+{
+  "step_ref": "S03",
+  "skill": "hsdd-adr",
+  "target": "ADR-001",
+  "status": "completed",
+  "stop": null,
+  "artifacts": [
+    "hsdd/adr/001-session-tokens.md",
+    "hsdd/adr/INDEX.md",
+    "hsdd/contract/auth-api.md",
+    "hsdd/contract/profile-api.md",
+    "hsdd/contract/profile-api.v2.md"
+  ],
+  "experiments": [],
+  "self_check": [
+    { "gate": "Frontmatter has `id`, `status`, `affects`, `date`.", "status": "pass", "note": "All four present; status stays accepted and date stays 2026-10-29, as an amendment requires." },
+    { "gate": "The decision is genuinely cross-cutting; a node-local one stayed a `D{n}`.", "status": "pass", "note": "It binds the root, simple-login.backend, simple-login.web and four contracts (auth-api@v1, profile-api@v1, profile-api@v2, booking-api@v1)." },
+    { "gate": "`## Decision` and `## Consequences` are self-contained (no reliance on Context).", "status": "pass", "note": "Decision is unchanged; the Consequences bullets read without Context and name no contract, phase, OQ or DEC id, so hsdd-config pulls nothing new into the contexts ADR-001 governs (DEC-020)." },
+    { "gate": "Every id in `affects` carries a matching `Governed by: [ADR-NNN]`.", "status": "pass", "note": "simple-login, simple-login.backend and simple-login.web carry it in their headers; auth-api@v1, profile-api@v1 and profile-api@v2 now carry governed_by: [ADR-001] in front matter (Q-001, DEC-023). booking-api@v1 has no file yet, so its id in affects is the forward reference until H3 drafts it (gate C3 and C5 warn, no error); routed to H3." },
+    { "gate": "A superseding ADR set both `supersedes` and the old ADR's `superseded_by`.", "status": "n/a", "note": "not exercised by this step" },
+    { "gate": "No invented decision was written as `accepted`; an unknown decision is `proposed` with a TODO.", "status": "pass", "note": "The Decision text is unchanged and was accepted from RFC-001 §3 by its authors. Keeping it under PRD v2 is DEC-018 (restart) and DEC-019 (sign-out), recorded for the owner's review." },
+    { "gate": "The registry was regenerated.", "status": "pass", "note": "node hsdd/scripts/gen-registry.mjs (byte-identical to hsdd-contract's copy): hsdd/adr/INDEX.md shows the new affects; hsdd/contract/INDEX.md is unchanged, since governed_by projects nothing." },
+    { "gate": "Open questions are cited by ID only; an ADR that resolves one names the ID in its Decision, and the owning spec's OQ row is updated to point at this ADR (RESOLVED (date)).", "status": "n/a", "note": "not exercised by this step" }
+  ],
+  "routed": [
+    { "target": "H3", "kind": "consider", "text": "ADR-001 is amended, not superseded (DEC-018, DEC-019): booking-api@v1 takes auth-api@v1's bearer token from the in-memory store; sessions are never in PostgreSQL; there is no logout endpoint. Its Consequences make a missing, unknown or expired token one case at every endpoint that takes the token, 401 UNAUTHORIZED, so booking-api@v1's endpoints answer it with the same envelope profile-api gives. ADR-001's affects already names booking-api@v1: its front matter needs governed_by: [ADR-001, ADR-002], or gate C3's forward-reference warning becomes an error once the file exists." },
+    { "target": "H4", "kind": "consider", "text": "ADR-001 keeps in-memory sessions and client-side sign-out (DEC-018, DEC-019), so its update asks nothing of auth-api@v1's guarantees on a restart or sign-out beyond what they already rest on. If the touch restates the token guarantee ('accepted ... until expiresAt'), a restart ending every token early is existing behavior (ADR-001 Consequences, first bullet), a clarification rather than a new rule. auth-api@v1's front matter already carries governed_by: [ADR-001] (Q-001)." },
+    { "target": "H6", "kind": "consider", "text": "ADR-001's affects now names simple-login (execution plan C-2, DEC-022), so the root header must keep Governed by: [ADR-001] when the touch restates it, or gate C3 errors. The Decisions bullet on ADR-001 (in-memory sessions, 30 minutes, sign-out on the client) stays true under the amendment." },
+    { "target": "H18", "kind": "consider", "text": "ADR-001 keeps sessions in memory (DEC-018), so simple-login.integration.2's restart stays a valid expired-token stand-in for AC-2.3 and the intake record's 'revisited if ADR-001's update makes sessions survive a restart' does not fire. The PRD v2 Success test that a restart keeps every booking must sign in again after the restart, since the same restart signs every user out (ADR-001 Consequences)." }
+  ],
+  "closes": [
+    { "id": "Q-001", "outcome": "addressed", "note": "governed_by: [ADR-001] added after owner in the front matter of hsdd/contract/auth-api.md, profile-api.md and profile-api.v2.md; body lines, Versioning, schemas and fixtures untouched, versions unchanged (DEC-023). Gate C3 reports nothing for the three contracts." },
+    { "id": "Q-002", "outcome": "addressed", "note": "C-2 absorbed: simple-login added to ADR-001's affects in the same edit as booking-api@v1, cited in the Amendments entry with C-2 and F-3 (DEC-022). The execution plan's C-2 checkbox is left for the next checkpoint to tick." }
+  ],
+  "reads_outside": [
+    { "path": "hsdd/spec/simple-login.integration.md", "why": "The invocation asks to weigh simple-login.integration.2's restart stand-in for AC-2.3; the node is not in affects." },
+    { "path": "hsdd/verify/simple-login.integration.1.verification.md", "why": "Its Learnings record that a backend restart gives the expired-token 401 in the browser suite (DEC-018 evidence)." },
+    { "path": "hsdd/verify/simple-login.integration.2.verification.md", "why": "Whether integration.2 shipped and still relies on the restart stand-in." },
+    { "path": "hsdd/verify/simple-login.web.3.verification.md", "why": "grep for restart: web D5's rationale names a restart invalidating every token." },
+    { "path": "hsdd/verify/simple-login.backend.2.verification.md", "why": "grep for restart and expiry: how the shipped session store behaves." },
+    { "path": "hsdd/management/2026-10-30-execution-plan.md", "why": "C-2 for Q-002, C-1 for profile-api@v1, and H-2's restart step (DEC-018, DEC-022, DEC-023)." },
+    { "path": "hsdd/judgement/decisions.jsonl", "why": "DEC-008, DEC-013, DEC-015 and DEC-016, which the invocation and the routed items rest on." },
+    { "path": "hsdd/conventions.md", "why": "Main line, OQ rules and the governance write rules." },
+    { "path": ".claude/skills/hsdd-contract/SKILL.md", "why": "Where governed_by sits in contract front matter and what the registry projects from it (Q-001)." },
+    { "path": ".claude/skills/hsdd-config/SKILL.md", "why": "Which ADR sections are injected and the self-contained rule, which keeps ids out of Consequences (DEC-020)." },
+    { "path": ".claude/skills/hsdd-auto/SKILL.md", "why": "grep for amendment rules referenced by the step template." },
+    { "path": "hsdd/scripts/auto/gate.mjs", "why": "Which checks the step gate runs." },
+    { "path": "hsdd/scripts/auto/lib/checks.mjs", "why": "C3's governed-by rule for nodes and contracts." },
+    { "path": "hsdd/scripts/auto/routed.mjs", "why": "How routed targets match steps, to address the consider items to handoff ids." },
+    { "path": "hsdd/scripts/auto/decide.mjs", "why": "The decision rules the decide command enforces." },
+    { "path": "hsdd/scripts/auto/schema/step-report.schema.json", "why": "This report's schema." },
+    { "path": "hsdd/scripts/auto/templates/steps/adr-update.md", "why": "The step template, to read the What to do rule in full." },
+    { "path": "hsdd/auto/steps/S02.json", "why": "The routed items' origin and the target forms the run uses." },
+    { "path": "hsdd/auto/steps/S02.decisions.jsonl", "why": "The decision line format, first three lines only." }
+  ],
+  "notes": [
+    "Outcome: ADR-001 amended, not superseded. Sessions stay in the in-memory store, so a restart still signs every user out (DEC-018); sign-out stays client-side with no logout endpoint (DEC-019). Decision text unchanged; Consequences gain two bullets and two clauses (DEC-020); Context kept as history with a one-paragraph pointer to Amendments (DEC-021).",
+    "Superseding was weighed and set aside partly because the next ADR number is ADR-002, which H2 already names for the time model; had it been chosen, one of the two would have needed renumbering in the intake record.",
+    "would_upstream: DEC-018 and DEC-019 carry it. RFC-001 §3 still gives 'no database' as the reason a restart may sign everybody out and says to revisit sign-out if the API grows; both choices stand with new reasons, which RFC-001's authors should record. This is the same upstream item as DEC-013.",
+    "DEC-015 expected H1 to rewrite ADR-001's 'The PRD needs' sentence. DEC-021 keeps the Context as written (the step's rule against rewriting history) and adds a pointer; the cites-superseded experiment found no baseline-path citation in ADR-001, so no citation touch is owed.",
+    "hsdd/management/2026-10-30-execution-plan.md C-2 is now done in content (ADR-001 affects names simple-login; INDEX row matches). This step cannot edit that plan; the next hsdd-checkpoint can tick it.",
+    "For the intake record's Produced section: ADR-001 amended 2026-10-31 (affects + simple-login, + booking-api@v1).",
+    "Gate after the edits, before this report: only C3 and C5 warnings that booking-api@v1 has no file yet (forward reference until H3)."
+  ],
+  "read_check": "0dc2cb56"
+}

@@ -1,0 +1,69 @@
+MUTANT=title npx playwright test e2e/rooms.spec.ts -g 'AC-5.[56]|AC-2.3' (Task 4 tests plus mutant, uncommitted changes on 15de563)
+
+--- mutant diff (env MUTANT selects; installed on page.context())
+28a29
+> import type { BrowserContext } from "@playwright/test";
+256a258
+>   await mutate(page.context());
+273a276
+>   await mutate(page.context());
+310a314
+>   await mutate(page.context());
+325a330,341
+> 
+> async function mutate(context: BrowserContext): Promise<void> {
+>   await context.route("**/api/bookings", async (route) => {
+>     if (route.request().method() !== "POST") return route.fallback();
+>     const body = route.request().postDataJSON();
+>     if (process.env.MUTANT === "fake-201") {
+>       await route.fulfill({ status: 201, json: { id: crypto.randomUUID(), roomId: body.roomId, roomName: ROOMS[body.roomId as RoomId].name, title: body.title, start: body.start, end: body.end } });
+>     } else if (process.env.MUTANT === "title") {
+>       await route.continue({ postData: JSON.stringify({ ...body, title: body.title.trim() }) });
+>     } else await route.fallback();
+>   });
+> }
+
+
+> @simple-login/backend@1.0.0 db:up
+> node scripts/db-up.mjs up
+
+ Container meeting-rooms-postgres-1 Running 
+ Container meeting-rooms-postgres-1 Waiting 
+ Container meeting-rooms-postgres-1 Healthy 
+
+Running 3 tests using 1 worker
+
+  ✓  1 e2e/rooms.spec.ts:249:1 › AC-5.5: with only the browser's clock five minutes before the current quarter hour, booking it shows That time has already started. (576ms)
+  ✘  2 e2e/rooms.spec.ts:273:1 › AC-5.6: blank, spaces-only and 81-character titles book nothing; 80 characters book exactly as typed (5.4s)
+  ✓  3 e2e/rooms.spec.ts:311:1 › AC-2.3: after a restart, pressing Book lands on Login with the expiry message (1.2s)
+
+
+  1) e2e/rooms.spec.ts:273:1 › AC-5.6: blank, spaces-only and 81-character titles book nothing; 80 characters book exactly as typed 
+
+    Error: expect(received).toEqual(expected) // deep equality
+
+    - Expected  - 1
+    + Received  + 1
+
+      Array [
+    -   "10:00 to 11:00   😀 Retro  and planning, xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+    +   "10:00 to 11:00  😀 Retro  and planning, xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      ]
+
+    Call Log:
+    - Timeout 5000ms exceeded while waiting on the predicate
+
+      299 |   const [start] = wallTimeInstants(date, "10:00", zone);
+      300 |   const [end] = wallTimeInstants(date, "11:00", zone);
+    > 301 |   await expect.poll(() => roomLines(page, "kew")).toEqual(expectedLines({ start, end, title: typed }, "kew", zone, date));
+          |                                                   ^
+      302 |
+      303 |   const rooms = await getRooms(await tokenFor("budi"), dayRange(date, LONDON).start, dayRange(date, LONDON).end);
+      304 |   expect(rooms.status).toBe(200);
+        at <repo>/e2e/rooms.spec.ts:301:51
+
+    Error Context: test-results/rooms-AC-5-6-blank-spaces--88379-cters-book-exactly-as-typed/error-context.md
+
+  1 failed
+    e2e/rooms.spec.ts:273:1 › AC-5.6: blank, spaces-only and 81-character titles book nothing; 80 characters book exactly as typed 
+  2 passed (11.8s)

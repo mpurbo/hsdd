@@ -1,0 +1,100 @@
+{
+  "step_ref": "S05",
+  "skill": "hsdd-contract",
+  "target": "booking-api",
+  "status": "completed",
+  "stop": null,
+  "artifacts": [
+    "hsdd/contract/booking-api.md",
+    "hsdd/contract/schema/booking-api.schema.json",
+    "hsdd/contract/fixture/booking-api/",
+    "hsdd/contract/INDEX.md"
+  ],
+  "experiments": [
+    {
+      "path": "hsdd/auto/experiments/booking-api-fixtures/",
+      "question": "Are booking-api@v1's schema and 35 fixtures consistent with each other and with the contract's rules, under the Ajv settings the backend's replay rig uses, and does a 365-day horizon keep the next London clock-change day bookable through the API under the real clock (Q-010 (1))?",
+      "finding": "The schema compiles under Ajv2020 with strict and allErrors plus ajv-formats (as backend/test/replay.ts runs it). All 35 fixture responses validate at the top level and against their endpoint's $defs, no fixture's given bookings overlap in a room, and an independent pure model of the Interface (clock + given + request to response, with the check orders and fixed messages) reproduces every fixture exactly, a 201's id aside; all 8 error codes are exercised. By Intl, the three rooms ranges are whole local days: London 2026-11-05 (24 h), Jakarta 2026-11-05 (24 h), London 2027-10-31 (25 h). Seven negative controls are each caught. Scanning every hour from 2026-10-31 to 2031, the next London change instant is at most 217.00 days ahead (worst clock 2027-03-28T01:00Z), so 365 days covers it and 180 would not; from today it is 147 days."
+    }
+  ],
+  "self_check": [
+    { "gate": "Frontmatter has id, version, status, kind, owner, compatibility, produced_by, consumers; external_consumers and former_consumers when any exist.", "status": "pass", "note": "id booking-api, version v1, status draft, kind api, owner simple-login.backend, governed_by [ADR-001, ADR-002], compatibility versioned (DEC-039), produced_by and consumers provisional (DEC-053), phase_ids provisional. No external or former consumers exist, so neither key is written." },
+    { "gate": "`consumers` lists phase ids that consume this version now; migrated ones are under `former_consumers`, never deleted.", "status": "pass", "note": "consumers [simple-login.web.5, simple-login.integration.3] are the provisional guesses of the first appended phase of each consumer node (DEC-053); gate C7 warns until H16 and H18 write those headings and hsdd-reconcile confirms them. A new version has no migrated consumers." },
+    { "gate": "The Interface section is concrete enough to mock against.", "status": "pass", "note": "Four endpoints with every status, code, fixed message and check order; the Booking and RoomWithBookings shapes; the four rooms' data; 35 exact fixtures. The experiment's model was written from the Interface alone and reproduces every fixture." },
+    { "gate": "At least one guarantee/invariant is stated.", "status": "pass", "note": "G1 to G18, covering AC-5.2 to AC-5.6 (G2 to G8), AC-6.1 to AC-6.3 (G11, G12, G14), the touching rule (G3), exactly one of simultaneous overlapping requests (G5), the two limits (G9, G10), the 401 case (G16) and the restart (G17)." },
+    { "gate": "A breaking change bumped the version in a new file beside the old one (`{slug}.v{n}.md`, its schema and fixtures likewise), and its migration note names the mode; under `lockstep` the old version is `deprecated` in the same run, with its sunset named.", "status": "n/a", "note": "not exercised by this step" },
+    { "gate": "The registry was regenerated.", "status": "pass", "note": "node hsdd/scripts/gen-registry.mjs (byte-identical to hsdd-contract's bundled copy): hsdd/contract/INDEX.md gains the booking-api v1 draft row with 2 consumers; hsdd/adr/INDEX.md is unchanged." },
+    { "gate": "`phase_ids` is present (`provisional` until `hsdd-reconcile` finalizes it).", "status": "pass", "note": "phase_ids: provisional." },
+    { "gate": "Every code-level artifact both sides consume (types file, fixtures, shared package) names its canonical path and its owner in the Interface or Validation section: the owning phase for code, `hsdd-contract` for validation artifacts.", "status": "pass", "note": "Validation names the schema and fixture paths, owned by hsdd-contract, and states there is no shared code package: each node writes its own types from the Interface." },
+    { "gate": "A contract or version created by this run has its schema and its kind's fixtures written at the canonical paths.", "status": "pass", "note": "hsdd/contract/schema/booking-api.schema.json and 35 example payloads under hsdd/contract/fixture/booking-api/ (api kind: schema plus example payloads), proven by hsdd/auto/experiments/booking-api-fixtures/." },
+    { "gate": "Open questions are cited by ID only <U+2014 EM DASH> never defined here; prose justifying behavior as \"pending OQ-x\" is swept when the OQ resolves (hsdd-reconcile).", "status": "pass", "note": "The contract cites no open question and defines none. The gate's dash is written as <U+2014 EM DASH> because the run's prose rules ban the character." },
+    { "gate": "A `stable` contract names a schema or a fixtures directory at the canonical paths and the artifact exists, or it carries `validation: grandfathered` (never on a contract authored after the upgrade).", "status": "n/a", "note": "not exercised by this step" },
+    { "gate": "No version is `retired` while a consumer or an external consumer still names it.", "status": "n/a", "note": "not exercised by this step" },
+    { "gate": "A `v0` contract carries `## Observed completeness`, and the block changed in any commit that added fixtures to it.", "status": "n/a", "note": "not exercised by this step" }
+  ],
+  "routed": [
+    {
+      "target": "H4",
+      "kind": "consider",
+      "text": "booking-api@v1 (S05) takes auth-api@v1's bearer token at all four endpoints until expiresAt and answers a missing, unknown or expired token with profile-api@v2's 401 body (G16); a restart drops tokens and keeps bookings with their ids (G17); there is no logout endpoint. The token guarantee can name booking-api@v1 with no change to auth-api's shapes or fixtures."
+    },
+    {
+      "target": "H14",
+      "kind": "must-address",
+      "text": "booking-api@v1's fixtures (hsdd/contract/fixture/booking-api/, 35, all replay exact) add two fields the current rig (backend/test/replay.ts) cannot replay: clock, the instant the injected clock reads for the whole fixture, tokens included ({{expired-token:u}} is a token whose expiresAt is before clock); and given, bookings to create before the request, directly and with the fixture's UUIDs (some lie before the clock, which POST refuses), starting each fixture from no bookings. The rig also meets DELETE, and a 204 whose fixture body is null while the real response has no body (res.json() throws on an empty body), and a 201 whose id is checked against the schema and must differ from every given id. Each fixture's response validates against the top-level schema; $defs.GetRoomsResponse, GetMyBookingsResponse, PostBookingResponse and DeleteBookingResponse are per endpoint. Booking ids are lower-case UUIDs (gen_random_uuid in PostgreSQL 17), never reused."
+    },
+    {
+      "target": "H14",
+      "kind": "consider",
+      "text": "booking-api@v1 for the backend's plan: G6 needs a re-read after an exclusion refusal (23P01 DETAIL names one row): the room's overlapping bookings ordered by start, the first one; if none remains because it was cancelled meanwhile, try the insert again, never a 409 without error.conflict and never a 5xx from contention (G5; PRD v2 Success, 20 simultaneous attempts). G1: accept an instant only when new Date(s).toISOString() === s; query values percent-decoded. The limits are instant arithmetic: end - start <= 8 h (G9), start - now <= 8,760 h (G10), started when now >= start (G7). The title counts code points (Ajv's maxLength does, JavaScript's .length does not), needs one non-whitespace character and is stored as sent (G8). The check orders of POST and DELETE are part of the contract (G15); a DELETE id that is not a UUID answers 404. Rooms come back in PRD v2 Rooms' order with ids merapi, bromo, thames, kew; lists sort by start, ties by that order (G13, G14). produced_by is the provisional guess simple-login.backend.4 (DEC-053)."
+    },
+    {
+      "target": "H16",
+      "kind": "consider",
+      "text": "booking-api@v1 for the web's plan: web/src/test/fetchStub.ts matches String(input) against request.path, but the rooms fixtures' paths carry unencoded colons (/api/rooms?from=2026-11-05T00:00:00.000Z&to=...) while URLSearchParams writes %3A, so compare decoded URLs or build the query without encoding (the producer accepts both). A 204 fixture's body is null and new Response(body, { status: 204 }) throws on any body, so the stub answers it with no body. Fixtures carry clock and given, which explain the answer and are never sent. AC-5.3's message is written from error.conflict's roomName, start and end in the user's zone (G18); the codes to branch on are UNAUTHORIZED, VALIDATION_FAILED, BOOKING_TOO_LONG, BOOKING_STARTED, BOOKING_TOO_FAR_AHEAD, BOOKING_CONFLICT, BOOKING_NOT_FOUND (a second tab already cancelled) and BOOKING_NOT_YOURS. The form may offer end times up to start + 8 hours and dates up to 365 days ahead, but the backend's answer decides. Lists arrive sorted; no client sort is needed. consumers names simple-login.web.5 provisionally (DEC-053)."
+    },
+    {
+      "target": "H18",
+      "kind": "consider",
+      "text": "booking-api@v1 for the integration plan: the 365-day horizon keeps the next London clock-change day bookable through the API under the real clock (at most 217 days ahead from any moment, hsdd/auto/experiments/booking-api-fixtures/). PRD v2 Success's 20 simultaneous attempts must give exactly one 201 and nineteen 409 BOOKING_CONFLICT naming the winner (G5, G6); a restart keeps every booking and id but drops tokens, so the test signs in again (G17). The fixtures carry a fixed clock and seeded state that the real service under the real clock cannot reproduce: only the 14 that depend on neither (the eight 400s, the four 401s, cancel-unknown and cancel-malformed-id) can be replayed exactly through the proxy; the stateful criteria are this node's own tests. consumers names simple-login.integration.3 provisionally (DEC-053)."
+    }
+  ],
+  "closes": [
+    { "id": "Q-005", "outcome": "addressed", "note": "Front matter governed_by: [ADR-001, ADR-002] and the body's Governed by line; every endpoint takes auth-api@v1's bearer token (Interface), and a missing, unknown or expired token is one 401 UNAUTHORIZED case with profile-api@v2's body (G16); there is no logout endpoint; bookings survive the restart that drops tokens (G17). Gate C3 reports no error for ADR-001 or ADR-002 now that the file exists." },
+    { "id": "Q-009", "outcome": "addressed", "note": "governed_by and the Governed by line name both ADRs. Instants in toISOString form only, both directions (Values, G1); the rooms query takes the day as two instants and returns each room's bookings overlapping the half-open range, earliest first (GET /api/rooms, G13); each room carries timeZone and office (RoomWithBookings); [start, end) and touching bookings do not overlap (G3); quarter-hour instants and end after start (G2); started at the clock's reading of start or later, refused for booking and for cancelling (G7, G11); my bookings are those whose end is after the clock, soonest first (G14); the refusal carries the other booking with roomName, start and end as instants in error.conflict (Errors, G6, G18)." },
+    { "id": "Q-010", "outcome": "addressed", "note": "(1) A start at most 365 days after the backend's clock (G10, DEC-047): the experiment finds the next London change instant at most 217 days after any clock, so the next change day is always bookable through the API. (2) The refusal names the overlapping booking with the earliest start, re-read by the producer, never a 409 without one (G6, DEC-045); fixture book-overlap-several pins it." }
+  ],
+  "reads_outside": [
+    { "path": "hsdd/judgement/decisions.jsonl", "why": "DEC-006, DEC-010, DEC-011, DEC-019, DEC-020, DEC-025, DEC-026, DEC-029 and DEC-030, which the invocation and this step's decisions rest on." },
+    { "path": "hsdd/auto/steps/S04.json", "why": "The report shape and the handoff-id form of routed targets." },
+    { "path": "hsdd/auto/run.yaml", "why": "The run's owner facts, prose rules and segment." },
+    { "path": "hsdd/auto/experiments/time-model-postgres/", "why": "The 23P01 DETAIL naming one row (Q-010 (2)) and the half-open overlap facts." },
+    { "path": "hsdd/auto/experiments/time-model-intl/README.md", "why": "London's change days 147 to 217 days apart (Q-010 (1))." },
+    { "path": "backend/package.json", "why": "The producer's Ajv and test runner versions, to check the schema under the same settings." },
+    { "path": "backend/test/replay.ts", "why": "The replay rig's fixture format, Ajv settings and body handling, which the new fixture fields extend." },
+    { "path": "backend/test/replay.test.ts", "why": "How the rig's own tests load fixtures and validate responses." },
+    { "path": "backend/test/contract.replay.test.ts", "why": "How the gate replays fixtures against the real routes with an injected clock." },
+    { "path": "web/src/test/fetchStub.ts", "why": "How the web's stub matches fixtures on method and path, for the query-string and 204 notes routed to H16." },
+    { "path": "web/src/test/fetchStub.test.ts", "why": "The stub's matching rules as tested." },
+    { "path": "package.json", "why": "Root scripts and workspaces, so the experiment stays out of the build." },
+    { "path": ".gitignore", "why": "That node_modules and package-lock.json under the experiment are ignored." },
+    { "path": "hsdd/scripts/auto/templates/steps/contract.md", "why": "The step template behind this dispatch." },
+    { "path": "hsdd/scripts/auto/schema/step-report.schema.json", "why": "This report's schema." },
+    { "path": "hsdd/scripts/auto/schema/decision.schema.json", "why": "The decision input's schema." },
+    { "path": "hsdd/scripts/auto/decide.mjs", "why": "The rules the decide command enforces (lines 40 to 75)." },
+    { "path": "hsdd/scripts/auto/gate.mjs", "why": "The step gate's checks and D1's exemption of step reports (lines 1 to 140, 360 to 420)." },
+    { "path": "hsdd/scripts/auto/lib/checks.mjs", "why": "C3, C4, C5 and C7: governed_by, validation paths, citations and provisional phase ids." },
+    { "path": "hsdd/scripts/auto/lib/report-rules.mjs", "why": "The code rules a report is held to." },
+    { "path": "hsdd/scripts/auto/dispatch.mjs", "why": "Lines 125 to 150: the <U+XXXX NAME> notation for a banned character, used in self_check." },
+    { "path": "hsdd/scripts/auto/lib/tree.mjs", "why": "grep: how governed_by and Governed by are parsed." },
+    { "path": ".claude/skills/hsdd-adr/SKILL.md", "why": "grep: whether another skill's gate text carries the banned dash." }
+  ],
+  "notes": [
+    "Outcome: booking-api@v1 drafted (status draft, phase_ids provisional, compatibility versioned) with four endpoints: GET /api/rooms?from&to, GET /api/me/bookings, POST /api/bookings, DELETE /api/bookings/{id} (DEC-040); one flat Booking shape everywhere (DEC-041) with UUID ids (DEC-042); eight error codes with fixed messages (DEC-043); the overlap refusal's booking in error.conflict (DEC-044), the earliest overlapping one (DEC-045); fixed check orders (DEC-048); title rule (DEC-049); strict instant form and no cap on the rooms range (DEC-050); list orders (DEC-051); fixtures with clock and given (DEC-052); provisional ids (DEC-053); what counts as breaking (DEC-054).",
+    "The two limits PRD v2 leaves to engineering, recorded with would_have_asked true for the owner's review: the longest booking is 8 hours (DEC-046, medium confidence; a statement about all-day events would move it to 12 hours or none) and a booking starts at most 365 days ahead (DEC-047, high confidence).",
+    "node hsdd/scripts/auto/gate.mjs --step S05: 0 errors, 26 warnings. 23 are B4, one per reads_outside entry; 3 are C7 (simple-login.backend.4, simple-login.web.5 and simple-login.integration.3 are provisional guesses that the phase-plan appends and reconciles settle).",
+    "error.conflict extends RFC-001 §2's envelope, which names code and message but does not forbid more; the contract says only BOOKING_CONFLICT carries it. Not flagged for upstream (DEC-044).",
+    "The experiment's node_modules and package-lock.json are git-ignored by the repository's .gitignore; its package.json is standalone and not part of any workspace."
+  ],
+  "read_check": "0474a69e"
+}

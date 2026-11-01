@@ -1,0 +1,653 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:simple-login:contract:booking-api:v1",
+  "title": "booking-api@v1: responses of GET /api/rooms, GET /api/me/bookings, POST /api/bookings and DELETE /api/bookings/{id}",
+  "description": "Validates one response of any endpoint as { status, body }. $defs.GetRoomsResponse, $defs.GetMyBookingsResponse, $defs.PostBookingResponse and $defs.DeleteBookingResponse validate one endpoint's responses; $defs.GetRoomsQuery and $defs.PostBookingRequest describe valid requests.",
+  "type": "object",
+  "required": [
+    "status",
+    "body"
+  ],
+  "properties": {
+    "status": {
+      "type": "integer"
+    },
+    "body": true
+  },
+  "additionalProperties": false,
+  "anyOf": [
+    {
+      "$ref": "#/$defs/GetRoomsResponse"
+    },
+    {
+      "$ref": "#/$defs/GetMyBookingsResponse"
+    },
+    {
+      "$ref": "#/$defs/PostBookingResponse"
+    },
+    {
+      "$ref": "#/$defs/DeleteBookingResponse"
+    }
+  ],
+  "$defs": {
+    "GetRoomsResponse": {
+      "description": "Responses of GET /api/rooms?from&to.",
+      "type": "object",
+      "required": [
+        "status",
+        "body"
+      ],
+      "properties": {
+        "status": {
+          "type": "integer"
+        },
+        "body": true
+      },
+      "additionalProperties": false,
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "const": 200
+            },
+            "body": {
+              "$ref": "#/$defs/RoomsBody"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "const": 400
+            },
+            "body": {
+              "$ref": "#/$defs/ValidationFailed"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "const": 401
+            },
+            "body": {
+              "$ref": "#/$defs/Unauthorized"
+            }
+          }
+        }
+      ]
+    },
+    "GetMyBookingsResponse": {
+      "description": "Responses of GET /api/me/bookings.",
+      "type": "object",
+      "required": [
+        "status",
+        "body"
+      ],
+      "properties": {
+        "status": {
+          "type": "integer"
+        },
+        "body": true
+      },
+      "additionalProperties": false,
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "const": 200
+            },
+            "body": {
+              "$ref": "#/$defs/MyBookingsBody"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "const": 401
+            },
+            "body": {
+              "$ref": "#/$defs/Unauthorized"
+            }
+          }
+        }
+      ]
+    },
+    "PostBookingResponse": {
+      "description": "Responses of POST /api/bookings.",
+      "type": "object",
+      "required": [
+        "status",
+        "body"
+      ],
+      "properties": {
+        "status": {
+          "type": "integer"
+        },
+        "body": true
+      },
+      "additionalProperties": false,
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "const": 201
+            },
+            "body": {
+              "$ref": "#/$defs/Booking"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "const": 400
+            },
+            "body": {
+              "$ref": "#/$defs/ValidationFailed"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "const": 401
+            },
+            "body": {
+              "$ref": "#/$defs/Unauthorized"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "const": 409
+            },
+            "body": {
+              "$ref": "#/$defs/BookingConflict"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "const": 422
+            },
+            "body": {
+              "oneOf": [
+                {
+                  "$ref": "#/$defs/BookingTooLong"
+                },
+                {
+                  "$ref": "#/$defs/BookingStarted"
+                },
+                {
+                  "$ref": "#/$defs/BookingTooFarAhead"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "DeleteBookingResponse": {
+      "description": "Responses of DELETE /api/bookings/{id}.",
+      "type": "object",
+      "required": [
+        "status",
+        "body"
+      ],
+      "properties": {
+        "status": {
+          "type": "integer"
+        },
+        "body": true
+      },
+      "additionalProperties": false,
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "const": 204
+            },
+            "body": {
+              "const": null
+            }
+          }
+        },
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "const": 401
+            },
+            "body": {
+              "$ref": "#/$defs/Unauthorized"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "const": 403
+            },
+            "body": {
+              "$ref": "#/$defs/BookingNotYours"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "const": 404
+            },
+            "body": {
+              "$ref": "#/$defs/BookingNotFound"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "const": 422
+            },
+            "body": {
+              "$ref": "#/$defs/BookingStarted"
+            }
+          }
+        }
+      ]
+    },
+    "GetRoomsQuery": {
+      "description": "A valid query of GET /api/rooms; from must also be before to.",
+      "type": "object",
+      "required": [
+        "from",
+        "to"
+      ],
+      "properties": {
+        "from": {
+          "$ref": "#/$defs/Instant"
+        },
+        "to": {
+          "$ref": "#/$defs/Instant"
+        }
+      }
+    },
+    "PostBookingRequest": {
+      "description": "A valid body of POST /api/bookings; end must also be after start, and roomId must name a room. Other fields are ignored.",
+      "type": "object",
+      "required": [
+        "roomId",
+        "start",
+        "end",
+        "title"
+      ],
+      "properties": {
+        "roomId": {
+          "$ref": "#/$defs/RoomId"
+        },
+        "start": {
+          "$ref": "#/$defs/QuarterHourInstant"
+        },
+        "end": {
+          "$ref": "#/$defs/QuarterHourInstant"
+        },
+        "title": {
+          "$ref": "#/$defs/Title"
+        }
+      }
+    },
+    "Instant": {
+      "description": "A UTC instant as Date.prototype.toISOString() writes it.",
+      "type": "string",
+      "pattern": "^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])T([01][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]\\.[0-9]{3}Z$"
+    },
+    "QuarterHourInstant": {
+      "description": "An instant whose UTC minutes are a multiple of 15 and whose seconds and milliseconds are zero.",
+      "type": "string",
+      "pattern": "^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])T([01][0-9]|2[0-3]):(00|15|30|45):00\\.000Z$"
+    },
+    "RoomId": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9-]{0,31}$"
+    },
+    "BookingId": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+    },
+    "Title": {
+      "description": "1 to 80 Unicode code points, at least one not whitespace, none of them U+0000 or an unpaired surrogate (U+D800 to U+DFFF not part of a pair).",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 80,
+      "pattern": "\\S",
+      "allOf": [
+        {
+          "pattern": "^(?:[^\\u0000\\uD800-\\uDFFF]|[\\uD800-\\uDBFF][\\uDC00-\\uDFFF])*$"
+        }
+      ]
+    },
+    "Booking": {
+      "type": "object",
+      "required": [
+        "id",
+        "roomId",
+        "roomName",
+        "title",
+        "start",
+        "end"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/BookingId"
+        },
+        "roomId": {
+          "$ref": "#/$defs/RoomId"
+        },
+        "roomName": {
+          "type": "string",
+          "minLength": 1
+        },
+        "title": {
+          "$ref": "#/$defs/Title"
+        },
+        "start": {
+          "$ref": "#/$defs/QuarterHourInstant"
+        },
+        "end": {
+          "$ref": "#/$defs/QuarterHourInstant"
+        }
+      },
+      "additionalProperties": false
+    },
+    "RoomWithBookings": {
+      "type": "object",
+      "required": [
+        "id",
+        "name",
+        "office",
+        "timeZone",
+        "seats",
+        "bookings"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/RoomId"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "office": {
+          "type": "string",
+          "minLength": 1
+        },
+        "timeZone": {
+          "type": "string",
+          "pattern": "^[A-Za-z_]+(/[A-Za-z0-9_+-]+)+$"
+        },
+        "seats": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "bookings": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Booking"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "RoomsBody": {
+      "type": "object",
+      "required": [
+        "rooms"
+      ],
+      "properties": {
+        "rooms": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/RoomWithBookings"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "MyBookingsBody": {
+      "type": "object",
+      "required": [
+        "bookings"
+      ],
+      "properties": {
+        "bookings": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Booking"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "Unauthorized": {
+      "type": "object",
+      "required": [
+        "error"
+      ],
+      "properties": {
+        "error": {
+          "type": "object",
+          "required": [
+            "code",
+            "message"
+          ],
+          "properties": {
+            "code": {
+              "const": "UNAUTHORIZED"
+            },
+            "message": {
+              "const": "Sign in to continue."
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "ValidationFailed": {
+      "type": "object",
+      "required": [
+        "error"
+      ],
+      "properties": {
+        "error": {
+          "type": "object",
+          "required": [
+            "code",
+            "message"
+          ],
+          "properties": {
+            "code": {
+              "const": "VALIDATION_FAILED"
+            },
+            "message": {
+              "const": "The request is not valid."
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "BookingTooLong": {
+      "type": "object",
+      "required": [
+        "error"
+      ],
+      "properties": {
+        "error": {
+          "type": "object",
+          "required": [
+            "code",
+            "message"
+          ],
+          "properties": {
+            "code": {
+              "const": "BOOKING_TOO_LONG"
+            },
+            "message": {
+              "const": "A booking can last at most 8 hours."
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "BookingStarted": {
+      "type": "object",
+      "required": [
+        "error"
+      ],
+      "properties": {
+        "error": {
+          "type": "object",
+          "required": [
+            "code",
+            "message"
+          ],
+          "properties": {
+            "code": {
+              "const": "BOOKING_STARTED"
+            },
+            "message": {
+              "const": "That time has already started."
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "BookingTooFarAhead": {
+      "type": "object",
+      "required": [
+        "error"
+      ],
+      "properties": {
+        "error": {
+          "type": "object",
+          "required": [
+            "code",
+            "message"
+          ],
+          "properties": {
+            "code": {
+              "const": "BOOKING_TOO_FAR_AHEAD"
+            },
+            "message": {
+              "const": "A booking can start at most 365 days ahead."
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "BookingNotFound": {
+      "type": "object",
+      "required": [
+        "error"
+      ],
+      "properties": {
+        "error": {
+          "type": "object",
+          "required": [
+            "code",
+            "message"
+          ],
+          "properties": {
+            "code": {
+              "const": "BOOKING_NOT_FOUND"
+            },
+            "message": {
+              "const": "There is no such booking."
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "BookingNotYours": {
+      "type": "object",
+      "required": [
+        "error"
+      ],
+      "properties": {
+        "error": {
+          "type": "object",
+          "required": [
+            "code",
+            "message"
+          ],
+          "properties": {
+            "code": {
+              "const": "BOOKING_NOT_YOURS"
+            },
+            "message": {
+              "const": "You can cancel only your own bookings."
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "BookingConflict": {
+      "type": "object",
+      "required": [
+        "error"
+      ],
+      "properties": {
+        "error": {
+          "type": "object",
+          "required": [
+            "code",
+            "message",
+            "conflict"
+          ],
+          "properties": {
+            "code": {
+              "const": "BOOKING_CONFLICT"
+            },
+            "message": {
+              "const": "The room is already booked for part of that time."
+            },
+            "conflict": {
+              "$ref": "#/$defs/Booking"
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

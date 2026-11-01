@@ -1,0 +1,88 @@
+{
+  "name": "rooms-on-a-date",
+  "description": "Budi (Europe/London) opens the Rooms screen on 5 November 2026, PRD v2 Screens: his date is [00:00Z, next 00:00Z) because London is on GMT.",
+  "clock": "2026-11-04T12:00:00.000Z",
+  "given": [
+    {
+      "id": "00000000-0000-4000-8000-000000000001",
+      "account": "ayu",
+      "roomId": "merapi",
+      "title": "Sprint planning",
+      "start": "2026-11-05T02:00:00.000Z",
+      "end": "2026-11-05T03:00:00.000Z"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000002",
+      "account": "budi",
+      "roomId": "thames",
+      "title": "Design review",
+      "start": "2026-11-05T10:00:00.000Z",
+      "end": "2026-11-05T11:00:00.000Z"
+    }
+  ],
+  "request": {
+    "method": "GET",
+    "path": "/api/rooms?from=2026-11-05T00:00:00.000Z&to=2026-11-06T00:00:00.000Z",
+    "headers": {
+      "authorization": "Bearer {{token:budi}}"
+    }
+  },
+  "response": {
+    "status": 200,
+    "body": {
+      "rooms": [
+        {
+          "id": "merapi",
+          "name": "Merapi",
+          "office": "Jakarta",
+          "timeZone": "Asia/Jakarta",
+          "seats": 8,
+          "bookings": [
+            {
+              "id": "00000000-0000-4000-8000-000000000001",
+              "roomId": "merapi",
+              "roomName": "Merapi",
+              "title": "Sprint planning",
+              "start": "2026-11-05T02:00:00.000Z",
+              "end": "2026-11-05T03:00:00.000Z"
+            }
+          ]
+        },
+        {
+          "id": "bromo",
+          "name": "Bromo",
+          "office": "Jakarta",
+          "timeZone": "Asia/Jakarta",
+          "seats": 4,
+          "bookings": []
+        },
+        {
+          "id": "thames",
+          "name": "Thames",
+          "office": "London",
+          "timeZone": "Europe/London",
+          "seats": 10,
+          "bookings": [
+            {
+              "id": "00000000-0000-4000-8000-000000000002",
+              "roomId": "thames",
+              "roomName": "Thames",
+              "title": "Design review",
+              "start": "2026-11-05T10:00:00.000Z",
+              "end": "2026-11-05T11:00:00.000Z"
+            }
+          ]
+        },
+        {
+          "id": "kew",
+          "name": "Kew",
+          "office": "London",
+          "timeZone": "Europe/London",
+          "seats": 4,
+          "bookings": []
+        }
+      ]
+    }
+  },
+  "replay": "exact"
+}

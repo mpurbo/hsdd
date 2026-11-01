@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "hsdd-auto/adapter/1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["version", "added", "created"],
+  "properties": {
+    "version": { "enum": [1] },
+    "added": {
+      "type": "array",
+      "items": {
+        "type": "object", "additionalProperties": false, "required": ["file", "pointer", "value"],
+        "properties": {
+          "file": { "type": "string", "minLength": 1 },
+          "pointer": { "type": "string", "minLength": 1 },
+          "value": {}
+        }
+      }
+    },
+    "created": { "type": "array", "items": { "type": "string", "minLength": 1 } }
+  }
+}

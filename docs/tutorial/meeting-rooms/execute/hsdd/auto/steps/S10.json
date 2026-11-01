@@ -1,0 +1,191 @@
+{
+  "step_ref": "S10",
+  "skill": "hsdd-spec",
+  "target": "simple-login.web",
+  "status": "completed",
+  "stop": null,
+  "artifacts": [
+    "hsdd/spec/simple-login.web.md",
+    "hsdd/spec/simple-login.md"
+  ],
+  "experiments": [],
+  "self_check": [
+    {
+      "gate": "The spec stays high-level; it is not an implementation plan.",
+      "status": "pass",
+      "note": "The header and Overview name the screens by what PRD v2 Screens puts on them and restate only rules that ADR-002, profile-api@v2 G5 and booking-api@v1 G18 already state: the zone from the profile only, every conversion in the app in pure functions taking the zone, a date as a range never taken as 24 hours, the backend's clock deciding, the overlap message from the refusal. Navigation is left to D4 (DEC-092); the time module's shape, the stub's matching and absence handling on Home stay with the H16 plan (DEC-091, DEC-095)."
+    },
+    {
+      "gate": "Every node has explicit consumed/produced contract ids.",
+      "status": "pass",
+      "note": "Consumes stays [auth-api@v1, profile-api@v1, profile-api@v2] and Produces none in both files. booking-api@v1 joins Consumes through hsdd-reconcile (H17), which the intake record leaves header versions to (DEC-014); the Overview's closing sentence already names it."
+    },
+    {
+      "gate": "Every node is testable in isolation (fixtures, mocks, schemas).",
+      "status": "pass",
+      "note": "The Isolation strategy now stubs fetch with the auth-api, profile-api and booking-api fixtures, tests the time functions on their own on London's clock-change days, and runs every test with TZ set to a zone that is neither account's nor UTC (ADR-002 Consequences; DEC-093, under routed Q-014 and Q-019). The backend never runs."
+    },
+    {
+      "gate": "Every dependency edge is typed; parallel lanes are called out.",
+      "status": "n/a",
+      "note": "not exercised by this step"
+    },
+    {
+      "gate": "Each child is marked internal or leaf-parent.",
+      "status": "n/a",
+      "note": "not exercised by this step"
+    },
+    {
+      "gate": "Mermaid DAG matches the dependency table.",
+      "status": "n/a",
+      "note": "not exercised by this step"
+    },
+    {
+      "gate": "`conventions.md` exists/updated at the root.",
+      "status": "pass",
+      "note": "hsdd/conventions.md exists; the touch adds no layout, naming or protocol convention, so it is unchanged."
+    },
+    {
+      "gate": "The decomposition axis at each level matches ownership stated by the human, not assumed <U+2014 EM DASH> no node is owned by two teams.",
+      "status": "pass",
+      "note": "The axis is unchanged. PRD v2 Team and delivery and the owner's facts give the web app to the frontend developer; Owns adds only screens and the time conversion, which ADR-002 Decisions 4 and 7 give to this node alone, and nothing the backend's Owns names (DEC-091). The gate's dash is written as <U+2014 EM DASH> because the run's prose rules ban the character."
+    },
+    {
+      "gate": "Every child node has its own `hsdd/spec/{child-id}.md` file.",
+      "status": "n/a",
+      "note": "not exercised by this step"
+    },
+    {
+      "gate": "Every input source appears in the Sources of at least one node, or is marked in the root `## Sources` as \"informative only <U+2014 EM DASH> not decomposed\", with a reason.",
+      "status": "n/a",
+      "note": "not exercised by this step: the Sources field is left to the citation touch (H12), which moves the PRD 1 and Update 1 entries to PRD v2 (intake record, Sources and Scope; DEC-089). The gate's dash is written as <U+2014 EM DASH>."
+    },
+    {
+      "gate": "No node's Sources lists a document that does not govern it.",
+      "status": "n/a",
+      "note": "not exercised by this step: the Sources field in this file and in the embedded summary is unchanged and still names PRD 1 and Update 1, which H12 moves (DEC-089)."
+    },
+    {
+      "gate": "Field blocks are bullet lists and empty lists say \"none\".",
+      "status": "pass",
+      "note": "Both header blocks stay bullet lists; Produces says none."
+    },
+    {
+      "gate": "Every open question is defined once, in its owning spec, with a table row and a `### {ID}` detail subsection; child views carry `[inherits …]`; no cited ID lacks a definition.",
+      "status": "n/a",
+      "note": "not exercised by this step: the touched text cites and defines no OQ, and simple-login.web.md has no Open questions section."
+    },
+    {
+      "gate": "OQ prefixes used by node specs are declared in `conventions.md`.",
+      "status": "n/a",
+      "note": "not exercised by this step"
+    },
+    {
+      "gate": "Under `multi-team`, every node whose team differs from its parent's carries `- **Team:**`; no node is owned by two teams.",
+      "status": "n/a",
+      "note": "not exercised by this step: conventions.md says single-team."
+    },
+    {
+      "gate": "Where children exchange contracts, an integration node exists or the decision not to add one is stated in the parent (one line).",
+      "status": "n/a",
+      "note": "not exercised by this step"
+    },
+    {
+      "gate": "A graft kept every existing child id and touched only the new child's file, the parent's summaries and the parent's DAG.",
+      "status": "n/a",
+      "note": "not exercised by this step"
+    },
+    {
+      "gate": "A retired node's file is kept; its contracts' retirement went through `hsdd-reconcile`.",
+      "status": "n/a",
+      "note": "not exercised by this step"
+    },
+    {
+      "gate": "Promotion: the human confirmed before `- **Adopted:** promoted` was written; `## Observed surface` kept; `v0` contracts unchanged unless redesigned.",
+      "status": "n/a",
+      "note": "not exercised by this step"
+    }
+  ],
+  "routed": [
+    {
+      "target": "H16",
+      "kind": "consider",
+      "text": "Carried from Q-014 (from S04), which matched S10 by its node and was closed there as explained, unaddressed, because a spec touch may not write the Phase Plan (DEC-095). Original text: ADR-002 for the web app's plan: one module of pure functions taking the zone as an argument (instant to wall time, a date to [start of date, start of next date), the form's quarter-hour instants, the repeated-hour and other-date marks), tested in isolation on 2027-03-28 (23 hours, 92 slots, no 01:xx) and 2027-10-31 (25 hours, 100 slots, 01:00 to 01:45 twice as BST then GMT) per hsdd/auto/experiments/time-model-intl/; Node.js 24 has no global Temporal, so use Intl or a library on it, or a polyfill; en-GB gives 'Thu 5 Nov', HH:mm with hourCycle h23, GMT and BST (en-US gives GMT+1); Vitest runs with TZ set to a third zone; the browser's clock only picks the Rooms screen's opening date; the overlap message is built from the refusal's instants, not from error.message."
+    },
+    {
+      "target": "H16",
+      "kind": "consider",
+      "text": "Carried from Q-019 (from S05), which matched S10 by its node and was closed there as explained, unaddressed, because a spec touch may not write the Phase Plan (DEC-095). Original text: booking-api@v1 for the web's plan: web/src/test/fetchStub.ts matches String(input) against request.path, but the rooms fixtures' paths carry unencoded colons (/api/rooms?from=2026-11-05T00:00:00.000Z&to=...) while URLSearchParams writes %3A, so compare decoded URLs or build the query without encoding (the producer accepts both). A 204 fixture's body is null and new Response(body, { status: 204 }) throws on any body, so the stub answers it with no body. Fixtures carry clock and given, which explain the answer and are never sent. AC-5.3's message is written from error.conflict's roomName, start and end in the user's zone (G18); the codes to branch on are UNAUTHORIZED, VALIDATION_FAILED, BOOKING_TOO_LONG, BOOKING_STARTED, BOOKING_TOO_FAR_AHEAD, BOOKING_CONFLICT, BOOKING_NOT_FOUND (a second tab already cancelled) and BOOKING_NOT_YOURS. The form may offer end times up to start + 8 hours and dates up to 365 days ahead, but the backend's answer decides. Lists arrive sorted; no client sort is needed. consumers names simple-login.web.5 provisionally (DEC-053)."
+    },
+    {
+      "target": "H16",
+      "kind": "consider",
+      "text": "Carried from Q-023 (from S07), which matched S10 by its node and was closed there as explained, unaddressed, because a spec touch may not write the Phase Plan (DEC-095). Original text: profile-api@v2 G4 promises timeZone in every 200 profile; G5 says the web takes the user's zone from it only, never the browser's, and shows no time rather than guess one when a profile lacks it (a backend that predates the field; backend and web ship separately, PRD v2 Team and delivery). Read from the code, not run: decideProfile ignores unknown fields, so the shipped web reads the new fixtures unchanged. The appended plan adds timeZone to the web's own Profile type and to Home (AC-2.1, AC-2.5) and decides absence: today a missing field makes the whole profile 'unavailable', which would also hide Home's other rows."
+    },
+    {
+      "target": "H16",
+      "kind": "consider",
+      "text": "From S10's touch (DEC-092, DEC-093). The Overview no longer states how the app moves between screens; D4 ('No router (RFC §6): the screen is a function of the session value') and D5 are now its only statement, and the D4 revisit (DEC-012) has three screens to cover: Home to Rooms and back (PRD v2 Screens: Book a room, Home), which screen shows after sign-in and on reload, and what Rooms does on a 401 or an unreachable backend. D1 notices expiry only when GET /api/me answers 401 on load; booking-api@v1 G16 answers 401 UNAUTHORIZED at every endpoint, so a booking request from Rooms or a Cancel on Home can be the first to see an expired token (PRD v2 AC-2.3). The header's Isolation strategy now says the time functions are tested on their own on London's clock-change days and every test runs with TZ set to a zone that is neither account's nor UTC (ADR-002); the plan's gate command or Vitest configuration is where that is set. Owns names turning instants into dates and times in the user's zone and back, and their display format, as this node's (ADR-002 Decisions 4 and 7)."
+    },
+    {
+      "target": "H12",
+      "kind": "consider",
+      "text": "S10 restated Purpose, Owns and Isolation strategy (in hsdd/spec/simple-login.web.md and the embedded summary in hsdd/spec/simple-login.md) and the Overview, citing PRD v2 by section (Screens, US-1 to US-6, AC-2.5, AC-4.2 to AC-4.4, AC-5.2, AC-5.3), ADR-002, profile-api@v2 G5 and booking-api@v1 G18 (DEC-089). The citations it left for H12: the Sources field in both places (PRD 1 and Update 1 paths). The Overview's 'auth-api@v1 and profile-api@v1, which simple-login.web.4 replaces with profile-api@v2' names profile-api@v1, whose file is not deprecated (its deprecation waits on Sync A, DEC-016). Every other PRD 1 or Update 1 reference in the file sits in the Phase Plan (web.1 to web.4, all with verification docs on main, D1 to D5 and the 2026-10-30 append), which is history."
+    }
+  ],
+  "closes": [
+    {
+      "id": "Q-014",
+      "outcome": "explained",
+      "note": "Targets H16, the web's phase plan, which this spec touch may not edit. The header and Overview now state its spec-level clauses: every conversion in the app in pure functions that take the zone (Overview, ADR-002), a date as the range from its start to the start of the next, never 24 hours, on London's clock-change days (Overview), the browser's clock only picking the date Rooms opens on (Overview), the overlap message built from the refusal (Overview), and the clock-change tests and the third TZ (Isolation strategy; DEC-092, DEC-093). Its plan content (the module, the 92 and 100 slot counts, Intl or a library or a polyfill, en-GB formats) is carried to H16 with the full text (DEC-095)."
+    },
+    {
+      "id": "Q-019",
+      "outcome": "explained",
+      "note": "Targets H16; the stub's URL matching, the 204 with no body, clock and given, the codes to branch on, the form's limits, the sorted lists and the provisional consumers entry are plan content. The Isolation strategy now stubs fetch with the booking-api fixtures (DEC-093), and the Overview says the app writes PRD v2 AC-5.3's message from the refusal's room name and instants, never from error.message, and that the backend's answer decides (booking-api@v1 G18; DEC-092). Carried to H16 with the full text (DEC-095)."
+    },
+    {
+      "id": "Q-023",
+      "outcome": "explained",
+      "note": "Targets H16; adding timeZone to the web's Profile type and deciding absence on Home (today a missing field makes the whole profile unavailable) are plan content. Purpose, Owns and the Overview now put the time zone on Home and say the app takes the zone from the profile's timeZone only, never the browser's, and shows no time for a profile without one (profile-api@v2 G5; DEC-090 to DEC-092). Carried to H16 with the full text (DEC-095)."
+    }
+  ],
+  "reads_outside": [
+    {
+      "path": "hsdd/auto/steps/S09.json, hsdd/auto/steps/S09.decisions.jsonl, git show 663d5d2 and 36af5a9",
+      "why": "How the previous spec touch on a sibling restated its header, cited PRD v2, closed items routed to its phase plan, and how the orchestrator ingested that (Q-027 to Q-033), so this touch follows the same rules."
+    },
+    {
+      "path": "hsdd/auto/queue.jsonl",
+      "why": "The full text and status of Q-014, Q-019, Q-023 and Q-033, to carry the first three verbatim and avoid duplicating Q-033."
+    },
+    {
+      "path": "hsdd/judgement/decisions.jsonl (DEC-012, DEC-067, DEC-084, DEC-085)",
+      "why": "Where navigation is decided (D4), the citation rule for restated text, and the earlier choices on the child table and on carried items."
+    },
+    {
+      "path": "hsdd/scripts/auto/routed.mjs, hsdd/scripts/auto/gate.mjs, hsdd/scripts/auto/lib/checks.mjs, hsdd/scripts/auto/templates/steps/spec-touch.md, hsdd/scripts/auto/schema/step-report.schema.json",
+      "why": "Why the H16 items matched this step, what the gate checks, and the report shape."
+    },
+    {
+      "path": ".claude/skills/hsdd-phase-plan/SKILL.md",
+      "why": "Whether append mode writes header lines (it does not), for DEC-093."
+    },
+    {
+      "path": "hsdd/adr/002-time-model.md, hsdd/contract/profile-api.v2.md, hsdd/contract/booking-api.md",
+      "why": "The decisions and guarantees the Overview, Owns and Isolation strategy restate (ADR-002 Decisions 4, 5, 7 and Consequences; profile-api@v2 G4, G5; booking-api@v1 G7, G16, G18)."
+    },
+    {
+      "path": "hsdd/verify/ and main:hsdd/verify/simple-login.web.4.verification.md",
+      "why": "Whether web.4 has shipped, for the H12 item's account of what is history."
+    }
+  ],
+  "notes": [
+    "Decisions DEC-089 to DEC-095. Changed: hsdd/spec/simple-login.web.md (Purpose, Owns, Isolation strategy, Overview) and hsdd/spec/simple-login.md (the same three header lines of the web's embedded summary only). The Phase Plan, Kind, Does not own, Consumes, Produces, Governed by, Sources and Decomposes into are untouched in both; the Phase Plan was diffed against HEAD and is identical.",
+    "The Isolation strategy was not named by H8; it was changed under routed Q-014 and Q-019 because no later handoff writes that header line (DEC-093, confidence medium). If the orchestrator reads the Touch paragraph more strictly, reverting that one line in both files undoes it without touching anything else.",
+    "Does not own still reads 'accounts, password checks, sessions on the server'. The rooms, the bookings and the rules that accept or refuse one now belong to simple-login.backend by its Owns (S09), and this Overview says the backend's clock and answer decide; the line was named neither by H8 nor by a routed item, so it is left. The root's child-node table still gives the web the Purpose 'the Login and Home screens in the browser'; Q-033 (target run) already covers it (DEC-094).",
+    "Routing mechanics, as in S09 (DEC-085): routed.mjs matches an item on a handoff to every step on that handoff's target, so the three H16 items reached this spec touch, and the carried copies will reach H12, the citation touch on the same node, before H16. If the orchestrator re-opens the originals instead, the three carried entries duplicate them and can be dropped before ingest.",
+    "Until hsdd-reconcile runs for this node (H17), the header's Consumes lacks booking-api@v1 while the Isolation strategy and the Overview name it. The shipped web (web.1 to web.4) has no Rooms screen, bookings or time zone; the header and Overview describe the node as PRD v2 requires it, and the appended plan (H16) delivers it."
+  ],
+  "read_check": "95bd24a1"
+}

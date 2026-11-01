@@ -1,0 +1,574 @@
+
+ RUN  v5.0.5 <repo>/backend
+
+ ❯ test/booking-routes.test.ts (16 tests | 8 failed) 444ms
+   ❯ POST /api/bookings (4)
+     × creates a booking, answers 201 with its wire form and stores it 23ms
+     × answers 409 naming the overlapping booking 41ms
+     × answers a limit failure through the rules (started booking is 422) 22ms
+   ❯ content type: POST /api/bookings answers as POST /api/login does (backend.5 Outstanding) (3)
+     × text/plain 21ms
+     × undefined 21ms
+     × application/json; charset=utf-8 40ms
+   × refuses a body that is not JSON, or JSON that is not an object, with 400 21ms
+   × 20 simultaneous POSTs for one room and time give one 201 and nineteen 409 naming it, ten rounds (G5) 42ms
+ ❯ test/contract.replay.test.ts (39 tests | 19 failed) 809ms
+   ❯ contract replay against the real routes (39)
+     × booking-api/book-365-days-ahead (exact) 24ms
+     × booking-api/book-a-room (exact) 21ms
+     × booking-api/book-eight-hours (exact) 21ms
+     × booking-api/book-end-not-after-start (exact) 21ms
+     × booking-api/book-in-the-repeated-hour (exact) 21ms
+     × booking-api/book-instant-with-offset (exact) 21ms
+     × booking-api/book-not-on-a-quarter-hour (exact) 21ms
+     × booking-api/book-overlap-several (exact) 23ms
+     × booking-api/book-overlap (exact) 24ms
+     × booking-api/book-same-time-other-room (exact) 23ms
+     × booking-api/book-started-and-overlapping (exact) 21ms
+     × booking-api/book-started (exact) 21ms
+     × booking-api/book-title-80-characters (exact) 19ms
+     × booking-api/book-title-blank (exact) 19ms
+     × booking-api/book-title-too-long (exact) 19ms
+     × booking-api/book-too-far-ahead (exact) 19ms
+     × booking-api/book-too-long (exact) 19ms
+     × booking-api/book-touching (exact) 21ms
+     × booking-api/book-unknown-room (exact) 19ms
+
+⎯⎯⎯⎯⎯⎯ Failed Tests 27 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  test/booking-routes.test.ts > POST /api/bookings > creates a booking, answers 201 with its wire form and stores it
+AssertionError: expected 501 to be 201 // Object.is equality
+
+- Expected
++ Received
+
+- 201
++ 501
+
+ ❯ test/booking-routes.test.ts:124:28
+    122|     const token = await signIn("ayu");
+    123|     const res = await post(bookingBody(), token);
+    124|     expect(res.statusCode).toBe(201);
+       |                            ^
+    125|     expect(res.json()).toEqual({
+    126|       id: expect.stringMatching(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/27]⎯
+
+ FAIL  test/booking-routes.test.ts > POST /api/bookings > answers 409 naming the overlapping booking
+AssertionError: expected 501 to be 409 // Object.is equality
+
+- Expected
++ Received
+
+- 409
++ 501
+
+ ❯ test/booking-routes.test.ts:141:31
+    139|     const first = await post(bookingBody("First"), await signIn("ayu")…
+    140|     const second = await post(bookingBody("Second"), await signIn("bud…
+    141|     expect(second.statusCode).toBe(409);
+       |                               ^
+    142|     expect(second.json()).toEqual({
+    143|       error: { code: "BOOKING_CONFLICT", message: "The room is already…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/27]⎯
+
+ FAIL  test/booking-routes.test.ts > POST /api/bookings > answers a limit failure through the rules (started booking is 422)
+AssertionError: expected 'UNAUTHORIZED' to be 'BOOKING_STARTED' // Object.is equality
+
+Expected: "BOOKING_STARTED"
+Received: "UNAUTHORIZED"
+
+ ❯ test/booking-routes.test.ts:159:35
+    157|     setClock("2026-11-05T02:30:00.000Z");
+    158|     const res = await post(bookingBody(), token);
+    159|     expect(res.json().error.code).toBe("BOOKING_STARTED");
+       |                                   ^
+    160|   });
+    161| });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/27]⎯
+
+ FAIL  test/booking-routes.test.ts > content type: POST /api/bookings answers as POST /api/login does (backend.5 Outstanding) > text/plain
+ FAIL  test/booking-routes.test.ts > content type: POST /api/bookings answers as POST /api/login does (backend.5 Outstanding) > undefined
+AssertionError: expected 501 to be 400 // Object.is equality
+
+- Expected
++ Received
+
+- 400
++ 501
+
+ ❯ test/booking-routes.test.ts:181:31
+    179|     if (loginBody_ !== undefined) expect(login.json()).toEqual(loginBo…
+    180|     const booked = await post(bookingBody(), token, contentType);
+    181|     expect(booked.statusCode).toBe(bookStatus);
+       |                               ^
+    182|     if (bookBody !== undefined) expect(booked.json()).toEqual(bookBody…
+    183|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/27]⎯
+
+ FAIL  test/booking-routes.test.ts > content type: POST /api/bookings answers as POST /api/login does (backend.5 Outstanding) > application/json; charset=utf-8
+AssertionError: expected 501 to be 201 // Object.is equality
+
+- Expected
++ Received
+
+- 201
++ 501
+
+ ❯ test/booking-routes.test.ts:181:31
+    179|     if (loginBody_ !== undefined) expect(login.json()).toEqual(loginBo…
+    180|     const booked = await post(bookingBody(), token, contentType);
+    181|     expect(booked.statusCode).toBe(bookStatus);
+       |                               ^
+    182|     if (bookBody !== undefined) expect(booked.json()).toEqual(bookBody…
+    183|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/27]⎯
+
+ FAIL  test/booking-routes.test.ts > refuses a body that is not JSON, or JSON that is not an object, with 400
+AssertionError: {: expected 501 to be 400 // Object.is equality
+
+- Expected
++ Received
+
+- 400
++ 501
+
+ ❯ test/booking-routes.test.ts:191:34
+    189|   for (const body of ["{", "null", "[]", '"x"']) {
+    190|     const res = await post(body, token);
+    191|     expect(res.statusCode, body).toBe(400);
+       |                                  ^
+    192|     expect(res.json(), body).toEqual(BOOKING_INVALID);
+    193|   }
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/27]⎯
+
+ FAIL  test/booking-routes.test.ts > 20 simultaneous POSTs for one room and time give one 201 and nineteen 409 naming it, ten rounds (G5)
+AssertionError: expected [] to have a length of 1 but got +0
+
+- Expected
++ Received
+
+- 1
++ 0
+
+ ❯ test/booking-routes.test.ts:214:49
+    212|       );
+    213|       const statuses = responses.map((r) => r.statusCode);
+    214|       expect(statuses.filter((s) => s === 201)).toHaveLength(1);
+       |                                                 ^
+    215|       expect(statuses.filter((s) => s === 409)).toHaveLength(19);
+    216|       const created = responses.find((r) => r.statusCode === 201)!;
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[7/27]⎯
+
+ FAIL  test/contract.replay.test.ts > contract replay against the real routes > booking-api/book-365-days-ahead (exact)
+AssertionError: expected [ Array(1) ] to deeply equal []
+
+- Expected
++ Received
+
+- []
++ [
++   "booking-api/book-365-days-ahead: status 501, expected 201",
++ ]
+
+ ❯ test/contract.replay.test.ts:58:64
+     56|       it(`${slug}/${fixture.name} (${fixture.replay})`, async () => {
+     57|         const { app, hooks } = realService();
+     58|         expect(await replayFixture(app, slug, fixture, hooks)).toEqual…
+       |                                                                ^
+     59|         await app.close();
+     60|       });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[8/27]⎯
+
+ FAIL  test/contract.replay.test.ts > contract replay against the real routes > booking-api/book-a-room (exact)
+AssertionError: expected [ Array(1) ] to deeply equal []
+
+- Expected
++ Received
+
+- []
++ [
++   "booking-api/book-a-room: status 501, expected 201",
++ ]
+
+ ❯ test/contract.replay.test.ts:58:64
+     56|       it(`${slug}/${fixture.name} (${fixture.replay})`, async () => {
+     57|         const { app, hooks } = realService();
+     58|         expect(await replayFixture(app, slug, fixture, hooks)).toEqual…
+       |                                                                ^
+     59|         await app.close();
+     60|       });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[9/27]⎯
+
+ FAIL  test/contract.replay.test.ts > contract replay against the real routes > booking-api/book-eight-hours (exact)
+AssertionError: expected [ Array(1) ] to deeply equal []
+
+- Expected
++ Received
+
+- []
++ [
++   "booking-api/book-eight-hours: status 501, expected 201",
++ ]
+
+ ❯ test/contract.replay.test.ts:58:64
+     56|       it(`${slug}/${fixture.name} (${fixture.replay})`, async () => {
+     57|         const { app, hooks } = realService();
+     58|         expect(await replayFixture(app, slug, fixture, hooks)).toEqual…
+       |                                                                ^
+     59|         await app.close();
+     60|       });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[10/27]⎯
+
+ FAIL  test/contract.replay.test.ts > contract replay against the real routes > booking-api/book-end-not-after-start (exact)
+AssertionError: expected [ Array(1) ] to deeply equal []
+
+- Expected
++ Received
+
+- []
++ [
++   "booking-api/book-end-not-after-start: status 501, expected 400",
++ ]
+
+ ❯ test/contract.replay.test.ts:58:64
+     56|       it(`${slug}/${fixture.name} (${fixture.replay})`, async () => {
+     57|         const { app, hooks } = realService();
+     58|         expect(await replayFixture(app, slug, fixture, hooks)).toEqual…
+       |                                                                ^
+     59|         await app.close();
+     60|       });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[11/27]⎯
+
+ FAIL  test/contract.replay.test.ts > contract replay against the real routes > booking-api/book-in-the-repeated-hour (exact)
+AssertionError: expected [ Array(1) ] to deeply equal []
+
+- Expected
++ Received
+
+- []
++ [
++   "booking-api/book-in-the-repeated-hour: status 501, expected 201",
++ ]
+
+ ❯ test/contract.replay.test.ts:58:64
+     56|       it(`${slug}/${fixture.name} (${fixture.replay})`, async () => {
+     57|         const { app, hooks } = realService();
+     58|         expect(await replayFixture(app, slug, fixture, hooks)).toEqual…
+       |                                                                ^
+     59|         await app.close();
+     60|       });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[12/27]⎯
+
+ FAIL  test/contract.replay.test.ts > contract replay against the real routes > booking-api/book-instant-with-offset (exact)
+AssertionError: expected [ Array(1) ] to deeply equal []
+
+- Expected
++ Received
+
+- []
++ [
++   "booking-api/book-instant-with-offset: status 501, expected 400",
++ ]
+
+ ❯ test/contract.replay.test.ts:58:64
+     56|       it(`${slug}/${fixture.name} (${fixture.replay})`, async () => {
+     57|         const { app, hooks } = realService();
+     58|         expect(await replayFixture(app, slug, fixture, hooks)).toEqual…
+       |                                                                ^
+     59|         await app.close();
+     60|       });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[13/27]⎯
+
+ FAIL  test/contract.replay.test.ts > contract replay against the real routes > booking-api/book-not-on-a-quarter-hour (exact)
+AssertionError: expected [ Array(1) ] to deeply equal []
+
+- Expected
++ Received
+
+- []
++ [
++   "booking-api/book-not-on-a-quarter-hour: status 501, expected 400",
++ ]
+
+ ❯ test/contract.replay.test.ts:58:64
+     56|       it(`${slug}/${fixture.name} (${fixture.replay})`, async () => {
+     57|         const { app, hooks } = realService();
+     58|         expect(await replayFixture(app, slug, fixture, hooks)).toEqual…
+       |                                                                ^
+     59|         await app.close();
+     60|       });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[14/27]⎯
+
+ FAIL  test/contract.replay.test.ts > contract replay against the real routes > booking-api/book-overlap-several (exact)
+AssertionError: expected [ Array(1) ] to deeply equal []
+
+- Expected
++ Received
+
+- []
++ [
++   "booking-api/book-overlap-several: status 501, expected 409",
++ ]
+
+ ❯ test/contract.replay.test.ts:58:64
+     56|       it(`${slug}/${fixture.name} (${fixture.replay})`, async () => {
+     57|         const { app, hooks } = realService();
+     58|         expect(await replayFixture(app, slug, fixture, hooks)).toEqual…
+       |                                                                ^
+     59|         await app.close();
+     60|       });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[15/27]⎯
+
+ FAIL  test/contract.replay.test.ts > contract replay against the real routes > booking-api/book-overlap (exact)
+AssertionError: expected [ Array(1) ] to deeply equal []
+
+- Expected
++ Received
+
+- []
++ [
++   "booking-api/book-overlap: status 501, expected 409",
++ ]
+
+ ❯ test/contract.replay.test.ts:58:64
+     56|       it(`${slug}/${fixture.name} (${fixture.replay})`, async () => {
+     57|         const { app, hooks } = realService();
+     58|         expect(await replayFixture(app, slug, fixture, hooks)).toEqual…
+       |                                                                ^
+     59|         await app.close();
+     60|       });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[16/27]⎯
+
+ FAIL  test/contract.replay.test.ts > contract replay against the real routes > booking-api/book-same-time-other-room (exact)
+AssertionError: expected [ Array(1) ] to deeply equal []
+
+- Expected
++ Received
+
+- []
++ [
++   "booking-api/book-same-time-other-room: status 501, expected 201",
++ ]
+
+ ❯ test/contract.replay.test.ts:58:64
+     56|       it(`${slug}/${fixture.name} (${fixture.replay})`, async () => {
+     57|         const { app, hooks } = realService();
+     58|         expect(await replayFixture(app, slug, fixture, hooks)).toEqual…
+       |                                                                ^
+     59|         await app.close();
+     60|       });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[17/27]⎯
+
+ FAIL  test/contract.replay.test.ts > contract replay against the real routes > booking-api/book-started-and-overlapping (exact)
+AssertionError: expected [ Array(1) ] to deeply equal []
+
+- Expected
++ Received
+
+- []
++ [
++   "booking-api/book-started-and-overlapping: status 501, expected 422",
++ ]
+
+ ❯ test/contract.replay.test.ts:58:64
+     56|       it(`${slug}/${fixture.name} (${fixture.replay})`, async () => {
+     57|         const { app, hooks } = realService();
+     58|         expect(await replayFixture(app, slug, fixture, hooks)).toEqual…
+       |                                                                ^
+     59|         await app.close();
+     60|       });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[18/27]⎯
+
+ FAIL  test/contract.replay.test.ts > contract replay against the real routes > booking-api/book-started (exact)
+AssertionError: expected [ Array(1) ] to deeply equal []
+
+- Expected
++ Received
+
+- []
++ [
++   "booking-api/book-started: status 501, expected 422",
++ ]
+
+ ❯ test/contract.replay.test.ts:58:64
+     56|       it(`${slug}/${fixture.name} (${fixture.replay})`, async () => {
+     57|         const { app, hooks } = realService();
+     58|         expect(await replayFixture(app, slug, fixture, hooks)).toEqual…
+       |                                                                ^
+     59|         await app.close();
+     60|       });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[19/27]⎯
+
+ FAIL  test/contract.replay.test.ts > contract replay against the real routes > booking-api/book-title-80-characters (exact)
+AssertionError: expected [ Array(1) ] to deeply equal []
+
+- Expected
++ Received
+
+- []
++ [
++   "booking-api/book-title-80-characters: status 501, expected 201",
++ ]
+
+ ❯ test/contract.replay.test.ts:58:64
+     56|       it(`${slug}/${fixture.name} (${fixture.replay})`, async () => {
+     57|         const { app, hooks } = realService();
+     58|         expect(await replayFixture(app, slug, fixture, hooks)).toEqual…
+       |                                                                ^
+     59|         await app.close();
+     60|       });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[20/27]⎯
+
+ FAIL  test/contract.replay.test.ts > contract replay against the real routes > booking-api/book-title-blank (exact)
+AssertionError: expected [ Array(1) ] to deeply equal []
+
+- Expected
++ Received
+
+- []
++ [
++   "booking-api/book-title-blank: status 501, expected 400",
++ ]
+
+ ❯ test/contract.replay.test.ts:58:64
+     56|       it(`${slug}/${fixture.name} (${fixture.replay})`, async () => {
+     57|         const { app, hooks } = realService();
+     58|         expect(await replayFixture(app, slug, fixture, hooks)).toEqual…
+       |                                                                ^
+     59|         await app.close();
+     60|       });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[21/27]⎯
+
+ FAIL  test/contract.replay.test.ts > contract replay against the real routes > booking-api/book-title-too-long (exact)
+AssertionError: expected [ Array(1) ] to deeply equal []
+
+- Expected
++ Received
+
+- []
++ [
++   "booking-api/book-title-too-long: status 501, expected 400",
++ ]
+
+ ❯ test/contract.replay.test.ts:58:64
+     56|       it(`${slug}/${fixture.name} (${fixture.replay})`, async () => {
+     57|         const { app, hooks } = realService();
+     58|         expect(await replayFixture(app, slug, fixture, hooks)).toEqual…
+       |                                                                ^
+     59|         await app.close();
+     60|       });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[22/27]⎯
+
+ FAIL  test/contract.replay.test.ts > contract replay against the real routes > booking-api/book-too-far-ahead (exact)
+AssertionError: expected [ Array(1) ] to deeply equal []
+
+- Expected
++ Received
+
+- []
++ [
++   "booking-api/book-too-far-ahead: status 501, expected 422",
++ ]
+
+ ❯ test/contract.replay.test.ts:58:64
+     56|       it(`${slug}/${fixture.name} (${fixture.replay})`, async () => {
+     57|         const { app, hooks } = realService();
+     58|         expect(await replayFixture(app, slug, fixture, hooks)).toEqual…
+       |                                                                ^
+     59|         await app.close();
+     60|       });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[23/27]⎯
+
+ FAIL  test/contract.replay.test.ts > contract replay against the real routes > booking-api/book-too-long (exact)
+AssertionError: expected [ Array(1) ] to deeply equal []
+
+- Expected
++ Received
+
+- []
++ [
++   "booking-api/book-too-long: status 501, expected 422",
++ ]
+
+ ❯ test/contract.replay.test.ts:58:64
+     56|       it(`${slug}/${fixture.name} (${fixture.replay})`, async () => {
+     57|         const { app, hooks } = realService();
+     58|         expect(await replayFixture(app, slug, fixture, hooks)).toEqual…
+       |                                                                ^
+     59|         await app.close();
+     60|       });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[24/27]⎯
+
+ FAIL  test/contract.replay.test.ts > contract replay against the real routes > booking-api/book-touching (exact)
+AssertionError: expected [ Array(1) ] to deeply equal []
+
+- Expected
++ Received
+
+- []
++ [
++   "booking-api/book-touching: status 501, expected 201",
++ ]
+
+ ❯ test/contract.replay.test.ts:58:64
+     56|       it(`${slug}/${fixture.name} (${fixture.replay})`, async () => {
+     57|         const { app, hooks } = realService();
+     58|         expect(await replayFixture(app, slug, fixture, hooks)).toEqual…
+       |                                                                ^
+     59|         await app.close();
+     60|       });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[25/27]⎯
+
+ FAIL  test/contract.replay.test.ts > contract replay against the real routes > booking-api/book-unknown-room (exact)
+AssertionError: expected [ Array(1) ] to deeply equal []
+
+- Expected
++ Received
+
+- []
++ [
++   "booking-api/book-unknown-room: status 501, expected 400",
++ ]
+
+ ❯ test/contract.replay.test.ts:58:64
+     56|       it(`${slug}/${fixture.name} (${fixture.replay})`, async () => {
+     57|         const { app, hooks } = realService();
+     58|         expect(await replayFixture(app, slug, fixture, hooks)).toEqual…
+       |                                                                ^
+     59|         await app.close();
+     60|       });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[26/27]⎯
+
+
+ Test Files  2 failed (2)
+      Tests  27 failed | 28 passed (55)
+   Start at  02:21:44
+   Duration  1.03s (tests 85%, import 13%, transform 2%)
+

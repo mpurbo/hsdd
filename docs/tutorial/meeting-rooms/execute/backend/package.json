@@ -1,0 +1,30 @@
+{
+  "name": "@simple-login/backend",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "simple-login backend: sign-in and profile over HTTP, all in memory.",
+  "engines": {
+    "node": ">=24.2"
+  },
+  "scripts": {
+    "start": "node src/server.ts",
+    "test": "vitest run",
+    "gate": "npm run db:up && tsc --noEmit && TZ=Asia/Kolkata vitest run",
+    "replay": "npm run db:up && TZ=Asia/Kolkata vitest run test/contract.replay.test.ts",
+    "db:up": "node scripts/db-up.mjs up",
+    "db:down": "node scripts/db-up.mjs down"
+  },
+  "dependencies": {
+    "fastify": "^5.12.7",
+    "pg": "^8.23.1"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "@types/pg": "^8.23.1",
+    "ajv": "^8.20.0",
+    "ajv-formats": "^3.0.1",
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.5"
+  }
+}

@@ -1,0 +1,184 @@
+{
+  "step_ref": "S18",
+  "skill": "hsdd-phase-plan",
+  "target": "simple-login.web",
+  "status": "completed",
+  "stop": null,
+  "artifacts": [
+    "hsdd/spec/simple-login.web.md"
+  ],
+  "experiments": [
+    {
+      "path": "hsdd/auto/experiments/web-time-display/",
+      "question": "What exact instants and strings will simple-login.web's planned time functions (ADR-002 Decisions 4, 5 and 7, Intl only) give for booking-api@v1's fixtures under TZ=Asia/Kolkata, so the phase plan can state them?",
+      "finding": "Intl alone implements every web-side rule: dayRange reproduces the three rooms fixtures' query paths exactly (London 2026-11-05, Jakarta 2026-11-05, London 2027-10-31 at 25 h); 2027-03-28 London is 23 h with 92 quarter hours and no 01:xx; 2027-10-31 has 100 with 01:00 to 01:45 BST then GMT. rooms-on-a-date for a London user reproduces PRD v2 Screens' Rooms lines; book-overlap for a Jakarta user gives 'Merapi is already booked from 09:00 to 10:00.'; marks read '01:00 GMT to 01:30 GMT', '23:30 to Mon 1 Nov 00:00', 'Wed 4 Nov 23:30 to 00:30' with '(Wed 4 Nov 16:30 to Wed 4 Nov 17:30 in London)'. Every 201 POST fixture's start and end are among the form's options with the browser clock at the fixture's clock, except book-started's (its clock reads the start). book-title-80-characters is 80 code points and 81 UTF-16 units. Intl accepts '+07:00' as a zone. The ambient zone under TZ=Asia/Kolkata resolves to 'Asia/Calcutta'."
+    }
+  ],
+  "self_check": [
+    {
+      "gate": "Phase 1 defines all shared types and contract-bounded interfaces.",
+      "status": "pass",
+      "note": "Append mode: simple-login.web.5, the first appended phase, defines every new type and contract-bounded interface: booking-api@v1's Room and Booking, the four client functions with their failure reasons, Profile.timeZone, and the stub for booking-api@v1's fixtures. Dates and instants stay strings, so web.6 adds no shared type."
+    },
+    {
+      "gate": "Phases 2..N-1 are maximally independent (parallelizable where possible).",
+      "status": "pass",
+      "note": "web.5 and web.6 depend only on shipped phases and run in parallel. web.7, web.8 and web.9 serialise: each screen phase wires App.tsx and session/flow.ts for what it adds (Collides with), and PRD v2 Team and delivery gives the web lane one developer, so a separate composition phase would buy no parallel lane (DEC-158)."
+    },
+    {
+      "gate": "Each phase has <= 8 OpenSpec tasks (split if more).",
+      "status": "pass",
+      "note": "web.5 7, web.6 6, web.7 7, web.8 7, web.9 7."
+    },
+    {
+      "gate": "Adjacent same-tier phases were checked against the sizing floor; every merge candidate kept separate names its reason (tier boundary, parallel lane, isolated risk).",
+      "status": "pass",
+      "note": "Over the appended phases only: web.5 and web.6 differ in tier; web.6 and web.7, web.7 and web.8, web.8 and web.9 share full-review but each pair consumes different contracts (none vs booking-api@v1 and profile-api@v2; web.8 alone reads auth-api@v1; web.9 reads booking-api@v1 only), and merged each comes to 725 to 785 lines, over one sitting. No candidate pair; one line under the table says so."
+    },
+    {
+      "gate": "Contract ids are defined before the phase that implements them.",
+      "status": "pass",
+      "note": "booking-api@v1 (draft, schema and 35 fixtures), profile-api@v2 (stable, with timeZone) and auth-api@v1 (stable) all exist; this node produces none."
+    },
+    {
+      "gate": "Phase N is testable against contract fixtures even if Phase N-1 is not implemented.",
+      "status": "pass",
+      "note": "Every appended phase stubs fetch with the contracts' fixtures and never needs the backend; web.6 needs no fixture. Each phase's Verification names the fixtures it runs."
+    },
+    {
+      "gate": "No phase couples to another phase's internals.",
+      "status": "pass",
+      "note": "Each phase names what it uses from an earlier one in Dependencies (web.5's client functions and stub helpers, web.6's named functions, web.7's Home props and the flow's session-expired event, web.8's Rooms screen); across nodes only the contracts' fixtures."
+    },
+    {
+      "gate": "Each phase has a concrete gate, a verification description, and a review tier.",
+      "status": "pass",
+      "note": "Gate: node default (npm --prefix web run gate, which web.5 runs under TZ=Asia/Kolkata); Verification lines name fixtures and exact strings; tiers web.5 spot-check, web.6 to web.9 full-review (DEC-168 for web.6)."
+    },
+    {
+      "gate": "The phase dependency graph is included as a Mermaid flowchart and matches the Dependencies fields.",
+      "status": "pass",
+      "note": "W5 to W9 and a fixtures box added; edges W1 and W4 to W5, W1 to W6, W4, W5 and W6 to W7, W5, W6 and W7 to W8, W5, W6 and W8 to W9, the box dashed to W5; existing edges not redrawn."
+    },
+    {
+      "gate": "Summary table opens the section and matches the phase sections.",
+      "status": "pass",
+      "note": "The Default gate line, then the table with five new rows; the table gained a Collides with column because web.7, web.8 and web.9 collide, shipped rows reading none (DEC-173)."
+    },
+    {
+      "gate": "Field blocks are bullet lists; empty lists say \"none\".",
+      "status": "pass",
+      "note": "Every field is a bullet; web.6's Consumes and every Produces read none."
+    },
+    {
+      "gate": "Every contingent phase names the OQ id it waits on; no contingency without a minted OQ.",
+      "status": "pass",
+      "note": "No appended phase is contingent and no request entry was emitted; the fixture gap for Cancel is handled in the tests (DEC-167)."
+    },
+    {
+      "gate": "The plan names the ordering policy it followed, matching the conventions line (or `interfaces-first` when absent, `fp-progression` when only the pre-v0.10 `FP ordering:` bullet is present).",
+      "status": "pass",
+      "note": "The first line after the table already names interfaces-first from hsdd/conventions.md; the append paragraph says the new phases follow the same policy."
+    },
+    {
+      "gate": "Every producing phase's Gate includes the contract replay for each contract it produces.",
+      "status": "n/a",
+      "note": "not exercised by this step: simple-login.web produces no contract."
+    },
+    {
+      "gate": "In append mode: no existing id changed, no shipped phase edited, numbering continued from the highest existing id, the node header untouched, the floor run over the appended phases only.",
+      "status": "pass",
+      "note": "web.1 to web.4 (all with verification docs on main) are unchanged; numbering continues at 5; the header's Produces and Consumes are untouched, and only its Sources entry gained sections, which append mode allows (DEC-171); the floor ran over web.5 to web.9 only. D1 and D4 are node decisions, revised in place with dated markers (DEC-161, DEC-162), not phase sections."
+    },
+    {
+      "gate": "No Scope or Verification line leans on a pointer to text the phase context does not carry (a source's section, another phase's text); the binding detail is in the line itself.",
+      "status": "pass",
+      "note": "Each line carries the rows, copy and values itself: Home's row order and booking lines, Rooms' line forms, the form's labels and every message, the fixtures' exact paths and strings from the experiment. PRD v2 Screens is cited as provenance after the detail. References to D1, D3, D4, D7 to D11 are carried by the phase context."
+    }
+  ],
+  "routed": [
+    {
+      "target": "run",
+      "kind": "consider",
+      "text": "From S18 (DEC-172), carrying Q-064: simple-login.web's Overview says 'with three screens (PRD v2 Screens)', but PRD v2 Screens draws only Home and Rooms; the citation should read (PRD v2 US-1, Screens) so Login has its source. A phase-plan-append does not edit hsdd-spec's Overview, so this step left it; the segment's align, which makes citation changes only, or a later hsdd-spec touch on simple-login.web can make it. Nothing in the plan depends on it."
+    },
+    {
+      "target": "simple-login.integration",
+      "kind": "consider",
+      "text": "From S18 (simple-login.web's appended plan: D4, D7, D9, D10, D11; DEC-162, DEC-165, DEC-166, DEC-170), for the browser tests that select by visible text. Home: rows Username, Email, Phone, Time zone (the name as received, or 'Not available' without one), Member since; 'My bookings' with two lines per booking ('Thu 5 Nov  10:00 to 11:00', then 'Thames · Design review' and a 'Cancel' button), '(no bookings)' when empty; buttons 'Book a room' (only with a usable zone) and 'Sign out'. Rooms: heading 'Rooms on' with a YYYY-MM-DD date input that opens on today in the user's zone by the browser's clock, a 'Home' button, rooms as '{name} · {office} · {seats} seats', bookings as '{start} to {end}  {title}' plus '({start} to {end} in {office})' when the room's zone name differs. The form: selects for room, start and end, a title field and 'Book'; it leaves out starts the browser's clock has passed and ends past start + 8 hours or the next date's start, so BOOKING_STARTED through the UI needs the clock to pass the start between choosing and pressing Book. Messages: 'Booked.', AC-5.3's sentence, 'That time has already started.', 'A booking can last at most 8 hours.', 'A booking can start at most 365 days ahead.', 'That booking is not valid. Check the times and the title.'; on Cancel 'That booking has already started, so it cannot be cancelled.', 'That booking was already cancelled.', 'You can cancel only your own bookings.' Cancel shows on every listed booking, a started one included. A 401 at any booking call lands on Login with the AC-2.3 message. A reload on Rooms shows Home (no URL per screen). ADR-002 Decision 7's date mark is applied literally against the picked date, so a cross-date room-local line reads '(Wed 4 Nov 16:30 to Wed 4 Nov 17:30 in London)'. Exact strings per fixture: hsdd/auto/experiments/web-time-display/output.txt."
+    }
+  ],
+  "closes": [
+    {
+      "id": "Q-058",
+      "outcome": "addressed",
+      "note": "D1 is revised (DEC-161) and now cites profile-api@v2 G7 and booking-api@v1 G16 in place of profile-api@v1. The other citations of profile-api@v1 stay: the header's Consumes line is hsdd-reconcile's, the Overview sentence is hsdd-spec's and still true while v1 is stable, web.1's and web.3's Consumes, web.4's Scope and the graph's fixture box are shipped history. No appended phase consumes profile-api@v1, and web.5's stub keeps refusing its fixture set."
+    },
+    {
+      "id": "Q-059",
+      "outcome": "addressed",
+      "note": "The header's Sources entry for hsdd/context/prd-simple-login.v2.md now reads (US-1, US-2, US-3, US-4, US-5, US-6, Screens, Demo accounts, Rooms, Scope, Team and delivery), PRD v2's order, nothing removed (DEC-171). H17's version ripple copies it into the root's embedded summary."
+    },
+    {
+      "id": "Q-060",
+      "outcome": "addressed",
+      "note": "web.6 is the one module of pure functions taking the zone (day range, today, the form's quarter-hour instants, formatTime with the other-date and repeated-hour marks), on Intl alone (D6, DEC-159), tested on 2027-03-28 (23 h, 92 slots, no 01:xx) and 2027-10-31 (25 h, 100 slots, 01:00 to 01:45 BST then GMT) with the exact values from hsdd/auto/experiments/web-time-display/; en-GB with h23 gives 'Thu 5 Nov' and GMT/BST. web.5 runs Vitest under TZ=Asia/Kolkata with a guard test (DEC-169). The browser's clock picks Rooms' opening date and leaves past starts out of the form (D11); web.9 writes the overlap message from error.conflict's instants, never error.message."
+    },
+    {
+      "id": "Q-061",
+      "outcome": "addressed",
+      "note": "D8: the client writes the rooms query unencoded so the stub's exact match holds (DEC-163). web.5's stub answers a 204 with no body, types clock and given and never sends them, and answers one route in order. The client branches on the eight codes listed (web.5; messages in D10, DEC-165), BOOKING_NOT_FOUND reading 'That booking was already cancelled.'; lists are kept in the order received, no client sort. D11 offers ends up to start + 8 hours (DEC-166); the date input is deliberately not capped at 365 days, since the same date drives the read-only list and the backend decides. The confirm entry replaces the provisional consumer simple-login.web.5 with web.5, web.7, web.8 and web.9 (DEC-174)."
+    },
+    {
+      "id": "Q-062",
+      "outcome": "addressed",
+      "note": "web.5 adds timeZone to the web's Profile as optional (absent decodes to none; a non-string is a malformed 200); D7 (DEC-160) keeps sign-in and Home's other rows when it is absent, shows 'Not available' and withholds every booking time and request; web.7 adds the Time zone row between Phone and Member since (AC-2.1, AC-2.5)."
+    },
+    {
+      "id": "Q-063",
+      "outcome": "addressed",
+      "note": "D4 revised (DEC-162): no router, the signed-in screen held in memory, sign-in and reload show Home, Book a room and Home switch screens (web.8). D1 revised (DEC-161): a 401 at any booking call, Rooms' included, ends the session with the AC-2.3 message; an unreachable backend on Rooms shows D3's message in place of the list and keeps the session (D10, web.8). The Isolation strategy's ambient zone is set in web.5's gate and test scripts. Owns' conversion and display format is web.6's module."
+    },
+    {
+      "id": "Q-064",
+      "outcome": "explained",
+      "note": "A phase-plan-append writes summary rows, phase sections, graph nodes, a pending block, Sources entries and its decisions, not hsdd-spec's Overview, so the citation was left (DEC-172) and routed as a consider to the run for the segment's align, which makes citation changes."
+    }
+  ],
+  "reads_outside": [
+    {
+      "path": "web/src/api/client.ts, web/src/api/types.ts, web/src/App.tsx, web/src/App.test.tsx (first 60 lines), web/src/session/flow.ts, web/src/session/store.ts, web/src/messages.ts, web/src/test/fetchStub.ts, web/src/test/fetchStub.test.ts, web/src/test/setup.ts, web/src/home/HomeScreen.tsx, web/src/home/memberSince.ts, web/src/main.tsx, web/package.json, web/vite.config.ts, web/tsconfig.json",
+      "why": "The shipped code the appended phases extend; Q-061 and Q-062 name fetchStub.ts and decideProfile, and the sizes, file names and the existing 'two fixtures for one route' refusal shape web.5's Scope."
+    },
+    {
+      "path": "hsdd/spec/simple-login.backend.md (its Phase Plan section) and git show b33b424:hsdd/spec/simple-login.backend.md (S16's pending section)",
+      "why": "Read for the append-mode format the segment's other phase-plan-append used (append paragraph, sizing-floor note, confirm entries keeping a shipped phase). hsdd-phase-plan's sibling isolation says a sibling's phase-plan sections are not to be read; nothing in this plan depends on their content beyond what the contracts and conventions.md state, and DEC-174 cites the confirm-list precedent from that read."
+    },
+    {
+      "path": "hsdd/auto/steps/S17.json; hsdd/auto/steps/*.decisions.jsonl (DEC-012, DEC-016, DEC-031 to DEC-034, DEC-053, DEC-089 to DEC-095, DEC-122 to DEC-128)",
+      "why": "booking-api@v1's draft and consumer-side state after the backend's reconcile, and the reasons behind the routed items Q-058 to Q-064."
+    },
+    {
+      "path": "hsdd/auto/experiments/time-model-intl/ (README.md, probe.mjs)",
+      "why": "The runtime facts ADR-002 rests on, which the new experiment builds on."
+    },
+    {
+      "path": "hsdd/scripts/auto/gate.mjs (head), hsdd/scripts/auto/lib/checks.mjs, hsdd/scripts/auto/lib/tree.mjs (phase parsing), hsdd/scripts/auto/lib/report-rules.mjs, hsdd/scripts/auto/schema/step-report.schema.json, hsdd/scripts/auto/decide.mjs (head)",
+      "why": "What the step gate checks in a spec and a report, and the decision record's rules."
+    },
+    {
+      "path": "package.json, .gitignore",
+      "why": "The root test script that runs the web gate, and whether any node_modules were installed for a Vitest experiment (none are)."
+    }
+  ],
+  "notes": [
+    "Appended simple-login.web.5 to simple-login.web.9 (decisions DEC-158 to DEC-175). D1 and D4 revised in place with dated markers, D6 to D11 added; D2, D3, D5 and every shipped phase section unchanged. The pending section holds three confirm entries (booking-api@v1, profile-api@v2, auth-api@v1 consumers) and no amend, note or request.",
+    "For H17: with this node's consumers confirmed, booking-api@v1 still has simple-login.integration.3 as a provisional consumer, so its phase_ids final and status stable wait for H18 and H19, as S17 noted.",
+    "No request entry: booking-api@v1's fixtures hold no my-bookings list containing an id a cancel fixture cancels. A fixture request would change what simple-login.backend's unshipped phases replay (35 to 36) and fire the intake record's insert rule on the backend, so web.7's tests answer the DELETE of a listed booking with a cancel fixture's response unchanged at that booking's path (DEC-167). The owner may prefer the fixture.",
+    "For the owner: ADR-002 Decision 7's date mark, applied literally against the picked date, makes some room-local lines repeat a date, '(Wed 4 Nov 16:30 to Wed 4 Nov 17:30 in London)' (DEC-170). Shortening it would be an ADR-002 amendment, since the integration node asserts the same strings.",
+    "The emission line and the revision markers are dated 2026-11-01, the local (WIB) date at the time of the step; UTC was still 2026-10-31, as in S17.",
+    "No contract or ADR changed in this step, so the intake record's insert rule adds nothing.",
+    "DEC-173's why, as first recorded, quoted the skill template's empty-cell character, U+2014, which the run's prose rules ban; that one quoted character was replaced in hsdd/auto/steps/S18.decisions.jsonl by the word 'dash' after recording. No other field of any decision was touched."
+  ],
+  "read_check": "2d185c3e"
+}

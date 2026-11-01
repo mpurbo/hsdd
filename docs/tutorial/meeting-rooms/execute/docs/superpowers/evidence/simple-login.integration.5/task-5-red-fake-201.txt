@@ -1,0 +1,76 @@
+MUTANT=fake-201 npx playwright test e2e/clock-change.spec.ts (uncommitted changes on 808888d)
+--- mutant diff
+22a23,35
+> 
+> test.beforeEach(async ({ page }) => {
+>   await page.route("**/api/me", async (route) => {
+>     if (process.env.MUTANT !== "zone") return route.fallback();
+>     const response = await route.fetch();
+>     await route.fulfill({ response, json: { ...(await response.json()), timeZone: "Asia/Kolkata" } });
+>   });
+>   await page.route("**/api/bookings", async (route) => {
+>     if (process.env.MUTANT !== "fake-201" || route.request().method() !== "POST") return route.fallback();
+>     const body = route.request().postDataJSON();
+>     await route.fulfill({ status: 201, json: { id: crypto.randomUUID(), roomId: body.roomId, roomName: ROOMS[body.roomId as RoomId].name, title: body.title, start: body.start, end: body.end } });
+>   });
+> });
+--- output
+
+> @simple-login/backend@1.0.0 db:up
+> node scripts/db-up.mjs up
+
+ Container meeting-rooms-postgres-1 Running 
+ Container meeting-rooms-postgres-1 Waiting 
+ Container meeting-rooms-postgres-1 Healthy 
+
+Running 5 tests using 1 worker
+
+  ✓  1 e2e/clock-change.spec.ts:53:1 › AC-4.4: the March day offers 92 starts and none from 01:00 to 01:45 (594ms)
+  ✓  2 e2e/clock-change.spec.ts:62:1 › AC-4.4: the October day offers 100 starts, 01:00 to 01:45 BST then GMT (546ms)
+  ✓  3 e2e/clock-change.spec.ts:75:1 › bookable: true at exactly 365 days, false one millisecond after (141ms)
+  ✘  4 e2e/clock-change.spec.ts:108:3 › AC-4.4: budi books Thames across the skipped hour on the March day (658ms)
+  ✘  5 e2e/clock-change.spec.ts:108:3 › AC-4.4: budi books Thames from 01:30 BST to 01:30 GMT on the October day (705ms)
+
+
+  1) e2e/clock-change.spec.ts:108:3 › AC-4.4: budi books Thames across the skipped hour on the March day 
+
+    Error: expect(received).toHaveLength(expected)
+
+    Expected length: 1
+    Received length: 0
+    Received array:  []
+
+      132 |     expect(rooms.status).toBe(200);
+      133 |     const thames = (rooms.body as { rooms: Array<{ id: string; bookings: Booking[] }> }).rooms.find((r) => r.id === ("thames" satisfies RoomId))!;
+    > 134 |     expect(thames.bookings).toHaveLength(1);
+          |                             ^
+      135 |     const booking = thames.bookings[0];
+      136 |     expect(booking.title).toBe(day.title);
+      137 |     expect(Date.parse(booking.end) - Date.parse(booking.start)).toBe(day.hours * 3600 * 1000);
+        at <repo>/e2e/clock-change.spec.ts:134:29
+
+    Error Context: test-results/clock-change-AC-4-4-budi-b-061fc-ipped-hour-on-the-March-day/error-context.md
+
+  2) e2e/clock-change.spec.ts:108:3 › AC-4.4: budi books Thames from 01:30 BST to 01:30 GMT on the October day 
+
+    Error: expect(received).toHaveLength(expected)
+
+    Expected length: 1
+    Received length: 0
+    Received array:  []
+
+      132 |     expect(rooms.status).toBe(200);
+      133 |     const thames = (rooms.body as { rooms: Array<{ id: string; bookings: Booking[] }> }).rooms.find((r) => r.id === ("thames" satisfies RoomId))!;
+    > 134 |     expect(thames.bookings).toHaveLength(1);
+          |                             ^
+      135 |     const booking = thames.bookings[0];
+      136 |     expect(booking.title).toBe(day.title);
+      137 |     expect(Date.parse(booking.end) - Date.parse(booking.start)).toBe(day.hours * 3600 * 1000);
+        at <repo>/e2e/clock-change.spec.ts:134:29
+
+    Error Context: test-results/clock-change-AC-4-4-budi-b-93428-1-30-GMT-on-the-October-day/error-context.md
+
+  2 failed
+    e2e/clock-change.spec.ts:108:3 › AC-4.4: budi books Thames across the skipped hour on the March day 
+    e2e/clock-change.spec.ts:108:3 › AC-4.4: budi books Thames from 01:30 BST to 01:30 GMT on the October day 
+  3 passed (7.4s)

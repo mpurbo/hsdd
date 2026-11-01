@@ -1,0 +1,16 @@
+npx playwright test e2e/rooms.spec.ts, on e626e69 plus the uncommitted e2e/rooms.ts and e2e/rooms.spec.ts, no mutant
+
+> @simple-login/backend@1.0.0 db:up
+> node scripts/db-up.mjs up
+
+ Container meeting-rooms-postgres-1 Running 
+ Container meeting-rooms-postgres-1 Waiting 
+ Container meeting-rooms-postgres-1 Healthy 
+
+Running 3 tests using 1 worker
+
+  ✓  1 e2e/rooms.spec.ts:45:3 › AC-4.1: Rooms lists the four rooms in order, opens on today in ayu's zone, and Home returns (475ms)
+  ✓  2 e2e/rooms.spec.ts:45:3 › AC-4.1: Rooms lists the four rooms in order, opens on today in budi's zone, and Home returns (476ms)
+  ✓  3 e2e/rooms.spec.ts:65:1 › AC-4.2: a date in ayu's zone shows each room's overlapping bookings, earliest first, and (no bookings) (580ms)
+
+  3 passed (4.9s)

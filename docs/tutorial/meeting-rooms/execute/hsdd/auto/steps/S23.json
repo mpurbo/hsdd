@@ -1,0 +1,149 @@
+{
+  "step_ref": "S23",
+  "skill": "hsdd-spec",
+  "target": "simple-login.backend",
+  "status": "completed",
+  "stop": null,
+  "artifacts": [],
+  "experiments": [],
+  "self_check": [
+    {
+      "gate": "The spec stays high-level; it is not an implementation plan.",
+      "status": "pass",
+      "note": "The header and Overview are unchanged. The start behavior, the start test on a database without the schema and the landing order are plan or contract content (D3, D6, D8, simple-login.backend.7; booking-api@v1 Development address), so none of it was written into the spec level (DEC-204)."
+    },
+    {
+      "gate": "Every node has explicit consumed/produced contract ids.",
+      "status": "n/a",
+      "note": "not exercised by this step"
+    },
+    {
+      "gate": "Every node is testable in isolation (fixtures, mocks, schemas).",
+      "status": "n/a",
+      "note": "not exercised by this step"
+    },
+    {
+      "gate": "Every dependency edge is typed; parallel lanes are called out.",
+      "status": "n/a",
+      "note": "not exercised by this step"
+    },
+    {
+      "gate": "Each child is marked internal or leaf-parent.",
+      "status": "n/a",
+      "note": "not exercised by this step"
+    },
+    {
+      "gate": "Mermaid DAG matches the dependency table.",
+      "status": "n/a",
+      "note": "not exercised by this step"
+    },
+    {
+      "gate": "`conventions.md` exists/updated at the root.",
+      "status": "pass",
+      "note": "hsdd/conventions.md exists. Its Local database section already says the service creates its tables in meeting_rooms_e2e when it starts, citing booking-api@v1's Development address, so the routed items need no new convention and the file is unchanged."
+    },
+    {
+      "gate": "The decomposition axis at each level matches ownership stated by the human, not assumed <U+2014 EM DASH> no node is owned by two teams.",
+      "status": "n/a",
+      "note": "not exercised by this step"
+    },
+    {
+      "gate": "Every child node has its own `hsdd/spec/{child-id}.md` file.",
+      "status": "n/a",
+      "note": "not exercised by this step"
+    },
+    {
+      "gate": "Every input source appears in the Sources of at least one node, or is marked in the root `## Sources` as \"informative only <U+2014 EM DASH> not decomposed\", with a reason.",
+      "status": "n/a",
+      "note": "not exercised by this step"
+    },
+    {
+      "gate": "No node's Sources lists a document that does not govern it.",
+      "status": "n/a",
+      "note": "not exercised by this step"
+    },
+    {
+      "gate": "Field blocks are bullet lists and empty lists say \"none\".",
+      "status": "n/a",
+      "note": "not exercised by this step"
+    },
+    {
+      "gate": "Every open question is defined once, in its owning spec, with a table row and a `### {ID}` detail subsection; child views carry `[inherits …]`; no cited ID lacks a definition.",
+      "status": "n/a",
+      "note": "not exercised by this step"
+    },
+    {
+      "gate": "OQ prefixes used by node specs are declared in `conventions.md`.",
+      "status": "n/a",
+      "note": "not exercised by this step"
+    },
+    {
+      "gate": "Under `multi-team`, every node whose team differs from its parent's carries `- **Team:**`; no node is owned by two teams.",
+      "status": "n/a",
+      "note": "not exercised by this step"
+    },
+    {
+      "gate": "Where children exchange contracts, an integration node exists or the decision not to add one is stated in the parent (one line).",
+      "status": "n/a",
+      "note": "not exercised by this step"
+    },
+    {
+      "gate": "A graft kept every existing child id and touched only the new child's file, the parent's summaries and the parent's DAG.",
+      "status": "n/a",
+      "note": "not exercised by this step"
+    },
+    {
+      "gate": "A retired node's file is kept; its contracts' retirement went through `hsdd-reconcile`.",
+      "status": "n/a",
+      "note": "not exercised by this step"
+    },
+    {
+      "gate": "Promotion: the human confirmed before `- **Adopted:** promoted` was written; `## Observed surface` kept; `v0` contracts unchanged unless redesigned.",
+      "status": "n/a",
+      "note": "not exercised by this step"
+    }
+  ],
+  "routed": [
+    {
+      "target": "run",
+      "kind": "insert-step",
+      "step_kind": "phase-plan-append",
+      "step_target": "simple-login.backend",
+      "text": "From S23 (Q-080, DEC-205). Rewrite the unshipped phase simple-login.backend.7 in place (hsdd-phase-plan append mode; the phase keeps its id) so the backend's gate proves what booking-api@v1's Development address promises and simple-login.integration.3's global setup relies on (DEC-198): the `start` test in server.test.ts starts the service through `start` on a test database created without the schema and lists the four rooms with no bookings through `GET /api/rooms`; after a booking, a second `start` on the same database still lists it with its id. The D8 helper gains a way to create a test database without the schema, dropped after the file like the others. Today every backend test runs on a database the D8 helper creates with the schema already applied, so none starts the service on an empty one. No contract, fixture or other phase changes; the step decides whether its pending section emits any entry. Q-079's landing note stays with simple-login.integration.3 (DEC-206), so the rewrite adds none."
+    }
+  ],
+  "closes": [
+    {
+      "id": "Q-078",
+      "outcome": "explained",
+      "note": "The service creating its tables in an empty database at start, with no rooms to load, is already this node's plan: D6 applies the schema (every statement IF NOT EXISTS) at every start, D3 keeps the rooms as data with no rooms table, and simple-login.backend.7 has server.ts apply the schema before it serves. S21 answered the request in booking-api@v1's Development address (DEC-198, DEC-199). The header and Overview state nothing it contradicts and stay unchanged (DEC-204); the producer-side proof is Q-080's insert-step (DEC-205)."
+    },
+    {
+      "id": "Q-079",
+      "outcome": "explained",
+      "note": "No backend change (DEC-206). The root `npm test` runs `npm --prefix backend run gate` before the browser suite, and from simple-login.backend.4 that gate starts PostgreSQL itself, so the window does not break the root gate; `npm run dev` or `npm run e2e` run alone meet simple-login.backend.7's exit message naming `npm --prefix backend run db:up`. The landing note stays in simple-login.integration.3's Dependencies, on the side that owns the root scripts."
+    },
+    {
+      "id": "Q-080",
+      "outcome": "explained",
+      "note": "A `start` test on a database without the schema is Phase Plan content (simple-login.backend.7 Scope, D8), which this touch may not edit (hsdd-spec Touch; DEC-204). The report routes an insert-step for a phase-plan-append on simple-login.backend that rewrites the unshipped simple-login.backend.7 in place with that test and a second start on the same database (DEC-205)."
+    }
+  ],
+  "reads_outside": [
+    { "path": "hsdd/auto/queue.jsonl", "why": "The full text and status of Q-075 to Q-083, and which items were routed where." },
+    { "path": "hsdd/auto/plan.md, hsdd/auto/steps/S22.decisions.jsonl", "why": "Which handoffs are done (no pending phase-plan step on simple-login.backend) and how S22 routed consistency items." },
+    { "path": "hsdd/auto/steps/S09.json, hsdd/auto/steps/S09.decisions.jsonl, hsdd/auto/steps/S13.json, hsdd/auto/steps/S15.json", "why": "How an earlier spec touch closed items whose content is Phase Plan (DEC-085), and how earlier reports quoted gates holding the banned dash." },
+    { "path": "hsdd/judgement/decisions.jsonl", "why": "DEC-182, DEC-183, DEC-198 and DEC-199, which the routed items cite." },
+    { "path": "hsdd/scripts/auto/templates/steps/spec-touch.md, hsdd/scripts/auto/templates/steps/phase-plan-append.md, hsdd/scripts/auto/gate.mjs, hsdd/scripts/auto/commit.mjs, hsdd/scripts/auto/lib/report-rules.mjs, hsdd/scripts/auto/schema/step-report.schema.json, hsdd/scripts/auto/schema/run-line.schema.json", "why": "Which step kind can rewrite an unshipped phase, the insertable kinds, the report rules, and whether an empty artifact commit is allowed." },
+    { "path": ".claude/skills/hsdd-auto/SKILL.md (Inserted steps), .claude/skills/hsdd-phase-plan/SKILL.md (append mode)", "why": "How an insert-step is accepted, and that append mode may rewrite an unshipped phase in place when the invocation names it (DEC-205)." },
+    { "path": "hsdd/spec/simple-login.integration.md, hsdd/contract/booking-api.md", "why": "simple-login.integration.3's Scope and Dependencies, and booking-api@v1's Development address, Validation and Versioning lines, which the items cite." },
+    { "path": "hsdd/verify/ (listing)", "why": "Whether simple-login.backend.7 has shipped (it has not)." },
+    { "path": "backend/test/server.test.ts, package.json, e2e/fixtures.ts, scripts/dev.mjs", "why": "The shipped `start` test, the root `test` order, and how the shipped rig starts the service, for DEC-205 and DEC-206." }
+  ],
+  "notes": [
+    "Decisions DEC-204 to DEC-206. No file changed: hsdd/spec/simple-login.backend.md, the parent's embedded summary and hsdd/conventions.md are untouched, so the artifact commit is empty.",
+    "The insert-step names simple-login.backend.7 for an in-place rewrite; hsdd-phase-plan's append mode requires the invocation to name the phase, and the rewritten Scope cites the insert-step item's id.",
+    "Outside the routed items and left unchanged: the header's Isolation strategy ends 'the service itself opens no port', but the shipped `start` test in backend/test/server.test.ts (since simple-login.backend.2) listens on 127.0.0.1 at an ephemeral port, and the test Q-080 asks for does the same. A later touch could read 'no fixed port'; nothing depends on it."
+  ],
+  "read_check": "223879e8"
+}

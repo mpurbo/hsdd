@@ -1,0 +1,27 @@
+run 3: PROBE_RETRY_ROUNDS=20 sh hsdd/auto/experiments/booking-store-postgres/run.sh, then sh hsdd/auto/experiments/booking-store-postgres/run-per-file-database.sh
+0. compose command: docker-compose (Docker Compose version 5.6.1)
+   up -d --wait returned once the healthcheck passed
+1. PostgreSQL 17.11 on aarch64-unknown-linux-musl, compiled by gcc (Alpine 15.2.0) 15.2.0, 64-bit
+   node v24.18.0, pg loaded, process TZ=Asia/Kolkata, Intl zone Asia/Calcutta
+2. 20 simultaneous requests for the same room and time (PRD v2 Success; booking-api@v1 G5, G6)
+  D  transaction: per-room advisory lock, read, INSERT: 30 rounds of 20; outcomes 201=30 409=570; rounds failing the check 0; retries 0; slowest round 71 ms; deadlocks detected 0
+  A  plain INSERT, the constraint alone: 10 rounds of 20; outcomes 201=10 error 23P01=190; rounds failing the check 0; retries 0; slowest round 15 ms; deadlocks detected 0
+  A' INSERT, on 23P01 or 40P01 re-read the earliest overlap, retry if none (at most 10): 20 rounds of 20; outcomes 201=20 409 after 23P01=361 409 after 40P01=1 gave up after 10 retries=18; rounds failing the check 1; retries 218; slowest round 215183 ms; deadlocks detected 219
+3. values at the edges of booking-api@v1
+  title U+0000 (valid JSON, one code point, matches \S): error 22021 invalid byte sequence for encoding "UTF8": 0x00
+  title with an unpaired surrogate U+D800: sent U+0061 U+D800 U+0062; read back U+0061 U+FFFD U+0062; equal false
+  an emoji title round trip: equal true
+  instant 0000-01-01T00:00:00.000Z as a text parameter to timestamptz: error 22008 date/time field value out of range: "0000-01-01T00:00:00.000Z"
+  instant 0001-01-01T00:00:00.000Z as a text parameter to timestamptz: 0001-01-01T00:00:00.000Z
+  instant 9999-12-31T23:45:00.000Z as a text parameter to timestamptz: 9999-12-31T23:45:00.000Z
+  new Date('0000-01-01T00:00:00.000Z').toISOString(): 0000-01-01T00:00:00.000Z
+4. instants through the driver
+  read back under session TimeZone Europe/London, as Date.toISOString(): 2026-11-05T10:00:00.000Z to 2026-11-05T11:00:00.000Z
+  read back under session TimeZone Asia/Jakarta, as Date.toISOString(): 2026-11-05T10:00:00.000Z
+  a JS Date parameter (not a string) written, read back: 2027-03-28T00:45:00.000Z to 2027-03-28T01:15:00.000Z
+  gen_random_uuid()::text is lower case: true (200 ids, e.g. c37b2e09-8678-44f2-8e68-9b78ed858f83)
+  a uuid column given a non-UUID text parameter: error 22P02 invalid input syntax for type uuid: "not-a-uuid"
+exit 0
+5. a database per test file: 10 times CREATE DATABASE + schema, then DROP DATABASE
+   create + schema: mean 30 ms, max 46 ms; with drop: mean 36 ms, max 58 ms
+exit 0

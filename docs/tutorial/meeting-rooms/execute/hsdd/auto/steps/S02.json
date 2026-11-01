@@ -1,0 +1,65 @@
+{
+  "step_ref": "S02",
+  "skill": "hsdd-intake",
+  "target": "hsdd/context/prd-simple-login.v2.md",
+  "status": "completed",
+  "stop": null,
+  "artifacts": ["hsdd/management/2026-10-31-intake-prd-simple-login-v2.md"],
+  "experiments": [
+    {
+      "path": "hsdd/auto/experiments/cites-superseded-targets/",
+      "question": "Which candidate citation-touch targets does the run's own cites-superseded condition select, and is each hit a real citation or a number?",
+      "finding": "It holds for the four node specs through real Sources citations of the PRD 1 and Update 1 paths; for auth-api, profile-api and profile-api.v2 only because the baseline version token 1 matches numbers (1 to 64 characters, minLength 1); for ADR-001 it does not hold."
+    }
+  ],
+  "self_check": [
+    { "gate": "Every open intake was read before routing; collisions are named in this record and in the colliding record's change log.", "status": "pass", "note": "hsdd/management holds one intake record, 2026-10-30-intake-add-phone.md, Status closed (2026-10-30); no open intake, so Collisions is none and no other record's change log changes. The open execution plan's adjacent repairs (C-1 to C-3) are not intakes; DEC-016 routes them as consider items." },
+    { "gate": "An as-built landing was recorded under Promotes and promoted as the first handoff, once.", "status": "n/a", "note": "not exercised by this step" },
+    { "gate": "Exactly one class; the record exists before any handoff ran.", "status": "pass", "note": "Class cross-node (DEC-005); no handoff has run, the record is this step's only artifact." },
+    { "gate": "The slug contains none of `progress`, `execution-plan`, `milestones` or `atlas`.", "status": "pass", "note": "Slug prd-simple-login-v2; the file name equals the segment id." },
+    { "gate": "`## Routing` carries the exact handoff prompt; `structural` stopped with options written, not a question asked.", "status": "pass", "note": "Nineteen handoff prompts are quoted verbatim in the prose list, in block order; the class is not structural." },
+    { "gate": "No spec, contract or ADR was written by this skill.", "status": "pass", "note": "Writes: the intake record, this report, the decisions sidecar (through decide.mjs) and one experiment under hsdd/auto/experiments/." },
+    { "gate": "The handoff block, when present, lists the same handoffs as the prose, in the same order, with the same prompts.", "status": "pass", "note": "Checked with gate.mjs (C8 prompt order and skill per kind)." }
+  ],
+  "routed": [
+    { "target": "H1", "kind": "must-address", "text": "The three contracts ADR-001 affects (auth-api@v1, profile-api@v1, profile-api@v2) name it only in a body line, not in governed_by front matter. Gate C3 reports this as a warning today and as an error in any step that changes ADR-001's file or one of those contracts (seen in S02's gate run). Add governed_by: [ADR-001] to each contract's front matter (hsdd-adr Bidirectional Linking), whether ADR-001 is amended or superseded." },
+    { "target": "H1", "kind": "consider", "text": "hsdd/management/2026-10-30-execution-plan.md routes C-2 (finding F-3): add simple-login to ADR-001's affects, since hsdd/spec/simple-login.md carries Governed by: [ADR-001]. It is a link fix with no decision and no dependency: absorb it in this update and cite C-2, or leave it to that plan; record which (DEC-016)." },
+    { "target": "H4", "kind": "consider", "text": "hsdd/management/2026-10-30-execution-plan.md routes C-3 (finding F-4): add the web phases that read auth-api@v1's fixtures to its consumers. Absorb it in this touch and cite C-3, or leave it to that plan; record which (DEC-016)." },
+    { "target": "H5", "kind": "consider", "text": "Leave profile-api@v1 as it is: its move to deprecated is C-1 of hsdd/management/2026-10-30-execution-plan.md, which waits on the owner's Sync A answer to A-1 (the sunset date). This touch changes profile-api@v2 only (DEC-016)." }
+  ],
+  "closes": [],
+  "reads_outside": [
+    { "path": "hsdd/management/2026-10-30-execution-plan.md", "why": "To find open work outside intake records that touches the same ADR and contracts (C-1 to C-3), so the handoffs do not pre-empt Sync A (DEC-016)." },
+    { "path": "hsdd/auto/plan.md", "why": "The segment's expected decisions, to make sure each has a route in the record." },
+    { "path": "hsdd/auto/run.yaml", "why": "The sources' citation names and versions, which define the superseded strings for cites-superseded." },
+    { "path": "hsdd/judgement/decisions.jsonl", "why": "DEC-001's reading of RFC-001, which DEC-013 builds on." },
+    { "path": "hsdd/conventions.md", "why": "Layout, ordering policy and the reconcile protocol, to order the per-node append and reconcile pairs." },
+    { "path": ".claude/skills/hsdd-auto/SKILL.md", "why": "Section 8 (what the intake mode walks: citation-touch placement, align) and the judgement-point shape." },
+    { "path": ".claude/skills/hsdd-spec/SKILL.md", "why": "The touch and citation-touch invocation forms and graft rules, to write the handoff prompts in the receiving skill's form." },
+    { "path": ".claude/skills/hsdd-contract/SKILL.md", "why": "The additive-only and versioned rules behind DEC-007 and the citation-touch rule." },
+    { "path": ".claude/skills/hsdd-adr/SKILL.md", "why": "The ADR or D{n} table behind DEC-008 to DEC-012 and the amend or supersede lifecycle named in H1." },
+    { "path": ".claude/skills/hsdd-phase-plan/SKILL.md", "why": "Append mode and Change Requests, which the record's Sources and Scope paragraph restates." },
+    { "path": ".claude/skills/hsdd-reconcile/SKILL.md", "why": "When a serial reconcile runs, to justify one reconcile per leaf-parent." },
+    { "path": "hsdd/scripts/auto/lib/intake.mjs", "why": "How the record and its hsdd-handoffs block are parsed and checked (C8), and the cites-superseded condition the experiment calls." },
+    { "path": "hsdd/scripts/auto/lib/kinds.mjs", "why": "Skill and target type per handoff kind, so each handoff's skill matches." },
+    { "path": "hsdd/scripts/auto/lib/checks.mjs", "why": "C8's header-field list." },
+    { "path": "hsdd/scripts/auto/next.mjs", "why": "How handoffs are dispatched, skipped, and what pending contract handoffs suppress in C3 and C5." },
+    { "path": "hsdd/scripts/auto/routed.mjs", "why": "The matching rule, so the consider items target handoff ids that match their steps." },
+    { "path": "hsdd/scripts/auto/gate.mjs", "why": "Which checks this step's gate runs." },
+    { "path": "hsdd/scripts/auto/schema/handoffs.schema.json", "why": "The block's schema." },
+    { "path": "hsdd/scripts/auto/schema/step-report.schema.json", "why": "This report's schema." },
+    { "path": "hsdd/scripts/auto/lib/report-rules.mjs", "why": "This report's code rules." },
+    { "path": "hsdd/scripts/auto/templates/steps/", "why": "The default invocations of the receiving step kinds, to phrase the prompts." }
+  ],
+  "notes": [
+    "would_upstream: no earlier decision carries would_upstream true (node hsdd/scripts/auto/state.mjs upstream prints none), so the request adopts, contradicts or leaves open none. This step adds one: DEC-013, RFC-001's version-1 statements (in-memory accounts and sessions, two endpoints, no database, no router) resolved locally; its authors should amend it or write an RFC for version 2.",
+    "cites-superseded is close to unconditional in this run: run.yaml's baseline sources carry version 1, and the condition matches any standalone 1 (1 to 64 characters, minLength 1, numbered list items). Every citation-touch the block lists will be dispatched, and so will any the insert rule adds. The block lists touches only for the four node specs, which cite the baseline paths (DEC-015).",
+    "supersededStrings also treats auth-api@v0 and profile-api@v0 as superseded (a v1 contract's lower version with no file counts as bumped in place). No file cites @v0, so nothing follows here.",
+    "PRD v2 Left to engineering: the longest booking and how far ahead go to H3, booking-api@v1's draft (DEC-011); whether signing in survives a restart goes to H1, ADR-001's update (DEC-008). RFC-001 section 6's no-router note goes to the web's D4 at H16 (DEC-012).",
+    "If H1 makes sessions survive a restart, simple-login.integration.2's AC-2.3 test loses its expired-token stand-in (a backend restart); H1's prompt names this and the record's prose routes it to H18.",
+    "H4 touches auth-api@v1 (stable, versioned) and H5 profile-api@v2 (stable, additive-only). If either classifies its change as breaking, H4 meets a breaking-amend stop; a new version that deprecates the old one triggers the insert rule's citation touches.",
+    "Pre-existing C3 finding: auth-api@v1, profile-api@v1 and profile-api@v2 lack governed_by: [ADR-001] in front matter. It is routed to H1 as must-address because H1 is the first step that changes ADR-001's file, which turns the three warnings into errors; if H1 leaves it, H4 and H5 meet the same error on their own files.",
+    "Docker 29.5.2 answers on this host (docker info) and Colima is installed, so later steps can run PostgreSQL 17 experiments without an external need; Node.js is v24.18.0."
+  ],
+  "read_check": "ea5becd4"
+}

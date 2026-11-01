@@ -1,0 +1,80 @@
+// The rig's own properties: the run's time zone, the database of its own,
+// the service's start and stop, and the helpers in e2e/api.ts.
+import { SERVICE_PORT, expect, startService, test } from "./fixtures.ts";
+import { currentQuarterHour, deleteBooking, getMyBookings, getRooms, instant, login, nextDay, postBooking, tokenFor, utcDay, type Booking } from "./api.ts";
+
+// Computed once per worker, at module load. This file books only Bromo (day 39)
+// and Kew (day 40), never Thames, and never asserts Thames's bookings:
+// simple-login.integration.5 books Thames on London's clock-change days, which
+// can be one of these dates. GET /api/me/bookings is account-wide, so lists are
+// checked with toContainEqual / not.toContainEqual on the test's own booking.
+const TODAY = utcDay(0);
+const SENTINEL_DAY = utcDay(39, TODAY);
+const ROUND_TRIP_DAY = utcDay(40, TODAY);
+
+// ICU reports a link's canonical name (Asia/Kolkata is Asia/Calcutta on some
+// builds), so the expected name comes from the same runtime's Intl, not a literal.
+const KOLKATA = new Intl.DateTimeFormat("en", { timeZone: "Asia/Kolkata" }).resolvedOptions().timeZone;
+
+test("the run is in Asia/Kolkata: the worker and the browser", async ({ page }) => {
+  expect(process.env.TZ).toBe("Asia/Kolkata");
+  expect(Intl.DateTimeFormat().resolvedOptions().timeZone).toBe(KOLKATA);
+  expect(new Date("2026-11-05T00:00:00.000Z").getHours()).toBe(5); // +05:30
+  // The browser's Chrome updates independently of Node's ICU, so the browser is
+  // compared with its own canonical name for Asia/Kolkata, not Node's.
+  const inPage = await page.evaluate(() => ({
+    zone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+    kolkata: new Intl.DateTimeFormat("en", { timeZone: "Asia/Kolkata" }).resolvedOptions().timeZone,
+    hours: new Date("2026-11-05T00:00:00.000Z").getHours(),
+  }));
+  expect(inPage.zone).toBe(inPage.kolkata);
+  expect(inPage.hours).toBe(5);
+});
+
+test("api.ts: instants are toISOString() strings on quarter hours of UTC", () => {
+  const now = Date.parse("2026-11-01T10:07:59.999Z");
+  expect(utcDay(0, now)).toBe(Date.parse("2026-11-01T00:00:00.000Z"));
+  expect(instant(utcDay(4, now), 2)).toBe("2026-11-05T02:00:00.000Z");
+  expect(instant(utcDay(4, now), 23, 45)).toBe("2026-11-05T23:45:00.000Z");
+  expect(() => instant(utcDay(4, now), 2, 10)).toThrow(RangeError);
+  expect(currentQuarterHour(now)).toBe("2026-11-01T10:00:00.000Z");
+});
+
+test("api.ts: sign in, book, list, cancel against the service", async () => {
+  expect((await login("ayu", "wrong")).status).toBe(401);
+  const ayu = await tokenFor("ayu");
+  const day = ROUND_TRIP_DAY;
+  const request = { roomId: "kew", start: instant(day, 3), end: instant(day, 4), title: "Rig round trip" };
+  const booked = await postBooking(ayu, request);
+  expect(booked.status).toBe(201);
+  const booking = booked.body as Booking;
+  expect(booking).toMatchObject({ ...request, roomName: "Kew" });
+  const rooms = await getRooms(ayu, instant(day, 0), instant(nextDay(day), 0));
+  expect(rooms.status).toBe(200);
+  const views = (rooms.body as { rooms: Array<{ id: string; bookings: Booking[] }> }).rooms;
+  expect(views.map((r) => r.id)).toEqual(["merapi", "bromo", "thames", "kew"]); // G13 order
+  const held = (id: string) => views.find((r) => r.id === id)?.bookings;
+  expect([held("merapi"), held("bromo"), held("kew")]).toEqual([[], [], [booking]]); // Thames is never asserted
+  expect(((await getMyBookings(ayu)).body as { bookings: Booking[] }).bookings).toContainEqual(booking);
+  expect(await deleteBooking(ayu, booking.id)).toEqual({ status: 204, body: null });
+  expect(((await getMyBookings(ayu)).body as { bookings: Booking[] }).bookings).not.toContainEqual(booking);
+});
+
+test("a run starts with no bookings: a slot only this test books is free", async () => {
+  const ayu = await tokenFor("ayu");
+  const day = SENTINEL_DAY;
+  const reply = await postBooking(ayu, { roomId: "bromo", start: instant(day, 0), end: instant(day, 0, 15), title: "Rig sentinel" });
+  expect(reply.status, JSON.stringify(reply.body)).toBe(201);
+});
+
+test("startService refuses a port already in use", async () => {
+  await expect(startService([process.execPath, "-e", ""], process.env, SERVICE_PORT)).rejects.toThrow(/already in use/);
+});
+
+test("startService fails at once, with the service's words, when the service exits before it listens", async () => {
+  const started = Date.now();
+  // 3999 is only probed, never bound: the stand-in exits before it could listen.
+  await expect(startService([process.execPath, "-e", "console.error('no database here'); process.exit(3)"], process.env, 3999))
+    .rejects.toThrow(/exited with code 3[\s\S]*no database here/);
+  expect(Date.now() - started).toBeLessThan(5_000);
+});

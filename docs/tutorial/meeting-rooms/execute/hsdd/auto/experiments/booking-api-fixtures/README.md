@@ -1,0 +1,8 @@
+All 35 booking-api@v1 fixtures validate against its schema under the backend replay rig's Ajv settings and reproduce against an independent model of the Interface; London's next clock change is at most 217 days after any clock, inside the 365-day horizon.
+Question: are the schema and fixtures written for booking-api@v1 (S05) consistent with each other and with the contract's rules, and does the how-far-ahead limit keep the next London clock-change day bookable (Q-010)?
+Run from the repository root: `npm --prefix hsdd/auto/experiments/booking-api-fixtures install`, then `node hsdd/auto/experiments/booking-api-fixtures/check.mjs` and `node hsdd/auto/experiments/booking-api-fixtures/horizon.mjs`; output in `output.txt` (Node.js 24.18).
+check.mjs: Ajv2020 with strict and allErrors plus ajv-formats (as backend/test/replay.ts) compiles the schema; each fixture's response validates at the top level and against its endpoint's $defs; given bookings never overlap in a room.
+check.mjs: a pure model (clock + given + request to response: G1 to G16, the check orders, the fixed messages) reproduces every fixture exactly, a 201's id aside; all 8 error codes are exercised.
+check.mjs: the three rooms ranges are whole local days by Intl: London 2026-11-05 (24 h), Jakarta 2026-11-05 (24 h), London 2027-10-31 (25 h).
+check.mjs: seven negative controls (later conflict, overlapping given state, leaked field, moved clock, wrong order, short instant, unfixed message) are each caught.
+horizon.mjs: scanning every hour from 2026-10-31 to 2031, the next change instant is at most 217.00 days ahead (clock 2027-03-28T01:00Z); 180 days would not cover it.

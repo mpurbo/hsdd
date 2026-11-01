@@ -1,0 +1,61 @@
+{
+  "step_ref": "S17",
+  "skill": "hsdd-reconcile",
+  "target": "simple-login.backend",
+  "status": "completed",
+  "stop": null,
+  "artifacts": [
+    "hsdd/spec/simple-login.backend.md",
+    "hsdd/spec/simple-login.md",
+    "hsdd/contract/profile-api.v2.md",
+    "hsdd/contract/booking-api.md",
+    "hsdd/contract/schema/booking-api.schema.json",
+    "hsdd/conventions.md"
+  ],
+  "experiments": [
+    {
+      "path": "hsdd/auto/experiments/booking-api-title-rule/",
+      "question": "Can booking-api@v1's schema state simple-login.backend's amend (a title holding U+0000 or an unpaired surrogate is refused) under the backend replay rig's strict Ajv settings, keep all 35 fixtures valid, and give the same verdict whether or not a validator compiles the pattern with the unicode flag?",
+      "finding": "Yes. The whole-string pattern ^(?:[^\\u0000\\uD800-\\uDFFF]|[\\uD800-\\uDBFF][\\uDC00-\\uDFFF])*$, in an allOf beside the unchanged \\S pattern, compiles under Ajv2020 { strict, allErrors } + ajv-formats; all 35 fixtures still validate; 17 named titles behave as expected (80 emoji accepted, U+0000, lone lead, lone trail and a reversed pair refused); over 200,000 random strings the pattern with and without the u flag never disagrees with isWellFormed() plus a U+0000 check. S05's booking-api-fixtures/check.mjs also still passes against the amended schema."
+    }
+  ],
+  "self_check": [
+    { "gate": "Every pending section drained, or explicitly deferred with a reason.", "status": "pass", "note": "simple-login.backend's four entries (2 confirm, 1 note, 1 amend) were drained and stamped `Reconciled 2026-11-01`. simple-login.web's and simple-login.integration's sections hold only their earlier stamps and no entries, so there was nothing to drain there." },
+    { "gate": "No contract with both sides fully planned remains `phase_ids: provisional`; none with `phase_ids: final`, no open request and an existing validation artifact remains `status: draft`; none was flipped without its artifact.", "status": "pass", "note": "booking-api@v1 stays phase_ids provisional and draft: its producer is confirmed (simple-login.backend.7), but its consumers simple-login.web.5 and simple-login.integration.3 are still DEC-053's guesses until H16 and H18 plan them, so its consumer side is not fully planned. Its schema and fixtures exist, so it qualifies for stable at the reconcile that confirms the last consumer side. profile-api@v2 was already stable with phase_ids final and is not re-examined. Nothing was flipped." },
+    { "gate": "Grandfather marks were added only to pre-existing fixtureless `stable` contracts named by the plan step (the upgrade step or one carrying it forward), none re-marked after a discharge, and removed wherever the artifact now exists.", "status": "n/a", "note": "not exercised by this step: no step kind invokes grandfather marking or discharge." },
+    { "gate": "No contract was retired while a consumer or external consumer still names it.", "status": "n/a", "note": "not exercised by this step: no retirement was named." },
+    { "gate": "Every version a drained `confirm` names is in its node's header, every copy above a drained node matches its header (`Produces`, `Consumes`, `Sources`), and every change request a node's `Sources` gained is in the root's `## Sources`.", "status": "pass", "note": "booking-api@v1 joined simple-login.backend's Produces; profile-api@v2 was already there. In hsdd/spec/simple-login.md the embedded summary's Produces and Sources now match the header (diffed line for line), the child-node table's Produces gained booking-api@v1, the DAG and its edge table gained the backend-to-web booking-api@v1 contract edge, and the contract matrix gained booking-api@v1 with the consumers its front matter names (DEC-152). The Sources gained only sections of PRD v2, already in the root's ## Sources." },
+    { "gate": "Migrated consumers named by the plan step are under `former_consumers`; none was deleted.", "status": "n/a", "note": "not exercised by this step: no migrated consumers were named." },
+    { "gate": "Every collision was decided by the human, and the losing plan was updated to match.", "status": "n/a", "note": "not exercised by this step: all four entries came from simple-login.backend and no other node had entries naming profile-api@v2 or booking-api@v1, so there was no collision." },
+    { "gate": "Contract edits follow hsdd-contract versioning (breaking change = a new version file beside the old one + a migration note naming its mode).", "status": "n/a", "note": "The amend is breaking by booking-api@v1's own list, and the give-way rule for a draft contract applied: DEC-154 made it in v1 in place with a dated Versioning line, and DEC-155 wrote the same rule into the schema's Title in the same edit. The confirm edits are front matter only." },
+    { "gate": "`node hsdd/scripts/gen-registry.mjs` ran after the last contract edit.", "status": "pass", "note": "Ran after the schema, body and front-matter edits; contract/INDEX.md and adr/INDEX.md came out unchanged, since no projected field changed." },
+    { "gate": "No artifact still cites a resolved OQ as open; sweep locations reported.", "status": "n/a", "note": "not exercised by this step: no drained entry resolved an open question; the tree's only one, OQ1, stays OPEN." },
+    { "gate": "Every change align made is a citation or a gate argument.", "status": "n/a", "note": "not exercised by this step: align was not invoked." }
+  ],
+  "routed": [
+    {
+      "target": "run",
+      "kind": "consider",
+      "text": "From S17 (DEC-153). The root's child-node table in hsdd/spec/simple-login.md still summarizes simple-login.backend's Purpose as \"authenticate built-in users and serve the signed-in user's profile over HTTP\" and simple-login.web's as \"the Login and Home screens in the browser\"; neither mentions the rooms, bookings, PostgreSQL 17 or the Rooms screen their headers gained at S09 and S10. The column is hsdd-spec's summary, not a copy of the header (at e84ae36 the web row already differed from its header), so the version ripple left it. A small hsdd-spec touch on simple-login, or the segment's report, can settle it; it changes no contract, edge or version."
+    }
+  ],
+  "closes": [],
+  "reads_outside": [
+    { "path": "hsdd/management/2026-10-31-intake-prd-simple-login-v2.md", "why": "The handoff order (H16 to H19 still to come for the consumers of booking-api@v1) and its insert rule, to decide whether the amend triggers a phase-plan-append on simple-login.backend." },
+    { "path": "hsdd/auto/steps/S16.json, hsdd/auto/steps/*.decisions.jsonl (DEC-053, DEC-138, DEC-145)", "why": "Why produced_by was a provisional guess, what S16 routed to H18 about the database, and the reasoning behind the amend." },
+    { "path": "git show e84ae36:hsdd/spec/simple-login.md, git show e84ae36:hsdd/spec/simple-login.{backend,web,integration}.md", "why": "Whether the child-node table's Purpose column was ever a verbatim copy of each header (DEC-153)." },
+    { "path": "backend/test/replay.ts (its Ajv lines)", "why": "The Ajv settings the experiment reproduces." },
+    { "path": "hsdd/auto/experiments/booking-api-fixtures/check.mjs", "why": "Reused its endpoint mapping and ran it unchanged against the amended schema." },
+    { "path": ".claude/skills/hsdd-contract/SKILL.md", "why": "Its versioning policy and unattended table for a breaking change to a draft contract, which reconcile's step 5 and 6 apply under." },
+    { "path": "hsdd/scripts/auto/gate.mjs, hsdd/scripts/auto/lib/checks.mjs, hsdd/scripts/auto/lib/report-rules.mjs, hsdd/scripts/auto/routed.mjs, hsdd/scripts/auto/schema/step-report.schema.json", "why": "What the step gate checks, and which targets a routed item can take." }
+  ],
+  "notes": [
+    "Collisions: none. The four entries all came from simple-login.backend; simple-login.web and simple-login.integration have no entries and no planned phase consuming booking-api@v1 yet.",
+    "Insert rule (intake record): the amend changes booking-api@v1 after simple-login.backend's phase-plan-append (H14), but it does not alter what that node's unshipped phases implement, consume or replay. simple-login.backend.5 already refuses these titles (D9), the 35 fixtures and the replay are unchanged, and the stricter schema Title only rejects responses no phase produces. So no phase-plan-append on simple-login.backend follows from it. simple-login.web and simple-login.integration plan after this step and read the amended contract.",
+    "booking-api@v1 consumers stay [simple-login.web.5, simple-login.integration.3] (DEC-053's guesses); C7 keeps warning until H16 and H18 plan those phases. The flip to phase_ids final and status stable belongs to the reconcile that confirms the last consumer side (H17 or H19); the validation artifacts already exist.",
+    "hsdd/conventions.md gained a `## Local database` section from the backend's note (DEC-156): the Compose file's owner and path, db:up and db:down, DATABASE_URL and its default, that every other node starts the database through db:up, and that the backend's gate starts it itself and tests on databases of its own. It restates D4 and D8; S16's consider to H18 carries the same facts.",
+    "The stamp and the Versioning line are dated 2026-11-01, the local (WIB) date at the time of the step; UTC was still 2026-10-31.",
+    "No open question was resolved, so the sweep found nothing; contract/INDEX.md and adr/INDEX.md were regenerated and are unchanged."
+  ],
+  "read_check": "8a038e05"
+}

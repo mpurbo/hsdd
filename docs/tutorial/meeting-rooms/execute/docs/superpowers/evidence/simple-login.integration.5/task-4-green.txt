@@ -1,0 +1,23 @@
+npx playwright test e2e/rooms.spec.ts (all 10 tests, no mutant; uncommitted changes on 15de563)
+
+> @simple-login/backend@1.0.0 db:up
+> node scripts/db-up.mjs up
+
+ Container meeting-rooms-postgres-1 Running 
+ Container meeting-rooms-postgres-1 Waiting 
+ Container meeting-rooms-postgres-1 Healthy 
+
+Running 10 tests using 1 worker
+
+  ✓   1 e2e/rooms.spec.ts:57:3 › AC-4.1: Rooms lists the four rooms in order, opens on today in ayu's zone, and Home returns (503ms)
+  ✓   2 e2e/rooms.spec.ts:57:3 › AC-4.1: Rooms lists the four rooms in order, opens on today in budi's zone, and Home returns (503ms)
+  ✓   3 e2e/rooms.spec.ts:77:1 › AC-4.2: a date in ayu's zone shows each room's overlapping bookings, earliest first, and (no bookings) (593ms)
+  ✓   4 e2e/rooms.spec.ts:104:1 › AC-4.3: another office's bookings also show the room's local times; the user's own zone shows none (851ms)
+  ✓   5 e2e/rooms.spec.ts:135:1 › AC-5.1 and AC-5.2: budi books through the form; starts and ends fall on quarter hours, every end after its start (613ms)
+  ✓   6 e2e/rooms.spec.ts:172:1 › AC-5.3: an overlap is refused with the other booking's times in budi's zone; touching books (530ms)
+  ✓   7 e2e/rooms.spec.ts:201:1 › AC-5.4: two users pressing Book together get one booking; the other sees the overlap message in their own zone (909ms)
+  ✓   8 e2e/rooms.spec.ts:248:1 › AC-5.5: with only the browser's clock five minutes before the current quarter hour, booking it shows That time has already started. (475ms)
+  ✓   9 e2e/rooms.spec.ts:271:1 › AC-5.6: blank, spaces-only and 81-character titles book nothing; 80 characters book exactly as typed (507ms)
+  ✓  10 e2e/rooms.spec.ts:308:1 › AC-2.3: after a restart, pressing Book lands on Login with the expiry message (1.1s)
+
+  10 passed (9.9s)

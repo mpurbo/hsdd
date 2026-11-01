@@ -1,0 +1,333 @@
+
+> @simple-login/backend@1.0.0 db:up
+> node scripts/db-up.mjs up
+
+ Container meeting-rooms-postgres-1 Running 
+ Container meeting-rooms-postgres-1 Waiting 
+ Container meeting-rooms-postgres-1 Healthy 
+
+Running 15 tests using 1 worker
+
+  ✘   1 e2e/proxy-replay.spec.ts:21:3 › replay through the proxy: booking-api/book-end-not-after-start (112ms)
+  ✘   2 e2e/proxy-replay.spec.ts:21:3 › replay through the proxy: booking-api/book-instant-with-offset (111ms)
+  ✘   3 e2e/proxy-replay.spec.ts:21:3 › replay through the proxy: booking-api/book-not-on-a-quarter-hour (106ms)
+  ✘   4 e2e/proxy-replay.spec.ts:21:3 › replay through the proxy: booking-api/book-title-blank (108ms)
+  ✘   5 e2e/proxy-replay.spec.ts:21:3 › replay through the proxy: booking-api/book-title-too-long (112ms)
+  ✘   6 e2e/proxy-replay.spec.ts:21:3 › replay through the proxy: booking-api/book-too-long (108ms)
+  ✘   7 e2e/proxy-replay.spec.ts:21:3 › replay through the proxy: booking-api/book-unknown-room (114ms)
+  ✘   8 e2e/proxy-replay.spec.ts:21:3 › replay through the proxy: booking-api/book-unknown-token (88ms)
+  ✘   9 e2e/proxy-replay.spec.ts:21:3 › replay through the proxy: booking-api/cancel-malformed-id (110ms)
+  ✘  10 e2e/proxy-replay.spec.ts:21:3 › replay through the proxy: booking-api/cancel-no-token (87ms)
+  ✘  11 e2e/proxy-replay.spec.ts:21:3 › replay through the proxy: booking-api/cancel-unknown (102ms)
+  ✘  12 e2e/proxy-replay.spec.ts:21:3 › replay through the proxy: booking-api/my-bookings-expired-token (733ms)
+  ✘  13 e2e/proxy-replay.spec.ts:21:3 › replay through the proxy: booking-api/rooms-from-not-before-to (108ms)
+  ✘  14 e2e/proxy-replay.spec.ts:21:3 › replay through the proxy: booking-api/rooms-instant-without-milliseconds (110ms)
+  ✘  15 e2e/proxy-replay.spec.ts:21:3 › replay through the proxy: booking-api/rooms-no-token (85ms)
+
+
+  1) e2e/proxy-replay.spec.ts:21:3 › replay through the proxy: booking-api/book-end-not-after-start 
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 400
+    Received: 404
+
+      44 |       ...(fixture.request.body === undefined ? {} : { data: JSON.stringify(fixture.request.body) }),
+      45 |     });
+    > 46 |     expect(res.status()).toBe(fixture.response.status);
+         |                          ^
+      47 |     expect(await res.json()).toEqual(fixture.response.body);
+      48 |   });
+      49 | }
+        at <repo>/e2e/proxy-replay.spec.ts:46:26
+
+    Error Context: test-results/proxy-replay-replay-throug-308e9-pi-book-end-not-after-start/error-context.md
+
+  2) e2e/proxy-replay.spec.ts:21:3 › replay through the proxy: booking-api/book-instant-with-offset 
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 400
+    Received: 404
+
+      44 |       ...(fixture.request.body === undefined ? {} : { data: JSON.stringify(fixture.request.body) }),
+      45 |     });
+    > 46 |     expect(res.status()).toBe(fixture.response.status);
+         |                          ^
+      47 |     expect(await res.json()).toEqual(fixture.response.body);
+      48 |   });
+      49 | }
+        at <repo>/e2e/proxy-replay.spec.ts:46:26
+
+    Error Context: test-results/proxy-replay-replay-throug-b83bb-pi-book-instant-with-offset/error-context.md
+
+  3) e2e/proxy-replay.spec.ts:21:3 › replay through the proxy: booking-api/book-not-on-a-quarter-hour 
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 400
+    Received: 404
+
+      44 |       ...(fixture.request.body === undefined ? {} : { data: JSON.stringify(fixture.request.body) }),
+      45 |     });
+    > 46 |     expect(res.status()).toBe(fixture.response.status);
+         |                          ^
+      47 |     expect(await res.json()).toEqual(fixture.response.body);
+      48 |   });
+      49 | }
+        at <repo>/e2e/proxy-replay.spec.ts:46:26
+
+    Error Context: test-results/proxy-replay-replay-throug-4333d--book-not-on-a-quarter-hour/error-context.md
+
+  4) e2e/proxy-replay.spec.ts:21:3 › replay through the proxy: booking-api/book-title-blank ────────
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 400
+    Received: 404
+
+      44 |       ...(fixture.request.body === undefined ? {} : { data: JSON.stringify(fixture.request.body) }),
+      45 |     });
+    > 46 |     expect(res.status()).toBe(fixture.response.status);
+         |                          ^
+      47 |     expect(await res.json()).toEqual(fixture.response.body);
+      48 |   });
+      49 | }
+        at <repo>/e2e/proxy-replay.spec.ts:46:26
+
+    Error Context: test-results/proxy-replay-replay-throug-fdf67-ooking-api-book-title-blank/error-context.md
+
+  5) e2e/proxy-replay.spec.ts:21:3 › replay through the proxy: booking-api/book-title-too-long ─────
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 400
+    Received: 404
+
+      44 |       ...(fixture.request.body === undefined ? {} : { data: JSON.stringify(fixture.request.body) }),
+      45 |     });
+    > 46 |     expect(res.status()).toBe(fixture.response.status);
+         |                          ^
+      47 |     expect(await res.json()).toEqual(fixture.response.body);
+      48 |   });
+      49 | }
+        at <repo>/e2e/proxy-replay.spec.ts:46:26
+
+    Error Context: test-results/proxy-replay-replay-throug-573f3-ing-api-book-title-too-long/error-context.md
+
+  6) e2e/proxy-replay.spec.ts:21:3 › replay through the proxy: booking-api/book-too-long ───────────
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 422
+    Received: 404
+
+      44 |       ...(fixture.request.body === undefined ? {} : { data: JSON.stringify(fixture.request.body) }),
+      45 |     });
+    > 46 |     expect(res.status()).toBe(fixture.response.status);
+         |                          ^
+      47 |     expect(await res.json()).toEqual(fixture.response.body);
+      48 |   });
+      49 | }
+        at <repo>/e2e/proxy-replay.spec.ts:46:26
+
+    Error Context: test-results/proxy-replay-replay-throug-2f5db-y-booking-api-book-too-long/error-context.md
+
+  7) e2e/proxy-replay.spec.ts:21:3 › replay through the proxy: booking-api/book-unknown-room ───────
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 400
+    Received: 404
+
+      44 |       ...(fixture.request.body === undefined ? {} : { data: JSON.stringify(fixture.request.body) }),
+      45 |     });
+    > 46 |     expect(res.status()).toBe(fixture.response.status);
+         |                          ^
+      47 |     expect(await res.json()).toEqual(fixture.response.body);
+      48 |   });
+      49 | }
+        at <repo>/e2e/proxy-replay.spec.ts:46:26
+
+    Error Context: test-results/proxy-replay-replay-throug-99937-oking-api-book-unknown-room/error-context.md
+
+  8) e2e/proxy-replay.spec.ts:21:3 › replay through the proxy: booking-api/book-unknown-token ──────
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 401
+    Received: 404
+
+      44 |       ...(fixture.request.body === undefined ? {} : { data: JSON.stringify(fixture.request.body) }),
+      45 |     });
+    > 46 |     expect(res.status()).toBe(fixture.response.status);
+         |                          ^
+      47 |     expect(await res.json()).toEqual(fixture.response.body);
+      48 |   });
+      49 | }
+        at <repo>/e2e/proxy-replay.spec.ts:46:26
+
+    Error Context: test-results/proxy-replay-replay-throug-3d3d6-king-api-book-unknown-token/error-context.md
+
+  9) e2e/proxy-replay.spec.ts:21:3 › replay through the proxy: booking-api/cancel-malformed-id ─────
+
+    Error: expect(received).toEqual(expected) // deep equality
+
+    - Expected  - 4
+    + Received  + 3
+
+      Object {
+    -   "error": Object {
+    -     "code": "BOOKING_NOT_FOUND",
+    -     "message": "There is no such booking.",
+    -   },
+    +   "error": "Not Found",
+    +   "message": "Route DELETE:/api/bookings/not-a-booking not found",
+    +   "statusCode": 404,
+      }
+
+      45 |     });
+      46 |     expect(res.status()).toBe(fixture.response.status);
+    > 47 |     expect(await res.json()).toEqual(fixture.response.body);
+         |                              ^
+      48 |   });
+      49 | }
+      50 |
+        at <repo>/e2e/proxy-replay.spec.ts:47:30
+
+    Error Context: test-results/proxy-replay-replay-throug-f4482-ing-api-cancel-malformed-id/error-context.md
+
+  10) e2e/proxy-replay.spec.ts:21:3 › replay through the proxy: booking-api/cancel-no-token ────────
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 401
+    Received: 404
+
+      44 |       ...(fixture.request.body === undefined ? {} : { data: JSON.stringify(fixture.request.body) }),
+      45 |     });
+    > 46 |     expect(res.status()).toBe(fixture.response.status);
+         |                          ^
+      47 |     expect(await res.json()).toEqual(fixture.response.body);
+      48 |   });
+      49 | }
+        at <repo>/e2e/proxy-replay.spec.ts:46:26
+
+    Error Context: test-results/proxy-replay-replay-throug-3d948-booking-api-cancel-no-token/error-context.md
+
+  11) e2e/proxy-replay.spec.ts:21:3 › replay through the proxy: booking-api/cancel-unknown ─────────
+
+    Error: expect(received).toEqual(expected) // deep equality
+
+    - Expected  - 4
+    + Received  + 3
+
+      Object {
+    -   "error": Object {
+    -     "code": "BOOKING_NOT_FOUND",
+    -     "message": "There is no such booking.",
+    -   },
+    +   "error": "Not Found",
+    +   "message": "Route DELETE:/api/bookings/00000000-0000-4000-8000-0000000000ff not found",
+    +   "statusCode": 404,
+      }
+
+      45 |     });
+      46 |     expect(res.status()).toBe(fixture.response.status);
+    > 47 |     expect(await res.json()).toEqual(fixture.response.body);
+         |                              ^
+      48 |   });
+      49 | }
+      50 |
+        at <repo>/e2e/proxy-replay.spec.ts:47:30
+
+    Error Context: test-results/proxy-replay-replay-throug-f9c7e--booking-api-cancel-unknown/error-context.md
+
+  12) e2e/proxy-replay.spec.ts:21:3 › replay through the proxy: booking-api/my-bookings-expired-token 
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 401
+    Received: 404
+
+      44 |       ...(fixture.request.body === undefined ? {} : { data: JSON.stringify(fixture.request.body) }),
+      45 |     });
+    > 46 |     expect(res.status()).toBe(fixture.response.status);
+         |                          ^
+      47 |     expect(await res.json()).toEqual(fixture.response.body);
+      48 |   });
+      49 | }
+        at <repo>/e2e/proxy-replay.spec.ts:46:26
+
+    Error Context: test-results/proxy-replay-replay-throug-75b69-i-my-bookings-expired-token/error-context.md
+
+  13) e2e/proxy-replay.spec.ts:21:3 › replay through the proxy: booking-api/rooms-from-not-before-to 
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 400
+    Received: 404
+
+      44 |       ...(fixture.request.body === undefined ? {} : { data: JSON.stringify(fixture.request.body) }),
+      45 |     });
+    > 46 |     expect(res.status()).toBe(fixture.response.status);
+         |                          ^
+      47 |     expect(await res.json()).toEqual(fixture.response.body);
+      48 |   });
+      49 | }
+        at <repo>/e2e/proxy-replay.spec.ts:46:26
+
+    Error Context: test-results/proxy-replay-replay-throug-08b1d-pi-rooms-from-not-before-to/error-context.md
+
+  14) e2e/proxy-replay.spec.ts:21:3 › replay through the proxy: booking-api/rooms-instant-without-milliseconds 
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 400
+    Received: 404
+
+      44 |       ...(fixture.request.body === undefined ? {} : { data: JSON.stringify(fixture.request.body) }),
+      45 |     });
+    > 46 |     expect(res.status()).toBe(fixture.response.status);
+         |                          ^
+      47 |     expect(await res.json()).toEqual(fixture.response.body);
+      48 |   });
+      49 | }
+        at <repo>/e2e/proxy-replay.spec.ts:46:26
+
+    Error Context: test-results/proxy-replay-replay-throug-d9d1b-nstant-without-milliseconds/error-context.md
+
+  15) e2e/proxy-replay.spec.ts:21:3 › replay through the proxy: booking-api/rooms-no-token ─────────
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 401
+    Received: 404
+
+      44 |       ...(fixture.request.body === undefined ? {} : { data: JSON.stringify(fixture.request.body) }),
+      45 |     });
+    > 46 |     expect(res.status()).toBe(fixture.response.status);
+         |                          ^
+      47 |     expect(await res.json()).toEqual(fixture.response.body);
+      48 |   });
+      49 | }
+        at <repo>/e2e/proxy-replay.spec.ts:46:26
+
+    Error Context: test-results/proxy-replay-replay-throug-51bab--booking-api-rooms-no-token/error-context.md
+
+  15 failed
+    e2e/proxy-replay.spec.ts:21:3 › replay through the proxy: booking-api/book-end-not-after-start ─
+    e2e/proxy-replay.spec.ts:21:3 › replay through the proxy: booking-api/book-instant-with-offset ─
+    e2e/proxy-replay.spec.ts:21:3 › replay through the proxy: booking-api/book-not-on-a-quarter-hour 
+    e2e/proxy-replay.spec.ts:21:3 › replay through the proxy: booking-api/book-title-blank ─────────
+    e2e/proxy-replay.spec.ts:21:3 › replay through the proxy: booking-api/book-title-too-long ──────
+    e2e/proxy-replay.spec.ts:21:3 › replay through the proxy: booking-api/book-too-long ────────────
+    e2e/proxy-replay.spec.ts:21:3 › replay through the proxy: booking-api/book-unknown-room ────────
+    e2e/proxy-replay.spec.ts:21:3 › replay through the proxy: booking-api/book-unknown-token ───────
+    e2e/proxy-replay.spec.ts:21:3 › replay through the proxy: booking-api/cancel-malformed-id ──────
+    e2e/proxy-replay.spec.ts:21:3 › replay through the proxy: booking-api/cancel-no-token ──────────
+    e2e/proxy-replay.spec.ts:21:3 › replay through the proxy: booking-api/cancel-unknown ───────────
+    e2e/proxy-replay.spec.ts:21:3 › replay through the proxy: booking-api/my-bookings-expired-token 
+    e2e/proxy-replay.spec.ts:21:3 › replay through the proxy: booking-api/rooms-from-not-before-to ─
+    e2e/proxy-replay.spec.ts:21:3 › replay through the proxy: booking-api/rooms-instant-without-milliseconds 
+    e2e/proxy-replay.spec.ts:21:3 › replay through the proxy: booking-api/rooms-no-token ───────────

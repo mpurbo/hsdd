@@ -1,0 +1,11 @@
+node v24.18.0; browser 156.0.8078.79; channel chrome
+
+1. timezoneId Asia/Kolkata: resolved Asia/Calcutta, getTimezoneOffset -330, 02:00Z getHours 7
+
+2. setFixedTime(2026-10-31T17:55:00.000Z) before load; real clock 2026-10-31T18:00:16.672Z
+   page Date.now() at load 2026-10-31T17:55:00.000Z, new Date() 2026-10-31T17:55:00.000Z
+   one second later: page Date.now() moved 0 ms; setInterval ticks 0 -> 19 (timers run)
+   page clock behind the real one by 5.29 min
+   the current quarter hour 2026-10-31T18:00:00.000Z is after the page's clock: true; it has started on the real clock: true
+
+3. the test process's Date.now() is the real clock: true (drift from real at start 1.0 s, the probe's own run time)

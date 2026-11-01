@@ -1,0 +1,10 @@
+{
+  "name": "experiment-booking-api-title-rule",
+  "private": true,
+  "type": "module",
+  "description": "Throwaway: checks booking-api@v1's Title rule for U+0000 and unpaired surrogates. Not part of any build.",
+  "devDependencies": {
+    "ajv": "^8.20.0",
+    "ajv-formats": "^3.0.1"
+  }
+}

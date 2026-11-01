@@ -1,0 +1,148 @@
+<!-- hsdd-phase-context {"phase":"simple-login.backend.2","spec":"7b3e10a","date":"2026-10-29"} -->
+# Current Phase: simple-login.backend.2 - Sign-in, sessions and the two endpoints
+
+## Goal
+password verification with scrypt and `timingSafeEqual`, running one comparison against a dummy hash when the username is unknown (RFC §4); the in-memory session store: 32 random bytes base64url per token, a fixed 30-minute expiry from the injected clock, lookup that rejects unknown and expired tokens (ADR-001); `POST /api/login` and `GET /api/me` exactly as the contracts state, with every error in the envelope, including a body that is not JSON or not `application/json` (400 `VALIDATION_FAILED`, never Fastify's default error shape); usernames matched per D1; `backend/src/server.ts` started by `npm --prefix backend start`, listening per D2; no password or token in any log line (RFC §9); and a `replay` script that runs the replay rig from phase 1 against the real routes.
+
+## Where it sits
+- Node: simple-login.backend · authenticate built-in users and serve the signed-in user's profile over HTTP
+- Owns: the built-in accounts, password verification, the session store, `POST /api/login`, `GET /api/me`, the `backend/` directory
+- Does not own: screens, where the browser keeps the token, the dev proxy
+- Isolation strategy: Fastify `app.inject()` with an injected clock and random source; the gate replays the auth-api and profile-api fixtures against the real routes; no browser and no open port needed
+
+## Phase
+- **Consumes:** none
+- **Produces:** [auth-api@v1, profile-api@v1]
+- **Governed by:** [ADR-001]
+- **Scope:** password verification with scrypt and `timingSafeEqual`, running one comparison against a dummy hash when the username is unknown (RFC §4); the in-memory session store: 32 random bytes base64url per token, a fixed 30-minute expiry from the injected clock, lookup that rejects unknown and expired tokens (ADR-001); `POST /api/login` and `GET /api/me` exactly as the contracts state, with every error in the envelope, including a body that is not JSON or not `application/json` (400 `VALIDATION_FAILED`, never Fastify's default error shape); usernames matched per D1; `backend/src/server.ts` started by `npm --prefix backend start`, listening per D2; no password or token in any log line (RFC §9); and a `replay` script that runs the replay rig from phase 1 against the real routes.
+- **Size estimate:** ~9 files (~380 lines), <= 7 OpenSpec tasks
+- **Gate:** `npm --prefix backend run gate` plus contract replay for auth-api and profile-api: `npm --prefix backend run replay`
+- **Verification:** with the service running, `curl` signs in as `ayu`, fetches `/api/me` with the token and gets Ayu's profile; a wrong password and an unknown user return byte-identical 401 bodies; a token stops working after 30 minutes (proven by the injected clock in tests, not by waiting).
+- **Review tier:** full-review
+- **Dependencies:** simple-login.backend.1 (domain types, account data, `buildApp`, the replay rig)
+
+## Contracts
+### auth-api@v1 · produces · stable
+**Interface**
+`POST /api/login` with a JSON body:
+
+```json
+{ "username": "ayu", "password": "sunrise-42" }
+```
+
+- `username`: string, 1 to 64 characters.
+- `password`: string, 1 to 128 characters.
+
+Responses (all bodies JSON):
+
+| Status | When | Body |
+|--------|------|------|
+| 200 | the username and password match a built-in account | `{ "token": string, "tokenType": "Bearer", "expiresAt": string }` |
+| 400 | the body is not a JSON object with both fields valid as above | `{ "error": { "code": "VALIDATION_FAILED", "message": "Username and password are required." } }` |
+| 401 | unknown username, or wrong password | `{ "error": { "code": "INVALID_CREDENTIALS", "message": "Incorrect username or password." } }` |
+
+- `token`: 43 characters of base64url (`[A-Za-z0-9_-]`).
+- `expiresAt`: an ISO-8601 UTC date-time, for example
+  `2026-10-29T10:30:00.000Z`.
+- Error envelope: `{ "error": { "code": string, "message": string } }`, no
+  other fields.
+
+Development address: the service listens on `http://127.0.0.1:3000`; the
+`PORT` environment variable overrides the port. A dev proxy or a test
+targets this address, not `localhost`.
+**Guarantees**
+- `expiresAt` is exactly 30 minutes after the moment the token was issued
+  (ADR-001).
+- A token from a 200 response is accepted by `profile-api@v1` until
+  `expiresAt`, and rejected after it.
+- An unknown username and a wrong password give the same status, the same
+  body, byte for byte.
+- Usernames match exactly: case-sensitive, with no trimming. `Ayu` and
+  `ayu ` are unknown usernames. Clients send what the user typed.
+- The token is opaque: consumers store it and send it back, never parse it.
+- No response contains the password or a password hash.
+- Consumers branch on `error.code`, never on `error.message`.
+
+### profile-api@v1 · produces · stable
+**Interface**
+`GET /api/me` with the header `Authorization: Bearer {token}`, where
+`{token}` came from `auth-api@v1`.
+
+| Status | When | Body |
+|--------|------|------|
+| 200 | the token is one the backend issued and it has not expired | the signed-in user's profile, below |
+| 401 | no `Authorization` header, a header that is not `Bearer {token}`, an unknown token, or an expired token | `{ "error": { "code": "UNAUTHORIZED", "message": "Sign in to continue." } }` |
+
+The profile:
+
+```json
+{
+  "id": "u_001",
+  "username": "ayu",
+  "displayName": "Ayu Lestari",
+  "email": "ayu@example.com",
+  "memberSince": "2024-03-14"
+}
+```
+
+- `id`: string, stable per account.
+- `memberSince`: a calendar date, `YYYY-MM-DD`.
+- Error envelope: `{ "error": { "code": string, "message": string } }`, no
+  other fields.
+
+Development address: the same process as `auth-api@v1`,
+`http://127.0.0.1:3000`, with `PORT` overriding the port.
+**Guarantees**
+- The profile has exactly the five fields above; it never contains a
+  password, a hash or a token.
+- The profile returned is always the account the token was issued for.
+- Every reason for rejection gives the same 401 body: consumers cannot
+  tell an expired token from an unknown one (ADR-001).
+- Consumers branch on `error.code`, never on `error.message`.
+
+## Decisions
+### ADR-001: Session tokens · accepted
+**Decision**
+Sessions are opaque bearer tokens held in the backend's in-memory session
+store. A token is 32 random bytes, base64url-encoded (43 characters),
+issued by `POST /api/login` and sent as `Authorization: Bearer {token}`.
+Its lifetime is a fixed 30 minutes from issue, with no renewal. Sign-out is
+client-side: the web app discards its token; there is no logout endpoint.
+**Consequences**
+- Restarting the backend signs every user out.
+- Consumers never parse a token; its only meaning is "valid until
+  `expiresAt`".
+- An expired, unknown or missing token is one case for consumers: 401
+  `UNAUTHORIZED`.
+- After a client-side sign-out the server entry lives on until it expires;
+  a stolen token stays valid for at most 30 minutes.
+- Time is an input: the backend's session logic takes the clock as a
+  dependency so expiry is testable without waiting.
+
+## Discipline
+- Test-first: write each behavior's failing test, and see it fail, before
+  the code that makes it pass.
+- Governance freeze: change nothing under hsdd/ except this phase's
+  verification doc; contracts, ADRs, specs and conventions change only
+  through hsdd-contract, hsdd-adr and hsdd-reconcile.
+- Consume contracts only: build against the Interface and Guarantees above,
+  never against another node's internals.
+- Contract wrong mid-phase: pause at a task boundary; write the gap, in
+  request or amend wording, under the verification doc's Outstanding and
+  stop; the human records it in the node's plan, renegotiates at the root
+  through hsdd-contract, and propagates the change into this phase's branch;
+  re-run the phase switch; resume. Never improvise around the contract.
+- Verification doc: hsdd/verify/simple-login.backend.2.verification.md from
+  hsdd/templates/verification.md at full-review depth. Every Learning
+  carries one disposition before sign-off; "- none" is valid, silence is not.
+- Contract replay: the gate validates this phase's real output against the
+  schema and reproduces the fixtures of auth-api@v1, profile-api@v1.
+
+## Links (spec 7b3e10a)
+- Phase section: hsdd/spec/simple-login.backend.md, heading "### simple-login.backend.2: Sign-in, sessions and the two endpoints"
+- Node spec: hsdd/spec/simple-login.backend.md
+- auth-api@v1: hsdd/contract/auth-api.md
+- profile-api@v1: hsdd/contract/profile-api.md
+- ADR-001: hsdd/adr/001-session-tokens.md
+- Conventions: hsdd/conventions.md
+- Verification template: hsdd/templates/verification.md

@@ -1,0 +1,85 @@
+# simple-login.backend.7 Verification transcript, HEAD fb8be52, 2026-10-31T21:20:48Z
+# Real clock 2026-10-31T21:20:48Z; the next day in Jakarta is 2026-11-02, from 2026-11-01T17:00:00.000Z to 2026-11-02T17:00:00.000Z.
+
+$ npm --prefix backend run db:up
+ Container meeting-rooms-postgres-1 Waiting 
+ Container meeting-rooms-postgres-1 Healthy 
+
+$ psql -d meeting_rooms -c "SELECT to_regclass('public.booking')"   (before the first start)
+(none)
+
+$ npm --prefix backend start   (PORT and DATABASE_URL unset: port 3000, the meeting_rooms database)
+"msg":"Server listening at http://127.0.0.1:3000"
+
+$ POST /api/login as ayu -> token ueiUB5...
+
+$ GET /api/rooms?from=2026-11-01T17:00:00.000Z&to=2026-11-02T17:00:00.000Z
+HTTP 200, body bytes 408
+{"rooms":[{"id":"merapi","name":"Merapi","office":"Jakarta","timeZone":"Asia/Jakarta","seats":8,"bookings":[]},{"id":"bromo","name":"Bromo","office":"Jakarta","timeZone":"Asia/Jakarta","seats":4,"bookings":[]},{"id":"thames","name":"Thames","office":"London","timeZone":"Europe/London","seats":10,"bookings":[]},{"id":"kew","name":"Kew","office":"London","timeZone":"Europe/London","seats":4,"bookings":[]}]}
+
+$ POST /api/bookings Merapi 2026-11-02T03:00:00.000Z to 2026-11-02T04:00:00.000Z
+HTTP 201, body bytes 182
+{"id":"25d1c58b-7e7e-411c-89c6-659506e1731c","roomId":"merapi","roomName":"Merapi","title":"Verification booking","start":"2026-11-02T03:00:00.000Z","end":"2026-11-02T04:00:00.000Z"}
+
+$ POST /api/bookings Merapi 2026-11-02T03:30:00.000Z to 2026-11-02T04:30:00.000Z (overlaps)
+HTTP 409, body bytes 293
+{"error":{"code":"BOOKING_CONFLICT","message":"The room is already booked for part of that time.","conflict":{"id":"25d1c58b-7e7e-411c-89c6-659506e1731c","roomId":"merapi","roomName":"Merapi","title":"Verification booking","start":"2026-11-02T03:00:00.000Z","end":"2026-11-02T04:00:00.000Z"}}}
+
+$ restart: stop the service, npm --prefix backend start again
+"msg":"Server listening at http://127.0.0.1:3000"
+
+$ GET /api/me/bookings with the old token ueiUB5...
+HTTP 401, body bytes 66
+{"error":{"code":"UNAUTHORIZED","message":"Sign in to continue."}}
+
+$ POST /api/login as ayu again -> token j3EltY...
+
+$ GET /api/me/bookings
+HTTP 200, body bytes 197
+{"bookings":[{"id":"25d1c58b-7e7e-411c-89c6-659506e1731c","roomId":"merapi","roomName":"Merapi","title":"Verification booking","start":"2026-11-02T03:00:00.000Z","end":"2026-11-02T04:00:00.000Z"}]}
+(the 201's id was 25d1c58b-7e7e-411c-89c6-659506e1731c)
+
+$ DELETE /api/bookings/25d1c58b-7e7e-411c-89c6-659506e1731c
+HTTP 204, body bytes 0
+
+
+$ GET /api/me/bookings
+HTTP 200, body bytes 15
+{"bookings":[]}
+
+$ psql -d meeting_rooms -c 'CREATE DATABASE b7_verify_empty'
+CREATE DATABASE
+
+$ psql -d b7_verify_empty -c '\dt'   (before the start)
+Did not find any relations.
+(no relations)
+
+$ DATABASE_URL=postgres://meeting_rooms:***@127.0.0.1:55432/b7_verify_empty npm --prefix backend start
+
+$ POST /api/login as ayu -> token z22uWj...
+
+$ GET /api/rooms?from=2026-11-01T17:00:00.000Z&to=2026-11-02T17:00:00.000Z
+HTTP 200, body bytes 408
+{"rooms":[{"id":"merapi","name":"Merapi","office":"Jakarta","timeZone":"Asia/Jakarta","seats":8,"bookings":[]},{"id":"bromo","name":"Bromo","office":"Jakarta","timeZone":"Asia/Jakarta","seats":4,"bookings":[]},{"id":"thames","name":"Thames","office":"London","timeZone":"Europe/London","seats":10,"bookings":[]},{"id":"kew","name":"Kew","office":"London","timeZone":"Europe/London","seats":4,"bookings":[]}]}
+
+$ psql -d b7_verify_empty -c '\dt'   (the service running)
+public|booking|table|meeting_rooms
+
+$ psql -d meeting_rooms -c 'DROP DATABASE b7_verify_empty'
+DROP DATABASE
+
+$ DATABASE_URL=postgres://meeting_rooms:***@127.0.0.1:1/meeting_rooms npm --prefix backend start   (nothing listens on port 1)
+exit 1
+The database cannot be reached or refused the connection (ECONNREFUSED). Start it with npm --prefix backend run db:up, and check that DATABASE_URL names a database that exists.
+
+$ grep the four service logs for the password, the tokens and the database URL
+service-1.log: 0 matching lines
+service-2.log: 0 matching lines
+service-3.log: 0 matching lines
+service-4.log: 0 matching lines
+
+$ psql -l (databases left on the Compose service)
+meeting_rooms
+postgres
+template0
+template1

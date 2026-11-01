@@ -1,0 +1,80 @@
+$ TZ=Asia/Jakarta FORCE_COLOR=0 npm run e2e
+
+> @simple-login/root@1.0.0 e2e
+> playwright test
+
+
+> @simple-login/backend@1.0.0 db:up
+> node scripts/db-up.mjs up
+
+ Container meeting-rooms-postgres-1 Running 
+ Container meeting-rooms-postgres-1 Waiting 
+ Container meeting-rooms-postgres-1 Healthy 
+
+Running 49 tests using 1 worker
+
+  ✓   1 e2e/home.spec.ts:9:1 › AC-2.1: Home shows the signed-in user's details (379ms)
+  ✓   2 e2e/home.spec.ts:19:1 › AC-2.4: Home shows each account's phone number exactly as stored (411ms)
+  ✓   3 e2e/home.spec.ts:28:1 › Budi sees Budi's profile, not Ayu's (315ms)
+  ✓   4 e2e/home.spec.ts:38:1 › AC-2.2: reloading keeps the user signed in (368ms)
+  ✓   5 e2e/home.spec.ts:46:1 › AC-3.1: Sign out returns to Login, and a reload stays there (368ms)
+  ✓   6 e2e/home.spec.ts:56:1 › AC-2.3: a session the backend no longer knows returns to Login with the expiry message (970ms)
+  ✓   7 e2e/login.spec.ts:4:1 › AC-1.1: the right password reaches Home within 3 seconds (303ms)
+  ✓   8 e2e/login.spec.ts:12:1 › AC-1.2: a wrong password shows the message and stays on Login (275ms)
+  ✓   9 e2e/login.spec.ts:19:1 › AC-1.2: an unknown user gets the same message (263ms)
+  ✓  10 e2e/login.spec.ts:25:1 › AC-1.3: Sign in is disabled while either field is empty (212ms)
+  ✓  11 e2e/proxy-replay.spec.ts:11:1 › replays 24 exact fixtures: 4 of auth-api@v1, 5 of profile-api@v2, 15 of booking-api@v1, none of profile-api@v1 (11ms)
+  ✓  12 e2e/proxy-replay.spec.ts:21:3 › replay through the proxy: auth-api/login-empty-username (50ms)
+  ✓  13 e2e/proxy-replay.spec.ts:21:3 › replay through the proxy: auth-api/login-missing-password (2ms)
+  ✓  14 e2e/proxy-replay.spec.ts:21:3 › replay through the proxy: auth-api/login-unknown-user (21ms)
+  ✓  15 e2e/proxy-replay.spec.ts:21:3 › replay through the proxy: auth-api/login-wrong-password (21ms)
+  ✓  16 e2e/proxy-replay.spec.ts:21:3 › replay through the proxy: profile-api.v2/me-ayu (22ms)
+  ✓  17 e2e/proxy-replay.spec.ts:21:3 › replay through the proxy: profile-api.v2/me-budi (22ms)
+  ✓  18 e2e/proxy-replay.spec.ts:21:3 › replay through the proxy: profile-api.v2/me-expired-token (542ms)
+  ✓  19 e2e/proxy-replay.spec.ts:21:3 › replay through the proxy: profile-api.v2/me-no-token (2ms)
+  ✓  20 e2e/proxy-replay.spec.ts:21:3 › replay through the proxy: profile-api.v2/me-unknown-token (2ms)
+  ✓  21 e2e/proxy-replay.spec.ts:21:3 › replay through the proxy: booking-api/book-end-not-after-start (25ms)
+  ✓  22 e2e/proxy-replay.spec.ts:21:3 › replay through the proxy: booking-api/book-instant-with-offset (22ms)
+  ✓  23 e2e/proxy-replay.spec.ts:21:3 › replay through the proxy: booking-api/book-not-on-a-quarter-hour (22ms)
+  ✓  24 e2e/proxy-replay.spec.ts:21:3 › replay through the proxy: booking-api/book-title-blank (22ms)
+  ✓  25 e2e/proxy-replay.spec.ts:21:3 › replay through the proxy: booking-api/book-title-too-long (24ms)
+  ✓  26 e2e/proxy-replay.spec.ts:21:3 › replay through the proxy: booking-api/book-too-long (24ms)
+  ✓  27 e2e/proxy-replay.spec.ts:21:3 › replay through the proxy: booking-api/book-unknown-room (22ms)
+  ✓  28 e2e/proxy-replay.spec.ts:21:3 › replay through the proxy: booking-api/book-unknown-token (2ms)
+  ✓  29 e2e/proxy-replay.spec.ts:21:3 › replay through the proxy: booking-api/cancel-malformed-id (22ms)
+  ✓  30 e2e/proxy-replay.spec.ts:21:3 › replay through the proxy: booking-api/cancel-no-token (2ms)
+  ✓  31 e2e/proxy-replay.spec.ts:21:3 › replay through the proxy: booking-api/cancel-unknown (23ms)
+  ✓  32 e2e/proxy-replay.spec.ts:21:3 › replay through the proxy: booking-api/my-bookings-expired-token (542ms)
+  ✓  33 e2e/proxy-replay.spec.ts:21:3 › replay through the proxy: booking-api/rooms-from-not-before-to (25ms)
+  ✓  34 e2e/proxy-replay.spec.ts:21:3 › replay through the proxy: booking-api/rooms-instant-without-milliseconds (22ms)
+  ✓  35 e2e/proxy-replay.spec.ts:21:3 › replay through the proxy: booking-api/rooms-no-token (2ms)
+  ✓  36 e2e/rig.spec.ts:19:1 › the run is in Asia/Kolkata: the worker and the browser (122ms)
+  ✓  37 e2e/rig.spec.ts:34:1 › api.ts: instants are toISOString() strings on quarter hours of UTC (2ms)
+  ✓  38 e2e/rig.spec.ts:43:1 › api.ts: sign in, book, list, cancel against the service (67ms)
+  ✓  39 e2e/rig.spec.ts:63:1 › a run starts with no bookings: a slot only this test books is free (26ms)
+  ✓  40 e2e/rig.spec.ts:70:1 › startService refuses a port already in use (0ms)
+  ✓  41 e2e/rig.spec.ts:74:1 › startService fails at once, with the service's words, when the service exits before it listens (40ms)
+round 1: budi won, booking 52fea824-49d7-4e0e-b345-411e249a74c9
+  ✓  42 e2e/success.spec.ts:49:3 › 20 simultaneous attempts, round 1 of 5: one 201, nineteen 409 (84ms)
+round 2: ayu won, booking 7de02e28-3ded-4549-8c11-ce8ee1b748cc
+  ✓  43 e2e/success.spec.ts:49:3 › 20 simultaneous attempts, round 2 of 5: one 201, nineteen 409 (70ms)
+round 3: budi won, booking 68e8b4b2-56bd-4285-8b35-3ccede6d73bd
+  ✓  44 e2e/success.spec.ts:49:3 › 20 simultaneous attempts, round 3 of 5: one 201, nineteen 409 (67ms)
+round 4: ayu won, booking 15451cad-96ad-4fdc-840d-2913cec15eb6
+  ✓  45 e2e/success.spec.ts:49:3 › 20 simultaneous attempts, round 4 of 5: one 201, nineteen 409 (66ms)
+round 5: ayu won, booking f78bfab4-c235-4d11-a970-861797cc826f
+  ✓  46 e2e/success.spec.ts:49:3 › 20 simultaneous attempts, round 5 of 5: one 201, nineteen 409, twenty ranges sharing one quarter hour (65ms)
+  ✓  47 e2e/success.spec.ts:98:1 › a restart keeps every booking with its id and ends every token (629ms)
+  ✓  48 e2e/success.spec.ts:143:1 › AC-5.5 at the service: the current quarter hour has started (22ms)
+  ✓  49 e2e/success.spec.ts:150:1 › AC-6.3: budi cannot cancel ayu's booking (52ms)
+
+  49 passed (9.5s)
+exit 0
+
+# ---- Cleanup checks, 2026-10-31T23:58:33Z ----
+$ lsof -nP -iTCP:3000 -sTCP:LISTEN
+(exit 1, output empty)
+$ lsof -nP -iTCP:5173 -sTCP:LISTEN
+(exit 1, output empty)
+$ pgrep -fl "mr-int/web/node_modules"
+(exit 1, output empty)

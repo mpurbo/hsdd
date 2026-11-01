@@ -1,0 +1,122 @@
+{
+  "step_ref": "S23",
+  "skill": "hsdd-spec",
+  "target": "simple-login.backend",
+  "status": "completed",
+  "stop": null,
+  "artifacts": [
+    "hsdd/spec/simple-login.backend.md",
+    "hsdd/spec/simple-login.md"
+  ],
+  "experiments": [],
+  "self_check": [
+    {
+      "gate": "The spec stays high-level; it is not an implementation plan.",
+      "status": "pass",
+      "note": "The only edit is the Isolation strategy's closing clause, restated to what the shipped tests do (DEC-208). The start behavior, the start test on a database without the schema and the landing order stay plan or contract content (D3, D6, D8, simple-login.backend.7; booking-api@v1 Development address) and were not written into the spec level (DEC-204)."
+    },
+    {
+      "gate": "Every node has explicit consumed/produced contract ids.",
+      "status": "n/a",
+      "note": "not exercised by this step"
+    },
+    {
+      "gate": "Every node is testable in isolation (fixtures, mocks, schemas).",
+      "status": "pass",
+      "note": "The Isolation strategy still builds and tests the node with app.inject(), an injected clock and random source, a real PostgreSQL 17 for booking tests and the fixture replay; its closing clause now says no test needs a fixed port and only the `start` test listens, on 127.0.0.1 at a port the system picks (DEC-207, DEC-208), which is true against backend/test/server.test.ts."
+    },
+    {
+      "gate": "Every dependency edge is typed; parallel lanes are called out.",
+      "status": "n/a",
+      "note": "not exercised by this step"
+    },
+    {
+      "gate": "Each child is marked internal or leaf-parent.",
+      "status": "n/a",
+      "note": "not exercised by this step"
+    },
+    {
+      "gate": "Mermaid DAG matches the dependency table.",
+      "status": "n/a",
+      "note": "not exercised by this step"
+    },
+    {
+      "gate": "`conventions.md` exists/updated at the root.",
+      "status": "pass",
+      "note": "hsdd/conventions.md exists. Its Local database section already says the service creates its tables in meeting_rooms_e2e when it starts, citing booking-api@v1's Development address, so the routed items need no new convention and the file is unchanged."
+    },
+    {
+      "gate": "The decomposition axis at each level matches ownership stated by the human, not assumed <U+2014 EM DASH> no node is owned by two teams.",
+      "status": "n/a",
+      "note": "not exercised by this step"
+    },
+    {
+      "gate": "Every child node has its own `hsdd/spec/{child-id}.md` file.",
+      "status": "n/a",
+      "note": "not exercised by this step"
+    },
+    {
+      "gate": "Every input source appears in the Sources of at least one node, or is marked in the root `## Sources` as \"informative only <U+2014 EM DASH> not decomposed\", with a reason.",
+      "status": "n/a",
+      "note": "not exercised by this step"
+    },
+    {
+      "gate": "No node's Sources lists a document that does not govern it.",
+      "status": "n/a",
+      "note": "not exercised by this step"
+    },
+    {
+      "gate": "Field blocks are bullet lists and empty lists say \"none\".",
+      "status": "pass",
+      "note": "The touched Isolation strategy line stays one bullet in hsdd/spec/simple-login.backend.md and in the embedded summary in hsdd/spec/simple-login.md; no list field changed."
+    },
+    {
+      "gate": "Every open question is defined once, in its owning spec, with a table row and a `### {ID}` detail subsection; child views carry `[inherits …]`; no cited ID lacks a definition.",
+      "status": "n/a",
+      "note": "not exercised by this step"
+    },
+    {
+      "gate": "OQ prefixes used by node specs are declared in `conventions.md`.",
+      "status": "n/a",
+      "note": "not exercised by this step"
+    },
+    {
+      "gate": "Under `multi-team`, every node whose team differs from its parent's carries `- **Team:**`; no node is owned by two teams.",
+      "status": "n/a",
+      "note": "not exercised by this step"
+    },
+    {
+      "gate": "Where children exchange contracts, an integration node exists or the decision not to add one is stated in the parent (one line).",
+      "status": "n/a",
+      "note": "not exercised by this step"
+    },
+    {
+      "gate": "A graft kept every existing child id and touched only the new child's file, the parent's summaries and the parent's DAG.",
+      "status": "n/a",
+      "note": "not exercised by this step"
+    },
+    {
+      "gate": "A retired node's file is kept; its contracts' retirement went through `hsdd-reconcile`.",
+      "status": "n/a",
+      "note": "not exercised by this step"
+    },
+    {
+      "gate": "Promotion: the human confirmed before `- **Adopted:** promoted` was written; `## Observed surface` kept; `v0` contracts unchanged unless redesigned.",
+      "status": "n/a",
+      "note": "not exercised by this step"
+    }
+  ],
+  "routed": [],
+  "closes": [],
+  "reads_outside": [
+    {
+      "path": "backend/src/server.ts",
+      "why": "That `start` is the only place the service listens, for the restated clause (DEC-208)."
+    }
+  ],
+  "notes": [
+    "Resume 1 (DEC-207), decision DEC-208. Changed: the Isolation strategy's closing clause in hsdd/spec/simple-login.backend.md and in the simple-login.backend summary embedded in hsdd/spec/simple-login.md, from 'no browser, and the service itself opens no port' to 'no browser, and no fixed port: only the `start` test listens, on 127.0.0.1 at a port the system picks'. Nothing else in either file changed.",
+    "The third note of S23.json (the Isolation strategy clause left unchanged) is settled by this resume."
+  ],
+  "read_check": "223879e8"
+}

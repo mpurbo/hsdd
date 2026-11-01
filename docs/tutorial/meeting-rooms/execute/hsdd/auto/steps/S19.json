@@ -1,0 +1,46 @@
+{
+  "step_ref": "S19",
+  "skill": "hsdd-reconcile",
+  "target": "simple-login.web",
+  "status": "completed",
+  "stop": null,
+  "artifacts": [
+    "hsdd/spec/simple-login.web.md",
+    "hsdd/spec/simple-login.md",
+    "hsdd/contract/booking-api.md",
+    "hsdd/contract/profile-api.v2.md",
+    "hsdd/contract/auth-api.md",
+    "hsdd/contract/INDEX.md"
+  ],
+  "experiments": [],
+  "self_check": [
+    { "gate": "Every pending section drained, or explicitly deferred with a reason.", "status": "pass", "note": "simple-login.web's three confirm entries were drained and stamped `Reconciled 2026-11-01`. simple-login.backend's and simple-login.integration's sections hold only earlier stamps and no entries, so the tree has no pending entry left." },
+    { "gate": "No contract with both sides fully planned remains `phase_ids: provisional`; none with `phase_ids: final`, no open request and an existing validation artifact remains `status: draft`; none was flipped without its artifact.", "status": "pass", "note": "booking-api@v1 stays phase_ids provisional and draft (DEC-177): its producer (simple-login.backend.7) and now this node's consumers (simple-login.web.5, .7, .8, .9) are confirmed, but simple-login.integration.3 is still DEC-053's guess for a phase H18 has not planned, so its consumer side is not fully planned. Its schema and 35 fixtures exist, so it qualifies for stable at H19 once the integration side is confirmed. profile-api@v2 and auth-api@v1 were already stable and final and are not re-examined (DEC-178). Nothing was flipped." },
+    { "gate": "Grandfather marks were added only to pre-existing fixtureless `stable` contracts named by the plan step (the upgrade step or one carrying it forward), none re-marked after a discharge, and removed wherever the artifact now exists.", "status": "n/a", "note": "not exercised by this step" },
+    { "gate": "No contract was retired while a consumer or external consumer still names it.", "status": "n/a", "note": "not exercised by this step" },
+    { "gate": "Every version a drained `confirm` names is in its node's header, every copy above a drained node matches its header (`Produces`, `Consumes`, `Sources`), and every change request a node's `Sources` gained is in the root's `## Sources`.", "status": "pass", "note": "booking-api@v1 joined simple-login.web's Consumes; profile-api@v2 and auth-api@v1 were already there. In hsdd/spec/simple-login.md the embedded summary of simple-login.web now matches its header line for line (diffed: Consumes gained booking-api@v1, Sources gained US-4, US-5, US-6, Demo accounts, Rooms, Team and delivery), and the child-node table's Consumes cell gained booking-api@v1. The DAG, its edge table and the contract matrix already carried booking-api@v1 to simple-login.web (S17, DEC-152). The Sources gained only sections of PRD v2, already in the root's ## Sources. The Purpose cell was left per DEC-179." },
+    { "gate": "Migrated consumers named by the plan step are under `former_consumers`; none was deleted.", "status": "n/a", "note": "not exercised by this step" },
+    { "gate": "Every collision was decided by the human, and the losing plan was updated to match.", "status": "n/a", "note": "not exercised by this step: all three entries came from simple-login.web and no other node has an entry naming booking-api@v1, profile-api@v2 or auth-api@v1; every fixture the appended phases cite exists in the contract's fixture set, so no entry contradicts a contract." },
+    { "gate": "Contract edits follow hsdd-contract versioning (breaking change = a new version file beside the old one + a migration note naming its mode).", "status": "n/a", "note": "not exercised by this step: the only contract edits are consumer ids in front matter; no guarantee, shape, schema or fixture changed, so no version question arose." },
+    { "gate": "`node hsdd/scripts/gen-registry.mjs` ran after the last contract edit.", "status": "pass", "note": "Ran after the three front-matter edits; contract/INDEX.md's consumer counts moved (auth-api 6 to 7, booking-api 2 to 5, profile-api v2 2 to 5); adr/INDEX.md is unchanged." },
+    { "gate": "No artifact still cites a resolved OQ as open; sweep locations reported.", "status": "n/a", "note": "not exercised by this step: no drained entry resolved an open question; the tree's only one, OQ1, stays OPEN." },
+    { "gate": "Every change align made is a citation or a gate argument.", "status": "n/a", "note": "not exercised by this step" }
+  ],
+  "routed": [],
+  "closes": [],
+  "reads_outside": [
+    { "path": "hsdd/management/2026-10-31-intake-prd-simple-login-v2.md", "why": "The handoff order (H18 and H19 still to come for the integration side of booking-api@v1) and its insert rule, to decide whether this reconcile triggers an inserted step." },
+    { "path": "hsdd/auto/steps/S17.json, hsdd/auto/steps/S17.decisions.jsonl, git show 4d3f106", "why": "How the previous reconcile in this segment treated the version ripple, the child table's Purpose column (DEC-152, DEC-153) and booking-api@v1's flip, so this one stays consistent." },
+    { "path": "hsdd/scripts/auto/schema/step-report.schema.json", "why": "The report's required fields." }
+  ],
+  "notes": [
+    "Collisions: none. The three confirm entries all came from simple-login.web; the backend's and the integration node's sections are empty.",
+    "Contract front matter after the confirms: booking-api@v1 consumers [simple-login.web.5, simple-login.web.7, simple-login.web.8, simple-login.web.9, simple-login.integration.3]; profile-api@v2 consumers [simple-login.web.4, simple-login.web.5, simple-login.web.7, simple-login.web.8, simple-login.integration.2]; auth-api@v1 consumers [simple-login.web.1, simple-login.web.2, simple-login.web.3, simple-login.web.4, simple-login.web.8, simple-login.integration.1, simple-login.integration.2]. Only this node's ids moved; the integration ids are that node's to confirm at H19.",
+    "booking-api@v1 stays draft and provisional; hsdd-config's C7 warning for it continues until H19. The flip to phase_ids final and status stable belongs to H19's reconcile, which must also replace the integration guess simple-login.integration.3 with the phases H18 plans; the validation artifacts already exist.",
+    "Insert rule (intake record): this reconcile changed no contract body, schema or fixture, only consumer ids, so nothing it did alters what an unshipped phase of any node implements, consumes or replays; no phase-plan-append or other step is inserted. No version was made superseded, so no citation-touch either.",
+    "simple-login.web.3 and simple-login.web.4 are auth-api@v1 consumers in its front matter (since H4's touch, auth-api@v1 Versioning 2026-10-31) although their phase Consumes lines name only profile-api; this node's confirm keeps them, for their App tests' `login-success`. Shipped phases are never reopened, so it is left as is; an align could note it if the owner wants the phase lines to match.",
+    "S17's routed consider on the root child table's stale Purpose cells already covers the web row; no second item was routed (DEC-179).",
+    "The stamp is dated 2026-11-01, the local (WIB) date at the time of the step, as S17's was; UTC was still 2026-10-31."
+  ],
+  "read_check": "26a74416"
+}

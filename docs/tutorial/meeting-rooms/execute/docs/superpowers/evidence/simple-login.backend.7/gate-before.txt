@@ -1,0 +1,23 @@
+
+> @simple-login/backend@1.0.0 gate
+> npm run db:up && tsc --noEmit && TZ=Asia/Kolkata vitest run
+
+
+> @simple-login/backend@1.0.0 db:up
+> node scripts/db-up.mjs up
+
+ Container meeting-rooms-postgres-1 Running 
+ Container meeting-rooms-postgres-1 Waiting 
+ Container meeting-rooms-postgres-1 Healthy 
+
+ RUN  v5.0.5 <repo>/backend
+
+{"level":30,"time":1793479283102,"pid":710,"hostname":"<host>","msg":"Server listening at http://127.0.0.1:58502"}
+{"level":30,"time":1793479283115,"pid":710,"hostname":"<host>","reqId":"req-1","req":{"method":"POST","url":"/api/login","host":"127.0.0.1:58502","remoteAddress":"127.0.0.1","remotePort":58504},"msg":"incoming request"}
+{"level":30,"time":1793479283139,"pid":710,"hostname":"<host>","reqId":"req-1","res":{"statusCode":200},"responseTime":24.694416999999987,"msg":"request completed"}
+
+ Test Files  18 passed (18)
+      Tests  224 passed (224)
+   Start at  02:11:22
+   Duration  1.77s (tests 78%, import 16%, transform 5%, worker 1%)
+

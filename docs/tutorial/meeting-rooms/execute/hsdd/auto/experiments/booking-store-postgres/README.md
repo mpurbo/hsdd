@@ -1,0 +1,10 @@
+Under 20 simultaneous bookings of one room, a per-room advisory lock settled every round in under 100 ms with no deadlock; the exclusion constraint alone sometimes settled only through 40P01 deadlocks (up to 19 s a round), and retrying after them could leave attempts unbooked (one round 215 s).
+Question: how should simple-login.backend's store hold booking-api@v1 G4 to G6 on PostgreSQL 17, and which booking-api@v1 values does PostgreSQL refuse (S16)?
+Run from the repository root: `npm --prefix hsdd/auto/experiments/booking-store-postgres install`, then `sh .../run.sh` and `sh .../run-per-file-database.sh` (Compose: `docker compose` if present, else `docker-compose`; port 127.0.0.1:55499; removed after).
+output.txt is run 3 (A' with 20 rounds); output-run2.txt and output-run1-killed.txt (A' unbounded, stopped after about ten minutes; psql then showed no booking stored and docker logs a deadlock about every second) are earlier runs (run 1's probe ran A, then an unbounded A', then D; run 2's had no deadlock counter).
+D (lock, read, insert): 60 rounds over runs 2 and 3 (run 1 was stopped before D), one 201 and nineteen 409s naming it each time, slowest 71 ms, 0 deadlocks.
+A (constraint alone): 40P01 for 76/570 and 38/190 losers in runs 1 and 2 (slowest 19 s), none in run 3; A' (re-read, retry): run 3 had 219 deadlocks and 18 attempts give up after 10 retries.
+Edges: title U+0000 fails with 22021; U+D800 alone reads back as U+FFFD; year 0000 as timestamptz fails with 22008 (0001 and 9999 pass); non-UUID text to a uuid column fails with 22P02.
+Driver: timestamptz reads back as the same instant under session zones Europe/London and Asia/Jakarta with TZ=Asia/Kolkata; a Date parameter round-trips too; gen_random_uuid() is lower case.
+A database per test file (CREATE DATABASE, schema, DROP): mean 36 ms, max 58 ms.
+Compose: only the standalone docker-compose 5.6.1 exists on this laptop (`docker compose` is unknown); `up -d --wait` with a pg_isready healthcheck works under Colima.

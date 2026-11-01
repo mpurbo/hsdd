@@ -1,0 +1,125 @@
+# Mutant D, inserted before the file's first const:
+// MUTANT D (never committed): a stray booking, titled as ayu's, joins every list of my bookings.
+test.beforeEach(async ({ page }) => {
+  await page.route("**/api/me/bookings", async (route) => {
+    const response = await route.fetch();
+    const body = await response.json();
+    if (response.status() === 200) {
+      body.bookings.push({ id: "00000000-0000-4000-8000-0000000000aa", roomId: "kew", roomName: "Kew", title: "Ayu not budi", start: "2099-01-06T11:00:00.000Z", end: "2099-01-06T12:00:00.000Z" });
+    }
+    await route.fulfill({ response, json: body });
+  });
+});
+
+
+> @simple-login/backend@1.0.0 db:up
+> node scripts/db-up.mjs up
+
+ Container meeting-rooms-postgres-1 Running 
+ Container meeting-rooms-postgres-1 Waiting 
+ Container meeting-rooms-postgres-1 Healthy 
+
+Running 3 tests using 1 worker
+
+  ✘  1 e2e/home.spec.ts:162:1 › AC-6.1: budi's bookings show soonest first, each with Cancel, and none of ayu's (640ms)
+  ✓  2 e2e/home.spec.ts:179:1 › AC-6.2: Cancel removes the booking's lines at once and frees its range (623ms)
+  ✘  3 e2e/home.spec.ts:194:1 › AC-6.1: with every booking of budi's cancelled, Home shows (no bookings) under My bookings (5.3s)
+
+
+  1) e2e/home.spec.ts:162:1 › AC-6.1: budi's bookings show soonest first, each with Cancel, and none of ayu's 
+
+    Error: expect(received).not.toContain(expected) // indexOf
+
+    Expected substring: not "Ayu not budi"
+    Received string:        "Hello, Budi Santoso Username budi Email budi@example.com Phone +62 813 9876 5432 Time zone Europe/London Member since 9 January 2025 My bookings Sat 2 Jan 09:00 to 10:00 Kew · Order 1 Cancel Sat 2 Jan 14:00 to 15:00 Kew · Order 2 Cancel Sun 3 Jan 09:00 to 10:00 Kew · Order 3 Cancel Tue 6 Jan 11:00 to 12:00 Kew · Ayu not budi Cancel Book a room Sign out"
+
+      174 |   expect(positions[1], text).toBeLessThan(positions[2]);
+      175 |   for (const [line] of items) await expect(cancelButton(page, line)).toHaveCount(1);
+    > 176 |   expect(text).not.toContain("Ayu not budi");
+          |                    ^
+      177 | });
+      178 |
+      179 | test("AC-6.2: Cancel removes the booking's lines at once and frees its range", async ({ page }) => {
+        at <repo>/e2e/home.spec.ts:176:20
+
+    Error Context: test-results/home-AC-6-1-budi-s-booking-552d1-th-Cancel-and-none-of-ayu-s/error-context.md
+
+  2) e2e/home.spec.ts:194:1 › AC-6.1: with every booking of budi's cancelled, Home shows (no bookings) under My bookings 
+
+    Error: expect(locator).toContainText(expected) failed
+
+    Locator: locator('body')
+    Timeout: 5000ms
+    - Expected substring  -  1
+    + Received string     + 20
+
+    - My bookings (no bookings)
+    + Hello, Budi Santoso
+    + Username
+    + budi
+    + Email
+    + budi@example.com
+    + Phone
+    + +62 813 9876 5432
+    + Time zone
+    + Europe/London
+    + Member since
+    + 9 January 2025
+    + My bookings
+    +
+    + Tue 6 Jan  11:00 to 12:00
+    +
+    + Kew · Ayu not budi
+    + Cancel
+    +
+    + Book a room
+    + Sign out
+
+    Call log:
+      - Expect "toContainText" locator('body') with timeout 5000ms
+      - waiting for locator('body')
+        2 × locator resolved to <body>…</body>
+          - unexpected value "Sign in
+    Username
+    Password
+    Signing in…"
+        12 × locator resolved to <body>…</body>
+           - unexpected value "Hello, Budi Santoso
+    Username
+    budi
+    Email
+    budi@example.com
+    Phone
+    +62 813 9876 5432
+    Time zone
+    Europe/London
+    Member since
+    9 January 2025
+    My bookings
+    
+    Tue 6 Jan  11:00 to 12:00
+    
+    Kew · Ayu not budi
+    Cancel
+    
+    Book a room
+    Sign out"
+
+
+      63 | /** Home shows `lines` in this order, each as text with whitespace normalized. */
+      64 | async function expectLines(page: Page, ...lines: string[]): Promise<void> {
+    > 65 |   await expect(page.locator("body")).toContainText(normalize(lines.join(" ")), { useInnerText: true });
+         |                                      ^
+      66 | }
+      67 |
+      68 | /** The `Cancel` button of the booking whose Home line is `line`: inside the deepest element holding both. */
+        at expectLines (<repo>/e2e/home.spec.ts:65:38)
+        at <repo>/e2e/home.spec.ts:202:9
+
+    Error Context: test-results/home-AC-6-1-with-every-boo-66a24--bookings-under-My-bookings/error-context.md
+
+  2 failed
+    e2e/home.spec.ts:162:1 › AC-6.1: budi's bookings show soonest first, each with Cancel, and none of ayu's 
+    e2e/home.spec.ts:194:1 › AC-6.1: with every booking of budi's cancelled, Home shows (no bookings) under My bookings 
+  1 passed (11.5s)
+exit 1

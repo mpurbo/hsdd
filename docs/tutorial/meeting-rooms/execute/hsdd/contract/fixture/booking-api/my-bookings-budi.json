@@ -1,0 +1,102 @@
+{
+  "name": "my-bookings-budi",
+  "description": "At 09:30Z Budi's list holds the booking in progress and his later ones, soonest first; Quick check starts with Design review and follows it because Thames comes before Kew. Ended call ended at 09:30Z and Ayu's review is not his.",
+  "clock": "2026-11-05T09:30:00.000Z",
+  "given": [
+    {
+      "id": "00000000-0000-4000-8000-000000000011",
+      "account": "budi",
+      "roomId": "thames",
+      "title": "Design review",
+      "start": "2026-11-05T10:00:00.000Z",
+      "end": "2026-11-05T11:00:00.000Z"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000012",
+      "account": "budi",
+      "roomId": "kew",
+      "title": "Ended call",
+      "start": "2026-11-05T08:00:00.000Z",
+      "end": "2026-11-05T09:30:00.000Z"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000013",
+      "account": "budi",
+      "roomId": "merapi",
+      "title": "Ongoing sync",
+      "start": "2026-11-05T09:00:00.000Z",
+      "end": "2026-11-05T10:00:00.000Z"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000014",
+      "account": "ayu",
+      "roomId": "bromo",
+      "title": "Ayu's review",
+      "start": "2026-11-05T12:00:00.000Z",
+      "end": "2026-11-05T13:00:00.000Z"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000015",
+      "account": "budi",
+      "roomId": "merapi",
+      "title": "Next week",
+      "start": "2026-11-12T10:00:00.000Z",
+      "end": "2026-11-12T11:00:00.000Z"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000016",
+      "account": "budi",
+      "roomId": "kew",
+      "title": "Quick check",
+      "start": "2026-11-05T10:00:00.000Z",
+      "end": "2026-11-05T10:30:00.000Z"
+    }
+  ],
+  "request": {
+    "method": "GET",
+    "path": "/api/me/bookings",
+    "headers": {
+      "authorization": "Bearer {{token:budi}}"
+    }
+  },
+  "response": {
+    "status": 200,
+    "body": {
+      "bookings": [
+        {
+          "id": "00000000-0000-4000-8000-000000000013",
+          "roomId": "merapi",
+          "roomName": "Merapi",
+          "title": "Ongoing sync",
+          "start": "2026-11-05T09:00:00.000Z",
+          "end": "2026-11-05T10:00:00.000Z"
+        },
+        {
+          "id": "00000000-0000-4000-8000-000000000011",
+          "roomId": "thames",
+          "roomName": "Thames",
+          "title": "Design review",
+          "start": "2026-11-05T10:00:00.000Z",
+          "end": "2026-11-05T11:00:00.000Z"
+        },
+        {
+          "id": "00000000-0000-4000-8000-000000000016",
+          "roomId": "kew",
+          "roomName": "Kew",
+          "title": "Quick check",
+          "start": "2026-11-05T10:00:00.000Z",
+          "end": "2026-11-05T10:30:00.000Z"
+        },
+        {
+          "id": "00000000-0000-4000-8000-000000000015",
+          "roomId": "merapi",
+          "roomName": "Merapi",
+          "title": "Next week",
+          "start": "2026-11-12T10:00:00.000Z",
+          "end": "2026-11-12T11:00:00.000Z"
+        }
+      ]
+    }
+  },
+  "replay": "exact"
+}

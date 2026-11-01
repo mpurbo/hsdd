@@ -1,0 +1,137 @@
+npx playwright test e2e/rooms.spec.ts e2e/clock-change.spec.ts @ 6eea2b8 + uncommitted changes
+
+> @simple-login/backend@1.0.0 db:up
+> node scripts/db-up.mjs up
+
+ Container meeting-rooms-postgres-1 Running 
+ Container meeting-rooms-postgres-1 Waiting 
+ Container meeting-rooms-postgres-1 Healthy 
+
+Running 16 tests using 1 worker
+
+  ✓   1 e2e/clock-change.spec.ts:41:1 › AC-4.4: the March day offers 92 starts and none from 01:00 to 01:45 (583ms)
+  ✓   2 e2e/clock-change.spec.ts:50:1 › AC-4.4: the October day offers 100 starts, 01:00 to 01:45 BST then GMT (532ms)
+  ✓   3 e2e/clock-change.spec.ts:63:1 › bookable: true at exactly 365 days, false one millisecond after (0ms)
+  ✓   4 e2e/clock-change.spec.ts:96:3 › AC-4.4: budi books Thames across the skipped hour on the March day (1.2s)
+  ✓   5 e2e/clock-change.spec.ts:96:3 › AC-4.4: budi books Thames from 01:30 BST to 01:30 GMT on the October day (1.2s)
+  ✓   6 e2e/rooms.spec.ts:55:1 › the date rule: DATES[1] is DATES[0]'s next date, even before London's March change (60ms)
+  ✓   7 e2e/rooms.spec.ts:83:3 › AC-4.1: Rooms lists the four rooms in order, opens on today in ayu's zone, and Home returns (491ms)
+  ✓   8 e2e/rooms.spec.ts:83:3 › AC-4.1: Rooms lists the four rooms in order, opens on today in budi's zone, and Home returns (501ms)
+  ✓   9 e2e/rooms.spec.ts:103:1 › AC-4.2: a date in ayu's zone shows each room's overlapping bookings, earliest first, and (no bookings) (589ms)
+  ✓  10 e2e/rooms.spec.ts:131:1 › AC-4.3: another office's bookings also show the room's local times; the user's own zone shows none (846ms)
+  ✓  11 e2e/rooms.spec.ts:162:1 › AC-5.1 and AC-5.2: budi books through the form; starts and ends fall on quarter hours, every end after its start (598ms)
+  ✓  12 e2e/rooms.spec.ts:199:1 › AC-5.3: an overlap is refused with the other booking's times in budi's zone; touching books (543ms)
+  ✓  13 e2e/rooms.spec.ts:228:1 › AC-5.4: two users pressing Book together get one booking; the other sees the overlap message in their own zone (925ms)
+  ✓  14 e2e/rooms.spec.ts:275:1 › AC-5.5: with only the browser's clock five minutes before the current quarter hour, booking it shows That time has already started. (465ms)
+  ✓  15 e2e/rooms.spec.ts:298:1 › AC-5.6: blank, spaces-only and 81-character titles book nothing; 80 characters book exactly as typed (522ms)
+  ✓  16 e2e/rooms.spec.ts:335:1 › AC-2.3: after a restart, pressing Book lands on Login with the expiry message (1.2s)
+
+  16 passed (13.7s)
+
+npm run e2e @ 6eea2b8 + uncommitted changes
+
+> @simple-login/root@1.0.0 e2e
+> playwright test
+
+
+> @simple-login/backend@1.0.0 db:up
+> node scripts/db-up.mjs up
+
+ Container meeting-rooms-postgres-1 Running 
+ Container meeting-rooms-postgres-1 Waiting 
+ Container meeting-rooms-postgres-1 Healthy 
+
+Running 85 tests using 1 worker
+
+  ✓   1 e2e/clock-change.spec.ts:41:1 › AC-4.4: the March day offers 92 starts and none from 01:00 to 01:45 (584ms)
+  ✓   2 e2e/clock-change.spec.ts:50:1 › AC-4.4: the October day offers 100 starts, 01:00 to 01:45 BST then GMT (544ms)
+  ✓   3 e2e/clock-change.spec.ts:63:1 › bookable: true at exactly 365 days, false one millisecond after (0ms)
+  ✓   4 e2e/clock-change.spec.ts:96:3 › AC-4.4: budi books Thames across the skipped hour on the March day (1.2s)
+  ✓   5 e2e/clock-change.spec.ts:96:3 › AC-4.4: budi books Thames from 01:30 BST to 01:30 GMT on the October day (1.2s)
+  ✓   6 e2e/home.spec.ts:66:1 › AC-2.1: Home shows the signed-in user's details (358ms)
+  ✓   7 e2e/home.spec.ts:78:1 › AC-2.5: each account's Home shows its zone as its name, the whole text (477ms)
+  ✓   8 e2e/home.spec.ts:89:1 › AC-2.5: ayu's Thames booking shows on her Home in Jakarta time (377ms)
+  ✓   9 e2e/home.spec.ts:97:1 › AC-2.5: budi's Merapi booking shows on his Home in London time (358ms)
+  ✓  10 e2e/home.spec.ts:105:1 › AC-2.4: Home shows each account's phone number exactly as stored (460ms)
+  ✓  11 e2e/home.spec.ts:114:1 › Budi sees Budi's profile, not Ayu's (347ms)
+  ✓  12 e2e/home.spec.ts:124:1 › AC-2.2: reloading keeps the user signed in (392ms)
+  ✓  13 e2e/home.spec.ts:132:1 › AC-3.1: Sign out returns to Login, and a reload stays there (391ms)
+  ✓  14 e2e/home.spec.ts:142:1 › AC-2.3: a session the backend no longer knows returns to Login with the expiry message (1.0s)
+  ✓  15 e2e/home.spec.ts:154:1 › AC-6.1: budi's bookings show soonest first, each with Cancel, and none of ayu's (457ms)
+  ✓  16 e2e/home.spec.ts:171:1 › AC-6.2: Cancel removes the booking's lines at once and frees its range (460ms)
+  ✓  17 e2e/home.spec.ts:186:1 › AC-6.1: with every booking of budi's cancelled, Home shows (no bookings) under My bookings (394ms)
+  ✓  18 e2e/home.spec.ts:197:1 › Success: after a restart, Login says the session expired and Home still lists the booking (1.2s)
+  ✓  19 e2e/login.spec.ts:5:1 › AC-1.1: the right password reaches Home (352ms)
+  ✓  20 e2e/login.spec.ts:11:1 › AC-1.2: a wrong password shows the message and stays on Login (294ms)
+  ✓  21 e2e/login.spec.ts:18:1 › AC-1.2: an unknown user gets the same message (290ms)
+  ✓  22 e2e/login.spec.ts:24:1 › AC-1.3: Sign in is disabled while either field is empty (238ms)
+  ✓  23 e2e/proxy-replay.spec.ts:11:1 › replays 24 exact fixtures: 4 of auth-api@v1, 5 of profile-api@v2, 15 of booking-api@v1, none of profile-api@v1 (11ms)
+  ✓  24 e2e/proxy-replay.spec.ts:21:3 › replay through the proxy: auth-api/login-empty-username (86ms)
+  ✓  25 e2e/proxy-replay.spec.ts:21:3 › replay through the proxy: auth-api/login-missing-password (2ms)
+  ✓  26 e2e/proxy-replay.spec.ts:21:3 › replay through the proxy: auth-api/login-unknown-user (23ms)
+  ✓  27 e2e/proxy-replay.spec.ts:21:3 › replay through the proxy: auth-api/login-wrong-password (21ms)
+  ✓  28 e2e/proxy-replay.spec.ts:21:3 › replay through the proxy: profile-api.v2/me-ayu (23ms)
+  ✓  29 e2e/proxy-replay.spec.ts:21:3 › replay through the proxy: profile-api.v2/me-budi (23ms)
+  ✓  30 e2e/proxy-replay.spec.ts:21:3 › replay through the proxy: profile-api.v2/me-expired-token (649ms)
+  ✓  31 e2e/proxy-replay.spec.ts:21:3 › replay through the proxy: profile-api.v2/me-no-token (2ms)
+  ✓  32 e2e/proxy-replay.spec.ts:21:3 › replay through the proxy: profile-api.v2/me-unknown-token (2ms)
+  ✓  33 e2e/proxy-replay.spec.ts:21:3 › replay through the proxy: booking-api/book-end-not-after-start (26ms)
+  ✓  34 e2e/proxy-replay.spec.ts:21:3 › replay through the proxy: booking-api/book-instant-with-offset (23ms)
+  ✓  35 e2e/proxy-replay.spec.ts:21:3 › replay through the proxy: booking-api/book-not-on-a-quarter-hour (22ms)
+  ✓  36 e2e/proxy-replay.spec.ts:21:3 › replay through the proxy: booking-api/book-title-blank (29ms)
+  ✓  37 e2e/proxy-replay.spec.ts:21:3 › replay through the proxy: booking-api/book-title-too-long (24ms)
+  ✓  38 e2e/proxy-replay.spec.ts:21:3 › replay through the proxy: booking-api/book-too-long (23ms)
+  ✓  39 e2e/proxy-replay.spec.ts:21:3 › replay through the proxy: booking-api/book-unknown-room (22ms)
+  ✓  40 e2e/proxy-replay.spec.ts:21:3 › replay through the proxy: booking-api/book-unknown-token (2ms)
+  ✓  41 e2e/proxy-replay.spec.ts:21:3 › replay through the proxy: booking-api/cancel-malformed-id (23ms)
+  ✓  42 e2e/proxy-replay.spec.ts:21:3 › replay through the proxy: booking-api/cancel-no-token (2ms)
+  ✓  43 e2e/proxy-replay.spec.ts:21:3 › replay through the proxy: booking-api/cancel-unknown (24ms)
+  ✓  44 e2e/proxy-replay.spec.ts:21:3 › replay through the proxy: booking-api/my-bookings-expired-token (645ms)
+  ✓  45 e2e/proxy-replay.spec.ts:21:3 › replay through the proxy: booking-api/rooms-from-not-before-to (29ms)
+  ✓  46 e2e/proxy-replay.spec.ts:21:3 › replay through the proxy: booking-api/rooms-instant-without-milliseconds (24ms)
+  ✓  47 e2e/proxy-replay.spec.ts:21:3 › replay through the proxy: booking-api/rooms-no-token (2ms)
+  ✓  48 e2e/rig.spec.ts:19:1 › the run is in Asia/Kolkata: the worker and the browser (129ms)
+  ✓  49 e2e/rig.spec.ts:34:1 › api.ts: instants are toISOString() strings on quarter hours of UTC (3ms)
+  ✓  50 e2e/rig.spec.ts:43:1 › api.ts: sign in, book, list, cancel against the service (63ms)
+  ✓  51 e2e/rig.spec.ts:63:1 › a run starts with no bookings: a slot only this test books is free (25ms)
+  ✓  52 e2e/rig.spec.ts:70:1 › startService refuses a port already in use (0ms)
+  ✓  53 e2e/rig.spec.ts:74:1 › startService fails at once, with the service's words, when the service exits before it listens (54ms)
+  ✓  54 e2e/rooms.spec.ts:55:1 › the date rule: DATES[1] is DATES[0]'s next date, even before London's March change (55ms)
+  ✓  55 e2e/rooms.spec.ts:83:3 › AC-4.1: Rooms lists the four rooms in order, opens on today in ayu's zone, and Home returns (473ms)
+  ✓  56 e2e/rooms.spec.ts:83:3 › AC-4.1: Rooms lists the four rooms in order, opens on today in budi's zone, and Home returns (486ms)
+  ✓  57 e2e/rooms.spec.ts:103:1 › AC-4.2: a date in ayu's zone shows each room's overlapping bookings, earliest first, and (no bookings) (582ms)
+  ✓  58 e2e/rooms.spec.ts:131:1 › AC-4.3: another office's bookings also show the room's local times; the user's own zone shows none (848ms)
+  ✓  59 e2e/rooms.spec.ts:162:1 › AC-5.1 and AC-5.2: budi books through the form; starts and ends fall on quarter hours, every end after its start (597ms)
+  ✓  60 e2e/rooms.spec.ts:199:1 › AC-5.3: an overlap is refused with the other booking's times in budi's zone; touching books (535ms)
+  ✓  61 e2e/rooms.spec.ts:228:1 › AC-5.4: two users pressing Book together get one booking; the other sees the overlap message in their own zone (954ms)
+  ✓  62 e2e/rooms.spec.ts:275:1 › AC-5.5: with only the browser's clock five minutes before the current quarter hour, booking it shows That time has already started. (489ms)
+  ✓  63 e2e/rooms.spec.ts:298:1 › AC-5.6: blank, spaces-only and 81-character titles book nothing; 80 characters book exactly as typed (499ms)
+  ✓  64 e2e/rooms.spec.ts:335:1 › AC-2.3: after a restart, pressing Book lands on Login with the expiry message (1.2s)
+round 1: ayu won, booking 41fef1f2-4b01-4001-a9bc-f116a63cf5a8
+  ✓  65 e2e/success.spec.ts:49:3 › 20 simultaneous attempts, round 1 of 5: one 201, nineteen 409 (86ms)
+round 2: ayu won, booking 044dcc14-6735-44a4-acdc-285e6467b81d
+  ✓  66 e2e/success.spec.ts:49:3 › 20 simultaneous attempts, round 2 of 5: one 201, nineteen 409 (69ms)
+round 3: ayu won, booking 84a679c0-94f0-4eab-879c-10876408396a
+  ✓  67 e2e/success.spec.ts:49:3 › 20 simultaneous attempts, round 3 of 5: one 201, nineteen 409 (71ms)
+round 4: ayu won, booking 528bbedd-1085-4a0f-871f-c014605307f0
+  ✓  68 e2e/success.spec.ts:49:3 › 20 simultaneous attempts, round 4 of 5: one 201, nineteen 409 (69ms)
+round 5: budi won, booking 5c595cf8-bcc0-415a-a275-fd79b0802517
+  ✓  69 e2e/success.spec.ts:49:3 › 20 simultaneous attempts, round 5 of 5: one 201, nineteen 409, twenty ranges sharing one quarter hour (70ms)
+  ✓  70 e2e/success.spec.ts:98:1 › a restart keeps every booking with its id and ends every token (743ms)
+  ✓  71 e2e/success.spec.ts:143:1 › AC-5.5 at the service: the current quarter hour has started (24ms)
+  ✓  72 e2e/success.spec.ts:150:1 › AC-6.3: budi cannot cancel ayu's booking (53ms)
+  ✓  73 e2e/time.spec.ts:13:1 › time.ts: a date's range runs from its start to the next date's start, in the zone given (0ms)
+  ✓  74 e2e/time.spec.ts:18:1 › time.ts: London's March change day is 23 hours, with no 01:00 to 01:45 (1ms)
+  ✓  75 e2e/time.spec.ts:26:1 › time.ts: London's October change day is 25 hours, with 01:00 to 01:45 first BST, then GMT (1ms)
+  ✓  76 e2e/time.spec.ts:38:1 › time.ts: the next change days are strictly after today's date in London (0ms)
+  ✓  77 e2e/time.spec.ts:43:1 › time.ts: today's date depends on the zone, never on the ambient one (0ms)
+  ✓  78 e2e/time.spec.ts:49:1 › time.ts: a date in British winter time is wholly GMT and never a change day (75ms)
+  ✓  79 e2e/time.spec.ts:56:1 › time.ts: winter dates for a file are distinct, wholly GMT, and a later file continues after them (139ms)
+  ✓  80 e2e/time.spec.ts:67:1 › time.ts: a wall time off the quarter hours is refused (3ms)
+  ✓  81 e2e/time.spec.ts:74:1 › time.ts: a time is 24-hour HH:mm in the zone given; a date is en-GB weekday, day and month (0ms)
+  ✓  82 e2e/time.spec.ts:80:1 › time.ts: a time off its line's date carries its own date (1ms)
+  ✓  83 e2e/time.spec.ts:86:1 › time.ts: a time in an hour the clocks repeat carries the zone's short name (1ms)
+  ✓  84 e2e/time.spec.ts:92:1 › time.ts: a room in another zone adds its own times and office; one in the user's zone does not (2ms)
+  ✓  85 e2e/time.spec.ts:100:1 › time.ts: Home's line is the start's date, two spaces, then the range in the user's zone (4ms)
+
+  85 passed (25.1s)

@@ -1,0 +1,71 @@
+{
+  "step_ref": "S06",
+  "skill": "hsdd-contract",
+  "target": "auth-api",
+  "status": "completed",
+  "stop": null,
+  "artifacts": [
+    "hsdd/contract/auth-api.md",
+    "hsdd/contract/INDEX.md"
+  ],
+  "experiments": [],
+  "self_check": [
+    { "gate": "Frontmatter has id, version, status, kind, owner, compatibility, produced_by, consumers; external_consumers and former_consumers when any exist.", "status": "pass", "note": "id auth-api, version v1, status stable, kind api, owner simple-login.backend, governed_by [ADR-001], compatibility versioned, produced_by [simple-login.backend.2], consumers now six (DEC-056), phase_ids final. No external or former consumers exist, so neither key is written." },
+    { "gate": "`consumers` lists phase ids that consume this version now; migrated ones are under `former_consumers`, never deleted.", "status": "pass", "note": "simple-login.web.3 and simple-login.web.4 added (C-3, F-4; DEC-056): web/src/App.test.tsx stubs fetch with the login-success fixture for the walk both phases ran. auth-api has no later version, so no phase has migrated; none was removed." },
+    { "gate": "The Interface section is concrete enough to mock against.", "status": "pass", "note": "Unchanged: POST /api/login with its request, the three responses, the token and expiresAt forms, the error envelope and the development address; consumers already stub fetch with its five fixtures." },
+    { "gate": "At least one guarantee/invariant is stated.", "status": "pass", "note": "G1 to G9 (DEC-059). G2 names booking-api@v1 beside profile-api@v1 and profile-api@v2; G3 states that a restart ends every token (DEC-057); G4 states that sign-out is client-side with no logout endpoint (DEC-058)." },
+    { "gate": "A breaking change bumped the version in a new file beside the old one (`{slug}.v{n}.md`, its schema and fixtures likewise), and its migration note names the mode; under `lockstep` the old version is `deprecated` in the same run, with its sunset named.", "status": "n/a", "note": "not exercised by this step: every change is compatible and v1 stays (DEC-060)." },
+    { "gate": "The registry was regenerated.", "status": "pass", "note": "node hsdd/scripts/gen-registry.mjs, byte-identical to hsdd-contract's bundled copy (cmp): the auth-api row of hsdd/contract/INDEX.md counts 6 consumers, which is C-3's Validate line; hsdd/adr/INDEX.md is unchanged." },
+    { "gate": "`phase_ids` is present (`provisional` until `hsdd-reconcile` finalizes it).", "status": "pass", "note": "phase_ids: final, unchanged. Both added consumers are existing, shipped phase headings in hsdd/spec/simple-login.web.md, so nothing provisional was introduced." },
+    { "gate": "Every code-level artifact both sides consume (types file, fixtures, shared package) names its canonical path and its owner in the Interface or Validation section: the owning phase for code, `hsdd-contract` for validation artifacts.", "status": "pass", "note": "Unchanged Validation section: schema hsdd/contract/schema/auth-api.schema.json and fixtures hsdd/contract/fixture/auth-api/, owned by hsdd-contract; no shared code package." },
+    { "gate": "A contract or version created by this run has its schema and its kind's fixtures written at the canonical paths.", "status": "n/a", "note": "not exercised by this step: no contract or version was created. The schema and the five fixtures are unchanged, since no shape, status or body changed (DEC-060)." },
+    { "gate": "Open questions are cited by ID only <U+2014 EM DASH> never defined here; prose justifying behavior as \"pending OQ-x\" is swept when the OQ resolves (hsdd-reconcile).", "status": "pass", "note": "The contract cites no open question and defines none. The gate's dash is written as <U+2014 EM DASH> because the run's prose rules ban the character." },
+    { "gate": "A `stable` contract names a schema or a fixtures directory at the canonical paths and the artifact exists, or it carries `validation: grandfathered` (never on a contract authored after the upgrade).", "status": "pass", "note": "auth-api@v1 is stable and its Validation names hsdd/contract/schema/auth-api.schema.json and hsdd/contract/fixture/auth-api/ (five files); both exist." },
+    { "gate": "No version is `retired` while a consumer or an external consumer still names it.", "status": "n/a", "note": "not exercised by this step" },
+    { "gate": "A `v0` contract carries `## Observed completeness`, and the block changed in any commit that added fixtures to it.", "status": "n/a", "note": "not exercised by this step" }
+  ],
+  "routed": [
+    {
+      "target": "H18",
+      "kind": "consider",
+      "text": "auth-api@v1 now states the restart in the contract: G3, a restart of the service ends every token issued before it, and each is then rejected exactly as an expired token is (ADR-001, sessions kept in memory by DEC-018). The AC-2.3 expired-token stand-in (a backend restart) therefore stays valid and can cite auth-api@v1 G3 with profile-api@v2's same-401 guarantee; PRD v2 Success's restart test signs in again after the restart and finds every booking (booking-api@v1 G17). G2 now names booking-api@v1: a token from POST /api/login works at its four endpoints until expiresAt. G4: there is no logout endpoint; sign-out discards the token on the client."
+    }
+  ],
+  "closes": [
+    { "id": "Q-003", "outcome": "addressed", "note": "C-3 absorbed (DEC-056): consumers gains simple-login.web.3 and simple-login.web.4, cited to hsdd/management/2026-10-30-execution-plan.md C-3 and finding F-4 in the Versioning entry; the registry counts 6. C-3's other half, whether the shipped phases' Consumes lines in hsdd/spec/simple-login.web.md are corrected or left with a note, is a spec question this skill never edits; it stays with the owner, and C-3's checkbox stays for the next checkpoint to tick." },
+    { "id": "Q-006", "outcome": "addressed", "note": "The touch restates the token guarantee and, as Q-006 expected, classifies the restart as existing behavior: G2 keeps 'accepted until expiresAt, and rejected after it' and points to G3, a restart ending every token early (ADR-001 Consequences, first bullet since commit e84ae36; DEC-057). Sign-out stays client-side with no logout endpoint, stated as G4 (DEC-019, DEC-058). governed_by: [ADR-001] was already present and is unchanged." },
+    { "id": "Q-016", "outcome": "addressed", "note": "G2 names booking-api@v1 beside profile-api@v1 and profile-api@v2, with no change to auth-api's shapes, schema or fixtures, classified compatible like the 2026-10-30 profile-api@v2 entry (DEC-060). booking-api@v1's G16 and G17 are consistent with auth-api's G2 and G3." }
+  ],
+  "reads_outside": [
+    { "path": "hsdd/judgement/decisions.jsonl", "why": "DEC-004, DEC-016, DEC-018, DEC-019, DEC-020 and DEC-022, which the routed items and this step's decisions rest on." },
+    { "path": "hsdd/auto/steps/S05.json", "why": "The report shape, the handoff-id form of routed targets, and how the em dash in a quoted gate was written." },
+    { "path": "hsdd/management/2026-10-30-execution-plan.md", "why": "C-3's prompt and Validate line (Q-003)." },
+    { "path": "hsdd/management/2026-10-30-progress.md", "why": "Finding F-4 behind C-3." },
+    { "path": "web/src/App.test.tsx", "why": "That the walk test stubs fetch with auth-api's login-success fixture (C-3's fact)." },
+    { "path": "web/src", "why": "A search for auth-api fixture use, and web/src/session/store.ts for the client-side sign-out and how the web reads expiresAt." },
+    { "path": "hsdd/verify/simple-login.web.3.verification.md", "why": "That web.3 consumes auth-api@v1 for the sign-in step (C-3)." },
+    { "path": "hsdd/verify/simple-login.web.4.verification.md", "why": "That the web.3 walk runs unchanged in web.4 (C-3)." },
+    { "path": "hsdd/verify/simple-login.integration.1.verification.md", "why": "The observed restart giving the expired-token 401 (DEC-057)." },
+    { "path": "hsdd/spec/simple-login.web.md", "why": "The web phases' Consumes lines and headings, for C-3 and gate check C7." },
+    { "path": "hsdd/spec/simple-login.integration.md", "why": "integration.2's restart stand-in for AC-2.3 (DEC-057)." },
+    { "path": "backend/src/sessions.ts", "why": "That tokens live in a per-process Map, so a restart ends them (DEC-057)." },
+    { "path": "backend/src/routes.ts", "why": "That the service has no logout endpoint (DEC-058)." },
+    { "path": "hsdd/context/rfc-simple-login.md", "why": "RFC-001 §3, the session model and client-side sign-out since v1." },
+    { "path": "hsdd/context/prd-simple-login.v2.md", "why": "US-3 and the restart lines of Success and Left to engineering." },
+    { "path": "hsdd/scripts/auto/gate.mjs", "why": "Which checks the step gate runs." },
+    { "path": "hsdd/scripts/auto/lib/checks.mjs", "why": "Checks C4, C5 and C7 on contract front matter and citations, for the consumers change." },
+    { "path": "hsdd/scripts/auto/routed.mjs", "why": "How a routed target matches later steps." },
+    { "path": "hsdd/scripts/auto/lib/report-rules.mjs", "why": "The report's code rules." },
+    { "path": ".claude/skills/hsdd-reconcile/SKILL.md", "why": "Who writes consumers and how confirm entries reach them (C-3)." },
+    { "path": ".claude/skills/hsdd-config/SKILL.md", "why": "That a contract id named in a consumed contract's body is inlined as referenced in phase contexts (note below)." },
+    { "path": ".claude/skills/hsdd-checkpoint/SKILL.md", "why": "A search for a rule tying consumers to phase Consumes lines (none found)." }
+  ],
+  "notes": [
+    "No decision depended on a runtime fact a program had to settle: the restart behavior is read from backend/src/sessions.ts and was observed in simple-login.integration.1's verification, so no experiment was written.",
+    "auth-api@v1's Versioning has no Breaking: line, which hsdd-contract's template expects. This touch classified its changes by the skill's rule 'if a consumer's code could break, it is a new version' and the contract's earlier entries (DEC-060) and did not add one, since writing a contract's breaking policy is a decision beyond this touch.",
+    "G2 now names booking-api@v1 as the invocation asks. hsdd-config inlines every contract id a consumed contract's body names, so every future phase context that consumes auth-api@v1 also carries booking-api@v1 as a referenced contract (and ADR-002 through booking-api's Governed by). The phases this intake plans that sign in consume booking-api@v1 anyway; a phase that only signs in would carry it as extra context.",
+    "C-3's owner question (correct the shipped web.3 and web.4 Consumes lines, or leave them with a note) is not answered here; it stays in hsdd/management/2026-10-30-execution-plan.md for Sync A. A citation touch never moves a shipped phase, so this segment's H12 will not change them either.",
+    "Only the two added consumers are shipped phases. Phases this intake plans (web.5, integration.3 and others) that sign in or replay auth-api fixtures reach consumers through their plans' confirm entries and hsdd-reconcile (H17, H19), as usual."
+  ],
+  "read_check": "7542d893"
+}
