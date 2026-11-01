@@ -9,7 +9,8 @@ const session: Session = {
 }
 const profile = loadFixture('profile-api.v2', 'me-ayu').response.body as Profile
 const checking: AppState = { kind: 'checking', session }
-const signedIn: AppState = { kind: 'signed-in', session, profile }
+const signedIn: AppState = { kind: 'signed-in', session, profile, screen: 'home' }
+const onRooms: AppState = { ...signedIn, screen: 'rooms' }
 const signedOut: AppState = { kind: 'signed-out' }
 
 describe('session flow', () => {
@@ -46,7 +47,15 @@ describe('session flow', () => {
     [
       'a 401 on a signed-in screen shows Login with the expiry notice (D1)',
       signedIn,
-      { type: 'session-expired' },
+      { type: 'session-expired', token: session.token },
+      { kind: 'signed-out', notice: 'session-expired' },
+    ],
+    ['Book a room shows Rooms (D4)', signedIn, { type: 'show-rooms' }, onRooms],
+    ['Home on Rooms shows Home (D4)', onRooms, { type: 'show-home' }, signedIn],
+    [
+      'a 401 on Rooms shows Login with the expiry notice (D1)',
+      onRooms,
+      { type: 'session-expired', token: session.token },
       { kind: 'signed-out', notice: 'session-expired' },
     ],
   ])('%s', (_name, from, event, to) => {
@@ -58,8 +67,12 @@ describe('session flow', () => {
     ['a stale rejection on Home', signedIn, { type: 'profile-rejected' }],
     ['a second sign-in while checking', checking, { type: 'signed-in', session }],
     ['a sign-out while signed out', signedOut, { type: 'signed-out' }],
-    ['a stale expiry while signed out', signedOut, { type: 'session-expired' }],
-    ['an expiry while checking', checking, { type: 'session-expired' }],
+    ['a stale expiry while signed out', signedOut, { type: 'session-expired', token: session.token }],
+    ['an expiry while checking', checking, { type: 'session-expired', token: session.token }],
+    ["an expiry for another session's token", signedIn, { type: 'session-expired', token: 'another-token' }],
+    ["an expiry for another session's token on Rooms", onRooms, { type: 'session-expired', token: 'another-token' }],
+    ['Book a room while signed out', signedOut, { type: 'show-rooms' }],
+    ['Home while checking', checking, { type: 'show-home' }],
   ])('ignores an event that does not apply: %s', (_name, from, event) => {
     expect(next(from, event)).toBe(from)
   })

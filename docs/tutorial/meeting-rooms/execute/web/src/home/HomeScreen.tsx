@@ -10,6 +10,7 @@ export interface HomeScreenProps {
   readonly token: string
   /** Validated once by App: `undefined` means D7 (no zone, so no bookings request). */
   readonly zone: ZoneName | undefined
+  readonly onBookRoom: () => void
   readonly onSignOut: () => void
   readonly onSessionExpired: () => void
 }
@@ -20,10 +21,11 @@ export interface HomeScreenProps {
  * profile-api@v2), and a Time zone row showing the zone exactly as received,
  * or `Not available` without a usable one. With a zone, `MyBookings` follows,
  * given the token, the zone and `onSessionExpired`. Without one, D7's line
- * takes the place of My bookings and no booking request is sent. The parent
- * owns the session.
+ * takes the place of My bookings and Book a room, and no booking request is
+ * sent. With a zone, `Book a room` sits beside Sign out and asks the parent
+ * to show Rooms. The parent owns the session and the screen.
  */
-export function HomeScreen({ profile, token, zone, onSignOut, onSessionExpired }: HomeScreenProps) {
+export function HomeScreen({ profile, token, zone, onBookRoom, onSignOut, onSessionExpired }: HomeScreenProps) {
   return (
     <main className="home">
       <section className="home-card">
@@ -45,9 +47,16 @@ export function HomeScreen({ profile, token, zone, onSignOut, onSessionExpired }
         ) : (
           <MyBookings token={token} zone={zone} onSessionExpired={onSessionExpired} />
         )}
-        <button type="button" onClick={onSignOut}>
-          Sign out
-        </button>
+        <div className="home-actions">
+          {zone !== undefined && (
+            <button type="button" onClick={onBookRoom}>
+              Book a room
+            </button>
+          )}
+          <button type="button" onClick={onSignOut}>
+            Sign out
+          </button>
+        </div>
       </section>
     </main>
   )
