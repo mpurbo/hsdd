@@ -1282,6 +1282,397 @@ executed the marking step carries the step forward unchanged.
 
 ---
 
+## Outside the loop
+
+Four situations recur on real projects, and the loop above does not name
+them: a stakeholder wants a size before any spec exists; the team keeps a
+knowledge base the spec should draw on; a launched system takes small fixes
+faster than phases can be planned; and a released tree has gone stale and
+nobody will verify it phase by phase. Each one runs on the skills as they
+are. What changes is the prompt, and in two cases a section you add to
+`hsdd/conventions.md`, the file every skill reads first.
+
+### Estimating in PE before the first spec
+
+Stakeholders ask for a size before anyone has run `hsdd-spec`, and the only
+input is the PRD. A plain agent that has heard of HSDD will produce a number.
+What it will not do is condition the number on the assumption that moves it
+most, the ownership axis: a stack split across teams adds contract phases and
+integration nodes that one full-stack owner never pays for. The estimate is
+a dry run of `hsdd-spec`'s process, steps 1 to 5 (normalize the input and
+inventory the sources, identify children by contract boundary, name
+contracts by id, map the typed DAG, decide recursion per child), with the
+axis turned from a stop into a table dimension, followed by
+`hsdd-phase-plan`'s sizing rules per leaf-parent. Nothing under `hsdd/` is
+written; there is no tree yet.
+
+```text
+Read hsdd-spec/SKILL.md and hsdd-phase-plan/SKILL.md from the directory the
+skills CLI installed them to (.claude/skills/ in this project, or the
+user-level skills directory) as reference. Write nothing under hsdd/.
+Estimate @docs/prd-fieldlog.md in Phase Equivalents.
+1. Normalize the input as hsdd-spec step 1, but do not stop at "who builds
+   what?": make the axis a table dimension, one column per plausible
+   ownership shape (one full-stack owner; backend and frontend split across
+   teams; a third only if the PRD implies one).
+2. Per column, decompose to leaf-parents as steps 2 to 5 would, listing each
+   by id with one line, integration nodes included where children exchange
+   contracts.
+3. Per leaf-parent, count phases under hsdd-phase-plan's sizing rules,
+   interfaces-first, one PE each, with the tier mix and the assumption
+   behind the count in a few words.
+4. Total PE per column with a band of plus or minus one phase per
+   leaf-parent, and the three assumptions that move the number most.
+Output: one table, leaf-parents by columns, with totals; the assumptions;
+the Sources list with each document's authority. Under 60 lines.
+```
+
+Keep the output beside the PRD, `docs/estimates/YYYY-MM-DD-{slug}.md`, not
+under `hsdd/management/`, which only the three management skills write.
+When the project starts, the root spec lists it under `## Sources` as
+"informative only, not decomposed", so it stays reachable. After the first
+checkpoint, compare its leaf-parent and phase counts with the progress
+report's, by hand. That comparison is the only thing a dedicated skill
+would add, and after three projects it is also the only thing that makes
+the fourth estimate better than a guess.
+
+### A knowledge base beside the tree
+
+Karpathy's [LLM Wiki](https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f)
+is a local git repository with immutable source documents under `raw/`,
+pages an agent writes and maintains under `wiki/` with an `index.md` and a
+`log.md`, and a `CLAUDE.md` that is the wiki's schema: how pages are
+organized and how the three operations run, ingest, query and lint. In HSDD
+terms a wiki page is a derived source: a synthesis of raw documents,
+maintained by an agent, dated. The provenance model already has the slot. A
+page enters `Sources` like any document, the raw documents it drew on enter
+beside it under their own authority, and the rule that a summary indexes a
+source and never replaces it applies to the page as to everything else.
+What needs care is how the query runs, because the wiki's `CLAUDE.md` is
+instructions for working in the wiki, the repo's `CLAUDE.md` is instructions
+for working in the repo, and a session that loads both follows a mixture.
+
+**Setup.** Clone the wiki outside every implementation repo. A submodule
+inside the repo puts the wiki's `CLAUDE.md` where the harness loads it for
+coding sessions, and the seam extractor would walk it. Allow the agent to
+read the clone's path by rule rather than adding it as a second working
+directory, for the same reason. Then declare it at the root, in
+`hsdd/conventions.md`; every skill reads this file first, so the protocol
+reaches every session without a skill change:
+
+```markdown
+## Knowledge base
+**Knowledge base:** git@github.com:acme/wiki.git (schema: `CLAUDE.md`; raw
+sources under `raw/`, pages under `wiki/`, filed answers under
+`wiki/queries/`)
+
+The knowledge base is upstream context, never an HSDD artifact. When the
+invoking prompt names a local clone:
+- Query only through a filed answer. A session working inside the clone
+  runs the wiki's own query operation and files the answer under
+  `wiki/queries/` with the raw documents it drew on. The HSDD session reads
+  the filed page, never the wiki at large.
+- A filed answer enters Sources as `{clone}/wiki/queries/{page}.md @ {wiki
+  sha}` with authority `draft (LLM Wiki answer, derived)`; the raw documents
+  it cites enter Sources beside it with their own authority.
+- Never inline wiki text into a phase context. A coding session reads wiki
+  text only through a Source named by section, like any other document.
+- After reconcile or a checkpoint, ingest the changed ADRs, contracts and
+  intake records back as pointer pages: a page about this system links the
+  `hsdd/` path and never restates a decision, an interface or a phase.
+```
+
+**Query, then spec.** Before `hsdd-spec` at the root or in promotion mode,
+run the query in a fresh session or subagent whose working directory is the
+clone, so the wiki's `CLAUDE.md` governs it and nothing else does:
+
+```text
+You are working inside the LLM Wiki at this directory; follow its CLAUDE.md.
+Run a query for an HSDD decomposition of the merchant onboarding platform
+described in ~/git/acme/docs/prd-onboarding.md. Answer, each with the wiki
+pages and raw documents you drew on:
+1. Which existing systems, services or teams does this touch, and who owns
+   each?
+2. Which terms in the PRD already have a definition here, and what is it?
+3. Which past decisions, incidents or constraints bear on it?
+4. What does the wiki not know that the decomposition will need?
+File the answer under wiki/queries/ per the wiki's conventions, with a
+Sources section naming every raw/ document used. Reply with the filed
+page's path, the wiki's commit sha and whether the tree is dirty, and the
+raw documents with one line each on what it governs. Nothing else.
+```
+
+The reply is one bounded document. Hand it to `hsdd-spec` as a source, with
+the raw documents beside it:
+
+```text
+Write a high-level spec for the merchant onboarding platform. Sources:
+- docs/prd-onboarding.md (approved PRD): product scope, v1 features
+- ~/wiki/wiki/queries/2026-11-02-onboarding-decomposition.md @ 3f9c2a1
+  (draft; LLM Wiki answer, derived): systems touched, owners, prior
+  decisions
+- ~/wiki/raw/rfc-017-merchant-identity.md (accepted RFC): the identity
+  model the platform consumes
+- ~/wiki/raw/incident-2026-06-kyc-timeout.md (incident): the KYC vendor's
+  timeout behavior
+Who builds what: take the ownership the wiki answer records and show it to
+me at the axis stop; I will confirm or correct it.
+```
+
+The axis stop stays a stop: the wiki supplies the fact, and you confirm it.
+Promotion, intake and phase planning take the same shape. Run the query
+with the question set that step needs (for intake, which services and
+owners the request touches; for phase planning, which constraints and
+incidents bear on this node), then name the filed page and its raw
+documents in the prompt. The skills do the rest under the trickle-down
+rule: the sources a node needs land in its `Sources`, and the phase context
+later carries the sections the phase cites. Nothing reaches a coding
+session by any other path.
+
+**Ingest back.** After `hsdd-reconcile` or a checkpoint, run inside the
+clone:
+
+```text
+You are working inside the LLM Wiki at this directory; follow its CLAUDE.md.
+Ingest the HSDD governance that changed in ~/git/acme since 2026-10-26:
+hsdd/adr/, hsdd/contract/ (contract files only, not fixtures) and the
+intake records under hsdd/management/. Treat them as sources that live
+outside this wiki: create or update entity pages for the system, its nodes
+and its contracts as pointer pages, each saying what the artifact is and
+linking its path, never restating a decision, an interface or a phase. If
+the wiki's conventions require a copy under raw/, copy with the repo commit
+sha in the filename and keep the pointer rule for the page. Update index.md
+and log.md. Reply with the pages touched.
+```
+
+Three failure modes to watch. A wiki page can lag the raw document under
+it; that is why the raw document sits in Sources too, where a version move
+is a citation touch. A session that reads the wiki at large instead of a
+filed answer pulls an unbounded amount of text into its context; the
+filed-answer rule exists for that. And a public tree over a private wiki
+leaks nothing as long as Sources lines stay one line and a pointer, which
+is what the rule already says.
+
+### Small fixes and small requests on a launched system
+
+After launch most changes are small, and the planning chain costs the same
+for a twenty-line fix as for a feature. Two lanes keep the tree honest
+without paying that cost twice. Both apply only after launch. Before it, a
+fix belongs to the phase it fixes, on that phase's branch, and backfill does
+not exist yet.
+
+The dividing line is the contract surface, not the diff size. A change that
+moves no route, schema, topic or table is invisible to every other node by
+construction, so the tree needs one thing from it: which node it happened
+in. A change that moves one is not small whatever its line count; it goes
+through `hsdd-intake` and a contract bump.
+
+**Which node?** When you do not know:
+
+```text
+Read hsdd/management/atlas.md (hsdd/spec/ if there is no atlas). Which node
+owns these paths: src/payouts/schedule.ts,
+src/payouts/__tests__/schedule.test.ts? Use each node's Isolation strategy,
+its phases' Scope lines, and any `modules:` line under an Observed surface.
+Answer with one node id and the phases whose Scope names these files, or
+say the paths span two nodes and name both. Write nothing.
+```
+
+Two nodes is the first sign the change is not small.
+
+**A request** (a ticket, a product ask) goes through intake as always; the
+saving is in what you ask the next skills for. Route it:
+
+> `/hsdd-intake` route `docs/tickets/PAY-412.md` (ticket): merchants want
+> the payout preview to show the fee line. Small, inside payouts.
+
+The record lands as class `local` with the handoff prompt written in it.
+Run it, asking for the smallest phase the rules allow:
+
+```text
+/hsdd-phase-plan acme.backend.payouts per
+hsdd/management/2026-11-02-intake-pay-412.md: append the phases this ticket
+needs. I expect one, review tier spot-check, gate "npm test -- payouts",
+Verification: the preview shows the fee line for a scheduled payout. If you
+need more than one phase or a contract change, say why before writing.
+```
+
+Then `/hsdd-reconcile acme.backend.payouts` drains the pending section (a
+lone appended phase with no governance updates makes this a few seconds),
+`/hsdd-phase acme.backend.payouts.9` writes the context, and the fix runs as
+a cycle or by hand. However it was made, the phase is done when its
+verification doc is on main:
+
+```text
+Write hsdd/verify/acme.backend.payouts.9.verification.md from
+hsdd/templates/verification.md for the fix in commit 8c1e4f2: the commands
+that prove it, what you observe when you run them now (dated), Outstanding
+for anything you could not run here, Learnings or "- none". Sign-off:
+Claude for {owner} (delegated), tier spot-check. Run the commands; do not
+invent an observation.
+```
+
+The next checkpoint appends the phase to the record's `## Produced`, ticks
+the record closed, and lists the delegated sign-off for the owner to
+ratify. To spend no attention on the chain at all, run it unattended and
+review the segment report's decisions in one sitting:
+
+> `/hsdd-auto intake docs/tickets/PAY-412.md --authority ticket --stop-policy decide-and-record`
+
+**A fix already made** (a hotfix, a QA finding fixed on the spot) is the
+legal bypass the spec names: ship it, and the next checkpoint's code-vs-plan
+pass files a backfill finding whose plan step appends a retro phase.
+Waiting for the checkpoint is allowed. Appending the retro phase yourself
+the same day is cheaper, because the checkpoint then finds nothing to file:
+
+```text
+/hsdd-phase-plan acme.backend.payouts: add a retro phase for the hotfix in
+commit 5d2b9a0 (preview rounded the fee to the wrong currency unit). The
+Scope cites the commit and says there is no checkpoint finding yet. Review
+tier gate-only. If the diff moved a route, schema, topic or table, stop and
+tell me; that is an intake, not a retro phase.
+```
+
+Then its verification doc, marked retroactive:
+
+```text
+Write hsdd/verify/acme.backend.payouts.10.verification.md from
+hsdd/templates/verification.md for the retro phase. Commands to run: the
+test that covers the fix. Observed: run it now, dated, and open with
+"Retroactive: written after the fix shipped in 5d2b9a0". Outstanding and
+Learnings per the template. Sign-off: Claude for {owner} (delegated), tier
+gate-only.
+```
+
+**Make attribution cheap.** The code-vs-plan pass has to decide which
+commits have a phase and which do not. A project convention tells every
+later checkpoint where to look, since every skill reads `conventions.md`
+first:
+
+```markdown
+## Manual lane (project convention)
+After launch, a fix that moves no contract surface (route, schema, topic,
+table) may ship before its phase exists. Every such commit carries the
+trailers `HSDD-Node: {node-id}` and `HSDD-Kind: fix | chore | docs |
+refactor`, and its retro phase is appended the same day
+(`/hsdd-phase-plan {node}: add a retro phase for commit {sha}`) with a
+retroactive verification doc. The checkpoint's code-vs-plan pass
+attributes unphased commits by trailer first; a commit with no trailer is
+scope creep as the spec defines it. A fix that moved a contract surface is
+not in this lane: route it through hsdd-intake.
+```
+
+With the trailer in place, run `/hsdd-checkpoint` scoped after a batch of
+fixes, naming the commits, and full only before a release. The spec's own
+cadence rule allows it: weekly is a convention, not a mechanism.
+
+### Sealing a released tree
+
+This is for a system that shipped, that QA verified, and whose tree then
+went stale: verification docs unsigned, phases planned and never built,
+intake records open, an execution plan full of syncs nobody will hold.
+Rebuilding the history is the expensive path, one retro phase per manual
+change, and reviewing what it generates is harder than the work it records.
+Sealing costs one run and spends your attention only where the next change
+will look: contracts and ADRs.
+
+Everything the seal needs is already admissible. A sign-off an agent takes
+for a named person counts as done, and the next checkpoint lists those
+sign-offs in one finding for that person to ratify. An Outstanding item may
+be waived with a reason. A verification doc written after the fact is the
+retroactive doc the spec's bypass rule names. Every finding may be waived in
+the plan with a reason instead of becoming a step. A campaign whose gates
+are all green is sealed and archived by the checkpoint that ticked the last
+one. And a protocol stated in `conventions.md` reaches every skill.
+
+One thing is missing: the method has no status for a phase that was planned
+and never built. The prompt adds one as a project convention,
+`- **Status:** dropped (date, reason)` on the phase record, mirroring node
+retirement. Until a spec version names it, every later checkpoint prompt
+has to restate that dropped phases are out of scope, or the pass counts
+them as not done.
+
+Two things to decide before you run it. Everything in the campaign must end
+up done or dropped, because `hsdd-milestone` keeps one unsealed document at
+a time: work you want to keep for later stays unshipped, keeps the document
+open, and belongs in a new campaign generated after the seal. And if an
+earlier catch-up attempt generated OpenSpec changes after the fact for
+phases nobody ran OpenSpec on, delete them: they record cycles that never
+happened, and the retroactive verification docs carry the honest record. A
+recorded bypass beats a hidden one.
+
+The run, with the facts filled in:
+
+```text
+Seal the HSDD tree for the released system. Facts:
+- Owner: {name}. Every delegated sign-off names this person.
+- Release: tag {tag}, released {YYYY-MM-DD}, in production since.
+- QA evidence: {path or URL of the QA sign-off and the test runs}.
+- Profile: {default | standalone-spec-repo}. Under the profile, run from
+  this implementation repo and commit inside hsdd/, then bump the pointer.
+
+Policy. This chooses among options the spec already allows; it overrides
+no rule.
+
+1. Every phase that shipped in {tag} is done by delegated sign-off. For
+   each phase with no signed verification doc on the main line, write
+   hsdd/verify/{phase-id}.verification.md from
+   hsdd/templates/verification.md with exactly this content and no
+   narrative:
+   - Commands to run: "none, retroactive"
+   - Expected output: "see QA evidence"
+   - Observed: "Not observed by this run. Released in {tag} on {date}. QA
+     evidence: {link}. Retroactive."
+   - Outstanding: one item, "individual verification not performed",
+     disposition: waived (released and QA-verified)
+   - Learnings: "- none"
+   - Sign-off: "Claude for {owner} (delegated)", today's date, the review
+     tier the phase plan names.
+   A doc that already has content keeps it; fill only its missing Sign-off
+   and dispositions the same way. Never invent an observation.
+2. Phases planned but never built and not in {tag}: list them to me and
+   stop. After I confirm, add "- **Status:** dropped ({date}, not built
+   before release)" to each phase record, and add under "## Phase design"
+   in hsdd/conventions.md: "A phase with Status: dropped is out of every
+   campaign scope and every done count."
+3. Run hsdd-milestone on the scope trigger: the dropped phases leave the
+   gates, the dates hold because the system is released, absorb in place
+   with a change-log entry.
+4. Run hsdd-checkpoint in full mode with this standing decision: every
+   finding whose remedy is a verification, the ratification of a delegated
+   sign-off, a sync, a queued decision, or a plan step on a shipped or
+   dropped phase is waived in the plan with the reason "sealed at release
+   {tag}". Only findings about a contract or an ADR remain as steps. Close
+   every intake record whose phases are done, tick the gates, seal the
+   milestone document and move it to hsdd/management/archive/.
+5. Delete the OpenSpec changes and archives that were generated after the
+   fact for phases nobody ran OpenSpec on, and say so in the progress
+   report.
+6. Edit no node spec body, contract or ADR, except the Status lines in
+   step 2.
+7. Commit on the main line as you go, one commit per step above.
+
+Report in one screen: phases sealed by delegated sign-off, phases dropped,
+intake records closed, milestone sealed yes or no and why not, findings
+waived with the count, and the contract or ADR items that need me, one
+line each. Nothing else needs my answer.
+```
+
+What you have afterwards is a tree whose ledger is complete and honest:
+every shipped phase has a doc that says it was not individually observed
+and why that was accepted, every unbuilt phase says it was dropped, the
+campaign is in the archive, and the execution plan's only live steps are
+the contract and ADR items the next change will depend on. Work those
+through `hsdd-contract` and `hsdd-adr` at your own pace.
+
+Then stop running checkpoints on a cadence. The next one runs when
+something lands, scoped and naming the commits, and it carries the standing
+decision from step 4 until the spec names the dropped status. New work
+enters through the lanes of the previous section; a feature large enough
+for several phases enters through `hsdd-intake` and opens a new campaign.
+
+---
+
 ## Tips
 
 - **Size to the window.** If a phase will not fit one ~5h review window (AI run
