@@ -20,7 +20,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   whose produced phases are done, ticks milestone gates and seals the
   campaign document into the archive; `report` appends the result and the
   list of what only the owner can do. Every write is a dry run until
-  `--write`; `--commit` commits what it touched. The scripts are copied
+  `--write`; `--commit` commits only the paths it touched and refuses a
+  detached submodule. `plan` validates `--catchup` before reading anything
+  and never overwrites an existing plan without `--force`; apply re-derives
+  every path from the phase id or a fresh scan, so the owner's edit surface
+  is the `class` field and nothing else. The scripts are copied
   verbatim to `hsdd/scripts/seal/`; `md.mjs` and `extract-plan.mjs` are
   copies of `hsdd-summary`'s, kept identical by a test.
 

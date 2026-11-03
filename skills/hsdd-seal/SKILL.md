@@ -66,8 +66,14 @@ script commits inside the submodule and bumps the pointer.
 
    `--catchup` names the commits an earlier catch-up attempt made (a
    revspec, `since:YYYY-MM-DD`, or comma-separated shas); the plan marks
-   the verification docs and OpenSpec directories they added. `--keep`
-   names phases to leave open. Every phase gets a default class:
+   the verification docs and OpenSpec directories they added. The value is
+   checked first: a `since:` date must be a calendar date, and every sha or
+   range end must be a commit in each repository the catch-up is read from;
+   under the standalone-spec-repo profile only `since:` reaches both the
+   implementation repo and the submodule. A bad value exits 1 and writes
+   nothing. An existing plan file is never overwritten without `--force`,
+   because it may carry the owner's edits. `--keep` names phases to leave
+   open. Every phase gets a default class:
    `done` (signed doc), `sign` (the newest progress report counts it done,
    its phase context exists, an OpenSpec change names it, or a doc existed
    before the catch-up), `drop` (nothing else), `keep` (only by `--keep`),
@@ -76,11 +82,16 @@ script commits inside the submodule and bumps the pointer.
    intake; an unbuilt phase wrongly signed makes contracts claim behavior
    the code lacks.
 2. **The owner edits the `class` field** in the JSON where the default is
-   wrong. Nothing else in the file is read back. The markdown's Unparsed
-   table lists what the parsers could not read; those items get no edit
-   and must be handled by hand.
+   wrong, and may shorten the `prune` list. Nothing else in the file is
+   acted on: every path is re-derived from the phase id or re-checked
+   against a fresh scan at apply time, and a path that leaves the project
+   root is refused. The markdown's Unparsed table lists what the parsers
+   could not read; those items get no edit and must be handled by hand.
 3. **Apply, one step at a time,** each as a dry run first, then with
-   `--write`, and `--commit` to commit what it touched (`seal: {step}`):
+   `--write`, and `--commit` to commit only the paths it touched
+   (`seal: {step}`; anything else the owner had staged stays staged). Under
+   the profile, `--commit` refuses to write while `hsdd/` has a detached
+   HEAD, since a commit there would sit on no branch:
 
    ```bash
    node hsdd/scripts/seal/seal.mjs apply sign  --plan hsdd/management/2026-11-03-seal-plan.json
@@ -91,14 +102,21 @@ script commits inside the submodule and bumps the pointer.
    - `sign`: a missing doc, or one the catch-up added, is written whole from
      the fixed template; any other unsigned doc keeps its body and gets its
      `## Sign-off` rewritten (`Claude for {owner} (delegated), {today}`,
-     Outstanding waived, Learnings `- none` when empty).
+     Outstanding waived, Learnings `- none` when empty). When a doc already
+     carries Learnings entries, their disposition line reads `dropped (sealed
+     at release {tag}; not actioned)` and the report lists the phase for a
+     person to read them; the seal never claims a disposition nobody made.
    - `drop`: the Status line after each dropped phase's `Review tier`, and
-     one paragraph under `## Phase design` in `hsdd/conventions.md`.
+     one paragraph under `## Phase design` in `hsdd/conventions.md`. A doc
+     the catch-up added for a dropped phase is left in place and listed for
+     the owner; the seal deletes no verification doc.
    - `prune`: deletes each `openspec/changes/` directory whose every file
      the catch-up added; `openspec/specs/` is never touched.
    - `close`: re-scans, closes intake records whose produced phases are all
      done (appending cited phases first), leaves an all-dropped record open
-     with a dated note, ticks each gate whose phases are done or dropped,
+     with a dated note, ticks each gate whose phases are done or dropped (a
+     gate written as a range, `a.1–a.4`, counts every phase of that node in
+     the range),
      records the dropped ones in the change log as an absorb, and when every
      gate is ticked adds `- **Sealed:** {today}` and moves the document to
      the archive.
