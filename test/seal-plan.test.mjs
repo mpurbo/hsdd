@@ -1,10 +1,8 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { sealTree } from "./helpers/seal-fixture.mjs";
+import { sealTree, INPUTS } from "./helpers/seal-fixture.mjs";
 import { readTree } from "../skills/hsdd-seal/scripts/lib/scan.mjs";
 import { classify, buildPlan, renderPlan, planPaths } from "../skills/hsdd-seal/scripts/lib/plan.mjs";
-
-export const INPUTS = { release: "2.4.0", date: "2026-09-15", owner: "Dewi", evidence: "QA run 77", catchup: null, today: "2026-11-03", keep: [] };
 
 const noEvidence = { report: false, context: false, openspec: false };
 const noDoc = { exists: false, signed: false, placeholder: false, addedInCatchup: false };

@@ -282,3 +282,5 @@ export function sealTree() {
   gitIn(root, "commit", "-q", "-m", "catch-up");
   return { root, catchup: gitIn(root, "rev-parse", "HEAD") };
 }
+
+export const INPUTS = { release: "2.4.0", date: "2026-09-15", owner: "Dewi", evidence: "QA run 77", catchup: null, today: "2026-11-03", keep: [] };
