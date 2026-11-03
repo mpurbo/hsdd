@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **`hsdd-seal`**, the thirteenth skill: seal a released tree whose HSDD
+  artifacts went stale, by script and with no model in the loop. `plan`
+  reads the tree and writes a seal plan with a default class per phase
+  (`done`, `sign`, `drop`, `keep`, `skip`); the owner edits the class;
+  `apply sign|drop|prune|close` writes retroactive verification docs by
+  delegated sign-off, marks unbuilt phases `- **Status:** dropped` under a
+  project convention appended to `hsdd/conventions.md`, removes OpenSpec
+  change directories an earlier catch-up invented, closes intake records
+  whose produced phases are done, ticks milestone gates and seals the
+  campaign document into the archive; `report` appends the result and the
+  list of what only the owner can do. Every write is a dry run until
+  `--write`; `--commit` commits what it touched. The scripts are copied
+  verbatim to `hsdd/scripts/seal/`; `md.mjs` and `extract-plan.mjs` are
+  copies of `hsdd-summary`'s, kept identical by a test.
+
 ## [0.11.0] - Unreleased
 
 Unattended planning runs. `hsdd-auto` runs HSDD's planning chain without the

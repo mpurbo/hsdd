@@ -111,7 +111,7 @@ HSDD ships as agent skills, installable with the [`skills`](https://github.com/v
 CLI (works with Claude Code, Cursor, Codex, and 70+ agents):
 
 ```bash
-# All twelve HSDD skills (replace with your repo path)
+# All thirteen HSDD skills (replace with your repo path)
 npx skills add mpurbo/hsdd
 
 # Or a single skill
@@ -144,6 +144,7 @@ re-implementing them; `hsdd-config` wires them into each phase's coding session,
 | `hsdd-milestone` | Generate a campaign's stakeholder milestone document once every leaf-parent in its scope is phase-planned. Each checkpoint is a demo and a gate; externally-gated work sits in a contingent tail outside the launch gate. Re-baseline the document when the dates move. |
 | `hsdd-summary` | Render offline HTML reading aids: the plan page (root to phase cards, for a reviewer, a stakeholder or an implementer) and the checkpoint page (the newest progress report and execution plan, for the lead running the sync, each lane's executor, and stakeholders). |
 | `hsdd-auto` | Run HSDD's planning chain unattended: compute the next step, dispatch one fresh subagent per skill invocation, answer or stop on each ask point per the owner's stop policy, gate and commit each step, and record every decision for one review sitting. |
+| `hsdd-seal` | Seal a released tree whose artifacts went stale, by script and with no model in the loop: a plan with a default class per phase, the owner's edit of that class, then retroactive verification docs by delegated sign-off, `Status: dropped` on unbuilt phases, pruned catch-up OpenSpec directories, closed intake records and the campaign document sealed into the archive. |
 
 ## How it works
 
@@ -174,6 +175,7 @@ not complete, phases complete.
 
 ```text
 hsdd-auto (unattended) -> runs the chain above, records every decision
+hsdd-seal (after release) -> closes the ledger of a stale tree by script
 ```
 
 Run `openspec init` once, at the repo root (the directory that holds `hsdd/`,
