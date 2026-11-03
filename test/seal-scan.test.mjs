@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { sealTree } from "./helpers/seal-fixture.mjs";
@@ -137,3 +137,14 @@ test("readTree without a catch-up marks nothing as added", () => {
 // The fixture texts are plain exports; this keeps the import at the top of the file readable.
 import * as fixture from "./helpers/seal-fixture.mjs";
 function awaitImport() { return fixture; }
+
+test("readTree reports phases already carrying a dropped status", () => {
+  const { root } = sealTree();
+  const spec = join(root, "hsdd/spec/acme.web.md");
+  const text = readFileSync(spec, "utf8");
+  const marker = "- **Review tier:** gate-only\n- **Dependencies:** none\n";
+  const at = text.lastIndexOf(marker);  // acme.web.3's block, the last gate-only phase in the file
+  writeFileSync(spec, text.slice(0, at) + "- **Review tier:** gate-only\n- **Status:** dropped (2026-11-01, not built before release 2.4.0)\n- **Dependencies:** none\n" + text.slice(at + marker.length));
+  const t = readTree(root);
+  assert.deepEqual([...t.dropped], ["acme.web.3"]);
+});

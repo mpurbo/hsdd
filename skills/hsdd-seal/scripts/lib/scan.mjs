@@ -95,6 +95,23 @@ export function parseMilestone(text, phaseIds) {
   };
 }
 
+// Phase ids whose record carries a `- **Status:** dropped` line, read from
+// each phase section under the node's Phase Plan.
+export function droppedPhaseIds(text, phaseIds) {
+  const ls = toLines(text);
+  const out = [];
+  const hs = headings(ls).filter((h) => h.level === 3);
+  hs.forEach((h, k) => {
+    const [id] = idsIn(h.text, phaseIds);
+    if (!id) return;
+    const end = k + 1 < hs.length ? hs[k + 1].line : ls.length;
+    const next2 = headings(ls).find((x) => x.line > h.line && x.level <= 2);
+    const stop = Math.min(end, next2 ? next2.line : ls.length);
+    if (ls.slice(h.line + 1, stop).some((l) => /^\s*-?\s*\*\*Status:\*\*\s*dropped\b/i.test(l))) out.push(id);
+  });
+  return out;
+}
+
 export function progressDoneSet(text, phaseIds) {
   const ls = toLines(text);
   const done = sectionBody(ls, "what is done");
@@ -230,11 +247,15 @@ export function readTree(root, { catchup = null, git = runGit } = {}) {
   }
 
   const pending = [];
+  const dropped = new Set();
+  const seen = new Set();
   for (const n of plan.nodes) {
-    if (!n.sourceFile || !existsSync(join(root, n.sourceFile))) continue;
+    if (!n.sourceFile || seen.has(n.sourceFile) || !existsSync(join(root, n.sourceFile))) continue;
+    seen.add(n.sourceFile);
     const text = readFileSync(join(root, n.sourceFile), "utf8");
     const pr = pendingRequests(text);
     if (pr.entries > 0) pending.push({ node: n.id, path: n.sourceFile, ...pr });
+    for (const id of droppedPhaseIds(text, phaseIds)) dropped.add(id);
   }
 
   const convPath = join(root, "hsdd", "conventions.md");
@@ -260,6 +281,7 @@ export function readTree(root, { catchup = null, git = runGit } = {}) {
     openspecIds,
     changeDirs: dirs,
     pending,
+    dropped,
     conventions: { path: "hsdd/conventions.md", text: convText, hasDropped: /Status:\*{0,2}\s*dropped|Status: dropped/.test(convText) },
     catchupAdded,
     unparsed: [...plan.unparsed],
