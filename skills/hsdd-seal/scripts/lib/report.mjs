@@ -44,6 +44,11 @@ export function buildResult(plan, tree) {
   for (const i of tree.intakes) {
     if (i.status === "open") needsOwner.push(`intake record still open: ${i.path} (its produced phases are not all done)`);
   }
+  for (const p of plan.phases) {
+    const doc = tree.docs.get(p.id);
+    if (p.class === "sign" && doc?.signed && doc.learningsEmpty === false) needsOwner.push(`${p.id}: its Learnings entries were sealed as "dropped (not actioned)"; a person should read them`);
+    if (p.class === "drop" && doc?.exists && doc.addedInCatchup && !doc.signed) needsOwner.push(`${p.id}: a catch-up doc remains on a dropped phase (${doc.path}); remove it by hand or reclassify the phase`);
+  }
   for (const id of unsigned) needsOwner.push(`${id}: planned as ${plan.phases.find((p) => p.id === id).class} but not applied (run apply again or classify by hand)`);
   for (const p of plan.phases.filter((x) => x.class === "keep")) needsOwner.push(`${p.id}: kept open by the owner; it holds its gate red until built or dropped`);
   for (const u of tree.unparsed) needsOwner.push(`unparsed: ${u.file}:${u.line} ${u.reason}`);

@@ -68,3 +68,18 @@ test("renderResult says none when nothing needs the owner", () => {
   assert.match(md, /### Needs the owner\n- none\n/);
   assert.match(md, /no milestone document/);
 });
+
+// Fix pass: findings 7 and 9 in the report
+test("the report lists undispositioned Learnings and a catch-up doc left on a dropped phase under Needs the owner", () => {
+  const { root, catchup } = sealTree();
+  const api3 = join(root, "hsdd/verify/acme.api.3.verification.md");
+  writeFileSync(api3, readFileSync(api3, "utf8").replace("## Learnings\n\n", "## Learnings\n- the node spec names the wrong port\n\n"));
+  const tree = readTree(root, { catchup });
+  const plan = buildPlan(tree, { ...INPUTS, catchup });
+  plan.phases.find((p) => p.id === "acme.web.2").class = "drop";
+  applyOps(root, opsSign(plan, tree), { write: true });
+  applyOps(root, opsDrop(plan, tree), { write: true });
+  const r = buildResult(plan, readTree(root, { catchup }));
+  assert.ok(r.needsOwner.some((s) => /acme\.api\.3.*Learnings/.test(s)), r.needsOwner.join("\n"));
+  assert.ok(r.needsOwner.some((s) => /acme\.web\.2.*catch-up/.test(s)), r.needsOwner.join("\n"));
+});

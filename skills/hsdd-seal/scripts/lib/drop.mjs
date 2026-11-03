@@ -72,7 +72,10 @@ export function opsDrop(plan, tree) {
   const line = statusLine(plan.inputs);
   const byFile = new Map();
   for (const p of plan.phases) {
-    if (p.class !== "drop" || tree.dropped?.has(p.id)) continue;
+    if (p.class !== "drop") continue;
+    const doc = tree.docs.get(p.id);
+    if (doc?.exists && doc.addedInCatchup && !doc.signed) ops.push({ kind: "note", path: doc.path, note: `catch-up doc on a dropped phase (${p.id}): remove it by hand or reclassify the phase` });
+    if (tree.dropped?.has(p.id)) continue;
     const file = tree.plan.phases.find((x) => x.id === p.id)?.sourceFile ?? null;
     if (!file || !tree.specTexts?.has(file)) {
       ops.push({ kind: "note", path: file ?? p.id, note: `no spec text for ${p.id}; add the Status line by hand` });

@@ -248,15 +248,28 @@ The checkpoint ticks the gates.
 - 2026-09-01: generated
 `;
 
-export function sealTree() {
-  const root = mkdtempSync(join(tmpdir(), "hsdd-seal-"));
-  gitIn(root, "init", "-q", "-b", "main");
-  const noHooks = join(root, ".git", "no-hooks");
-  mkdirSync(noHooks);
-  gitIn(root, "config", "core.hooksPath", noHooks);
-  gitIn(root, "config", "user.name", "Test Owner");
-  gitIn(root, "config", "user.email", "owner@example.invalid");
-  gitIn(root, "config", "commit.gpgsign", "false");
+export const RELEASE_AT = "2026-09-15T10:00:00+07:00";
+export const CATCHUP_AT = "2026-10-25T10:00:00+07:00";
+
+export const commitAt = (dir, when, message) =>
+  execFileSync("git", ["commit", "-q", "-m", message], { cwd: dir, encoding: "utf8", env: { ...process.env, GIT_AUTHOR_DATE: when, GIT_COMMITTER_DATE: when } });
+
+export function initRepo(dir) {
+  gitIn(dir, "init", "-q", "-b", "main");
+  const noHooks = join(dir, ".git", "no-hooks");
+  mkdirSync(noHooks, { recursive: true });
+  gitIn(dir, "config", "core.hooksPath", noHooks);
+  gitIn(dir, "config", "user.name", "Test Owner");
+  gitIn(dir, "config", "user.email", "owner@example.invalid");
+  gitIn(dir, "config", "commit.gpgsign", "false");
+  gitIn(dir, "config", "protocol.file.allow", "always");
+}
+
+export function sealTree({ nested = false } = {}) {
+  const gitRoot = mkdtempSync(join(tmpdir(), "hsdd-seal-"));
+  initRepo(gitRoot);
+  const root = nested ? join(gitRoot, "svc") : gitRoot;
+  if (nested) mkdirSync(root);
 
   write(root, "hsdd/conventions.md", CONVENTIONS);
   write(root, "hsdd/spec/acme.md", ROOT_SPEC);
@@ -271,16 +284,61 @@ export function sealTree() {
   write(root, "hsdd/management/2026-09-01-milestones.md", MILESTONES);
   write(root, "hsdd-context/acme.web.2.md", "# Current Phase: acme.web.2 - Screens\n");
   write(root, "openspec/changes/archive/2026-08-01-acme-api-1/proposal.md", "# acme.api.1\n");
+  write(root, "openspec/changes/archive/2026-09-01-acme-web-30-thing/proposal.md", "# not acme.web.3\n");
   write(root, "openspec/specs/api/spec.md", "# API capability\n");
-  gitIn(root, "add", "-A");
-  gitIn(root, "commit", "-q", "-m", "release 2.4.0");
+  gitIn(gitRoot, "add", "-A");
+  commitAt(gitRoot, RELEASE_AT, "release 2.4.0");
 
-  write(root, "hsdd/verify/acme.web.2.verification.md", doc("acme.web.2", "Screens", "", { observed: "2026-10-25: the screens render and the tests pass (reconstructed)." }));
+  write(root, "hsdd/verify/acme.web.2.verification.md", CATCHUP_DOC);
   write(root, "openspec/changes/archive/2026-10-25-acme-api-3/proposal.md", "# acme.api.3\n");
   write(root, "openspec/changes/archive/2026-10-25-acme-api-3/tasks.md", "- [x] done\n");
+  gitIn(gitRoot, "add", "-A");
+  commitAt(gitRoot, CATCHUP_AT, "catch-up");
+  return { root, gitRoot, catchup: gitIn(gitRoot, "rev-parse", "HEAD") };
+}
+
+export const CATCHUP_DOC = doc("acme.web.2", "Screens", "", { observed: "2026-10-25: the screens render and the tests pass (reconstructed)." });
+
+// The standalone-spec-repo profile: the HSDD tree is its own repository,
+// mounted as a submodule at hsdd/ in an implementation repository. The
+// catch-up added a doc inside the submodule and an OpenSpec archive outside.
+export function profileTree() {
+  const spec = mkdtempSync(join(tmpdir(), "hsdd-seal-spec-"));
+  initRepo(spec);
+  write(spec, "conventions.md", CONVENTIONS.replace("## Main line", "Profile: standalone-spec-repo\n\n## Main line"));
+  write(spec, "spec/acme.md", ROOT_SPEC);
+  write(spec, "spec/acme.api.md", API_SPEC);
+  write(spec, "spec/acme.web.md", WEB_SPEC);
+  write(spec, "spec/acme.legacy.md", LEGACY_SPEC);
+  write(spec, "verify/acme.api.1.verification.md", doc("acme.api.1", "Types", "Dewi, 2026-09-10"));
+  write(spec, "verify/acme.api.2.verification.md", doc("acme.api.2", "Endpoints", "Claude for Dewi (delegated), 2026-10-01"));
+  write(spec, "verify/acme.api.3.verification.md", doc("acme.api.3", "Pagination", "{person} | {agent} for {person} (delegated)", { observed: "2026-09-20: ran npm test, 14 passed.", outstanding: "- the export of page 2 was not checked", learnings: "" }));
+  write(spec, "management/2026-10-20-progress.md", PROGRESS);
+  write(spec, "management/2026-08-20-intake-feature-x.md", INTAKE_RECORD);
+  write(spec, "management/2026-09-01-milestones.md", MILESTONES);
+  gitIn(spec, "add", "-A");
+  commitAt(spec, RELEASE_AT, "spec at release 2.4.0");
+
+  const root = mkdtempSync(join(tmpdir(), "hsdd-seal-impl-"));
+  initRepo(root);
+  write(root, "hsdd-context/acme.web.2.md", "# Current Phase: acme.web.2 - Screens\n");
+  write(root, "openspec/changes/archive/2026-08-01-acme-api-1/proposal.md", "# acme.api.1\n");
+  write(root, "openspec/specs/api/spec.md", "# API capability\n");
+  gitIn(root, "-c", "protocol.file.allow=always", "submodule", "add", "-q", spec, "hsdd");
   gitIn(root, "add", "-A");
-  gitIn(root, "commit", "-q", "-m", "catch-up");
-  return { root, catchup: gitIn(root, "rev-parse", "HEAD") };
+  commitAt(root, RELEASE_AT, "impl at release 2.4.0");
+  gitIn(join(root, "hsdd"), "config", "user.name", "Test Owner");
+  gitIn(join(root, "hsdd"), "config", "user.email", "owner@example.invalid");
+  gitIn(join(root, "hsdd"), "config", "commit.gpgsign", "false");
+  gitIn(join(root, "hsdd"), "config", "core.hooksPath", join(spec, ".git", "no-hooks"));
+
+  write(root, "hsdd/verify/acme.web.2.verification.md", CATCHUP_DOC);
+  gitIn(join(root, "hsdd"), "add", "-A");
+  commitAt(join(root, "hsdd"), CATCHUP_AT, "catch-up (spec)");
+  write(root, "openspec/changes/archive/2026-10-25-acme-api-3/proposal.md", "# acme.api.3\n");
+  gitIn(root, "add", "-A");
+  commitAt(root, CATCHUP_AT, "catch-up (impl)");
+  return { root, spec, catchup: "since:2026-10-01" };
 }
 
 export const INPUTS = { release: "2.4.0", date: "2026-09-15", owner: "Dewi", evidence: "QA run 77", catchup: null, today: "2026-11-03", keep: [] };

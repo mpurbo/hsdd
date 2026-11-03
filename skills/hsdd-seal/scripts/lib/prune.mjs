@@ -1,8 +1,6 @@
 // The prune step: remove OpenSpec change directories the catch-up invented.
 // A directory goes only when every file in it was first added by the catch-up
-// commits; openspec/specs/ is never touched.
-import { existsSync } from "node:fs";
-import { join } from "node:path";
+// commits, as the fresh scan sees it; openspec/specs/ is never touched.
 
 export function prunableDirs(added, filesByDir) {
   const out = [];
@@ -12,12 +10,25 @@ export function prunableDirs(added, filesByDir) {
   return out.sort();
 }
 
+// Exactly openspec/changes/{name} or openspec/changes/archive/{name}.
+export function isChangeDir(dir) {
+  const seg = String(dir).split("/");
+  const name = seg[seg.length - 1];
+  if (!name || name === "." || name === ".." || name === "archive") return false;
+  if (seg.length === 3) return seg[0] === "openspec" && seg[1] === "changes";
+  if (seg.length === 4) return seg[0] === "openspec" && seg[1] === "changes" && seg[2] === "archive";
+  return false;
+}
+
 export function opsPrune(plan, tree) {
   const ops = [];
+  const dirs = tree.changeDirs ?? new Map();
   for (const entry of plan.prune ?? []) {
-    if (!/^openspec\/changes\//.test(entry.dir)) continue;
-    if (!existsSync(join(tree.root, entry.dir))) continue;
-    ops.push({ kind: "delete", path: entry.dir, note: `${entry.files.length} file(s) the catch-up added` });
+    const dir = entry?.dir;
+    if (!isChangeDir(dir) || !dirs.has(dir)) continue;
+    const files = dirs.get(dir);
+    if (!files.length || !files.every((f) => tree.catchupAdded.has(f))) continue;
+    ops.push({ kind: "delete", path: dir, note: `${files.length} file(s) the catch-up added` });
   }
   return ops;
 }

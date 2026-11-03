@@ -29,10 +29,14 @@ export function idsIn(text, ids) {
   return found.sort((a, b) => a.at - b.at).map((f) => f.id);
 }
 
-function sectionBody(ls, title) {
+// The level-2 section whose name (numbering stripped) starts with `title`,
+// as { lines, sec: { title, line, start, end } }, or null. Shared by every
+// module that reads or rewrites a section, so they agree on which one it is.
+export function findSection(ls, title) {
   const sec = sections(ls, 2).find((s) => new RegExp(`^${title}`, "i").test(sectionName(s.title)));
   return sec ? { lines: ls.slice(sec.start, sec.end), sec } : null;
 }
+const sectionBody = findSection;
 
 const bodyIsEmpty = (lines) => !lines || lines.every((l) => !l.trim() || /^\s*-\s+none\b/i.test(l));
 
@@ -77,6 +81,34 @@ export function parseIntake(text, path, phaseIds) {
   };
 }
 
+const splitId = (id) => {
+  const at = id.lastIndexOf(".");
+  return { node: id.slice(0, at), n: Number(id.slice(at + 1)) };
+};
+
+// Phase ids a gate names, with `a.1–a.4` (one node, ascending) expanded to
+// every known phase of that node in the range.
+export function gatePhases(text, phaseIds) {
+  const found = idsIn(text, phaseIds);
+  const ranges = [...text.matchAll(/([\w.-]+\.\d+)\s*(?:\u2013|\u2014|-)\s*([\w.-]+\.\d+)/g)];
+  const out = [...found];
+  for (const r of ranges) {
+    if (!phaseIds.includes(r[1]) || !phaseIds.includes(r[2])) continue;
+    const a = splitId(r[1]);
+    const b = splitId(r[2]);
+    if (a.node !== b.node || a.n > b.n) continue;
+    const members = phaseIds.filter((id) => {
+      const s = splitId(id);
+      return s.node === a.node && s.n >= a.n && s.n <= b.n;
+    }).sort((x, y) => splitId(x).n - splitId(y).n);
+    // The range's members sit where the range sits in the text, right after its first id.
+    const at = out.indexOf(r[1]);
+    const fresh = members.filter((id) => !out.includes(id));
+    out.splice(at + 1, 0, ...fresh);
+  }
+  return out;
+}
+
 export function parseMilestone(text, phaseIds) {
   const ls = toLines(text);
   const ms = sectionBody(ls, "milestones");
@@ -85,7 +117,7 @@ export function parseMilestone(text, phaseIds) {
   const gates = [];
   for (let i = from; i < to; i++) {
     const m = /^\s*[-*]\s+\[( |x|X)\]\s+(.*)$/.exec(ls[i]);
-    if (m) gates.push({ line: i, checked: m[1] !== " ", text: m[2].trim(), phases: idsIn(m[2], phaseIds) });
+    if (m) gates.push({ line: i, checked: m[1] !== " ", text: m[2].trim(), phases: gatePhases(m[2], phaseIds) });
   }
   const firstH2 = headings(ls).find((h) => h.level === 2);
   return {
@@ -141,11 +173,52 @@ export function gitCwdFor(root, relPath) {
 }
 
 export function runGit(cwd, args) {
-  return execFileSync("git", args, { cwd, encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] });
+  try {
+    return execFileSync("git", args, { cwd, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] });
+  } catch (e) {
+    const err = String(e.stderr ?? "").trim();
+    throw new Error(`git ${args[0]} failed in ${cwd}${err ? `: ${err}` : ""}`);
+  }
+}
+
+// The git working copies a catch-up value is evaluated in: the project root,
+// and the submodule at hsdd/ under the standalone-spec-repo profile.
+function catchupCwds(root) {
+  return [...new Set([gitCwdFor(root, "hsdd/"), root])];
+}
+
+const DATE = /^\d{4}-\d{2}-\d{2}$/;
+
+// Is the owner's --catchup value one git will evaluate the way the owner
+// means? A since: date must be a real calendar date; every sha or range end
+// must be a commit in every repository the catch-up is queried in.
+export function validateCatchup(root, arg, { git = runGit } = {}) {
+  const errors = [];
+  if (arg == null || String(arg).trim() === "") return { ok: true, errors };
+  const v = String(arg).trim();
+  if (/^since:/i.test(v)) {
+    const d = v.slice(6);
+    if (!DATE.test(d) || Number.isNaN(Date.parse(d)) || new Date(d).toISOString().slice(0, 10) !== d) errors.push(`since: takes a calendar date as YYYY-MM-DD; "${v}" is not one (git would read a bad date as the beginning of history)`);
+    return { ok: errors.length === 0, errors };
+  }
+  const revs = v.includes("..") ? v.split("..").map((s) => s.replace(/^\.+|\.+$/g, "")).filter(Boolean) : v.split(",").map((s) => s.trim()).filter(Boolean);
+  for (const cwd of catchupCwds(root)) {
+    const label = relative(root, cwd) || ".";
+    for (const rev of revs) {
+      try {
+        git(cwd, ["rev-parse", "--verify", "--quiet", `${rev}^{commit}`]);
+      } catch {
+        const hint = cwd !== root ? "; under the standalone-spec-repo profile a sha from the implementation repository does not exist in hsdd/, use since:YYYY-MM-DD, which reaches both repositories" : "";
+        errors.push(`${rev}: not a commit in ${label}${hint}`);
+      }
+    }
+  }
+  return { ok: errors.length === 0, errors };
 }
 
 // Root-relative paths first added by the catch-up commits under hsdd/verify
-// and openspec/changes, each queried in its own git working copy.
+// and openspec/changes, each queried in its own git working copy. A git
+// failure is an error, never an empty set.
 export function addedPaths(root, catchup, { git = runGit } = {}) {
   const out = new Set();
   const args = catchupArgs(catchup);
@@ -155,9 +228,9 @@ export function addedPaths(root, catchup, { git = runGit } = {}) {
     const inCwd = relative(cwd, join(root, rel)) || ".";
     let text = "";
     try {
-      text = git(cwd, ["log", "--diff-filter=A", "--name-only", "--format=", ...args, "--", inCwd]);
-    } catch {
-      continue;
+      text = git(cwd, ["log", "--diff-filter=A", "--name-only", "--format=", "--relative", ...args, "--", inCwd]);
+    } catch (e) {
+      throw new Error(`--catchup ${catchup} could not be evaluated for ${rel} (${e.message})`);
     }
     for (const line of text.split("\n")) {
       if (!line.trim()) continue;
@@ -241,8 +314,10 @@ export function readTree(root, { catchup = null, git = runGit } = {}) {
   for (const [dir, files] of dirs) {
     if (files.length && files.every((f) => catchupAdded.has(f))) continue;
     const slug = dir.split("/").pop();
+    for (const id of idsIn(slug, phaseIds)) openspecIds.add(id);
     for (const id of phaseIds) {
-      if (slug.includes(id) || slug.includes(id.replace(/\./g, "-"))) openspecIds.add(id);
+      const dashed = new RegExp(`(?<![\\w])${escapeRe(id.replace(/\./g, "-"))}(?![\\w]|-\\d)`);
+      if (dashed.test(slug)) openspecIds.add(id);
     }
   }
 

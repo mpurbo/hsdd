@@ -1,27 +1,30 @@
 // The sign step: retroactive verification docs by delegated sign-off.
 // Every sentence here is fixed text; nothing describes a run that did not happen.
-import { toLines, headings } from "../md.mjs";
-
-const SECTIONS = ["Commands to run", "Expected output", "Observed", "Outstanding", "Learnings", "Metrics", "Sign-off"];
+import { toLines } from "../md.mjs";
+import { findSection } from "./scan.mjs";
 
 export function tierWord(tier) {
   return tier ?? "not stated in the phase record";
 }
 
-export function signoffBlock(phase, inputs) {
+export function learningsDisposition(inputs, { learningsEmpty = true } = {}) {
+  return learningsEmpty ? "none" : `dropped (sealed at release ${inputs.release}; not actioned)`;
+}
+
+export function signoffBlock(phase, inputs, { learningsEmpty = true } = {}) {
   return [
     "## Sign-off",
     `- Reviewer / date: Claude for ${inputs.owner} (delegated), ${inputs.today}`,
     `- Review tier applied: ${tierWord(phase.tier)}`,
     "- Disposition of each Outstanding item: waived (released and QA-verified)",
-    "- Disposition of each Learning: none",
+    `- Disposition of each Learning: ${learningsDisposition(inputs, { learningsEmpty })}`,
     "",
   ].join("\n");
 }
 
 export function retroactiveDoc(phase, inputs) {
   return [
-    `# Verification: ${phase.id} — ${phase.name}`,
+    `# Verification: ${phase.id} \u2014 ${phase.name}`,
     "",
     "## Commands to run",
     "none, retroactive",
@@ -30,7 +33,7 @@ export function retroactiveDoc(phase, inputs) {
     "see QA evidence",
     "",
     "## Observed",
-    `${inputs.today}: Not observed by this run. Released in ${inputs.release} on ${inputs.date}. QA evidence: ${inputs.evidence}. Retroactive (spec §11.8).`,
+    `${inputs.today}: Not observed by this run. Released in ${inputs.release} on ${inputs.date}. QA evidence: ${inputs.evidence}. Retroactive (spec \u00a711.8).`,
     "",
     "## Outstanding",
     "- individual verification not performed",
@@ -42,37 +45,27 @@ export function retroactiveDoc(phase, inputs) {
   ].join("\n");
 }
 
-// Level-2 sections by name, with their line ranges [start, end) of body.
-function sectionMap(ls) {
-  const hs = headings(ls).filter((h) => h.level <= 2);
-  const out = new Map();
-  hs.forEach((h, k) => {
-    if (h.level !== 2) return;
-    const next = hs.find((x) => x.line > h.line);
-    out.set(h.text.trim().toLowerCase(), { line: h.line, start: h.line + 1, end: next ? next.line : ls.length });
-  });
-  return out;
-}
+const emptyBody = (lines) => lines.every((l) => !l.trim() || /^\s*-\s+none\b/i.test(l));
 
-const emptyBody = (ls, s) => ls.slice(s.start, s.end).every((l) => !l.trim());
-
-// Keep the body, replace or append Sign-off, fill an empty Learnings with "- none".
+// Keep the body, replace or append Sign-off, fill an empty Learnings with
+// "- none". Sections are found the way scan.mjs finds them, so a numbered
+// heading is rewritten, never duplicated.
 export function signDoc(text, phase, inputs) {
   let ls = toLines(text);
   while (ls.length && !ls[ls.length - 1].trim()) ls.pop();
-  let secs = sectionMap(ls);
-  const learn = secs.get("learnings");
+  const learn = findSection(ls, "learnings");
+  let learningsEmpty = true;
   if (learn) {
-    if (emptyBody(ls, learn)) ls.splice(learn.start, learn.end - learn.start, "- none", "");
+    if (emptyBody(learn.lines)) ls.splice(learn.sec.start, learn.sec.end - learn.sec.start, "- none", "");
+    else learningsEmpty = false;
   } else {
-    const so = secs.get("sign-off");
-    const at = so ? so.line : ls.length;
+    const so = findSection(ls, "sign-off");
+    const at = so ? so.sec.line : ls.length;
     ls.splice(at, 0, "## Learnings", "- none", "");
   }
-  secs = sectionMap(ls);
-  const block = signoffBlock(phase, inputs).split("\n");
-  const so = secs.get("sign-off");
-  if (so) ls.splice(so.line, so.end - so.line, ...block);
+  const block = signoffBlock(phase, inputs, { learningsEmpty }).split("\n");
+  const so = findSection(ls, "sign-off");
+  if (so) ls.splice(so.sec.line, so.sec.end - so.sec.line, ...block);
   else {
     if (ls.length && ls[ls.length - 1].trim()) ls.push("");
     ls.push(...block);
@@ -82,6 +75,8 @@ export function signDoc(text, phase, inputs) {
   return out.replace(/\n{3,}/g, "\n\n");
 }
 
+export const docPathFor = (id) => `hsdd/verify/${id}.verification.md`;
+
 export function opsSign(plan, tree) {
   const ops = [];
   for (const p of plan.phases) {
@@ -89,7 +84,7 @@ export function opsSign(plan, tree) {
     const doc = tree.docs.get(p.id);
     if (doc?.signed) continue;
     const phase = { id: p.id, name: p.name, tier: p.tier };
-    const path = p.docPath;
+    const path = docPathFor(p.id);
     if (!doc?.exists || doc.addedInCatchup) {
       ops.push({ kind: "write", path, content: retroactiveDoc(phase, plan.inputs), note: doc?.exists ? "rewritten: the catch-up added this doc" : "retroactive doc" });
     } else {
@@ -98,5 +93,3 @@ export function opsSign(plan, tree) {
   }
   return ops;
 }
-
-export { SECTIONS };

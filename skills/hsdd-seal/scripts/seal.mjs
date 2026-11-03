@@ -5,7 +5,7 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join, relative, resolve } from "node:path";
-import { readTree, runGit, gitCwdFor } from "./lib/scan.mjs";
+import { readTree, runGit, gitCwdFor, validateCatchup } from "./lib/scan.mjs";
 import { buildPlan, renderPlan, planPaths } from "./lib/plan.mjs";
 import { applyOps, describeOps } from "./lib/ops.mjs";
 import { opsSign } from "./lib/sign.mjs";
@@ -20,7 +20,8 @@ export const USAGE = "usage: seal.mjs plan | apply sign|drop|prune|close | repor
   "  report --plan hsdd/management/DATE-seal-plan.json [--write] [--commit]";
 
 const STEPS = { sign: opsSign, drop: opsDrop, prune: opsPrune, close: opsClose };
-const FLAGS = new Set(["write", "commit"]);
+const FLAGS = new Set(["write", "commit", "force"]);
+const DATE = /^\d{4}-\d{2}-\d{2}$/;
 
 export function parseArgs(argv) {
   const out = { cmd: argv[0] ?? null, sub: null, opts: {} };
@@ -62,30 +63,62 @@ function loadPlan(root, rel, out) {
     out.error(`${rel} is not a seal plan (kind ${JSON.stringify(plan?.kind ?? null)})`);
     return { code: 1 };
   }
+  if (!DATE.test(String(plan.inputs?.today ?? ""))) {
+    out.error(`${rel}: inputs.today must be YYYY-MM-DD, got ${JSON.stringify(plan.inputs?.today ?? null)}`);
+    return { code: 1 };
+  }
   return { plan, full };
 }
 
-// Stage and commit the touched paths in each git working copy they belong to.
-export function commitPaths(root, paths, message, git = runGit) {
+function groupByCwd(root, paths) {
   const byCwd = new Map();
   for (const p of paths) {
     const cwd = gitCwdFor(root, p);
     if (!byCwd.has(cwd)) byCwd.set(cwd, []);
     byCwd.get(cwd).push(relative(cwd, join(root, p)));
   }
+  return byCwd;
+}
+
+// Working copies other than the root whose HEAD is detached: a commit there
+// would sit on no branch, one `git submodule update` from being orphaned.
+export function detachedCwds(root, paths, git = runGit) {
+  const out = [];
+  for (const cwd of groupByCwd(root, paths).keys()) {
+    if (cwd === root) continue;
+    try {
+      git(cwd, ["symbolic-ref", "-q", "HEAD"]);
+    } catch {
+      out.push(cwd);
+    }
+  }
+  return out;
+}
+
+const hasStaged = (git, cwd, rels) => {
+  try {
+    git(cwd, ["diff", "--cached", "--quiet", "--", ...rels]);
+    return false;
+  } catch {
+    return true;
+  }
+};
+
+// Stage and commit only the touched paths, in each git working copy they
+// belong to; anything else the owner had staged stays staged.
+export function commitPaths(root, paths, message, git = runGit) {
   const committed = [];
-  for (const [cwd, rels] of byCwd) {
+  for (const [cwd, rels] of groupByCwd(root, paths)) {
     git(cwd, ["add", "-A", "--", ...rels]);
-    const staged = git(cwd, ["status", "--porcelain", "--", ...rels]).trim();
-    if (!staged) continue;
-    git(cwd, ["commit", "-q", "-m", message]);
+    if (!hasStaged(git, cwd, rels)) continue;
+    git(cwd, ["commit", "-q", "-m", message, "--", ...rels]);
     committed.push(cwd);
   }
   for (const cwd of committed) {
     if (cwd === root) continue;
     const sub = relative(root, cwd);
     git(root, ["add", "--", sub]);
-    if (git(root, ["status", "--porcelain", "--", sub]).trim()) git(root, ["commit", "-q", "-m", `${message} (pointer)`]);
+    if (hasStaged(git, root, [sub])) git(root, ["commit", "-q", "-m", `${message} (pointer)`, "--", sub]);
   }
   return committed;
 }
@@ -103,9 +136,22 @@ function cmdPlan(root, opts, out) {
     catchup: opts.catchup || null, today: opts.today || today(),
     keep: opts.keep ? String(opts.keep).split(",").map((s) => s.trim()).filter(Boolean) : [],
   };
+  if (!DATE.test(inputs.today) || !DATE.test(inputs.date)) {
+    out.error("--date and --today take YYYY-MM-DD");
+    return 2;
+  }
+  const check = validateCatchup(root, inputs.catchup);
+  if (!check.ok) {
+    for (const e of check.errors) out.error(`--catchup: ${e}`);
+    return 1;
+  }
+  const paths = planPaths(root, inputs.today);
+  if (existsSync(join(root, paths.json)) && !opts.force) {
+    out.error(`${paths.json} exists and may carry the owner's edits; pass --force to overwrite it`);
+    return 1;
+  }
   const tree = readTree(root, { catchup: inputs.catchup });
   const plan = buildPlan(tree, inputs);
-  const paths = planPaths(root, inputs.today);
   mkdirSync(dirname(join(root, paths.json)), { recursive: true });
   writeFileSync(join(root, paths.json), JSON.stringify(plan, null, 2) + "\n");
   writeFileSync(join(root, paths.md), renderPlan(plan));
@@ -137,11 +183,18 @@ function cmdApply(root, sub, opts, out) {
     out.log("dry run: nothing written; pass --write to apply");
     return 0;
   }
+  const touched = [...new Set(ops.flatMap((o) => (o.kind === "rename" ? [o.path, o.to] : o.kind === "note" ? [] : [o.path])))];
+  if (opts.commit) {
+    const detached = detachedCwds(root, touched);
+    if (detached.length) {
+      for (const cwd of detached) out.error(`${relative(root, cwd)}/ has a detached HEAD; check out its main line there, then run this step again. Nothing was written.`);
+      return 1;
+    }
+  }
   const r = applyOps(root, ops, { write: true });
   for (const l of r.lines) out.log(l);
   out.log(`applied ${r.applied.length}, skipped ${r.skipped.length}`);
-  if (opts.commit && r.applied.length) {
-    const touched = [...new Set(ops.flatMap((o) => (o.kind === "rename" ? [o.path, o.to] : o.kind === "note" ? [] : [o.path])))];
+  if (opts.commit && touched.length) {
     const committed = commitPaths(root, touched, `seal: ${sub}`);
     out.log(committed.length ? `committed in ${committed.map((c) => relative(root, c) || ".").join(", ")}` : "nothing to commit");
   }

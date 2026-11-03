@@ -2,7 +2,15 @@
 // An Op is { kind: "write"|"delete"|"rename"|"note", path, content?, to?, note };
 // a note is printed and never applied: something the owner must do by hand.
 import { existsSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from "node:fs";
-import { dirname, join } from "node:path";
+import { dirname, join, resolve, sep } from "node:path";
+
+// A path from a plan file must stay under the project root.
+export function underRoot(root, p) {
+  const base = resolve(root);
+  const full = resolve(root, p);
+  if (full !== base && !full.startsWith(base + sep)) throw new Error(`refusing ${p}: outside the project root`);
+  return full;
+}
 
 export function describeOps(ops) {
   if (!ops.length) return "nothing to do";
@@ -15,11 +23,12 @@ export function applyOps(root, ops, { write = false } = {}) {
   const skipped = [];
   const lines = [];
   for (const op of ops) {
-    const full = join(root, op.path);
     if (op.kind === "note") {
       lines.push(`note   ${op.path}  ${op.note ?? ""}`.trimEnd());
       continue;
     }
+    const full = underRoot(root, op.path);
+    if (op.kind === "rename") underRoot(root, op.to);
     if (op.kind === "write") {
       if (existsSync(full) && readFileSync(full, "utf8") === op.content) {
         skipped.push(op.path);

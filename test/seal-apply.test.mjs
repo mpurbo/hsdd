@@ -267,3 +267,66 @@ test("opsClose on the fixture after sign and drop: the record gains its cited ph
   assert.equal(after.milestone, null);
   assert.equal(opsClose(plan, after).length, 0);
 });
+
+// Fix pass: findings 4, 6, 7, 8 (tick), 9
+test("signDoc replaces a numbered or suffixed Sign-off and Learnings section instead of appending a second one", () => {
+  const before = "# V\n\n## 3. Observed\nran it\n\n## 5. Learnings\n\n## 7. Sign-off\n- Reviewer / date: {person}\n";
+  const after = signDoc(before, PH, INPUTS);
+  assert.equal((after.match(/Sign-off/g) || []).length, 1);
+  assert.equal((after.match(/Learnings/g) || []).length, 1);
+  assert.match(after, /## 5\. Learnings\n- none\n/);
+  assert.match(after, /## Sign-off\n- Reviewer \/ date: Claude for Dewi/);
+  assert.doesNotMatch(after, /\{person\}/);
+});
+
+test("signDoc never claims a disposition for Learnings it did not disposition", () => {
+  const before = "# V\n\n## Observed\nran it\n\n## Learnings\n- the node spec names the wrong port\n\n## Sign-off\n- Reviewer / date: {person}\n";
+  const after = signDoc(before, PH, INPUTS);
+  assert.match(after, /- the node spec names the wrong port\n/);
+  assert.match(after, /- Disposition of each Learning: dropped \(sealed at release 2\.4\.0; not actioned\)\n/);
+  assert.doesNotMatch(after, /Disposition of each Learning: none/);
+});
+
+test("opsSign derives the doc path from the phase id, not from the plan file", () => {
+  const { tree, plan } = planned();
+  plan.phases.find((p) => p.id === "acme.web.1").docPath = "../escaped.md";
+  const ops = opsSign(plan, tree);
+  assert.ok(ops.every((o) => !o.path.includes("..")));
+  assert.ok(ops.some((o) => o.path === "hsdd/verify/acme.web.1.verification.md"));
+});
+
+test("opsPrune accepts only a change directory the fresh scan knows and the catch-up added", () => {
+  const { tree, plan } = planned();
+  plan.prune = [
+    { dir: "openspec/changes/../../../victim", files: [] },
+    { dir: "openspec/changes/archive", files: [] },
+    { dir: "openspec/changes/archive/2026-08-01-acme-api-1", files: ["openspec/changes/archive/2026-08-01-acme-api-1/proposal.md"] },
+    { dir: "openspec/changes/archive/2026-10-25-acme-api-3", files: ["openspec/changes/archive/2026-10-25-acme-api-3/proposal.md", "openspec/changes/archive/2026-10-25-acme-api-3/tasks.md"] },
+  ];
+  assert.deepEqual(opsPrune(plan, tree).map((o) => o.path), ["openspec/changes/archive/2026-10-25-acme-api-3"]);
+});
+
+test("applyOps refuses a path that leaves the project root", () => {
+  const root = mkdtempSync(join(tmpdir(), "hsdd-seal-ops-"));
+  assert.throws(() => applyOps(root, [{ kind: "write", path: "../escaped.md", content: "x", note: "" }], { write: true }), /outside/);
+  assert.throws(() => applyOps(root, [{ kind: "delete", path: "/etc", note: "" }], { write: false }), /outside/);
+  assert.throws(() => applyOps(root, [{ kind: "rename", path: "a.md", to: "../b.md", note: "" }], { write: false }), /outside/);
+});
+
+test("tickMilestone with a range gate ticks only when every phase in the range is done or dropped", () => {
+  const text = "# M\n\n**Date:** d\n\n## Milestones\n- [ ] acme.api.1–acme.api.4 done\n\n## Change log\n- d: generated\n";
+  const partial = tickMilestone(text, { done: new Set(["acme.api.1", "acme.api.4"]), dropped: new Set(), today: "2026-11-03", release: "2.4.0", phaseIds: MS_IDS });
+  assert.equal(partial.sealed, false);
+  assert.deepEqual(partial.open, ["acme.api.1–acme.api.4 done"]);
+  const full = tickMilestone(text, { done: new Set(["acme.api.1", "acme.api.2", "acme.api.3"]), dropped: new Set(["acme.api.4"]), today: "2026-11-03", release: "2.4.0", phaseIds: MS_IDS });
+  assert.equal(full.sealed, true);
+});
+
+test("opsDrop notes a catch-up doc left on a dropped phase instead of ignoring it", () => {
+  const { tree, plan } = planned();
+  plan.phases.find((p) => p.id === "acme.web.2").class = "drop";
+  const ops = opsDrop(plan, tree);
+  const note = ops.find((o) => o.kind === "note" && o.path === "hsdd/verify/acme.web.2.verification.md");
+  assert.ok(note, "expected a note for the catch-up doc");
+  assert.match(note.note, /catch-up/);
+});
