@@ -248,11 +248,11 @@ export function readTree(root, { catchup = null, git = runGit } = {}) {
 
   const pending = [];
   const dropped = new Set();
-  const seen = new Set();
+  const specTexts = new Map();
   for (const n of plan.nodes) {
-    if (!n.sourceFile || seen.has(n.sourceFile) || !existsSync(join(root, n.sourceFile))) continue;
-    seen.add(n.sourceFile);
+    if (!n.sourceFile || specTexts.has(n.sourceFile) || !existsSync(join(root, n.sourceFile))) continue;
     const text = readFileSync(join(root, n.sourceFile), "utf8");
+    specTexts.set(n.sourceFile, text);
     const pr = pendingRequests(text);
     if (pr.entries > 0) pending.push({ node: n.id, path: n.sourceFile, ...pr });
     for (const id of droppedPhaseIds(text, phaseIds)) dropped.add(id);
@@ -282,6 +282,7 @@ export function readTree(root, { catchup = null, git = runGit } = {}) {
     changeDirs: dirs,
     pending,
     dropped,
+    specTexts,
     conventions: { path: "hsdd/conventions.md", text: convText, hasDropped: /Status:\*{0,2}\s*dropped|Status: dropped/.test(convText) },
     catchupAdded,
     unparsed: [...plan.unparsed],

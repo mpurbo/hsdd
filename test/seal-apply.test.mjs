@@ -31,6 +31,9 @@ test("applyOps: dry run writes nothing, --write writes, identical content is ski
   assert.deepEqual(again.applied, []);
   assert.deepEqual(again.skipped, ["hsdd/verify/x.md"]);
   assert.match(describeOps(ops), /write\s+hsdd\/verify\/x\.md\s+x/);
+  const noted = applyOps(root, [{ kind: "note", path: "hsdd/spec/n.md", note: "by hand" }], { write: true });
+  assert.deepEqual([noted.applied, noted.skipped], [[], []]);
+  assert.match(noted.lines[0], /^note\s+hsdd\/spec\/n\.md\s+by hand$/);
 });
 
 test("applyOps: delete and rename", () => {
@@ -100,4 +103,50 @@ test("opsSign writes a doc for a phase the owner reclassified to sign", () => {
   assert.ok(ops.some((o) => o.path === "hsdd/verify/acme.web.3.verification.md"));
   applyOps(root, ops, { write: true });
   assert.ok(existsSync(join(root, "hsdd/verify/acme.web.3.verification.md")));
+});
+
+// Task 5: the drop step
+import { API_SPEC, CONVENTIONS } from "./helpers/seal-fixture.mjs";
+import { statusLine, insertStatus, conventionsParagraph, addConvention, opsDrop } from "../skills/hsdd-seal/scripts/lib/drop.mjs";
+
+test("statusLine is the fixed dropped line", () => {
+  assert.equal(statusLine(INPUTS), "- **Status:** dropped (2026-11-03, not built before release 2.4.0)");
+});
+
+test("insertStatus puts the line after the phase's Review tier, once, and only in that phase", () => {
+  const line = statusLine(INPUTS);
+  const once = insertStatus(API_SPEC, { id: "acme.api.4", n: 4 }, line);
+  assert.match(once, /### acme\.api\.4: Export\n[\s\S]*?- \*\*Review tier:\*\* gate-only\n- \*\*Status:\*\* dropped \(2026-11-03, not built before release 2\.4\.0\)\n- \*\*Dependencies:\*\* none\n/);
+  assert.equal((once.match(/\*\*Status:\*\* dropped/g) || []).length, 1);
+  assert.equal(insertStatus(once, { id: "acme.api.4", n: 4 }, line), once);
+  assert.equal(insertStatus(API_SPEC, { id: "acme.api.9", n: 9 }, line), null);
+});
+
+test("insertStatus falls back to the end of the field block when there is no Review tier line", () => {
+  const spec = "# n: N\n\n## Phase Plan\n\n### n.1: One\n\n- **Scope:** x\n- **Gate:** npm test\n\nSome prose.\n";
+  const out = insertStatus(spec, { id: "n.1", n: 1 }, "- **Status:** dropped (d, r)");
+  assert.match(out, /- \*\*Gate:\*\* npm test\n- \*\*Status:\*\* dropped \(d, r\)\n\nSome prose\.\n/);
+});
+
+test("conventions paragraph is appended once under Phase design", () => {
+  const para = conventionsParagraph(INPUTS);
+  assert.match(para, /^A phase record may carry `- \*\*Status:\*\* dropped \(date, reason\)`\./);
+  assert.match(para, /release 2\.4\.0\.$/);
+  const conv = addConvention(CONVENTIONS, para);
+  assert.match(conv, /## Phase design[\s\S]*Status:\*\* dropped[\s\S]*\n## Teams/);
+  assert.equal(addConvention(conv, para), conv);
+  const bare = addConvention("# Project Conventions\n\n## Layout\n- x\n", para);
+  assert.match(bare, /\n## Phase design\n\nA phase record may carry/);
+});
+
+test("opsDrop writes the two node specs and the conventions file, and is idempotent", () => {
+  const { root, catchup, tree, plan } = planned();
+  const ops = opsDrop(plan, tree);
+  assert.deepEqual(ops.map((o) => o.path).sort(), ["hsdd/conventions.md", "hsdd/spec/acme.api.md", "hsdd/spec/acme.web.md"]);
+  applyOps(root, ops, { write: true });
+  const after = readTree(root, { catchup });
+  assert.deepEqual([...after.dropped].sort(), ["acme.api.4", "acme.web.3"]);
+  assert.equal(after.conventions.hasDropped, true);
+  assert.equal(opsDrop(plan, after).length, 0);
+  assert.ok(readFileSync(join(root, "hsdd/spec/acme.api.md"), "utf8").includes("## Governance updates (pending reconcile)\n\n- confirm"));
 });

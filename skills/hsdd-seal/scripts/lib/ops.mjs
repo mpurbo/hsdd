@@ -1,5 +1,6 @@
 // File operations: computed first, described, then applied only with --write.
-// An Op is { kind: "write"|"delete"|"rename", path, content?, to?, note }.
+// An Op is { kind: "write"|"delete"|"rename"|"note", path, content?, to?, note };
+// a note is printed and never applied: something the owner must do by hand.
 import { existsSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 
@@ -15,6 +16,10 @@ export function applyOps(root, ops, { write = false } = {}) {
   const lines = [];
   for (const op of ops) {
     const full = join(root, op.path);
+    if (op.kind === "note") {
+      lines.push(`note   ${op.path}  ${op.note ?? ""}`.trimEnd());
+      continue;
+    }
     if (op.kind === "write") {
       if (existsSync(full) && readFileSync(full, "utf8") === op.content) {
         skipped.push(op.path);
