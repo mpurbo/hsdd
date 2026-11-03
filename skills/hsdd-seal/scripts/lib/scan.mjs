@@ -56,7 +56,7 @@ export function parseVerificationDoc(text) {
   };
 }
 
-function headerField(ls, name) {
+export function headerField(ls, name) {
   const re = new RegExp(`^\\s*-?\\s*\\*\\*${name}:\\*\\*\\s*(.*)$`, "i");
   for (const l of ls) {
     const m = re.exec(l);

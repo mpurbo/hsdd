@@ -174,3 +174,96 @@ test("opsPrune honours the owner removing a directory from the plan", () => {
   plan.prune = [];
   assert.deepEqual(opsPrune(plan, tree), []);
 });
+
+// Task 7: the close step
+import { MILESTONES } from "./helpers/seal-fixture.mjs";
+import { writeFileSync } from "node:fs";
+import { closeIntake, tickMilestone, opsClose } from "../skills/hsdd-seal/scripts/lib/close.mjs";
+
+const REC = (produced, status = "open") => `# Intake: X\n\n- **Date:** 2026-01-01\n- **Request:** docs/x.md (ticket)\n- **Status:** ${status}\n\n## Request\nX.\n\n## Produced\n${produced}\n\n## Change log\n- 2026-01-01: created\n`;
+const IDS = ["a.1", "a.2", "a.3"];
+const CLOSE = { today: "2026-11-03", release: "2.4.0", phaseIds: IDS };
+
+test("closeIntake closes a record whose produced phases are all done", () => {
+  const r = closeIntake(REC("- phases: `a.1`, `a.2`"), { ...CLOSE, done: new Set(["a.1", "a.2"]), dropped: new Set(), cited: [] });
+  assert.equal(r.action, "closed");
+  assert.match(r.text, /- \*\*Status:\*\* closed \(2026-11-03\)\n/);
+  assert.match(r.text, /- 2026-11-03: closed at the seal of release 2\.4\.0\n$/);
+  assert.doesNotMatch(r.text, /\*\*Status:\*\* open/);
+});
+
+test("closeIntake leaves an all-dropped record open with a dated note", () => {
+  const r = closeIntake(REC("- phases: `a.1`"), { ...CLOSE, done: new Set(), dropped: new Set(["a.1"]), cited: [] });
+  assert.equal(r.action, "all-dropped");
+  assert.match(r.text, /- \*\*Status:\*\* open\n/);
+  assert.match(r.text, /- 2026-11-03: all produced phases dropped at the seal of release 2\.4\.0\n$/);
+});
+
+test("closeIntake appends cited phases to Produced and keeps a mixed record open", () => {
+  const r = closeIntake(REC("- phases: `a.1`, `a.2`"), { ...CLOSE, done: new Set(["a.1"]), dropped: new Set(["a.2"]), cited: ["a.1", "a.3"] });
+  assert.equal(r.action, "open");
+  assert.match(r.text, /## Produced\n- phases: `a\.1`, `a\.2`\n- phases \(seal\): a\.3\n/);
+  assert.match(r.text, /- \*\*Status:\*\* open\n/);
+});
+
+test("closeIntake leaves a closed record alone and an empty one open", () => {
+  const closed = REC("- phases: `a.1`", "closed (2026-10-01)");
+  assert.deepEqual(closeIntake(closed, { ...CLOSE, done: new Set(["a.1"]), dropped: new Set(), cited: [] }), { text: closed, action: "already-closed" });
+  const empty = closeIntake(REC("(nothing yet)"), { ...CLOSE, done: new Set(["a.1"]), dropped: new Set(), cited: [] });
+  assert.equal(empty.action, "open");
+  assert.equal(empty.text, REC("(nothing yet)"));
+});
+
+const MS_IDS = ["acme.api.1", "acme.api.2", "acme.api.3", "acme.api.4", "acme.web.1", "acme.web.2", "acme.web.3"];
+const DONE = new Set(["acme.api.1", "acme.api.2", "acme.api.3", "acme.web.1", "acme.web.2"]);
+const DROPPED = new Set(["acme.api.4", "acme.web.3"]);
+
+test("tickMilestone ticks gates whose phases are done or dropped, records the absorb, and stays unsealed over an unknown gate", () => {
+  const r = tickMilestone(MILESTONES, { done: DONE, dropped: DROPPED, today: "2026-11-03", release: "2.4.0", phaseIds: MS_IDS });
+  assert.equal(r.sealed, false);
+  assert.deepEqual(r.open, ["acme.api.10 done"]);
+  assert.deepEqual(r.absorbed, ["acme.api.4", "acme.web.3"]);
+  assert.equal((r.text.match(/- \[x\]/g) || []).length, 3);
+  assert.equal((r.text.match(/- \[ \]/g) || []).length, 1);
+  assert.match(r.text, /- 2026-11-03: dropped phases acme\.api\.4, acme\.web\.3 left the gates; scope absorbed at the seal of release 2\.4\.0, dates hold\n$/);
+  assert.doesNotMatch(r.text, /\*\*Sealed:\*\*/);
+});
+
+test("tickMilestone seals when every gate with known phases is ticked", () => {
+  const text = MILESTONES.replace(/^- \[ \] .*acme\.api\.10.*\n/m, "");
+  const r = tickMilestone(text, { done: DONE, dropped: DROPPED, today: "2026-11-03", release: "2.4.0", phaseIds: MS_IDS });
+  assert.equal(r.sealed, true);
+  assert.deepEqual(r.open, []);
+  assert.ok(r.text.indexOf("- **Sealed:** 2026-11-03") > 0);
+  assert.ok(r.text.indexOf("- **Sealed:** 2026-11-03") < r.text.indexOf("\n## "));
+  const again = tickMilestone(r.text, { done: DONE, dropped: DROPPED, today: "2026-11-03", release: "2.4.0", phaseIds: MS_IDS });
+  assert.equal(again.text, r.text);
+});
+
+test("tickMilestone keeps a gate open when it names a phase that is neither done nor dropped", () => {
+  const text = MILESTONES.replace(/^- \[ \] .*acme\.api\.10.*\n/m, "");
+  const r = tickMilestone(text, { done: new Set([...DONE].filter((x) => x !== "acme.web.2")), dropped: DROPPED, today: "2026-11-03", release: "2.4.0", phaseIds: MS_IDS });
+  assert.equal(r.sealed, false);
+  assert.deepEqual(r.open, ["acme.web.1, acme.web.2 and acme.web.3 done"]);
+});
+
+test("opsClose on the fixture after sign and drop: the record gains its cited phase and stays open; the milestone seals and moves to the archive", () => {
+  const { root, catchup, tree, plan } = planned();
+  applyOps(root, opsSign(plan, tree), { write: true });
+  applyOps(root, opsDrop(plan, tree), { write: true });
+  const ms = join(root, "hsdd/management/2026-09-01-milestones.md");
+  writeFileSync(ms, readFileSync(ms, "utf8").replace(/^- \[ \] .*acme\.api\.10.*\n/m, ""));
+  const ops = opsClose(plan, readTree(root, { catchup }));
+  const rec = ops.find((o) => o.path === "hsdd/management/2026-08-20-intake-feature-x.md");
+  assert.ok(rec && rec.kind === "write");
+  assert.match(rec.content, /- phases \(seal\): acme\.web\.3/);
+  assert.match(rec.content, /- \*\*Status:\*\* open\n/);
+  assert.ok(ops.some((o) => o.kind === "write" && o.path === "hsdd/management/2026-09-01-milestones.md" && /\*\*Sealed:\*\* 2026-11-03/.test(o.content)));
+  assert.ok(ops.some((o) => o.kind === "rename" && o.path === "hsdd/management/2026-09-01-milestones.md" && o.to === "hsdd/management/archive/2026-09-01-milestones.md"));
+  applyOps(root, ops, { write: true });
+  assert.ok(existsSync(join(root, "hsdd/management/archive/2026-09-01-milestones.md")));
+  assert.equal(existsSync(ms), false);
+  const after = readTree(root, { catchup });
+  assert.equal(after.milestone, null);
+  assert.equal(opsClose(plan, after).length, 0);
+});
