@@ -150,3 +150,27 @@ test("opsDrop writes the two node specs and the conventions file, and is idempot
   assert.equal(opsDrop(plan, after).length, 0);
   assert.ok(readFileSync(join(root, "hsdd/spec/acme.api.md"), "utf8").includes("## Governance updates (pending reconcile)\n\n- confirm"));
 });
+
+// Task 6: the prune step
+import { prunableDirs, opsPrune } from "../skills/hsdd-seal/scripts/lib/prune.mjs";
+
+test("prunableDirs keeps only directories whose every file the catch-up added", () => {
+  assert.deepEqual(prunableDirs(new Set(["x/a", "x/b", "y/a"]), new Map([["x", ["x/a", "x/b"]], ["y", ["y/a", "y/b"]], ["z", []]])), ["x"]);
+});
+
+test("opsPrune deletes the catch-up archive and nothing else, and is idempotent", () => {
+  const { root, catchup, tree, plan } = planned();
+  const ops = opsPrune(plan, tree);
+  assert.deepEqual(ops.map((o) => [o.kind, o.path]), [["delete", "openspec/changes/archive/2026-10-25-acme-api-3"]]);
+  applyOps(root, ops, { write: true });
+  assert.equal(existsSync(join(root, "openspec/changes/archive/2026-10-25-acme-api-3")), false);
+  assert.ok(existsSync(join(root, "openspec/changes/archive/2026-08-01-acme-api-1/proposal.md")));
+  assert.ok(existsSync(join(root, "openspec/specs/api/spec.md")));
+  assert.equal(opsPrune(plan, readTree(root, { catchup })).length, 0);
+});
+
+test("opsPrune honours the owner removing a directory from the plan", () => {
+  const { tree, plan } = planned();
+  plan.prune = [];
+  assert.deepEqual(opsPrune(plan, tree), []);
+});
