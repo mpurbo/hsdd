@@ -230,6 +230,7 @@ const SKILLS = [
   ]],
   ["Change", [
     ["hsdd-intake", "Route a change request into the existing tree: classify it, detect collisions, write the record, hand off.", "Here's the payout-scheduling PRD, docs/prd-payout-scheduling.md. Where does it go?"],
+    ["hsdd-seal", "Seal a released tree whose artifacts went stale, by script: a plan with a default class per phase, your edit of that one field, then retroactive sign-offs, dropped phases, closed records and the archived campaign. No model reads the tree.", "node hsdd/scripts/seal/seal.mjs plan --release 2.4.0 --date 2026-09-15 --owner \"Dewi\" --evidence \"QA regression 2.4.0\""],
   ]],
   ["Run", [
     ["hsdd-checkpoint", "Run the weekly evidence pass across the spec repo and every implementation repo.", "/hsdd-checkpoint full checkpoint before Monday's sync. Repos: ~/git/acme-be, ~/git/acme-fe."],
@@ -1496,7 +1497,7 @@ const CHAPTERS = [
   },
   {
     id: "begin", group: "Run it", short: "Get started", eyebrow: "09 · Get started",
-    title: "Twelve skills, two ways in.",
+    title: "Thirteen skills, two ways in.",
     lede: "HSDD ships as agent skills for Claude Code, Cursor, Codex and other agents. You talk to your agent; the skills trigger on what you ask for.",
     steps: [
       { title: "The skill map", visual: skillsView, body: () => `

@@ -1326,9 +1326,11 @@ Four situations recur on real projects, and the loop above does not name
 them: a stakeholder wants a size before any spec exists; the team keeps a
 knowledge base the spec should draw on; a launched system takes small fixes
 faster than phases can be planned; and a released tree has gone stale and
-nobody will verify it phase by phase. Each one runs on the skills as they
-are. What changes is the prompt, and in two cases a section you add to
-`hsdd/conventions.md`, the file every skill reads first.
+nobody will verify it phase by phase. Three of them run on the skills as
+they are: what changes is the prompt, and in two cases a section you add
+to `hsdd/conventions.md`, the file every skill reads first. The fourth has
+a skill of its own, `hsdd-seal`, because it is clerical work a script does
+better than a model.
 
 ### Estimating in PE before the first spec
 
@@ -1611,103 +1613,108 @@ went stale: verification docs unsigned, phases planned and never built,
 intake records open, an execution plan full of syncs nobody will hold.
 Rebuilding the history is the expensive path, one retro phase per manual
 change, and reviewing what it generates is harder than the work it records.
-Sealing costs one run and spends your attention only where the next change
-will look: contracts and ADRs.
+Sealing costs one script run and spends your attention only where the next
+change will look: which phases shipped, and the contracts and ADRs.
 
 Everything the seal needs is already admissible. A sign-off an agent takes
 for a named person counts as done, and the next checkpoint lists those
 sign-offs in one finding for that person to ratify. An Outstanding item may
 be waived with a reason. A verification doc written after the fact is the
-retroactive doc the spec's bypass rule names. Every finding may be waived in
-the plan with a reason instead of becoming a step. A campaign whose gates
-are all green is sealed and archived by the checkpoint that ticked the last
-one. And a protocol stated in `conventions.md` reaches every skill.
-
-One thing is missing: the method has no status for a phase that was planned
-and never built. The prompt adds one as a project convention,
+retroactive doc the spec's bypass rule names. An intake record closes when
+its produced phases are done. A campaign whose gates are all green is
+sealed and archived. And a protocol stated in `conventions.md` reaches every
+skill. One thing is missing: the method has no status for a phase that was
+planned and never built. The seal adds one as a project convention,
 `- **Status:** dropped (date, reason)` on the phase record, mirroring node
 retirement. Until a spec version names it, every later checkpoint prompt
 has to restate that dropped phases are out of scope, or the pass counts
 them as not done.
 
-Two things to decide before you run it. Everything in the campaign must end
-up done or dropped, because `hsdd-milestone` keeps one unsealed document at
-a time: work you want to keep for later stays unshipped, keeps the document
-open, and belongs in a new campaign generated after the seal. And if an
-earlier catch-up attempt generated OpenSpec changes after the fact for
-phases nobody ran OpenSpec on, delete them: they record cycles that never
-happened, and the retroactive verification docs carry the honest record. A
-recorded bypass beats a hidden one.
+Nothing in a seal needs judgment except which phases shipped, and that is
+your knowledge, not a model's. So the seal is the `hsdd-seal` skill's
+script: it computes a plan from the tree, you edit one field, it applies
+the plan, and no model reads a file. On a project billed per token that is
+the difference between a seal and a week of review. Copy the skill's
+`scripts/` directory verbatim to `hsdd/scripts/seal/` (Node 20), then plan:
 
-The run, with the facts filled in:
-
-```text
-Seal the HSDD tree for the released system. Facts:
-- Owner: {name}. Every delegated sign-off names this person.
-- Release: tag {tag}, released {YYYY-MM-DD}, in production since.
-- QA evidence: {path or URL of the QA sign-off and the test runs}.
-- Profile: {default | standalone-spec-repo}. Under the profile, run from
-  this implementation repo and commit inside hsdd/, then bump the pointer.
-
-Policy. This chooses among options the spec already allows; it overrides
-no rule.
-
-1. Every phase that shipped in {tag} is done by delegated sign-off. For
-   each phase with no signed verification doc on the main line, write
-   hsdd/verify/{phase-id}.verification.md from
-   hsdd/templates/verification.md with exactly this content and no
-   narrative:
-   - Commands to run: "none, retroactive"
-   - Expected output: "see QA evidence"
-   - Observed: "Not observed by this run. Released in {tag} on {date}. QA
-     evidence: {link}. Retroactive."
-   - Outstanding: one item, "individual verification not performed",
-     disposition: waived (released and QA-verified)
-   - Learnings: "- none"
-   - Sign-off: "Claude for {owner} (delegated)", today's date, the review
-     tier the phase plan names.
-   A doc that already has content keeps it; fill only its missing Sign-off
-   and dispositions the same way. Never invent an observation.
-2. Phases planned but never built and not in {tag}: list them to me and
-   stop. After I confirm, add "- **Status:** dropped ({date}, not built
-   before release)" to each phase record, and add under "## Phase design"
-   in hsdd/conventions.md: "A phase with Status: dropped is out of every
-   campaign scope and every done count."
-3. Run hsdd-milestone on the scope trigger: the dropped phases leave the
-   gates, the dates hold because the system is released, absorb in place
-   with a change-log entry.
-4. Run hsdd-checkpoint in full mode with this standing decision: every
-   finding whose remedy is a verification, the ratification of a delegated
-   sign-off, a sync, a queued decision, or a plan step on a shipped or
-   dropped phase is waived in the plan with the reason "sealed at release
-   {tag}". Only findings about a contract or an ADR remain as steps. Close
-   every intake record whose phases are done, tick the gates, seal the
-   milestone document and move it to hsdd/management/archive/.
-5. Delete the OpenSpec changes and archives that were generated after the
-   fact for phases nobody ran OpenSpec on, and say so in the progress
-   report.
-6. Edit no node spec body, contract or ADR, except the Status lines in
-   step 2.
-7. Commit on the main line as you go, one commit per step above.
-
-Report in one screen: phases sealed by delegated sign-off, phases dropped,
-intake records closed, milestone sealed yes or no and why not, findings
-waived with the count, and the contract or ADR items that need me, one
-line each. Nothing else needs my answer.
+```bash
+node hsdd/scripts/seal/seal.mjs plan --release 2.4.0 --date 2026-09-15 \
+  --owner "Dewi Lestari" --evidence "QA regression 2.4.0, Jira PAY fix version 2.4.0" \
+  --catchup a1b2c3d..f4e5d6c
 ```
+
+`--catchup` names the commits an earlier catch-up attempt made (a revspec,
+`since:YYYY-MM-DD`, or comma-separated shas), so the plan can tell which
+verification docs and OpenSpec change directories were invented after the
+fact. The value is checked before anything is read, and under the
+standalone-spec-repo profile only `since:` reaches both the implementation
+repo and the submodule. The command writes `hsdd/management/{today}-seal-plan.json`
+and a markdown rendering, with a default class per phase: `done` (a signed
+doc), `sign` (the newest progress report counts it done, its phase context
+exists, an OpenSpec change names it, or a doc existed before the catch-up),
+`drop` (nothing else), `skip` (already dropped, or a retired node). When
+in doubt the default is `drop`: a built phase wrongly dropped is re-planned
+by a later intake; an unbuilt phase wrongly signed makes the contracts
+claim behavior the code lacks. Read the markdown once, edit the `class`
+field in the JSON where the default is wrong, and leave everything else:
+the script re-derives every path at apply time and refuses one that leaves
+the project root. Then:
+
+```bash
+P=hsdd/management/2026-11-03-seal-plan.json
+for step in sign drop prune close; do
+  node hsdd/scripts/seal/seal.mjs apply $step --plan $P                   # dry run, read it
+  node hsdd/scripts/seal/seal.mjs apply $step --plan $P --write --commit  # apply, commit "seal: $step"
+done
+node hsdd/scripts/seal/seal.mjs report --plan $P --write --commit
+```
+
+- `sign` writes a retroactive doc for every `sign` phase whose doc is
+  missing or was added by the catch-up: Observed reads "Not observed by
+  this run. Released in 2.4.0 on 2026-09-15. QA evidence: ... Retroactive
+  (spec §11.8)", Sign-off reads `Claude for Dewi Lestari (delegated), {today}`,
+  Outstanding is waived. A doc with a real run keeps its body and gets only
+  its Sign-off rewritten; Learnings it already carries are sealed as
+  `dropped (sealed at release 2.4.0; not actioned)` and the report lists
+  the phase, because the seal never claims a disposition nobody made.
+- `drop` adds the Status line after each dropped phase's `Review tier` and
+  the convention paragraph under `## Phase design` in `hsdd/conventions.md`.
+- `prune` deletes each `openspec/changes/` directory whose every file the
+  catch-up added; they record cycles that never ran, and the retroactive
+  docs carry the honest record. `openspec/specs/` is never touched.
+- `close` re-scans, closes intake records whose produced phases are all
+  done, ticks every gate whose phases are done or dropped, records the
+  dropped ones in the milestone's change log as an absorb, and when every
+  gate is ticked adds `- **Sealed:** {today}` and moves the document to
+  `hsdd/management/archive/`.
+- `report` appends a `## Result` to the plan markdown with the counts and
+  a **Needs the owner** list: `request` entries for `hsdd-reconcile`, gates
+  still open, records still open, Learnings to read, catch-up docs left on
+  dropped phases, unparsed items. That list is the whole of what you act
+  on afterwards.
+
+Every step is a dry run until `--write`, is idempotent, and with `--commit`
+commits only the paths it touched (under the profile: inside the submodule,
+then the pointer bump; it refuses to write while `hsdd/` has a detached
+HEAD). One decision before you run it: everything in the campaign must end
+up done or dropped, because `hsdd-milestone` keeps one unsealed document at
+a time. Work you want to keep for later (`--keep`) holds its gate red and
+belongs in a new campaign generated after the seal; the simpler path is to
+drop it and let it re-enter through `hsdd-intake`.
 
 What you have afterwards is a tree whose ledger is complete and honest:
 every shipped phase has a doc that says it was not individually observed
 and why that was accepted, every unbuilt phase says it was dropped, the
-campaign is in the archive, and the execution plan's only live steps are
-the contract and ADR items the next change will depend on. Work those
-through `hsdd-contract` and `hsdd-adr` at your own pace.
-
-Then stop running checkpoints on a cadence. The next one runs when
-something lands, scoped and naming the commits, and it carries the standing
-decision from step 4 until the spec names the dropped status. New work
-enters through the lanes of the previous section; a feature large enough
-for several phases enters through `hsdd-intake` and opens a new campaign.
+campaign is in the archive, and your remaining work is the Needs the owner
+list. No checkpoint ran: the expensive evidence pass was paid for before the
+seal and nothing in the code changed. The first checkpoint after it, scoped
+to the seal commits, supersedes the pre-seal execution plan, lists the
+seal's delegated sign-offs in one finding for you to ratify, and carries the
+standing decision that every finding except a contract or ADR item is
+waived "sealed at release 2.4.0". A reconcile runs when the first intake
+needs one. New work enters through the lanes of the previous section; a
+feature large enough for several phases enters through `hsdd-intake` and
+opens a new campaign.
 
 ---
 
