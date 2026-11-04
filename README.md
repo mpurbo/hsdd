@@ -206,6 +206,19 @@ sitting over the ledger: the report's "Decisions to look at first" section
 lists every answer the run gave on your behalf. Nothing starts a run on a
 timer. See the [v0.11 specification](spec/hsdd-spec-v0_11.md).
 
+## Sealing a released tree
+
+A system ships, QA verifies it, and the tree falls behind: unsigned
+verification docs, phases planned and never built, open intake records.
+`/hsdd-seal` closes that ledger by script, with no model reading the tree:
+`plan` writes a seal plan with a default class per phase, you edit that one
+field, `apply sign|drop|prune|close` writes retroactive verification docs by
+delegated sign-off, marks unbuilt phases `dropped`, removes OpenSpec records
+an earlier catch-up invented, closes the intake records and seals the
+campaign document into the archive, and `report` lists what only you can
+do. Every write is a dry run until `--write`. See the
+[v0.12 specification](spec/hsdd-spec-v0_12.md).
+
 ## Quickstart
 
 ```text
@@ -234,6 +247,8 @@ timer. See the [v0.11 specification](spec/hsdd-spec-v0_11.md).
   (v0.3–v0.7.1) remains in `spec/` as history; nothing requires reading it.
 - [v0.11 specification](spec/hsdd-spec-v0_11.md): the delta that adds
   `hsdd-auto`; read it with v0.10.
+- [v0.12 specification](spec/hsdd-spec-v0_12.md): the delta that adds
+  `hsdd-seal` and the dropped phase status; read it with v0.10 and v0.11.
 - [User's guide](docs/users-guide.md): three worked examples (single-level,
   multi-level and brownfield), then running the project week to week,
   unattended runs, and what to do when a project drifts outside the method.

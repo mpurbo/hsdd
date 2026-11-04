@@ -192,11 +192,13 @@ test("closeIntake closes a record whose produced phases are all done", () => {
   assert.doesNotMatch(r.text, /\*\*Status:\*\* open/);
 });
 
-test("closeIntake leaves an all-dropped record open with a dated note", () => {
+test("closeIntake closes an all-dropped record as closed (date, dropped), per v0.12 §3.4", () => {
   const r = closeIntake(REC("- phases: `a.1`"), { ...CLOSE, done: new Set(), dropped: new Set(["a.1"]), cited: [] });
-  assert.equal(r.action, "all-dropped");
-  assert.match(r.text, /- \*\*Status:\*\* open\n/);
-  assert.match(r.text, /- 2026-11-03: all produced phases dropped at the seal of release 2\.4\.0\n$/);
+  assert.equal(r.action, "closed-dropped");
+  assert.match(r.text, /- \*\*Status:\*\* closed \(2026-11-03, dropped\)\n/);
+  assert.doesNotMatch(r.text, /\*\*Status:\*\* open/);
+  assert.match(r.text, /- 2026-11-03: closed at the seal of release 2\.4\.0; every produced phase was dropped, the request was not delivered\n$/);
+  assert.equal(closeIntake(r.text, { ...CLOSE, done: new Set(), dropped: new Set(["a.1"]), cited: [] }).action, "already-closed");
 });
 
 test("closeIntake appends cited phases to Produced and keeps a mixed record open", () => {

@@ -22,8 +22,8 @@ be waived with a reason, a verification doc written after the fact is the
 retroactive doc the bypass rule names (§11.8), an intake record closes when
 its produced phases are done (§11.5), a campaign seals when its gates are
 green (§12.5), and a protocol stated in `hsdd/conventions.md` reaches every
-skill (§14.2). The one thing it adds is a project convention for a phase
-that was planned and never built. Nothing here needs judgment except which
+skill (§14.2). The one rule it adds, the dropped status for a phase that was planned and
+never built, is spec v0.12 §3; the seal itself is v0.12 chapter 4. Nothing here needs judgment except which
 phases shipped, and that is the owner's knowledge, so the owner edits one
 field and a script does the rest.
 
@@ -113,8 +113,9 @@ script commits inside the submodule and bumps the pointer.
    - `prune`: deletes each `openspec/changes/` directory whose every file
      the catch-up added; `openspec/specs/` is never touched.
    - `close`: re-scans, closes intake records whose produced phases are all
-     done (appending cited phases first), leaves an all-dropped record open
-     with a dated note, ticks each gate whose phases are done or dropped (a
+     done (appending cited phases first), closes an all-dropped record as
+     `closed (date, dropped)` since its request was not delivered, leaves a
+     mixed record open, ticks each gate whose phases are done or dropped (a
      gate written as a range, `a.1–a.4`, counts every phase of that node in
      the range),
      records the dropped ones in the change log as an absorb, and when every
@@ -137,9 +138,10 @@ Each step is idempotent: a second `apply` changes nothing.
 - Never delete a verification doc, an intake record, a progress report or an
   execution plan; never touch `openspec/specs/`.
 - Never answer a `request` entry; it is a contract gap for a person.
-- The dropped status is a project convention until a spec version names it:
-  every later checkpoint prompt restates "treat a phase carrying
-  `- **Status:** dropped` as out of scope and not counted".
+- The dropped status is spec v0.12 §3. On skills older than 0.12.0 every
+  checkpoint prompt restates "treat a phase carrying `- **Status:** dropped`
+  as out of scope and not counted"; the conventions paragraph the seal
+  appends states it where a project's own agents read it.
 
 ## When to stop
 

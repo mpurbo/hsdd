@@ -1623,12 +1623,11 @@ be waived with a reason. A verification doc written after the fact is the
 retroactive doc the spec's bypass rule names. An intake record closes when
 its produced phases are done. A campaign whose gates are all green is
 sealed and archived. And a protocol stated in `conventions.md` reaches every
-skill. One thing is missing: the method has no status for a phase that was
-planned and never built. The seal adds one as a project convention,
-`- **Status:** dropped (date, reason)` on the phase record, mirroring node
-retirement. Until a spec version names it, every later checkpoint prompt
-has to restate that dropped phases are out of scope, or the pass counts
-them as not done.
+skill. Before v0.12 the method had no status for a phase that was planned
+and never built; v0.12 §3 names one, `- **Status:** dropped (date, reason)`
+on the phase record, mirroring node retirement. The seal writes it, and a
+project on older skills restates in every checkpoint prompt that dropped
+phases are out of scope.
 
 Nothing in a seal needs judgment except which phases shipped, and that is
 your knowledge, not a model's. So the seal is the `hsdd-seal` skill's
@@ -1683,7 +1682,8 @@ node hsdd/scripts/seal/seal.mjs report --plan $P --write --commit
   catch-up added; they record cycles that never ran, and the retroactive
   docs carry the honest record. `openspec/specs/` is never touched.
 - `close` re-scans, closes intake records whose produced phases are all
-  done, ticks every gate whose phases are done or dropped, records the
+  done, closes one whose produced phases were all dropped as
+  `closed (date, dropped)`, ticks every gate whose phases are done or dropped, records the
   dropped ones in the milestone's change log as an absorb, and when every
   gate is ticked adds `- **Sealed:** {today}` and moves the document to
   `hsdd/management/archive/`.
@@ -1764,6 +1764,16 @@ Upgrades are additive: reinstall the skills, and nothing already written is
 rewritten. Each release's entry in the [changelog](../CHANGELOG.md) has the
 full list of changes. The notes below say what changes for a project in
 flight, newest release first.
+
+### From 0.11.0 to 0.12.0
+
+Reinstall the thirteen skills. Nothing is rewritten. The dropped phase
+status (`- **Status:** dropped (date, reason)` on a phase record) is
+recognized from the next checkpoint: out of every scope and done count, its
+row kept. An intake record whose produced phases were all dropped closes as
+`closed (date, dropped)`. A project that never seals is otherwise
+unaffected; one that already carries the convention paragraph under
+`## Phase design` keeps it as informative text.
 
 ### From 0.10.2 to 0.11.0
 

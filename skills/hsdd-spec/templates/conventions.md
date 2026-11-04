@@ -19,10 +19,11 @@ and per-phase contexts stay in each implementation repo (`hsdd-context/`).
 - `hsdd/adr/{nnn}-{title}.md` + `hsdd/adr/INDEX.md`     cross-cutting decisions (authored by hsdd-adr, registry generated)
 - `hsdd/scripts/gen-registry.mjs`             registry generator (copied verbatim from hsdd-contract)
 - `hsdd/scripts/seams/`                       seam extractor (copied verbatim from hsdd-adopt; present only in adopted trees)
+- `hsdd/scripts/seal/`                        seal scripts (copied verbatim from hsdd-seal; present only in sealed trees)
 - `hsdd/templates/verification.md`            verification-doc template, copied from hsdd-config
 - `openspec/config.yaml` + `openspec/changes/` config and one change per phase
 - `hsdd-context/{phase-id}.md` (+ `hsdd-context/superpowers/{phase-id}.md`)  generic phase context and its superpowers derivative, written by hsdd-config in the implementation repo
-- `hsdd/management/`                          management layer (progress, execution plans, milestones, intake records, atlas), written only by hsdd-checkpoint, hsdd-milestone and hsdd-intake (intake records), and `hsdd-auto`'s report step, for an intake record's `## Produced`
+- `hsdd/management/`                          management layer (progress, execution plans, milestones, intake records, atlas), written only by hsdd-checkpoint, hsdd-milestone and hsdd-intake (intake records), and `hsdd-auto`'s report step, for an intake record's `## Produced`; hsdd-seal writes the seal plan and its result
 - `hsdd/management/archive/`                  sealed milestone documents (closed campaigns)
 - `hsdd/summary/`                             optional reading aids (hsdd-summary); absent means none are rendered
 

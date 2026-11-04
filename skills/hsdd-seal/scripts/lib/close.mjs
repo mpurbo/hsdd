@@ -46,8 +46,10 @@ export function closeIntake(text, { done, dropped, today, release, phaseIds, cit
     return { text: finish(ls), action: "closed" };
   }
   if (produced.every((id) => dropped.has(id))) {
-    ls = appendToSection(ls, "change log", "## Change log", `- ${today}: all produced phases dropped at the seal of release ${release}`);
-    return { text: finish(ls), action: "all-dropped" };
+    // v0.12 §3.4: a record whose produced phases were all dropped closes as dropped; its request was not delivered.
+    ls = ls.map((l) => (/^\s*-?\s*\*\*Status:\*\*/i.test(l) ? l.replace(/\*\*Status:\*\*.*$/, `**Status:** closed (${today}, dropped)`) : l));
+    ls = appendToSection(ls, "change log", "## Change log", `- ${today}: closed at the seal of release ${release}; every produced phase was dropped, the request was not delivered`);
+    return { text: finish(ls), action: "closed-dropped" };
   }
   return { text: finish(ls), action: "open" };
 }

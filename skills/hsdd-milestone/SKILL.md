@@ -76,7 +76,10 @@ progress reporting, or phase planning.
      on staging and fetch the public page"), and
    - a **gate**: yes/no checkboxes, where "phase X done" always means:
      implemented, gate command green, verification doc merged to the spec
-     repo's main branch.
+     repo's main branch. A phase whose record carries `- **Status:** dropped`
+     (spec v0.12 §3) is out of the campaign's scope: a gate that names it is
+     satisfied for that phase, the change log records the absorb, and the
+     dates hold.
 5. **Compute the contingent tail.** Every phase marked
    `contingent (OQ-id)` on an external question lands in the tail: what it
    waits on, its entry criterion, its estimate — **excluded from the

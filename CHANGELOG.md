@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.12.0] - Unreleased
+
+Sealing a released tree. A system that shipped and that QA verified can
+have its stale HSDD ledger closed by script, with no model in the loop, and
+the method gains the one rule the seal needs: a `dropped` status for a phase
+that was planned and never built.
+
+Specification: `spec/hsdd-spec-v0_12.md`. Design record:
+`docs/superpowers/specs/2026-11-03-hsdd-seal-design.md`.
+
+### Upgrading from 0.11.0
+
+- Reinstall the thirteen skills. Nothing is rewritten.
+- The dropped phase status is recognized from the next checkpoint. A
+  project that already carries the convention paragraph under
+  `## Phase design` keeps it; it is now informative.
+- An intake record whose produced phases were all dropped closes as
+  `closed (date, dropped)` from the next checkpoint; existing closed records
+  are unchanged.
+- A project that never seals is otherwise unaffected.
+
 ### Added
 
 - **`hsdd-seal`**, the thirteenth skill: seal a released tree whose HSDD
@@ -27,6 +48,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   is the `class` field and nothing else. The scripts are copied
   verbatim to `hsdd/scripts/seal/`; `md.mjs` and `extract-plan.mjs` are
   copies of `hsdd-summary`'s, kept identical by a test.
+- **The dropped phase status** (spec v0.12 §3): `- **Status:** dropped
+  (date, reason)` on a phase record, after its review tier, takes the phase
+  out of every scope and done count while keeping its id and its ledger
+  row.
+- README: a "Sealing a released tree" section; the user's guide's "Outside
+  the loop" chapter seals by script; the interactive guide's skill map
+  lists `hsdd-seal`.
+
+### Changed
+
+- `hsdd-checkpoint`: dropped phases are out of every count and listed in
+  one line; an all-dropped intake record closes as `closed (date, dropped)`;
+  a gate a dropped phase names is satisfied for that phase; seal plan files
+  are outside the chain rules; the first checkpoint after a seal takes the
+  seal plan's result as a named input and lists the seal's delegated
+  sign-offs in one finding.
+- `hsdd-milestone`: a dropped phase is out of a campaign's scope.
+- `hsdd-phase-plan`: append mode never rewrites, renumbers or merges with a
+  dropped phase.
+- `hsdd-intake`: the record's Status field admits `closed (date, dropped)`.
+- `hsdd-spec`'s conventions template: the layout names `hsdd/scripts/seal/`
+  and `hsdd-seal` among the writers of `hsdd/management/`.
 
 ## [0.11.0] - Unreleased
 

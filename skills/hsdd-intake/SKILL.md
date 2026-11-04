@@ -100,7 +100,7 @@ replaces "wipe `hsdd/` and rebuild".
 - **Lands on:** [node ids] · **Contracts:** [contract ids or none]
 - **Promotes:** [as-built node ids promoted first, or none]
 - **Collisions:** [open intake filenames this waits on or merged with, or none]
-- **Status:** open | closed (YYYY-MM-DD)
+- **Status:** open | closed (YYYY-MM-DD) | closed (YYYY-MM-DD, dropped)
 
 ## Request
 {at most five lines: what is asked, for whom, by when, citing the source}
@@ -125,7 +125,11 @@ on the spec repo's main line (the branch the conventions' `**Main line:**`
 names, `main` when absent), signed by a person or for one, the same
 admissibility rule as everywhere else. `hsdd-checkpoint` appends the
 phases whose Scope cites the record, ticks `**Status:** closed (date)` and
-appends to the change log; this skill never closes a record.
+appends to the change log; this skill never closes a record. A record whose
+listed phases were all dropped (spec v0.12 §3) closes as
+`closed (date, dropped)`: its request was not delivered, and the record says
+so; a record with done and dropped phases mixed stays open until every
+phase that is not dropped is done.
 
 ## Handoff block
 
