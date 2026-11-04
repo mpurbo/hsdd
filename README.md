@@ -222,6 +222,8 @@ timer. See the [v0.11 specification](spec/hsdd-spec-v0_11.md).
 
 ## Learn more
 
+- [Documentation site](https://mpurbo.github.io/hsdd/): everything below,
+  plus the tutorials and a reference for the skills, in one place.
 - [Interactive guide](docs/guide/index.html): a visual, step-by-step
   introduction for newcomers, from the tree and contracts to brownfield
   adoption, change intake and unattended runs. Open it in a browser from a
@@ -232,8 +234,12 @@ timer. See the [v0.11 specification](spec/hsdd-spec-v0_11.md).
   (v0.3–v0.7.1) remains in `spec/` as history; nothing requires reading it.
 - [v0.11 specification](spec/hsdd-spec-v0_11.md): the delta that adds
   `hsdd-auto`; read it with v0.10.
-- [User's guide](docs/users-guide.md): worked examples for a simple single-level
-  project and a multi-level system, plus running the project week to week.
+- [User's guide](docs/users-guide.md): three worked examples (single-level,
+  multi-level and brownfield), then running the project week to week,
+  unattended runs, and what to do when a project drifts outside the method.
+- [Tutorials](docs/tutorial/): three recorded runs on a real repository, from
+  a one-page PRD to running code, a change through intake, and a
+  product-sized change planned unattended.
 
 ## References
 
