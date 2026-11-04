@@ -22,7 +22,7 @@ a real repository.
 
 ## Before you start
 
-Install the twelve skills (see the [README](../README.md)) and, ideally,
+Install the thirteen skills (see the [README](../README.md)) and, ideally,
 [Obra's superpowers](https://github.com/obra/superpowers) plugin. HSDD
 composes with its test-driven development, verification and code-review
 skills instead of re-implementing them. The HSDD loop, in one line:
