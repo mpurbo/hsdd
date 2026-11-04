@@ -322,6 +322,11 @@ appends phases to an existing plan. Rules:
   `hsdd/verify/`, never authored here.
 - The summary table is a permanent ledger: shipped phases keep their rows;
   new rows are appended.
+- A **dropped phase** (its record carries `- **Status:** dropped`, spec
+  v0.12 §3) is never rewritten, renumbered or merged with; numbering
+  continues past it, and a change that needs its capability plans a new
+  phase. This skill never writes the Status line; `hsdd-seal` or a person
+  at the root does.
 - A **retro phase** (a backfill for code that shipped with no phase) is
   marked `(retro)` in its name, cites the finding id in its Scope, and its
   verification doc is written after the fact and marked retroactive.
@@ -437,7 +442,7 @@ When your arguments contain `--unattended {step}`, you run as step
       when only the pre-v0.10 `FP ordering:` bullet is present).
 - [ ] Every producing phase's Gate includes the contract replay for each
       contract it produces.
-- [ ] In append mode: no existing id changed, no shipped phase edited,
+- [ ] In append mode: no existing id changed, no shipped or dropped phase edited,
       numbering continued from the highest existing id, the node header
       untouched, the floor run over the appended phases only.
 - [ ] No Scope or Verification line leans on a pointer to text the phase

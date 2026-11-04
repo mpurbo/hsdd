@@ -60,6 +60,10 @@ Point-in-time documents are dated and chained; the atlas is living:
 - `hsdd/management/YYYY-MM-DD-intake-{slug}.md`: `hsdd-intake` writes it;
   dated, never superseded, outside the chain rules below; this skill only
   appends phase ids to its `## Produced` and closes it
+- `hsdd/management/YYYY-MM-DD-seal-plan.json` and `.md`: `hsdd-seal` writes
+  them (spec v0.12 §4.3); outside the chain rules below, like intake
+  records; this skill reads the `.md`'s `## Result` after a seal and edits
+  neither
 
 Chain rules (enforced here, checked every pass):
 
@@ -210,7 +214,12 @@ be standing in produces a progress report that undercounts the project.
      phase is done (step 3's admissible done, so a claim keeps the record
      open): set
      `**Status:** closed (YYYY-MM-DD)` and append to the record's change log
-     (management-document edits, within this skill's write scope). Report
+     (management-document edits, within this skill's write scope). A record
+     whose listed phases are **all dropped** (each record carries
+     `- **Status:** dropped`, spec v0.12 §3) closes as
+     `**Status:** closed (YYYY-MM-DD, dropped)` with a change-log line saying
+     its request was not delivered; a record with done and dropped phases
+     mixed stays open until every phase that is not dropped is done. Report
      the counts of open and closed intakes; an open intake whose
      `## Produced` is still empty two checkpoints after its date is a
      finding (the handoff never landed).
@@ -219,7 +228,10 @@ be standing in produces a progress report that undercounts the project.
    repo's main branch, its Reviewer naming a person or an agent signing for
    one, or the phase already counted done by an earlier progress report
    (the audit above). Claims without a verification doc, or with a Reviewer
-   who names no person, are reported as claims.
+   who names no person, are reported as claims. A phase whose record carries
+   `- **Status:** dropped` (spec v0.12 §3) is out of every count: neither
+   done, nor remaining, nor a claim; list the dropped phases in one line of
+   the report.
 
    If `hsdd/summary/` exists, run `node hsdd/scripts/summary/summary.mjs
    check` and list the plan page, if it is stale, and the plan page's stale
@@ -253,7 +265,15 @@ be standing in produces a progress report that undercounts the project.
    mv`, and state in the progress report that the campaign closed and that
    the next campaign opens a new document through `hsdd-milestone`.
    Admissibility is the existing rule: every phase in scope is done (step
-   3); a seal is evidence-backed, never declared.
+   3); a seal is evidence-backed, never declared. A dropped phase is out of
+   scope: a gate that names it is satisfied for that phase, and the
+   document's change log records the absorb. A document that `hsdd-seal`
+   sealed and moved to the archive is a closed campaign like any other. The
+   first checkpoint after a seal is scoped to the seal's commits, takes the
+   seal plan's `## Result` as a named input for the verification-doc audit,
+   re-audits the ticks and closures against the signed docs and the dropped
+   lines, and lists the seal's delegated sign-offs in one finding (spec
+   v0.12 §4.11).
 7. **Render the checkpoint page (only when `hsdd/summary/` exists).** Invoke
    `hsdd-summary` and follow its Process (checkpoint page) over the documents
    this run just wrote. If the page reports a Plan integrity finding (a

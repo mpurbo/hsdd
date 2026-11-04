@@ -1,0 +1,66 @@
+// File operations: computed first, described, then applied only with --write.
+// An Op is { kind: "write"|"delete"|"rename"|"note", path, content?, to?, note };
+// a note is printed and never applied: something the owner must do by hand.
+import { existsSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from "node:fs";
+import { dirname, join, resolve, sep } from "node:path";
+
+// A path from a plan file must stay under the project root.
+export function underRoot(root, p) {
+  const base = resolve(root);
+  const full = resolve(root, p);
+  if (full !== base && !full.startsWith(base + sep)) throw new Error(`refusing ${p}: outside the project root`);
+  return full;
+}
+
+export function describeOps(ops) {
+  if (!ops.length) return "nothing to do";
+  const width = Math.max(...ops.map((o) => o.path.length));
+  return ops.map((o) => `${o.kind.padEnd(6)} ${o.path.padEnd(width)}  ${o.kind === "rename" ? `-> ${o.to}  ` : ""}${o.note ?? ""}`.trimEnd()).join("\n");
+}
+
+export function applyOps(root, ops, { write = false } = {}) {
+  const applied = [];
+  const skipped = [];
+  const lines = [];
+  for (const op of ops) {
+    if (op.kind === "note") {
+      lines.push(`note   ${op.path}  ${op.note ?? ""}`.trimEnd());
+      continue;
+    }
+    const full = underRoot(root, op.path);
+    if (op.kind === "rename") underRoot(root, op.to);
+    if (op.kind === "write") {
+      if (existsSync(full) && readFileSync(full, "utf8") === op.content) {
+        skipped.push(op.path);
+        lines.push(`skip   ${op.path}  (already as planned)`);
+        continue;
+      }
+      if (write) {
+        mkdirSync(dirname(full), { recursive: true });
+        writeFileSync(full, op.content);
+      }
+    } else if (op.kind === "delete") {
+      if (!existsSync(full)) {
+        skipped.push(op.path);
+        lines.push(`skip   ${op.path}  (absent)`);
+        continue;
+      }
+      if (write) rmSync(full, { recursive: true, force: true });
+    } else if (op.kind === "rename") {
+      if (!existsSync(full)) {
+        skipped.push(op.path);
+        lines.push(`skip   ${op.path}  (absent)`);
+        continue;
+      }
+      if (write) {
+        mkdirSync(dirname(join(root, op.to)), { recursive: true });
+        renameSync(full, join(root, op.to));
+      }
+    } else {
+      throw new Error(`unknown op kind ${op.kind}`);
+    }
+    if (write) applied.push(op.path);
+    lines.push(`${write ? "done" : "plan"}   ${op.kind} ${op.path}${op.kind === "rename" ? ` -> ${op.to}` : ""}`);
+  }
+  return { applied, skipped, lines };
+}

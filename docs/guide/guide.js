@@ -230,6 +230,7 @@ const SKILLS = [
   ]],
   ["Change", [
     ["hsdd-intake", "Route a change request into the existing tree: classify it, detect collisions, write the record, hand off.", "Here's the payout-scheduling PRD, docs/prd-payout-scheduling.md. Where does it go?"],
+    ["hsdd-seal", "Seal a released tree whose artifacts went stale, by script: a plan with a default class per phase, your edit of that one field, then retroactive sign-offs, dropped phases, closed records and the archived campaign. No model reads the tree.", "node hsdd/scripts/seal/seal.mjs plan --release 2.4.0 --date 2026-09-15 --owner \"Dewi\" --evidence \"QA regression 2.4.0\""],
   ]],
   ["Run", [
     ["hsdd-checkpoint", "Run the weekly evidence pass across the spec repo and every implementation repo.", "/hsdd-checkpoint full checkpoint before Monday's sync. Repos: ~/git/acme-be, ~/git/acme-fe."],
@@ -1021,7 +1022,7 @@ function firstSessionView(s) {
     ? [["Write a high-level spec for acme from docs/onboarding-prd.md: a merchant onboarding platform with a backend, a mobile app, and a web console.", "hsdd-spec asks who builds what, then splits the root"], ["Break down @hsdd/spec/acme.backend.md into auth, billing, and catalog.", "hsdd-spec again, one level down"], ["Define the auth-token contract: auth produces it, billing and mobile consume it.", "hsdd-contract, with schema and fixtures"], ["acme.backend.auth is small enough to phase. Write its phase plan.", "hsdd-phase-plan"], ["Drain the pending governance updates.", "hsdd-reconcile"], ["Set up OpenSpec config for this project.", "hsdd-config, once per project: the gate and verification-doc rules"], ["/hsdd-phase acme.backend.auth.1", "hsdd-config's switch, before every phase; then run your coding cycle"]]
     : [["Adopt this codebase into HSDD.", "hsdd-adopt extracts seams and stops at the tree for you to confirm"], ["Here's the payout-scheduling PRD, docs/prd-payout-scheduling.md. Where does it go?", "hsdd-intake writes the record and the handoff"], ["/hsdd-spec promote legacy-pay.payouts using docs/prd-payout-scheduling.md", "promotion, with your confirmation"], ["/hsdd-phase-plan legacy-pay.payouts per hsdd/management/2026-10-10-intake-payout-scheduling.md", "phases that cite the intake record"], ["Drain the pending governance updates.", "hsdd-reconcile"], ["Set up OpenSpec config for this project.", "hsdd-config, once per project"], ["/hsdd-phase legacy-pay.payouts.1", "the switch, before every phase"], ["/hsdd-checkpoint full checkpoint before Monday's sync. Repos: ~/git/legacy-pay.", "the weekly evidence pass, with drift checks"]];
   return `<div class="bar"><span class="label">Install</span></div>
-    ${promptBox("npx skills add mpurbo/hsdd", "All twelve skills, for Claude Code, Cursor, Codex and other agents. Recommended companion: the superpowers plugin.")}
+    ${promptBox("npx skills add mpurbo/hsdd", "All thirteen skills, for Claude Code, Cursor, Codex and other agents. Recommended companion: the superpowers plugin.")}
     <p class="caveat">The skills CLI does not install the optional slash commands such as ${c("/hsdd-phase")}. To use them, copy ${c("commands/*.md")} from this repository into your project's ${c(".claude/commands/")}; otherwise ask in words, as in the skill map.</p>
     <div class="bar"><span class="label">First session</span>${seg("path", s.path, [["green", "New system"], ["brown", "Existing codebase"]], "Starting point")}</div>
     <div class="learn">${steps.map(([p, n]) => promptBox(p, n)).join("")}</div>`;
@@ -1496,7 +1497,7 @@ const CHAPTERS = [
   },
   {
     id: "begin", group: "Run it", short: "Get started", eyebrow: "09 · Get started",
-    title: "Twelve skills, two ways in.",
+    title: "Thirteen skills, two ways in.",
     lede: "HSDD ships as agent skills for Claude Code, Cursor, Codex and other agents. You talk to your agent; the skills trigger on what you ask for.",
     steps: [
       { title: "The skill map", visual: skillsView, body: () => `
