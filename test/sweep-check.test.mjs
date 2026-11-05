@@ -210,3 +210,10 @@ test("the change-log line may omit the phase count only when there is no phase r
   const stale = { ...p, changeLog: [p.changeLog[0].replace(/, \d+ phase$/, ""), ...p.changeLog.slice(1)] };
   assert.match(problems(stale).join("\n"), /counts/);
 });
+
+test("a commit that moved the surface and spans two nodes is never a phase row", () => {
+  // rowFor writes the move as the reason, so only the node `none` says the commit spans.
+  const rows = fresh.rows.map((x) => (x.sha === s7("routeAdd") ? { ...x, node: "none" } : x));
+  const r = asPhase(noHandoff(good(), "routeAdd"), "routeAdd");
+  assert.match(checkRecord(r, rows, tree).join("\n"), new RegExp(`row ${s7("routeAdd")}: .*spans two nodes`));
+});

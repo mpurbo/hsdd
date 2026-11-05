@@ -1530,8 +1530,9 @@ Both modes ask the same two questions about a change:
    phase, because the tree must not say something the code no longer does.
 
 When both answers are no, no other node can see the change, and the tree
-needs only one fact from it: which node it happened in. That costs one table
-row. On an as-built node the second question is not asked: only the surface
+needs only one fact from it: which node it happened in. Before the code,
+intake writes nothing. After the code, the sweep writes one table row. On an
+as-built node the second question is not asked: only the surface
 decides, and promotion waits for the first change that needs a phase.
 
 Sweep mode asks one more question before these two, because it looks at
@@ -1612,19 +1613,20 @@ There is no record, because the row the commit gets in the next sweep is the
 audit trail. The trailer only tells the sweep which node the commit belongs
 to. It does not attribute the commit on its own.
 
-`manual` exists only when you run the skill yourself. `/hsdd-auto intake`
-routes the same request `local` and records that decision, so the review of
-the segment shows a phase you would not otherwise have paid for.
+You get `manual` only when you run the skill yourself. An unattended run
+(`/hsdd-auto intake`) never answers `manual`: it routes the same request as
+`local` and records that decision, and the segment review then shows a phase
+you did not need.
 
 **If intake cannot tell.** When your description does not settle the two
 questions, the class is not `manual`. A phase is the safe answer, and a sweep
 can still find later that the diff was small.
 
-**If the change needs a phase.** "Rename the fee line to charge" is a
-different case: it makes false a Verification line that says "shows the fee
-line", so it is class `local`, a phase. A ticket or a product request like
-this goes through intake as usual. The saving is in what you ask the next
-skills for. Route it:
+**If the change needs a phase.** A product request is a different case.
+PAY-412, "show the fee line in the payout preview", adds behavior the tree
+must describe, so its class is `local`: a phase. It goes through intake as
+usual. The saving is in asking the next skills for the smallest phase. Route
+it:
 
 > `/hsdd-intake` route `docs/tickets/PAY-412.md` (ticket): merchants want
 > the payout preview to show the fee line. Small, inside payouts.
@@ -1657,8 +1659,9 @@ invent an observation.
 
 The next checkpoint appends the phase to the record's `## Produced`, ticks
 the record closed, and lists the delegated sign-off for the owner to
-ratify. To spend no attention on the chain at all, run it unattended and
-review the segment report's decisions in one sitting:
+ratify. If you do not want to run these steps one by one, run the chain
+unattended
+and read its decisions afterwards in one sitting:
 
 > `/hsdd-auto intake docs/tickets/PAY-412.md --authority ticket --stop-policy decide-and-record`
 
@@ -1674,8 +1677,8 @@ root, the directory that holds `hsdd/`:
 ```
 
 Your first sweep also needs a starting point: see
-[The first sweep](#the-first-sweep). It copies the script to
-`hsdd/scripts/sweep/` as well, which needs Node 20 or later.
+[The first sweep](#the-first-sweep). The first sweep also copies the script
+into `hsdd/scripts/sweep/`. The script needs Node 20 or later.
 
 **What a sweep does:**
 
@@ -1709,22 +1712,25 @@ record of only those rows is written closed by the sweep itself. The next
 checkpoint closes any other record once every `retro` and `intake` row has
 its product in `## Produced` and no `unplaced` row remains.
 
-**Changing a class.** The agent may raise a class but never lowers one. You
-may lower any class before the record is committed, with a change-log line
+**Changing a class.** Raising a class means moving it toward more work, such
+as from `log` to `retro`. The agent may raise a class but never lowers one.
+You may lower any class before the record is committed, with a change-log line
 that names you. After the record is published, nobody lowers a class.
 
-**Committing the record.** `check` and `commit` gate first publication.
+**Committing the record.** `check` and `commit` guard the first commit of the
+record.
 `check` reads the record back against a fresh draft of its range and refuses
-with the row named. `commit` commits the record alone and never pushes. Under
-the profile, push inside `hsdd/` before pushing the implementation
-repository, as every governance edit is pushed, or the pointer names a commit
-no clone has. A later edit, such as placing an `unplaced` row, is committed
+with the row named. `commit` commits the record alone and never pushes.
+Under the standalone-spec-repo profile, push inside `hsdd/` first and the
+implementation repository second, as with every governance edit. Otherwise
+the submodule pointer names a commit that no other clone has. A later edit,
+such as placing an `unplaced` row, is committed
 with git directly.
 
 ##### The first sweep
 
-On the first sweep, name the start with `--from`, which is itself not swept,
-so give the last commit of the launch:
+On the first sweep, name the start with `--from`. The commit you name is not
+swept itself, so give the last commit of the launch:
 
 ```text
 /hsdd-intake sweep --from 3fa81c0 --run-by "Dewi Lestari"
@@ -1740,8 +1746,9 @@ classified. A range with no candidates writes no record.
 Anyone can run a sweep: a developer after merging, or a lead before a
 checkpoint, with the same command and the same steps. The record's `Run by`
 line names a person, who answers for the classification. A lead who sweeps
-the week's commits does not answer for the code. When nobody reads the
-record, run it by delegation:
+the week's commits does not answer for the code. When an agent runs the
+sweep and no person reads the record before it is
+committed, name the delegation:
 
 ```text
 /hsdd-intake sweep --run-by "Claude for {person} (delegated)"
@@ -1781,15 +1788,16 @@ A commit that names its phase needs no row, no question and no judgment.
 a phase follows it. Hand-written commits are the ones that forget.
 
 **When a phase commit does not name its phase.** The agent reads the phases
-of the owning node. The commit is the work of a phase when the diff is what
-the phase's Scope says, and the commit is no later than the phase's sign-off.
+of the owning node. The commit is the work of a phase when the diff lies
+within what the phase's Scope says, and the commit is no later than the
+phase's sign-off.
 The row then gets class `phase`, with the phase id as its reason. Three rules
 keep this honest:
 
 - Sharing a node is not enough. A small fix on a node with an open phase is
   not that phase's work.
-- A phase that was signed takes in nothing later. A fix after the sign-off is
-  an ordinary row.
+- A phase whose verification doc is signed does not take later commits. A fix
+  after the sign-off is an ordinary row.
 - A commit that touches two nodes stays `intake`, because a phase belongs to
   one node.
 
@@ -1983,8 +1991,9 @@ Reinstall the thirteen skills. Nothing is rewritten. A sweep now tells the
 work of a phase from a small fix: such a commit gets a `phase` row, even when
 it names no phase id. Records already written stand. A first change-log line
 with no phase count reads as zero. The checkpoint attributes phase work again,
-so a backfill finding that named only phase work closes without a sweep, and a
-project that never sweeps is unaffected. Every commit of a phase should now
+so a backfill finding that named only phase work closes without a sweep. That
+is all a project that never sweeps sees of this release. Every commit of a
+phase should now
 name its phase id. Phases switched after the upgrade get that line in their
 Discipline. A phase context already written is a record and is not rewritten.
 

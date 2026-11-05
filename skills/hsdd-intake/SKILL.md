@@ -93,7 +93,7 @@ read `sweep.md`.
    | `structural` | the tree's shape is wrong for this change | **stop**: a human decision, the expensive one; the record states why and what the options are |
    | `manual` | after launch, a request that, as described, moves no route, schema, topic or table, stales no claim of the owning node's closure, and lands inside one node | **no skill, no record**: the answer names the node and the commit trailer; the change ships on the implementation repository's main line and the sweep attributes it |
 
-   **A `manual` answer writes nothing.** The two tests are the sweep's,
+   **A `manual` answer writes nothing.** The two tests are the sweep's surface and claim tests,
    applied to the request as described instead of to a diff: it moves no
    route, schema, topic or table, and it stales no claim, a claim being a
    sentence of the owning node's closure that the code can make false (a

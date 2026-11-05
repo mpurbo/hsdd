@@ -5,7 +5,7 @@
 > after launch whatever its size and whether or not the code exists yet. A
 > request too small for a phase is answered with a node and a commit
 > trailer, no record; after it ships, the sweep reads a range of commits,
-> sets aside what is already attributed, classifies the rest by two tests,
+> sets aside what is already attributed, classifies the rest by bounded tests,
 > writes one record, and hands off only what earned a phase or an intake.
 > Read it against v0.10.2, v0.11.0 and v0.12.0; only the changes are stated
 > here. Everything in those documents not touched below still stands.
@@ -64,7 +64,8 @@ second, a change that makes a claim in the tree false, and gives both a
 home.
 
 The home matters. A developer with a change should have one question to
-answer, "where does this go?", and one skill that answers it, in both cases: before the code exists, and after it shipped. If the answer before
+answer, "where does this go?", and one skill that answers it, in both cases:
+before the code exists, and after it shipped. If the answer before
 the code is "a phase" and the answer after it is "a row", developers learn
 to skip the question. So the lane is intake's, in both cases: a class for
 the request that is below the line, and a mode for the commits that already
@@ -118,7 +119,9 @@ landed.
 - **The dividing line.** A change that moves a route, schema, topic or
   table is not small whatever its line count; it goes through request mode
   and a contract bump as before. The sweep detects the move and hands off;
-  it never classifies such a commit `log`.
+  it never classifies such a commit `log`. The one exception is a move a
+  phase planned: that commit is `phase`, and the phase answers for it
+  (§4.3).
 - **Human review.** A sweep names the person it answers to, and the
   classification is theirs. A retro phase still gets its verification doc
   and its sign-off; the checkpoint still lists delegated ones to ratify.
@@ -176,21 +179,24 @@ text, "v0.11.0 §n" reads v0.11.0, and "v0.12.0 §n" reads v0.12.0.
   profile), `hsdd-context/` and `openspec/`.
 - **Attributed commit.** A commit that is governance-only, a merge, one
   whose message names a phase id of the tree, one whose sha a phase's Scope
-  cites, or one that a sweep record has classified. After launch a commit that is none of these is scope
-  creep (v0.10.0 §12.7).
+  cites, or one that a sweep record has classified. At the checkpoint, phase
+  work by the test of §4.3 counts as well (chapter 8), while a sweep gives
+  it a row. After launch a commit that is none of these is scope creep
+  (v0.10.0 §12.7).
 - **Surface move.** A diff that adds, removes or changes a route, a table,
   a topic or a schema file as the seam classifiers see them, or that
   touches a path under `hsdd/contract/` (§4.3).
-- **Phase work.** A commit that delivers a phase of the tree: the diff is
-  what the phase's Scope says, and the commit is no later than the phase's
-  sign-off (§4.3).
+- **Phase work.** A commit that delivers a phase of the tree: the diff lies
+  within what the phase's Scope says, and the commit is no later than the
+  phase's sign-off (§4.3).
 - **Claim.** A sentence in the owning node's closure that the code can make
   false without moving the surface: a phase's Scope or Verification line;
   the node header's Purpose, Owns, Does not own and Isolation strategy; a
   node decision; the Guarantees of a contract the node produces; the
   Decision of an ADR the node is governed by (§4.3). A produced contract's
   Interface is surface, not claim.
-- **Sweep class.** The sweep's disposition for a candidate: `log`, `phase`, `retro`,
+- **Sweep class.** The sweep's disposition for a candidate: `log`, `phase`,
+  `retro`,
   `intake` or `unplaced` (§4.3, §4.4). Where this document says "class"
   about a commit, it means this; about a request, it means an intake class.
 - **Sweep record.** The management document of chapter 5.
@@ -209,7 +215,8 @@ v0.10.0 §11.2's class table gains a row:
 |-------|-------|-----------|
 | `manual` | after launch, a request that, as described, moves no route, schema, topic or table, stales no claim of the owning node's closure, and lands inside one node | **no skill, no record**: the answer names the node and the commit trailer; the change ships on the implementation repository's main line and the sweep attributes it (chapter 4) |
 
-The tests are the sweep's two tests (§4.3), applied to the request as
+The tests are the sweep's surface and claim tests (§4.3), applied to the
+request as
 described instead of to a diff. "Make the preview's total larger" moves no
 surface and names nothing a Scope, Verification, Guarantee or header
 sentence says: `manual`. "Rename the fee line to charge" stales a
@@ -323,7 +330,8 @@ next sweep's default `{from}` is unchanged.
 
 ### 4.3 The tests
 
-A candidate's class comes from three tests applied in order. The first is the script's, the other two the agent's.
+A candidate's class comes from three tests applied in order. The first is
+the script's, the other two the agent's.
 
 **The surface test** (script). Over the commit's changed paths taken
 together, the script extracts routes, topics and migration tables from the
@@ -346,9 +354,13 @@ saw it; a move they report is never lowered by an agent.
 **The phase test** (agent), for every candidate, those the surface test set
 `intake` included. A commit with no phase id in its message may still be the
 work of a phase: only the convention of chapter 8 ties the two together. The
-commit is phase work when a phase of its owning node, not dropped, describes
-it: the diff is what the phase's Scope says, and the commit's date is no later
-than the day the phase's verification doc was signed, when it has been signed.
+agent reads the owning node's phases and their verification docs, nothing
+wider. The commit is phase work when a phase of its owning node, not
+dropped, describes
+it: the diff lies within what the phase's Scope says, and the commit's
+author date
+is no later than the date in the Sign-off of the phase's verification doc, when
+that doc is signed.
 On a row the surface test set `intake`, the phase must also account for the
 move, in its Scope or its Produces. The class is then **`phase`**, the reason
 is the phase id, and the row is the whole record of the commit: no claim test
@@ -385,7 +397,8 @@ says. Depth on demand holds for small fixes too.
 The agent may raise a class: `log` to `retro`, and either to `intake` when
 it reads a move the classifiers missed or when the paths span two nodes
 (§4.4). It never lowers one. Moving a script-set `intake` to `phase` is not
-lowering: the commit already has a phase, and that phase answers for the move. A person who runs the sweep may lower any
+lowering: the commit already has a phase, and that phase answers for the
+move. A person who runs the sweep may lower any
 class before the record is committed, the agent's or the script's, with a
 change-log line `- YYYY-MM-DD: lowered {sha7} from {class} to {class} by
 {person}: {reason}`; a script-set
@@ -509,7 +522,9 @@ descends from the others' on the main line.
 - YYYY-MM-DD: created; {k} candidates: {l} log, {r} retro, {i} intake, {u} unplaced, {p} phase
 ````
 
-Every cell is one clause. The `Reason` cell is `none` for `log`, the phase id for `phase`, the claim's location for `retro`, the surface move or the spanned nodes for `intake`,
+Every cell is one clause. The `Reason` cell is `none` for `log`, the phase
+id for `phase`, the claim's location for `retro`, the surface move or the
+spanned nodes for `intake`,
 the paths for `unplaced`. The `Subject` cell is the commit's subject line
 with any pipe character replaced by a slash. A category under
 `## Not candidates` with nothing in it reads `none`. `## Produced` reads
@@ -543,7 +558,9 @@ cites the record and lists the sha; an intake record whose `**Request:**`
 names the sha) and no `unplaced` row remains. Products are listed one per
 line, `- H{n}: {product}`, replacing `none`. Closure means the commits are attributed, not that the retro
 phases are done: a retro phase's done-ness is its node's ledger's business
-and its intake's, and the sweep record does not track it twice. A record with only `log` and `phase` rows is written `closed` by the sweep itself, on the day it
+and its intake's, and the sweep record does not track it twice. A record
+with only `log` and `phase` rows is written `closed` by the sweep itself, on
+the day it
 is created, with no change-log line beyond the first. Every other record is
 closed by `hsdd-checkpoint` (chapter 8), which appends the products and
 ticks the status; the sweep closes nothing it did not create closed.
@@ -641,7 +658,8 @@ class in its class table and process (chapter 3), the unattended row of
 selected (§7.2), and that its procedure is the file `sweep.md` beside
 `SKILL.md`, read only in sweep mode so that request-mode runs do not carry
 it. `sweep.md` tells the agent to run the script, to fill only the cells the
-script left, to apply the phase test and the claim test as §4.3 states them and no wider test,
+script left, to apply the phase test and the claim test as §4.3 states them
+and no wider test,
 to ask the runner for placements the evidence did not give, to fix a record
 `check` refused and run `check` again, and never to commit a record `check`
 refused. Its quality gates and anti-rationalization table are its own.
@@ -713,27 +731,37 @@ directory outside the repository, removed afterwards. A range with no
 candidates writes nothing (§4.2).
 
 **The agent** then fills every `?`: the node by §4.4 step 3, asking the
-runner (step 4) for what the tree does not answer; the class and reason by the phase test, then the claim test. It raises classes as §4.3 allows and lowers none. It fills
+runner (step 4) for what the tree does not answer; the class and reason by
+the phase test, then the claim test. It raises classes as §4.3 allows and
+lowers none. It fills
 the change-log line's counts and `Run by`, from the invocation or by asking
 the runner once. It writes `## Routing` from the rows, one handoff per node with `retro` rows and one
 per `intake` row, with the prompts of chapter 6 verbatim, in table order,
 numbered `H{n}`, each headed `**H{n}** ({class}, {node or sha}):`, a
-`retro` handoff carrying the three prompts of §6.1. For a record whose rows are all `log` or `phase` it leaves `## Routing` at `none` and ticks `Status` to
+`retro` handoff carrying the three prompts of §6.1. For a record whose rows
+are all `log` or `phase` it leaves `## Routing` at `none` and ticks `Status`
+to
 `closed` with the record's date.
 
 **`check`** reads the record back against a fresh `draft` of the range its
 header names, with the record under check left out of the classified set,
 and refuses, naming the row, when: a candidate has no row or a row has no
 candidate; a cell is still `?`; a class is not one of the five; a `retro`
-or `intake` row's reason is `none`; a row the draft set `intake` is anything but `phase` and no change-log line
+or `intake` row's reason is `none`; a row the draft set `intake` is anything
+but `phase` and no change-log line
 names its sha as lowered by a person (§4.3); a `phase` row's reason is not a
 phase of the tree, is a dropped phase, or is a phase of another node, or the
-draft's row spans two nodes; a `log` or `phase` row's sha appears in a handoff; a `retro` or `intake` row
+draft's row spans two nodes; a `log` or `phase` row's sha appears in a
+handoff; a `retro` or `intake` row
 has no handoff whose first prompt names its sha; a `retro` row's node is
 as-built, or internal, or the root, where append mode has no plan to write
-into; a node named is not in the tree, is retired on a `log`, `phase` or `retro` row, or is `none` on one; `Run by` is empty or a template placeholder; the first change-log
+into; a node named is not in the tree, is retired on a `log`, `phase` or
+`retro` row, or is `none` on one; `Run by` is empty or a template
+placeholder; the first change-log
 line's counts disagree with the table; `Status` is `closed` on a record
-with a `retro`, `intake` or `unplaced` row, or `open` on a record with only `log` and `phase` rows. A prompt names a sha only at chapter 6's sha positions, `commits {sha}, {sha}`
+with a `retro`, `intake` or `unplaced` row, or `open` on a record with only
+`log` and `phase` rows. A prompt names a sha only at chapter 6's sha
+positions, `commits {sha}, {sha}`
 and `{repo}@{sha}`, read across line breaks: the record's own filename ends in
 `{to7}`, and a subject may quote any sha, so neither counts. `check` exits
 non-zero and writes nothing; the agent fixes the record and runs it again.
@@ -806,12 +834,15 @@ two-checkpoint escalation of v0.10.0 §11.8 stands. The intake-record pass
 - **`hsdd-spec`'s `conventions.md` template.** The layout gains
   `hsdd/scripts/sweep/`; `hsdd/management/` names `hsdd-intake` as the
   writer of sweep records beside intake records; the profile section's
-  repository list names each repository by the name §5.1 derives, so the list and the records agree; the execution protocol gains the commit-message rule.
+  repository list names each repository by the name §5.1 derives, so the
+  list and the records agree; the execution protocol gains the
+  commit-message rule.
 
 The user's guide's "Small fixes and small requests on a launched system"
 section is written for a developer who returns to it: how `hsdd-intake` works
 first, then one subsection per case, before the code exists, after it is on
-the main branch, and when several developers commit at once. The "fix already made" path
+the main branch, and when several developers commit at once. The "fix
+already made" path
 and the `## Manual lane (project convention)` paragraph become the sweep;
 the `HSDD-Node:` trailer stays as the placement hint §4.4 reads and the
 carrier of a `manual` answer. `HSDD-Kind:` is read by nothing and the guide
@@ -847,7 +878,7 @@ No artifact is rewritten and nothing triggers an adoption run.
 | Change | Effect on a 0.13.0 project | Implemented in v0.13.1 by |
 |--------|----------------------------|---------------------------|
 | The phase test and the `phase` class (§4.3, §6.4) | From the next sweep. Records already written stand. A first change-log line with no phase count reads as zero. | `hsdd-intake` |
-| Phase work is attributed at the checkpoint (chapter 8) | From the next checkpoint. A backfill finding that named only phase work closes without a sweep, and a project that never sweeps is unaffected, as this section's first table says. | `hsdd-checkpoint` |
+| Phase work is attributed at the checkpoint (chapter 8) | From the next checkpoint. A backfill finding that named only phase work closes without a sweep, and that is all a project that never sweeps sees of this release. | `hsdd-checkpoint` |
 | Every commit of a phase names its phase id (chapter 8) | Forward-only: phases switched after the upgrade get the Discipline line, and a phase context already written is a record. | `hsdd-config`; conventions template |
 
 ### 9.2 Artifact stability
@@ -892,7 +923,9 @@ record is unchanged; `manual` and `commit` are values, not fields.
 
 ### 9.4 Glossary additions
 
-Request mode, sweep mode, range, candidate commit, governance-only commit, attributed commit, surface move, phase work, claim, sweep class, sweep record: each as
+Request mode, sweep mode, range, candidate commit, governance-only commit,
+attributed commit, surface move, phase work, claim, sweep class, sweep
+record: each as
 chapter 2 defines them. `manual`: the intake class of chapter 3.
 
 ---
@@ -984,7 +1017,7 @@ Provenance as v0.10.0 chapter 18 defines it.
 | A request below the line, before the code | Class `manual`: a node and a trailer, no record, no skill handoff; the sweep row is its record (chapter 3). | reasoned-only |
 | Where small post-launch changes are recorded | In a sweep record, one row per commit; a phase only when a claim went stale; an intake only when the surface moved (chapters 4 to 6). | reasoned-only |
 | The sweep's input | A commit range on an implementation repository's main line, defaulting from the previous record; never a hand-kept file (§4.2). | reasoned-only |
-| What "worth recording" means | Two bounded tests, surface then claim; the agent names the claim or the move, never a worth; the same tests read a request's description in request mode (§3.1, §4.3). | reasoned-only |
+| What "worth recording" means | Bounded tests, surface, phase, then claim; the agent names the phase, the claim or the move, never a worth; the surface and claim tests read a request's description in request mode (§3.1, §4.3). | reasoned-only |
 | Who applies which test | The script applies the surface test and proposes placement from `modules:` lines; the agent applies the claim test over the owning node's closure and places from the tree; the runner places what the tree does not answer (§4.3, §4.4). | reasoned-only |
 | Lowering a class | Never by an agent; a person may before the record is committed, the script's `intake` included, with a change-log line that `check` reads; never after publication (§4.3, §5.3, §7.4). | reasoned-only |
 | A small fix on an as-built node | `log` unless the surface moved: no claim test, no retro phase, no promotion for a shipped fix or a `manual` request (§3.2, §4.3). | reasoned-only |
@@ -1087,7 +1120,8 @@ topic producer, each in a file whose other lines also change; a copy change
 in a routes file that moves no route; a log line; a commit under the
 as-built node's prefix that would stale a header sentence; a commit
 spanning both nodes' prefixes; a commit under a path no node owns; a commit
-carrying `HSDD-Node:`; a commit a later retro phase's Scope cites by sha. A dropped phase is read from its record. At least:
+carrying `HSDD-Node:`; a commit a later retro phase's Scope cites by sha. A
+dropped phase is read from its record. At least:
 
 - the range: default `--from` from the newest record of the repository, and
   the overlap under `classified by`; a first sweep with no record and no
@@ -1136,11 +1170,14 @@ carrying `HSDD-Node:`; a commit a later retro phase's Scope cites by sha. A drop
 
 `hsdd-intake`'s `SKILL.md` carries the `manual` row and its process step,
 the §3.4 unattended row, and a sweep-mode section of at most 40 lines that
-selects the mode and names `sweep.md`; `sweep.md` under 240 lines with the phase test, the claim test and the as-built rule stated as §4.3 states them, its own
+selects the mode and names `sweep.md`; `sweep.md` under 240 lines with the
+phase test, the claim test and the as-built rule stated as §4.3 states them,
+its own
 quality gates, and an anti-rationalization table whose first row is the
 worth judgment; the slash command's description names both modes and stays
 one line; the two skill texts and the template of chapter 8 carry their
-edits; the user's guide's small-fixes section is written as chapter 8 says, and the third situation in "Outside the loop" names them; the
+edits; the user's guide's small-fixes section is written as chapter 8 says,
+and the third situation in "Outside the loop" names them; the
 README's `hsdd-intake` row names both modes, its fenced chain block gains the
 sweep line, and its skill count stays thirteen; the interactive guide's skill map describes intake's
 two modes; the changelog entry names the upgrade effects of §9.1.

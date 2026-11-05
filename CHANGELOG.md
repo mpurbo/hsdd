@@ -23,16 +23,17 @@ Specification: `spec/hsdd-spec-v0_13.md`, corrected in place.
 - The `phase` class applies from the next sweep. Records already written
   stand. A first change-log line with no phase count reads as zero.
 - The checkpoint attributes phase work from the next checkpoint. A backfill
-  finding that named only phase work closes without a sweep, and a project
-  that never sweeps is unaffected.
+  finding that named only phase work closes without a sweep, and that is all
+  a project that never sweeps sees of this release.
 - Every commit of a phase now names its phase id, forward-only. A phase
   context already written is a record and is not rewritten.
 
 ### Added
 
 - **The phase test and the `phase` class** (spec v0.13 §4.3, §6.4): the agent
-  asks of every candidate whether a phase of its owning node, not dropped,
-  describes it, and the commit is no later than that phase's sign-off. A
+  asks of every candidate whether the diff lies within the Scope of a phase of
+  its owning node, not dropped, and the commit is no later than that phase's
+  sign-off. A
   `phase` row names the phase and needs no handoff. It may stand in for a
   surface move the phase accounts for, and never for a commit that spans two
   nodes. `check` refuses a reason that is no phase of the row's node and a

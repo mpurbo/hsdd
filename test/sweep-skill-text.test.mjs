@@ -545,7 +545,7 @@ test("How: the two modes come before any example, then the questions, then the c
   assert.ok(t.includes("Does the change make a claim in the tree false?"));
   assert.ok(t.includes("is this commit the work of a phase?"));
   assert.ok(t.includes("On an as-built node the second question is not asked: only the surface decides"));
-  assert.ok(t.includes("That costs one table row."));
+  assert.ok(t.includes("Before the code, intake writes nothing. After the code, the sweep writes one table row."));
   const at = ["Request mode", "Does the change move", "Classes in request mode", "Classes in sweep mode", "**Which node?**"].map((s) => HOW.indexOf(s));
   assert.ok(at.every((p) => p >= 0), `parts at ${at}`);
   assert.deepEqual(at, [...at].sort((x, y) => x - y));
@@ -575,7 +575,7 @@ test("Before the code: a route answered manual, with the trailer", () => {
   assert.ok(t.includes("moves a route, schema, topic or table"), "and the condition that voids it");
   assert.ok(t.includes("does not attribute the commit on its own"));
   assert.ok(t.includes("A phase is the safe answer"));
-  assert.ok(t.includes("`/hsdd-auto intake` routes the same request `local`"));
+  assert.ok(t.includes("An unattended run (`/hsdd-auto intake`) never answers `manual`"));
 });
 
 test("Before the code: a change that needs a phase is the PAY-412 flow", () => {
@@ -617,9 +617,9 @@ test("the classes cost what the spec says", () => {
 test("After the code: what a sweep does, the first sweep, and what gates publication", () => {
   const t = norm(AFTER_CODE);
   assert.ok(t.includes("legal bypass"));
-  assert.ok(t.includes("name the start with `--from`, which is itself not swept"));
+  assert.ok(t.includes("name the start with `--from`. The commit you name is not swept itself"));
   assert.ok(t.includes("A `--from` later than the previous record's end is refused"));
-  assert.ok(t.includes("`check` and `commit` gate first publication"));
+  assert.ok(t.includes("`check` and `commit` guard the first commit of the record."));
   const note = t.indexOf("Your first sweep also needs a starting point");
   assert.ok(note > t.indexOf('/hsdd-intake sweep --run-by "Dewi Lestari"') && note < t.indexOf("What a sweep does"), "the first sweep is flagged right after the command");
 });
@@ -629,7 +629,7 @@ test("After the code: who runs it, and the checkpoint's cadence", () => {
   assert.ok(t.includes("a developer after merging"));
   assert.ok(t.includes("a lead before a checkpoint"));
   assert.ok(t.includes('--run-by "Claude for {person} (delegated)"'));
-  assert.ok(t.includes("When nobody reads the record"));
+  assert.ok(t.includes("When an agent runs the sweep and no person reads the record before it is committed"));
   assert.ok(t.includes("`/hsdd-intake sweep --from {sha}`"));
   assert.ok(t.includes("run `/hsdd-checkpoint` scoped after a batch of fixes, naming the commits, and full only before a release."));
 });
@@ -644,6 +644,7 @@ test("Several developers: one range, the phase id, the phase class, and two peop
   assert.ok(t.includes("no later than the phase's sign-off"));
   assert.ok(t.includes("pull before you sweep"));
   assert.ok(t.includes("the next checkpoint files that as a finding"));
+  assert.ok(t.includes("A phase whose verification doc is signed does not take later commits."));
   assert.ok(MANY_DEVS.includes("| Commit subject | Author | What the sweep does |"));
 });
 
@@ -731,7 +732,7 @@ test("an unplaced row stays open until a person places it, and hsdd-adopt alone 
 // Final review: the skill texts the script's fixes and the rulings touch.
 test("the checkpoint's attribution list carries chapter 8's Scope clause", () => {
   assert.ok(norm(SPEC).includes("a merge, is governance-only, names a phase id, is cited by a phase's Scope, is phase work by the test of §4.3, or is a row in a sweep record is attributed"), "the spec");
-  assert.ok(norm(CHECKPOINT).includes("a commit that is a merge, is governance-only, names a phase id, is cited by a phase's Scope, is phase work (the diff is what a phase's Scope says, and the commit is no later than that phase's sign-off), or is a row in a sweep record is attributed"), "the checkpoint");
+  assert.ok(norm(CHECKPOINT).includes("a commit that is a merge, is governance-only, names a phase id, is cited by a phase's Scope, is phase work by the phase test (spec v0.13 §4.3: the diff lies within the Scope of a phase of its owning node, not dropped; the commit's author date is no later than that phase's sign-off; and the phase's Scope or Produces accounts for any surface move), or is a row in a sweep record is attributed"), "the checkpoint");
 });
 
 test("the Manual lane sentence names the rule it means", () => {
@@ -781,7 +782,7 @@ test("a commit a retro phase cites by sha is attributed, and a finding id alone 
 });
 
 test("the guide says what to push first, as section 7.4 does", () => {
-  assert.ok(norm(AFTER_CODE).includes("Under the profile, push inside `hsdd/` before pushing the implementation repository, as every governance edit is pushed, or the pointer names a commit no clone has."));
+  assert.ok(norm(AFTER_CODE).includes("Under the standalone-spec-repo profile, push inside `hsdd/` first and the implementation repository second, as with every governance edit."));
 });
 
 test("the interactive guide tells the v0.13 path: the finding's step is a sweep, and a retro row earns a retro phase", () => {
@@ -803,7 +804,7 @@ const SPEC_PHASE_TEST = between(SPEC, "**The phase test** (agent)", "**The claim
 test("the phase test in sweep.md carries the spec's rule", () => {
   const t = norm(PHASE_TEST);
   for (const s of [
-    "the diff is what the phase's Scope says, and the commit's date is no later than the day the phase's verification doc was signed, when it has been signed.",
+    "the diff lies within what the phase's Scope says, and the commit's author date is no later than the date in the Sign-off of the phase's verification doc, when that doc is signed.",
     "On a row the surface test set `intake`, the phase must also account for the move, in its Scope or its Produces.",
     "A commit that spans two nodes stays `intake`, since a phase belongs to one node.",
     "Sharing a node is not evidence: a small fix on a node with an open phase is not that phase's work.",
@@ -842,6 +843,7 @@ test("the 0.13.1 changelog entry and the upgrade note name the effects of sectio
     for (const s of ["`phase`", "A first change-log line with no phase count reads as zero", "A phase context already written is a record"]) assert.ok(text.includes(s), `${name}: ${s}`);
   }
   assert.ok(!/\btenses?\b/i.test(CHANGELOG), "plain words");
+  assert.ok(norm(UPGRADE_131).includes("That is all a project that never sweeps sees of this release."));
 });
 
 test("the interactive guide does not say only a retro row earns a retro phase", () => {

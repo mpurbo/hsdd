@@ -65,8 +65,9 @@ node hsdd/scripts/sweep/sweep.mjs commit hsdd/management/DATE-sweep-REPO-SHA7.md
 3. **Write `## Routing`** from the rows, in table order, numbered `H{n}`:
    one handoff per node with `retro` rows and one per `intake` row, each
    headed `**H{n}** ({class}, {node or sha}):`, every prompt in its own
-   `text` fence below it. When every row is `log` or `phase`, leave `## Routing` at
-   `none` and tick `Status` to `closed (YYYY-MM-DD)` with the record's date.
+   `text` fence below it. When every row is `log` or `phase`, leave
+   `## Routing` at `none` and tick `Status` to `closed (YYYY-MM-DD)` with the
+   record's date.
 4. **`check`, until it passes.** It reads the record back against a fresh
    draft of its range, exits non-zero naming the row, and writes nothing.
    Fix the record and run it again; never commit a record `check` refused.
@@ -97,15 +98,16 @@ line keeps the counts of the day it was written.
 ## The phase test
 
 It runs first, on every candidate, those the surface test set `intake`
-included. Read the owning node's phases and nothing wider. The commit is
-phase work when a phase of its owning node, not dropped, describes it: the
-diff is what the phase's Scope says, and the commit's date is no later than
-the day the phase's verification doc was signed, when it has been signed.
-On a row the surface test set `intake`, the phase must also account for the
-move, in its Scope or its Produces. The class is then **`phase`**, the reason
-is the phase id, and the row is the whole record of the commit: no claim test
-and no handoff, because the phase's own gate and verification doc answer for
-it.
+included. Read the owning node's phases and their verification docs, nothing
+wider. `git show -s --format=%as {sha}` gives the commit's author date. The
+commit is phase work when a phase of its owning node, not dropped, describes
+it: the diff lies within what the phase's Scope says, and the commit's
+author date is no later than the date in the Sign-off of the phase's
+verification doc, when that doc is signed. On a row the surface test set
+`intake`, the phase must also account for the move, in its Scope or its
+Produces. The class is then **`phase`**, the reason is the phase id, and the
+row is the whole record of the commit: no claim test and no handoff, because
+the phase's own gate and verification doc answer for it.
 
 A commit that spans two nodes stays `intake`, since a phase belongs to one
 node. Sharing a node is not evidence: a small fix on a node with an open phase

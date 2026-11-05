@@ -51,7 +51,7 @@ function phaseProblems(x, fresh, tree) {
   const at = `row ${x.sha}`;
   const phase = tree.phases.get(x.reason);
   const out = [];
-  if (fresh?.cls === "intake" && fresh.reason.startsWith("spans ")) out.push(`${at}: the commit ${fresh.reason}, and a commit that spans two nodes stays intake`);
+  if (fresh?.cls === "intake" && fresh.node === "none") out.push(`${at}: the commit spans two nodes, and such a commit stays intake`);
   if (!phase) out.push(`${at}: reason ${x.reason} is not a phase of the tree`);
   else if (phase.dropped) out.push(`${at}: phase ${phase.id} is dropped`);
   else if (x.node !== "none" && x.node !== "?" && phase.node !== x.node) out.push(`${at}: phase ${phase.id} is not on node ${x.node}`);
