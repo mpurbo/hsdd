@@ -3,8 +3,9 @@
 **Core principle: the script owns the record's structure, the agent answers
 one bounded question per commit.** The script reads the range, sets aside
 what is attributed, runs the surface test and writes every row. The agent
-fills the cells it left, asking whether the diff makes a claim of the owning
-node's closure false or stale. Nothing a sweep writes counts as done.
+fills the cells it left, asking whether the commit is the work of a phase
+and, if it is not, whether the diff makes a claim of the owning node's
+closure false or stale. Nothing a sweep writes counts as done.
 
 ## When it applies
 
@@ -52,9 +53,11 @@ node hsdd/scripts/sweep/sweep.mjs commit hsdd/management/DATE-sweep-REPO-SHA7.md
      places is `unplaced`, reason its paths, node `none`, and is never
      guessed onto a node; one partly unowned is placed by the runner or not
      at all. An `intake` row nobody places stays `intake`, node `none`.
-   - **Class and Reason**, by the claim test, on every row left at `?`.
-     `Reason` is `none` for `log`, the claim's location for `retro`, the
-     paths for `unplaced`, and never what the code now does.
+   - **Class and Reason**, by the phase test on every row, then the claim
+     test on every row left at `?`. `Reason` is `none` for `log`, the phase
+     id for `phase`, the claim's location for `retro`, the surface move or the
+     spanned nodes for `intake`, the paths for `unplaced`, and never what the
+     code now does.
    - **`Run by`**, unless `--run-by` filled it: a person, or
      `{agent} for {person} (delegated)`, asking the runner once. That
      person answers for the classification.
@@ -62,7 +65,7 @@ node hsdd/scripts/sweep/sweep.mjs commit hsdd/management/DATE-sweep-REPO-SHA7.md
 3. **Write `## Routing`** from the rows, in table order, numbered `H{n}`:
    one handoff per node with `retro` rows and one per `intake` row, each
    headed `**H{n}** ({class}, {node or sha}):`, every prompt in its own
-   `text` fence below it. When every row is `log`, leave `## Routing` at
+   `text` fence below it. When every row is `log` or `phase`, leave `## Routing` at
    `none` and tick `Status` to `closed (YYYY-MM-DD)` with the record's date.
 4. **`check`, until it passes.** It reads the record back against a fresh
    draft of its range, exits non-zero naming the row, and writes nothing.
@@ -91,9 +94,30 @@ in the same edit. `check` and `commit` gate the first publication only: a
 published edit is committed with git directly, since the first change-log
 line keeps the counts of the day it was written.
 
+## The phase test
+
+It runs first, on every candidate, those the surface test set `intake`
+included. Read the owning node's phases and nothing wider. The commit is
+phase work when a phase of its owning node, not dropped, describes it: the
+diff is what the phase's Scope says, and the commit's date is no later than
+the day the phase's verification doc was signed, when it has been signed.
+On a row the surface test set `intake`, the phase must also account for the
+move, in its Scope or its Produces. The class is then **`phase`**, the reason
+is the phase id, and the row is the whole record of the commit: no claim test
+and no handoff, because the phase's own gate and verification doc answer for
+it.
+
+A commit that spans two nodes stays `intake`, since a phase belongs to one
+node. Sharing a node is not evidence: a small fix on a node with an open phase
+is not that phase's work. When the diff does not let you tell, ask the runner
+once, and a commit nobody claims for a phase goes on to the claim test. Moving
+a script-set `intake` to `phase` is not lowering: the commit already has a
+phase, and that phase answers for the move. `check` refuses a reason that is
+no phase of the row's node, a dropped phase, and a row that spans two nodes.
+
 ## The claim test
 
-It runs on every candidate the surface test left. The agent reads the diff
+It runs on every candidate the first two tests left. The agent reads the diff
 and the owning node's closure, nothing wider: the node's spec file, the
 Scope and Verification lines of its phases, the Guarantees of the contracts
 the node produces, and the Decision of each ADR in its Governed by. If the
@@ -185,6 +209,8 @@ files it as a finding, and the record stays open until a person places it.
 
 - [ ] Every candidate has a row; none was added or dropped by hand.
 - [ ] No class was lowered by the agent.
+- [ ] Every `phase` row names a phase of its node whose Scope describes the
+      diff.
 - [ ] A claim is named by its location on every `retro` row.
 - [ ] No `retro` row sits on an as-built node.
 - [ ] `check` passed before `commit`.
@@ -197,3 +223,4 @@ files it as a finding, and the record stays open until a person places it.
 | "I'll skip the record, nothing staled" | Nothing staled is the `log` answer, and the row is the record. Without it the commits stay an unswept range, and the next checkpoint files that as a finding. |
 | "The classifier is wrong, I'll change that intake to log" | An agent never lowers a class, and `check` refuses the row. Ask the runner, who may lower it before the commit with the change-log line, and who answers for it. |
 | "I'll guess the node" | Ask the runner once. A commit nobody places is `unplaced`, listed for the owner; a guess puts code no node owns on a node and hides the finding. |
+| "It's on the node with the open phase, so it's phase work" | Sharing a node is not evidence. The phase's Scope must describe the diff, and a phase already signed absorbs nothing later. Otherwise run the claim test. |

@@ -29,10 +29,10 @@ it never defines.
 
 ## Two modes
 
-One door for a change in either tense. The first word of your arguments
-selects the mode:
+One door for a change, before the code exists or after it shipped. The first
+word of your arguments selects the mode:
 
-| Mode | Tense | Selected by | Answer |
+| Mode | When | Selected by | Answer |
 |------|-------|-------------|--------|
 | Request mode | Before the code exists | `route`, a path, a URL, or a described request | One change request routed into the tree, record first; a request below the line is class `manual`, a node and a trailer and no record. Runs no script. |
 | Sweep mode | After the code shipped | `sweep` | One sweep record over a range of commits on an implementation repository's main line. Runs `sweep.mjs`. |

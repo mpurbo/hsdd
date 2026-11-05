@@ -7,9 +7,57 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.13.1] - Unreleased
+
+A sweep tells the work of a phase from a small fix. Under 0.13.0 the only link
+from a commit to its phase was a phase id in the message or a sha in a Scope,
+and nothing told a phase cycle to write one, so a sweep read unmarked phase
+work as small fixes and the checkpoint read it as a backfill. The user's guide
+section on small fixes is rewritten for the developer who returns to it.
+
+Specification: `spec/hsdd-spec-v0_13.md`, corrected in place.
+
+### Upgrading from 0.13.0
+
+- Reinstall the thirteen skills. No existing artifact is rewritten.
+- The `phase` class applies from the next sweep. Records already written
+  stand. A first change-log line with no phase count reads as zero.
+- The checkpoint attributes phase work from the next checkpoint. A backfill
+  finding that named only phase work closes without a sweep, and a project
+  that never sweeps is unaffected.
+- Every commit of a phase now names its phase id, forward-only. A phase
+  context already written is a record and is not rewritten.
+
+### Added
+
+- **The phase test and the `phase` class** (spec v0.13 §4.3, §6.4): the agent
+  asks of every candidate whether a phase of its owning node, not dropped,
+  describes it, and the commit is no later than that phase's sign-off. A
+  `phase` row names the phase and needs no handoff. It may stand in for a
+  surface move the phase accounts for, and never for a commit that spans two
+  nodes. `check` refuses a reason that is no phase of the row's node and a
+  dropped phase.
+- **A commit-message rule:** `hsdd-config`'s Discipline and the conventions
+  template say every commit of a phase names its phase id.
+
+### Changed
+
+- `hsdd-checkpoint` attributes phase work again, as it did before 0.13.0
+  turned its judgment into a closed list.
+- The user's guide's "Small fixes and small requests on a launched system" is
+  rewritten: how `hsdd-intake` works first, then one subsection per case,
+  including several developers committing at once.
+- `sweep.md` may run to 240 lines, and the phase test takes the room.
+
+### Fixed
+
+- The interactive guide no longer says only a `retro` row earns a retro phase;
+  an `intake` row's phases are retro phases too.
+
 ## [0.13.0] - Unreleased
 
-Small changes after launch. `hsdd-intake` takes a change in either tense: a
+Small changes after launch. `hsdd-intake` handles a change before the code
+exists and after it shipped: a
 request below the line gets a node and a commit trailer and no record, and a
 sweep attributes shipped commits in a dated record, one row per commit,
 handing off only what earned a phase or an intake. The skill count stays
@@ -109,8 +157,8 @@ Specification: `spec/hsdd-spec-v0_13.md`.
   `hsdd/scripts/sweep/`, `hsdd/management/` names `hsdd-intake` as the writer
   of sweep records, and the profile section's repository list uses the names
   sweep records use.
-- The user's guide: the small-fixes section is rewritten over the two
-  tenses, its retro-phase prompts and the `## Manual lane` block are gone,
+- The user's guide: the small-fixes section is rewritten for both
+  cases, its retro-phase prompts and the `## Manual lane` block are gone,
   and "Outside the loop" names `manual` and the sweep. `HSDD-Kind:` is read
   by nothing and the guide stops recommending it; a project that writes it
   loses nothing.
