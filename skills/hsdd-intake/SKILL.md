@@ -4,12 +4,15 @@ description: >
   Use when a change request arrives for a system that already has an HSDD
   tree: a PRD, an RFC, a ticket, an incident, a design drop. Routes it into
   the existing tree, checks for collisions with open intakes, writes the
-  routing record before any handoff, and hands off. Triggers: "here's a new
-  PRD, where does it go", "route this change", "intake this ticket", "a
-  change request came in", "where in the tree does this land", "new feature
-  request for an existing system". Do NOT use for the first tree
-  (hsdd-spec at the root, or hsdd-adopt), for the periodic evidence pass
-  (hsdd-checkpoint), or for writing the phases themselves (hsdd-phase-plan).
+  routing record before any handoff, and hands off. After launch it also
+  answers a request below the line with a node and a commit trailer, and
+  sweeps shipped commits into a sweep record. Triggers: "here's a new PRD,
+  where does it go", "route this change", "intake this ticket", "a change
+  request came in", "where in the tree does this land", "new feature request
+  for an existing system", "is this small enough to skip a phase", "sweep
+  the merged fixes". Do NOT use for the first tree (hsdd-spec at the root,
+  or hsdd-adopt), for the periodic evidence pass (hsdd-checkpoint), or for
+  writing the phases themselves (hsdd-phase-plan).
 ---
 
 # HSDD Intake: Route a Change Into the Tree
@@ -24,11 +27,34 @@ read-only toward governance; intake is event-driven and its whole job is
 to route into governance. Its record is a management document: it cites,
 it never defines.
 
+## Two modes
+
+One door for a change in either tense. The first word of your arguments
+selects the mode:
+
+| Mode | Tense | Selected by | Answer |
+|------|-------|-------------|--------|
+| Request mode | Before the code exists | `route`, a path, a URL, or a described request | One change request routed into the tree, record first; a request below the line is class `manual`, a node and a trailer and no record. Runs no script. |
+| Sweep mode | After the code shipped | `sweep` | One sweep record over a range of commits on an implementation repository's main line. Runs `sweep.mjs`. |
+
+Sweep mode applies to a launched system and looks only backwards, at
+commits that exist on the main line. When the arguments name neither mode
+and the text says the change already shipped ("I merged", "these commits",
+a sha or a range), ask once which mode is meant; never sweep a request or
+route a commit range without being told. One commit given to request mode
+is the `commit` authority, one commit per request, which is how a sweep
+hands a surface move back.
+
+**Sweep mode leaves this file here.** Read `sweep.md` beside this file and
+follow it; the rest of this file is request mode. Request mode does not
+read `sweep.md`.
+
 ## Inputs
 
 - The change request: a path or URL, and its authority (accepted RFC |
-  approved PRD | draft | ticket | incident | braindump). An approved
-  amendment to a PRD is `approved PRD`.
+  approved PRD | draft | ticket | incident | braindump | commit). An
+  approved amendment to a PRD is `approved PRD`. A `commit` request is
+  `{repo}@{sha}`, already shipped, and its phases are retro phases.
 - `hsdd/management/atlas.md` (the newest tree view); when no atlas exists,
   `hsdd/spec/` directly.
 - Every open intake record under `hsdd/management/` (step 1).
@@ -64,6 +90,43 @@ it never defines.
    | `cross-node` | touches several nodes' surfaces | `hsdd-contract` bump and/or `hsdd-adr`, then `hsdd-phase-plan` on each node (append mode when it already has phases) |
    | `new-capability` | needs a node that does not exist | `hsdd-spec` graft mode on the **existing parent**, then phase-plan the new child |
    | `structural` | the tree's shape is wrong for this change | **stop**: a human decision, the expensive one; the record states why and what the options are |
+   | `manual` | after launch, a request that, as described, moves no route, schema, topic or table, stales no claim of the owning node's closure, and lands inside one node | **no skill, no record**: the answer names the node and the commit trailer; the change ships on the implementation repository's main line and the sweep attributes it |
+
+   **A `manual` answer writes nothing.** The two tests are the sweep's,
+   applied to the request as described instead of to a diff: it moves no
+   route, schema, topic or table, and it stales no claim, a claim being a
+   sentence of the owning node's closure that the code can make false (a
+   phase's Scope or Verification line; the node header's Purpose, Owns,
+   Does not own and Isolation strategy; a node decision; the Guarantees of
+   a contract the node produces; the Decision of an ADR that governs it).
+   "Make the preview's total larger" moves no surface and names nothing
+   those sentences say: `manual`. "Rename the fee line to charge" stales a
+   Verification line that says "shows the fee line": `local`, a phase. "Add
+   a preview endpoint" moves a route: `local` or `cross-node` with a
+   contract bump.
+
+   Doubt is not `manual`: when the description does not let you tell, the
+   class is another one, because the phase is the safe answer and the sweep
+   can still find later that the diff stayed below the line. A request of
+   authority `commit` is never `manual`. `manual` does not exist before
+   launch: on an unlaunched system a request too small for its own phase is
+   routed `local` and appended to the phase it fixes, or folded into an
+   unshipped phase's Scope by the owner. An as-built landing is not
+   promoted for a `manual` request: step 3 does not run, and promotion
+   waits for the first change request that needs a phase.
+
+   Steps 5 and 6 do not apply: nothing is written under `hsdd/` and nothing
+   is handed off. In place of step 7's report, name:
+
+   - the node, found as step 2 finds a landing;
+   - the trailer the commit must carry, `HSDD-Node: {node-id}`, which is how
+     the answer reaches the sweep;
+   - that the change ships on the main line of the implementation
+     repository and is attributed by `/hsdd-intake sweep` after it merges,
+     by the developer or by a lead before the next checkpoint;
+   - the one condition that voids the answer: if, while making the change,
+     the developer finds it moves a route, schema, topic or table, the
+     request comes back through request mode before it merges.
 
 5. **Write the record before the handoff** (shape below). The routing
    decision is auditable because it was written first, not inferred from
@@ -250,6 +313,7 @@ When your arguments contain `--unattended {step}`, you run as step
 | Class `structural` | return | `shape` |
 | A landing on an as-built node | decide: write the `**Promotes:**` line and order a `promote` handoff first (§9.2); the `promotion` stop is `hsdd-spec`'s, in that step | none |
 | Serializing or merging with an open intake | decide | `judgement` |
+| A request that would be class `manual` | decide: route it `local`; `manual` is not an unattended class (spec v0.13 §3.4) | `judgement` |
 
 When the orchestrator answers a `return` (§8.3, case B), the resumed step
 applies the answer, and the quality gate that names the human act is `n/a`
@@ -268,6 +332,9 @@ with the orchestrator's decision id.
 - [ ] No spec, contract or ADR was written by this skill.
 - [ ] The handoff block, when present, lists the same handoffs as the prose,
       in the same order, with the same prompts.
+- [ ] A `manual` answer wrote nothing under `hsdd/` and named the node and
+      the trailer; a request the description could not settle was not
+      `manual`.
 
 ## Anti-Rationalization
 
@@ -278,3 +345,4 @@ with the orchestrator's decision id.
 | "The as-built node is small; I'll phase-plan it as is" | An as-built spec is an unvalidated claim about intent. Promote it through hsdd-spec, with the human's confirmation, then route. |
 | "The other intake touches the same contract but a different field" | Same contract, same single writer, same serialization. Record which intake waits. |
 | "I'll fix the tree shape while I'm here" | Structural is the human's decision. Stop with the options written down. |
+| "It's probably small; I'll say manual" | Doubt is not manual. The phase is the safe answer, and the sweep can still find later that the diff stayed below the line. |
