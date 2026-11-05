@@ -23,6 +23,10 @@ export function unknownIdsIn(text, nodeIds, phaseIds) {
   return tokensIn(text, `(?:${byLengthDesc(nodeIds).map(escapeRe).join("|")})\\.\\d+`).filter((id) => !known.has(id));
 }
 
+export const shaTokensIn = (text) => tokensIn(text, "[0-9a-f]{7,40}");
+
+const citingPhases = (sha, scopeShas) => [...new Set(scopeShas.filter((s) => sha.startsWith(s.sha)).map((s) => s.phase))];
+
 export function setAside(commits, tree, classified) {
   const aside = { merges: [], governance: [], attributed: [], classified: [], unknown: [], candidates: [] };
   const byRecord = new Map();
@@ -30,7 +34,8 @@ export function setAside(commits, tree, classified) {
     const sha = short(c.sha);
     if (c.parents.length > 1) { aside.merges.push(sha); continue; }
     if (c.paths.length > 0 && c.paths.every(isGovernancePath)) { aside.governance.push(sha); continue; }
-    const phases = phaseIdsIn(c.message, tree.phaseIds);
+    const named = phaseIdsIn(c.message, tree.phaseIds);
+    const phases = named.length > 0 ? named : citingPhases(c.sha, tree.scopeShas);
     if (phases.length > 0) { aside.attributed.push({ sha, phases }); continue; }
     if (classified.has(sha)) {
       const filename = classified.get(sha);

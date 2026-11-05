@@ -13,7 +13,7 @@ const short = (sha) => sha.slice(0, 7);
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
 
 export function resolveRange(root, opts, records, git = runGit) {
-  for (const k of "to from main".split(" ")) {
+  for (const k of ["to", "from", "main"]) {
     if (typeof opts[k] === "string" && opts[k].startsWith("-")) throw new Refusal(`--${k} value "${opts[k]}" starts with "-"; give a commit or a branch name`);
   }
   const { name, named } = repoName(root, opts.repo, git);
@@ -70,12 +70,14 @@ export function draft(root, opts, out, git = runGit) {
   const today = opts.today ?? new Date().toLocaleDateString("en-CA");
   if (!DATE.test(today)) throw new Refusal(`--today ${today} is not YYYY-MM-DD`);
   const records = readRecords(root);
-  const bad = records.find((r) => r.repo === null || r.to === null);
+  const bad = records.find((r) => r.repo === null || r.to === null || r.date === null);
   if (bad) throw new Refusal(`unreadable record ${bad.filename}: fix or delete it before drafting`);
   const { name } = repoName(root, opts.repo, git);
   const mine = records.filter((r) => r.repo === name);
   const open = mine.find(unfinished);
   if (open) throw new Refusal(`unfinished record ${open.filename}: fill every ? or delete it before drafting`);
+  const lost = mine.find((r) => !resolveCommit(root, r.to, git));
+  if (lost) throw new Refusal(`${lost.filename}: the Range to ${short(lost.to)} does not resolve in this clone; fetch it first`);
   const range = resolveRange(root, opts, records, git);
   const classified = classifiedOf(mine, name);
   const d = draftFor(root, range, readTree(root), classified);

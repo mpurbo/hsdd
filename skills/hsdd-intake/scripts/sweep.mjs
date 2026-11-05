@@ -14,7 +14,7 @@ export const USAGE = "usage: sweep.mjs draft | check | commit\n" +
   "  check  hsdd/management/DATE-sweep-REPO-SHA7.md\n" +
   "  commit hsdd/management/DATE-sweep-REPO-SHA7.md";
 
-const VALUED = new Set("to from main repo run-by today".split(" "));
+const VALUED = new Set(["to", "from", "main", "repo", "run-by", "today"]);
 const FLAGS = new Set(["write"]);
 
 export function parseArgs(argv) {
@@ -22,8 +22,11 @@ export function parseArgs(argv) {
   for (let i = 1; i < argv.length; i++) {
     const key = argv[i].startsWith("--") ? argv[i].slice(2) : null;
     if (key && FLAGS.has(key)) opts[key] = true;
-    else if (key && VALUED.has(key)) opts[key] = argv[++i] ?? "";
-    else throw new Refusal(`unexpected argument ${argv[i]}`);
+    else if (key && VALUED.has(key)) {
+      const value = argv[++i];
+      if (!value) throw new Refusal(`--${key} needs a value`);
+      opts[key] = value;
+    } else throw new Refusal(`unexpected argument ${argv[i]}`);
   }
   return opts;
 }
@@ -34,7 +37,7 @@ export function commit(root, path, out, git = runGit) {
   const rel = relative(root, resolve(root, path));
   const detached = detachedCwds(root, [rel], git);
   if (detached.length > 0) {
-    out.error(`${relative(root, detached[0]) || detached[0]} is on a detached HEAD; check out a branch there before committing, or the commit is orphaned by the next submodule update`);
+    out.error(`${relative(root, detached[0])} is on a detached HEAD; check out a branch there before committing, or the commit is orphaned by the next submodule update`);
     return 1;
   }
   const r = parseRecord(readFileSync(resolve(root, path), "utf8"));

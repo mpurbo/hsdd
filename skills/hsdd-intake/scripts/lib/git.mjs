@@ -1,5 +1,5 @@
-// Reads of the repository through git only. Nothing here writes, checks out
-// or stashes.
+// The repository through git: its reads, and commitPaths, the one write, which
+// `commit` runs. Nothing here checks out or stashes.
 import { execFileSync } from "node:child_process";
 import { existsSync } from "node:fs";
 import { basename, join, relative } from "node:path";

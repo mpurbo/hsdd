@@ -30,10 +30,18 @@ function scriptFiles(dir) {
   });
 }
 
+// The lookbehind keeps a quoted word out: ["to", "from", "main"] holds no import.
+const IMPORT = /(?<!["'\w])(?:from|import)\s*\(?\s*["']([^"']+)["']/g;
+const importsIn = (text) => [...text.matchAll(IMPORT)].map((m) => m[1]);
+
+test("the import pattern reads every form, and no quoted word in a string list", () => {
+  assert.deepEqual(importsIn('import a from "./a.mjs";\nimport "node:fs";\nawait import("../b.mjs");\nexport { c } from \'./c.mjs\';'), ["./a.mjs", "node:fs", "../b.mjs", "./c.mjs"]);
+  assert.deepEqual(importsIn('const k = ["to", "from", "main"];\nconst j = [\'import\', \'x\'];'), []);
+});
+
 test("every import under the scripts is relative or node:", () => {
-  const spec = /(?:from|import)\s*\(?\s*["']([^"']+)["']/g;
   for (const file of scriptFiles(SCRIPTS)) {
-    for (const [, s] of readFileSync(file, "utf8").matchAll(spec)) {
+    for (const s of importsIn(readFileSync(file, "utf8"))) {
       assert.ok(
         s.startsWith("./") || s.startsWith("../") || s.startsWith("node:"),
         `${file} imports "${s}", which is neither relative nor node:`,

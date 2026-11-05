@@ -103,6 +103,7 @@ export function newestRecord(records, repo, descends) {
   if (!mine.length) return null;
   const latest = mine.reduce((d, r) => (r.date > d ? r.date : d), "");
   const sameDay = mine.filter((r) => r.date === latest);
+  // Same-day records on diverged heads have no newest: the last by filename stands in.
   return sameDay.find((r) => sameDay.every((o) => o === r || o.to === r.to || descends(r.to, o.to))) ?? sameDay.at(-1);
 }
 

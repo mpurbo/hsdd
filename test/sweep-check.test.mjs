@@ -22,6 +22,11 @@ const addRow = (r, sha) => ({ ...r, rows: [...r.rows, { sha, node: "acme.web", c
 const addToPrompt = (r, sha) => ({ ...r, routing: [...r.routing, "**H9** (retro, acme.web):", "```text", `add one retro phase for commits ${sha},`, "```"] });
 const dropHandoffs = (r) => ({ ...r, routing: ["none"] });
 const miscount = (r) => ({ ...r, changeLog: [r.changeLog[0].replace(/\d+ log/, "99 log"), ...r.changeLog.slice(1)] });
+const without = (lines, sha) => {
+  const i = lines.findIndex((l) => l.startsWith("**H") && l.includes(sha));
+  const end = lines.indexOf("```", i + 2);
+  return [...lines.slice(0, i), ...lines.slice(end + 1)];
+};
 
 test("handoffsOf reads a retro handoff's three prompts and an intake handoff's one", () => {
   const hs = handoffsOf(good().routing);
@@ -43,11 +48,15 @@ const REFUSALS = [
   ["a ? cell", (r) => set(r, "log", { cls: "?" }), /\?/],
   ["an unknown class", (r) => set(r, "log", { cls: "skip" }), /class/],
   ["a retro row with reason none", (r) => set(r, "copy", { reason: "none" }), /reason/],
+  ["an intake row with reason none", (r) => set(r, "routeAdd", { reason: "none" }), new RegExp(`row ${s7("routeAdd")}: reason is none`)],
   ["a script-set intake changed with no line", (r) => set(r, "routeAdd", { cls: "log", reason: "none" }), /lowered/],
   ["a log row's sha in a handoff", (r) => addToPrompt(r, s7("log")), /handoff/],
   ["a retro row with no handoff", (r) => dropHandoffs(r), /handoff/],
+  ["an intake row with no handoff", (r) => ({ ...r, routing: without(r.routing, s7("routeAdd")) }), new RegExp(`row ${s7("routeAdd")}: intake row has no handoff`)],
   ["a retro row on an as-built node", (r) => set(r, "asBuilt", { cls: "retro", reason: "x" }), /as-built/],
   ["a retro row on the root", (r) => set(r, "copy", { node: "acme" }), /internal|root/],
+  ["a log row on a retired node", (r) => set(r, "log", { node: "acme.legacy" }), new RegExp(`row ${s7("log")}: log row on retired node acme\\.legacy`)],
+  ["a retro row on a retired node", (r) => set(r, "copy", { node: "acme.legacy" }), new RegExp(`row ${s7("copy")}: retro row on retired node acme\\.legacy`)],
   ["a node outside the tree", (r) => set(r, "log", { node: "acme.nope" }), /not in the tree/],
   ["none on a log row", (r) => set(r, "log", { node: "none" }), /none/],
   ["an empty Run by", (r) => ({ ...r, runBy: "" }), /Run by/],
@@ -58,6 +67,12 @@ const REFUSALS = [
   ["a malformed Status", (r) => ({ ...r, status: "done" }), /Status/],
 ];
 for (const [name, edit, re] of REFUSALS) test(`check refuses ${name}`, () => assert.match(problems(edit(good())).join("\n"), re));
+
+test("check refuses a retro row on an internal node", () => {
+  const nodes = new Map([...tree.nodes, ["acme.core", { id: "acme.core", kind: "internal", status: "active", adopted: null }]]);
+  const r = set(good(), "copy", { node: "acme.core" });
+  assert.match(checkRecord(r, fresh.rows, { ...tree, nodes }).join("\n"), new RegExp(`row ${s7("copy")}: retro row on internal node acme\\.core`));
+});
 
 test("each refusal names the row's sha", () => {
   assert.match(problems(set(good(), "copy", { reason: "none" })).join("\n"), new RegExp(s7("copy")));
@@ -78,11 +93,6 @@ test("an all-log record must be closed", () => {
   assert.match(problems({ ...r, status: "open" }, logs).join("\n"), /Status/);
 });
 
-const without = (lines, sha) => {
-  const i = lines.findIndex((l) => l.startsWith("**H") && l.includes(sha));
-  const end = lines.indexOf("```", i + 2);
-  return [...lines.slice(0, i), ...lines.slice(end + 1)];
-};
 test("a script-set intake lowered with its line passes", () => {
   const sha = s7("routeAdd");
   const text = fillRecord(goodText, {
@@ -91,10 +101,32 @@ test("a script-set intake lowered with its line passes", () => {
     lowered: [`- 2026-11-05: lowered ${sha} from intake to log by Purbo: a route-like string in a comment`],
   });
   const r = parseRecord(text);
-  assert.ok(!problems(r).join("\n").includes("lowered"), problems(r).join("\n"));
+  assert.deepEqual(problems(r), []);
   // a line for another class or another sha does not count
   const wrong = { ...r, changeLog: r.changeLog.map((l) => l.replace("to log", "to retro")) };
   assert.match(problems(wrong).join("\n"), /lowered/);
+});
+
+test("the lowered line's target is its own class, not words in its reason", () => {
+  const sha = s7("routeAdd");
+  const r = parseRecord(fillRecord(goodText, {
+    rows: { [sha]: { cls: "log", reason: "none" } },
+    routing: without(parseRecord(goodText).routing, sha),
+    lowered: [`- 2026-11-05: lowered ${sha} from intake to retro by Purbo: first went to log by mistake`],
+  }));
+  assert.match(problems(r).join("\n"), new RegExp(`row ${sha}: .*no change-log line`));
+});
+
+test("a script-set intake reading unplaced is told it is never lowered there, and offered no line", () => {
+  const sha = s7("routeAdd");
+  const r = parseRecord(fillRecord(goodText, {
+    rows: { [sha]: { node: "none", cls: "unplaced", reason: "src/web/routes.js" } },
+    routing: without(parseRecord(goodText).routing, sha),
+    lowered: [`- 2026-11-05: lowered ${sha} from intake to unplaced by Purbo: nobody owns it`],
+  }));
+  const got = problems(r).join("\n");
+  assert.match(got, new RegExp(`row ${sha}: .*never lowered to unplaced`));
+  assert.ok(!got.includes("no change-log line"), got);
 });
 
 test("promptShas reads chapter 6's sha positions only", () => {

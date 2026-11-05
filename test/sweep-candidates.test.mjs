@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { rangeCommits } from "../skills/hsdd-intake/scripts/lib/git.mjs";
 import { readTree } from "../skills/hsdd-intake/scripts/lib/tree.mjs";
-import { isGovernancePath, phaseIdsIn, unknownIdsIn, setAside, asideLines, place } from "../skills/hsdd-intake/scripts/lib/candidates.mjs";
+import { isGovernancePath, phaseIdsIn, unknownIdsIn, shaTokensIn, setAside, asideLines, place } from "../skills/hsdd-intake/scripts/lib/candidates.mjs";
 import { sweepRepo } from "./helpers/sweep-fixture.mjs";
 
 const fx = sweepRepo();
@@ -26,13 +26,22 @@ test("unknownIdsIn ignores versions and file names", () => {
 test("setAside on the fixture", () => {
   const a = setAside(commits, tree, new Map());
   assert.deepEqual(a.merges, [s7("merge")]);
-  assert.deepEqual(a.governance, [s7("gov")]);
-  assert.deepEqual(a.attributed.map((x) => x.sha), [s7("phaseSubject"), s7("phaseTrailer")]);
-  assert.deepEqual(a.attributed.map((x) => x.phases), [["acme.web.2"], ["acme.web.1"]]);
+  assert.deepEqual(a.governance, [s7("gov"), s7("citing")]);
+  assert.deepEqual(a.attributed.map((x) => x.sha), [s7("phaseSubject"), s7("phaseTrailer"), s7("cited")]);
+  assert.deepEqual(a.attributed.map((x) => x.phases), [["acme.web.2"], ["acme.web.1"], ["acme.web.3"]]);
   assert.deepEqual(a.unknown, [{ sha: s7("unknownId"), id: "acme.web.20" }]);
   assert.ok(a.candidates.some((c) => c.sha === fx.shas.side), "a commit a merge brought in is a candidate");
   assert.ok(a.candidates.some((c) => c.sha === fx.shas.unknownId));
   assert.ok(!a.candidates.some((c) => c.sha === fx.shas.merge || c.sha === fx.shas.gov || c.sha === fx.shas.phaseSubject));
+});
+
+test("a commit a phase's Scope cites is listed under attributed, and the rest of that Scope attributes nothing", () => {
+  const a = setAside(commits, tree, new Map());
+  assert.ok(!a.candidates.some((c) => c.sha === fx.shas.cited));
+  assert.match(asideLines(a)[2], new RegExp(`${s7("cited")} -> acme\\.web\\.3$`));
+  assert.ok(a.candidates.some((c) => c.sha === fx.shas.log), "the sha ending a record's filename in the Scope is no citation");
+  assert.equal(commits.filter((c) => c.sha.startsWith("feedbee")).length, 0, "feedbee is no commit's prefix");
+  assert.equal(a.attributed.length, 3);
 });
 
 test("setAside groups classified commits by record", () => {
@@ -61,7 +70,7 @@ test("hsdd-contextual is not governance", () => assert.equal(isGovernancePath("h
 const rows = {
   side: "acme.web", unknownId: "acme.web", routeAdd: "acme.web", schema: null, migration: "acme.web", alter: "acme.web",
   topic: "acme.web", copy: "acme.web", moved: "acme.web", removed: "acme.web", spaced: "acme.web", log: "acme.web",
-  asBuilt: "acme.reports", unowned: null, retired: null, trailer: "acme.web", contract: "acme.web",
+  asBuilt: "acme.reports", unowned: null, retired: null, trailer: "acme.web", cited: "acme.web", contract: "acme.web",
 };
 for (const [key, node] of Object.entries(rows)) {
   test(`place: ${key}`, () => assert.deepEqual(place(commit(key), tree), { node, spans: [] }));
@@ -90,6 +99,42 @@ test("a trailer naming a retired or unknown node is ignored", () => {
 test("governance paths are left out of placement", () => {
   const t = t2([{ node: "a", prefixes: ["src/a/"] }]);
   assert.deepEqual(place(mk(["hsdd/c.md", "src/a/x.js"]), t), { node: "a", spans: [] });
+});
+
+test("shaTokensIn reads whole tokens of 7 to 40 lower-case hex characters", () => {
+  assert.deepEqual(shaTokensIn("commits a1b2c3d, `b2c3d4e5` and acme@c3d4e5f."), ["a1b2c3d", "b2c3d4e5", "c3d4e5f"]);
+  assert.deepEqual(shaTokensIn(`${"a".repeat(40)} ${"b".repeat(41)}`), ["a".repeat(40)]);
+  for (const t of ["a1b2c3", "A1B2C3D", "a1b2c3dz", "za1b2c3d", "a1b2c3d-x", "2026-11-05-sweep-acme-a1b2c3d.md"]) assert.deepEqual(shaTokensIn(t), [], t);
+});
+
+const cites = (scopeShas, more = {}) => ({ nodes: new Map(), nodeIds: [], phaseIds: [], scopes: [], scopeShas, ...more });
+const sha = "abcdef0" + "1".repeat(33);
+const hotfix = (message = "x") => ({ ...mk(["src/a/x.js"], message), sha });
+
+test("setAside: a listed token that starts the full sha attributes the commit to that phase", () => {
+  for (const token of ["abcdef0", "abcdef01", sha]) {
+    const a = setAside([hotfix()], cites([{ sha: token, phase: "a.3" }]), new Map());
+    assert.deepEqual(a.attributed, [{ sha: "abcdef0", phases: ["a.3"] }], token);
+    assert.deepEqual(a.candidates, [], token);
+  }
+});
+test("setAside: a Scope token that is hex but no commit's prefix attributes nothing", () => {
+  for (const token of ["feedbee", "bcdef01", "abcdef02"]) {
+    const a = setAside([hotfix()], cites([{ sha: token, phase: "a.3" }]), new Map());
+    assert.deepEqual(a.attributed, [], token);
+    assert.equal(a.candidates.length, 1, token);
+  }
+});
+test("setAside: every citing phase is listed once", () => {
+  const scopeShas = [{ sha: "abcdef0", phase: "a.3" }, { sha: "abcdef01", phase: "a.3" }, { sha: "abcdef0", phase: "a.4" }];
+  assert.deepEqual(setAside([hotfix()], cites(scopeShas), new Map()).attributed, [{ sha: "abcdef0", phases: ["a.3", "a.4"] }]);
+});
+test("setAside: the Scope test runs after the message test and before the classified test", () => {
+  const scopeShas = [{ sha: "abcdef0", phase: "a.3" }];
+  const named = setAside([hotfix("a.1: done")], cites(scopeShas, { phaseIds: ["a.1", "a.3"] }), new Map());
+  assert.deepEqual(named.attributed, [{ sha: "abcdef0", phases: ["a.1"] }]);
+  const classified = setAside([hotfix()], cites(scopeShas), new Map([["abcdef0", "r.md"]]));
+  assert.deepEqual([classified.attributed.length, classified.classified], [1, []]);
 });
 
 test("asideLines reads none for an empty category", () => {

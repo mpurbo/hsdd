@@ -51,6 +51,12 @@ test("readTree: scopes leave out the retired node, adopted is read", () => {
   assert.equal(t.nodes.get("acme.reports").adopted, "as-built");
   assert.ok(t.phaseIds.includes("acme.web.2"));
 });
+test("readTree: scopeShas holds each whole hex token of a phase's Scope, with its phase", () => {
+  assert.deepEqual(readTree(fx.root).scopeShas, [
+    { sha: fx.shas.cited.slice(0, 7), phase: "acme.web.3" },
+    { sha: "feedbee", phase: "acme.web.3" },
+  ]);
+});
 test("the profile fixture reads the same tree and its pointer commit has no project path but the gitlink", () => {
   const p = sweepProfileRepo();
   assert.deepEqual(readTree(p.root).scopes.map((s) => s.node).sort(), ["acme.reports", "acme.web"]);

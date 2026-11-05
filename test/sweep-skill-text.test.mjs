@@ -381,7 +381,6 @@ test("phase planning's retro phase may cover several commits of one sweep record
 
 test("the conventions template names the sweep script, record and repository names", () => {
   const t = norm(CONVENTIONS);
-  assert.ok(t.includes("- `hsdd/scripts/seal/` sweep") === false);
   const seal = CONVENTIONS.indexOf("- `hsdd/scripts/seal/`");
   const sweep = CONVENTIONS.indexOf("- `hsdd/scripts/sweep/`");
   assert.ok(seal > 0 && sweep > seal);

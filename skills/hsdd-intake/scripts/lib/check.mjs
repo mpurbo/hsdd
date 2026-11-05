@@ -2,7 +2,7 @@
 // its range. The rules are pure; the command only reads and prints.
 import { existsSync, readFileSync } from "node:fs";
 import { basename, resolve } from "node:path";
-import { Refusal } from "./git.mjs";
+import { Refusal, resolveCommit } from "./git.mjs";
 import { readTree, readRecords } from "./tree.mjs";
 import { isRecordFile, parseRecord, classifiedOf } from "./record.mjs";
 import { draftFor } from "./draft.mjs";
@@ -40,7 +40,8 @@ export function promptShas(prompt) {
   return [...listed, ...single];
 }
 
-const loweredLine = (sha) => new RegExp(`^- \\d{4}-\\d{2}-\\d{2}: lowered ${sha} from intake to (log|retro) by .+: .+$`);
+// The class a change-log line lowers `sha` to, or undefined on any other line.
+const loweredTo = (line, sha) => new RegExp(`^- \\d{4}-\\d{2}-\\d{2}: lowered ${sha} from intake to (log|retro) by .+: .+$`).exec(line)?.[1];
 
 function rowProblems(x, fresh, tree, record) {
   const at = `row ${x.sha}`;
@@ -50,14 +51,15 @@ function rowProblems(x, fresh, tree, record) {
   if (x.cls !== "?" && !CLASSES.includes(x.cls)) out.push(`${at}: class "${x.cls}" is not one of ${CLASSES.join(", ")}`);
   if ((x.cls === "retro" || x.cls === "intake") && x.reason === "none") out.push(`${at}: reason is none on a ${x.cls} row`);
   if (fresh?.cls === "intake" && x.cls !== "intake" && x.cls !== "?") {
-    const ok = x.cls !== "unplaced" && record.changeLog.some((l) => loweredLine(x.sha).test(l) && l.includes(` to ${x.cls} by `));
-    if (!ok) out.push(`${at}: the draft set intake and the row reads ${x.cls} with no change-log line "lowered ${x.sha} from intake to ${x.cls} by {person}: {reason}"`);
+    if (x.cls === "unplaced") out.push(`${at}: the draft set intake and a row is never lowered to unplaced; an intake row nobody places stays intake, node none`);
+    else if (!record.changeLog.some((l) => loweredTo(l, x.sha) === x.cls)) out.push(`${at}: the draft set intake and the row reads ${x.cls} with no change-log line "lowered ${x.sha} from intake to ${x.cls} by {person}: {reason}"`);
   }
   if (x.node === "none") {
     if (x.cls !== "intake" && x.cls !== "unplaced" && CLASSES.includes(x.cls)) out.push(`${at}: node none is valid on intake and unplaced rows only`);
   } else if (x.node !== "?") {
     const n = tree.nodes.get(x.node);
     if (!n) out.push(`${at}: node ${x.node} is not in the tree`);
+    else if ((x.cls === "log" || x.cls === "retro") && n.status === "retired") out.push(`${at}: ${x.cls} row on retired node ${x.node}; a row names an active node`);
     else if (x.cls === "retro") {
       if (n.adopted === "as-built") out.push(`${at}: retro row on as-built node ${x.node}, where append mode has no plan to write into`);
       else if (n.kind === "internal" || n.kind === "root") out.push(`${at}: retro row on ${n.kind} node ${x.node}, where append mode has no plan to write into`);
@@ -107,6 +109,9 @@ export function check(root, path, out) {
   if (!existsSync(file)) throw new Refusal(`${path} does not exist`);
   const record = parseRecord(readFileSync(file, "utf8"));
   if (record.repo === null || record.from === null || record.to === null) throw new Refusal(`${path}: the Repository or Range header is unreadable`);
+  for (const [end, sha] of Object.entries({ from: record.from, to: record.to })) {
+    if (!resolveCommit(root, sha)) throw new Refusal(`${path}: the Range ${end} ${sha.slice(0, 7)} does not resolve in this clone; fetch it first`);
+  }
   const classified = classifiedOf(readRecords(root), record.repo, filename);
   const tree = readTree(root);
   const fresh = draftFor(root, { from: record.from, to: record.to }, tree, classified);

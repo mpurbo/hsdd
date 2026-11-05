@@ -18,11 +18,11 @@ const spec = (id, name, kind, fields, body) => `# ${id}: ${name}
 ${fields}- **Isolation strategy:** fixtures
 ${body}`;
 
-const phase = (id, name, verification) => `### ${id}: ${name}
+const phase = (id, name, verification, scope = name) => `### ${id}: ${name}
 
 - **Consumes:** none
 - **Produces:** none
-- **Scope:** ${name}
+- **Scope:** ${scope}
 - **Size estimate:** ~3 files (~100 lines), <= 4 tasks
 - **Gate:** npm test
 - **Verification:** ${verification}
@@ -43,7 +43,7 @@ const ROOT = `# acme: Acme
 The fixture system.
 `;
 
-const WEB = spec("acme.web", "Web", "leaf-parent", "- **Adopted:** promoted\n", `- **Decomposes into:** phases (see hsdd-phase-plan)
+const web = ({ rows = "", phases = "" } = {}) => spec("acme.web", "Web", "leaf-parent", "- **Adopted:** promoted\n", `- **Decomposes into:** phases (see hsdd-phase-plan)
 
 ## Phase Plan
 
@@ -53,9 +53,18 @@ const WEB = spec("acme.web", "Web", "leaf-parent", "- **Adopted:** promoted\n", 
 |------:|------|------|------|------------|
 | acme.web.1 | Shell | gate-only | ~3 files, <=4 tasks | none |
 | acme.web.2 | Preview | gate-only | ~3 files, <=4 tasks | 1 |
-
+${rows}
 ${phase("acme.web.1", "Shell", "it works")}
-${phase("acme.web.2", "Preview", "the preview shows the fee line")}${surface("src/web/")}`);
+${phase("acme.web.2", "Preview", "the preview shows the fee line")}${phases}${surface("src/web/")}`);
+const WEB = web();
+
+// A retro phase whose Scope cites one commit by sha, beside two tokens that
+// attribute nothing: a record's filename ending in another commit's sha, and
+// a hex word that is no commit's prefix.
+const webWithRetro = (cited, recordTo) => web({
+  rows: "| acme.web.3 | Hotfix (retro) | gate-only | ~1 file, <=1 tasks | none |\n",
+  phases: `\n${phase("acme.web.3", "Hotfix (retro)", "the hotfix holds", `Commit ${cited} per finding F-1 and hsdd/management/2026-10-01-sweep-acme-${recordTo}.md; ticket feedbee`)}`,
+});
 
 const REPORTS = spec("acme.reports", "Reports", "leaf-parent", "- **Adopted:** as-built\n", surface("src/reports/"));
 const LEGACY = spec("acme.legacy", "Legacy", "leaf-parent", "- **Status:** retired\n", surface("src/legacy/"));
@@ -175,6 +184,12 @@ export function sweepRepo({ nested = false } = {}) {
   append("src/web/app.js", "// shared again\n");
   append("src/reports/monthly.js", "// shared again\n");
   shas.trailerSpan = commit("web: shared", "HSDD-Node: acme.web");
+
+  append("src/web/app.js", "// cited hotfix\n");
+  shas.cited = commit("web: cited hotfix");
+
+  at("hsdd/spec/acme.web.md", webWithRetro(shas.cited.slice(0, 7), shas.log.slice(0, 7)));
+  shas.citing = commit("docs: retro phase for the hotfix");
 
   at("hsdd/contract/payouts-api.md", "# Payouts API\n");
   append("src/web/app.js", "// contract note\n");

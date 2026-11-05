@@ -3,7 +3,8 @@ import assert from "node:assert/strict";
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { main } from "../skills/hsdd-intake/scripts/sweep.mjs";
+import { main, parseArgs } from "../skills/hsdd-intake/scripts/sweep.mjs";
+import { Refusal } from "../skills/hsdd-intake/scripts/lib/git.mjs";
 
 function collector() {
   const lines = [];
@@ -241,8 +242,7 @@ test("a detached submodule is refused and nothing is committed", () => {
   const rootHead = gitIn(p.root, "rev-parse", "HEAD");
   const o = collector();
   assert.equal(main(["commit", rel], p.root, o), 1);
-  assert.match(o.lines.join("\n"), /detached/);
-  assert.match(o.lines.join("\n"), /hsdd/);
+  assert.equal(o.lines.at(-1), "hsdd is on a detached HEAD; check out a branch there before committing, or the commit is orphaned by the next submodule update");
   assert.equal(gitIn(join(p.root, "hsdd"), "rev-parse", "HEAD"), subHead);
   assert.equal(gitIn(p.root, "rev-parse", "HEAD"), rootHead);
 });
@@ -337,3 +337,74 @@ test("commit takes no flags", () => {
   assert.match(o.lines.join("\n"), /unexpected argument --write/);
   assert.equal(gitIn(fx.root, "rev-parse", "HEAD"), head);
 });
+
+// final review
+for (const k of ["to", "from", "main", "repo", "run-by", "today"]) {
+  test(`--${k} with a missing or an empty value is refused, naming the flag`, () => {
+    const refused = (e) => e instanceof Refusal && e.message === `--${k} needs a value`;
+    assert.throws(() => parseArgs(["draft", `--${k}`]), refused);
+    assert.throws(() => parseArgs(["draft", `--${k}`, ""]), refused);
+    assert.throws(() => parseArgs(["draft", "--write", `--${k}`]), refused);
+  });
+}
+
+test("a trailing --repo refuses the draft and does not take the origin name", () => {
+  const fx = sweepRepo();
+  const o = collector();
+  assert.equal(main(["draft", "--from", fx.base, "--write", "--repo"], fx.root, o), 1);
+  assert.deepEqual(o.lines, ["--repo needs a value"]);
+  assert.deepEqual(managed(fx.root), []);
+});
+
+test("a commit a phase's Scope cites gets no row, and the record lists it under attributed", () => {
+  const fx = sweepRepo();
+  const o = collector();
+  assert.equal(main(draftArgs(fx, "--from", fx.base), fx.root, o), 0);
+  const r = parseRecord(o.lines.join("\n"));
+  assert.ok(!r.rows.some((x) => x.sha === s7(fx.shas.cited)));
+  assert.match(r.notCandidates.join("\n"), new RegExp(`attributed: .*${s7(fx.shas.cited)} -> acme\\.web\\.3`));
+});
+
+const edited = (path, patch) => writeFileSync(path, renderRecord({ ...parseRecord(readFileSync(path, "utf8")), ...patch }));
+const LOST = "0123456".repeat(5) + "01234";
+
+test("a record with no Date line is unreadable", () => {
+  const fx = sweepRepo();
+  const { name, path } = filled(fx, fx.base, fx.shas.routeAdd);
+  writeFileSync(path, readFileSync(path, "utf8").replace(/^- \*\*Date:\*\*.*\n/m, ""));
+  const o = collector();
+  assert.equal(main(draftArgs(fx), fx.root, o), 1);
+  assert.equal(o.lines.join("\n"), `unreadable record ${name}: fix or delete it before drafting`);
+});
+
+test("a record whose to is not in this clone refuses the draft and names the file", () => {
+  const fx = sweepRepo();
+  const { name, path } = filled(fx, fx.base, fx.shas.routeAdd);
+  edited(path, { to: LOST });
+  const o = collector();
+  assert.equal(main(draftArgs(fx), fx.root, o), 1);
+  assert.match(o.lines.join("\n"), new RegExp(`^${name.replace(/\./g, "\\.")}: .*${LOST.slice(0, 7)} does not resolve in this clone`));
+});
+
+test("another repository's record is not resolved here: under the profile its shas are in its own clone", () => {
+  const fx = sweepRepo();
+  const { path } = filled(fx, fx.base, fx.shas.routeAdd);
+  edited(path, { repo: "other", to: LOST });
+  const o = collector();
+  assert.equal(main(draftArgs(fx, "--from", fx.base), fx.root, o), 0, o.lines.join("\n"));
+});
+
+for (const end of ["from", "to"]) {
+  test(`check and commit refuse a header ${end} not in this clone, naming the file`, () => {
+    const fx = sweepRepo();
+    const { rel, path } = filled(fx, fx.base, fx.shas.routeAdd);
+    edited(path, { [end]: LOST });
+    const head = gitIn(fx.root, "rev-parse", "HEAD");
+    for (const command of ["check", "commit"]) {
+      const o = collector();
+      assert.equal(main([command, rel], fx.root, o), 1);
+      assert.deepEqual(o.lines, [`${rel}: the Range ${end} ${LOST.slice(0, 7)} does not resolve in this clone; fetch it first`]);
+    }
+    assert.equal(gitIn(fx.root, "rev-parse", "HEAD"), head);
+  });
+}

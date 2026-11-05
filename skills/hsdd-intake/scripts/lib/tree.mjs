@@ -1,10 +1,11 @@
-// The spec tree as sweep needs it: nodes, phase ids, and the path prefixes
-// each live node's Observed surface claims.
+// The spec tree as sweep needs it: nodes, phase ids, the path prefixes each
+// live node's Observed surface claims, and the shas phases' Scopes cite.
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { extractPlan } from "../extract-plan.mjs";
 import { parseObservedSurface } from "../diff.mjs";
 import { isRecordFile, parseRecord } from "./record.mjs";
+import { shaTokensIn } from "./candidates.mjs";
 
 export function readTree(root) {
   const plan = extractPlan(root);
@@ -12,7 +13,8 @@ export function readTree(root) {
   const scopes = plan.nodes
     .filter((n) => n.observedSurface && n.status !== "retired" && existsSync(join(root, n.sourceFile)))
     .map((n) => ({ node: n.id, prefixes: parseObservedSurface(readFileSync(join(root, n.sourceFile), "utf8"))?.modules ?? [] }));
-  return { nodes, nodeIds: plan.nodes.map((n) => n.id), phaseIds: plan.phases.map((p) => p.id), scopes };
+  const scopeShas = plan.phases.flatMap((p) => shaTokensIn(p.scope ?? "").map((sha) => ({ sha, phase: p.id })));
+  return { nodes, nodeIds: plan.nodes.map((n) => n.id), phaseIds: plan.phases.map((p) => p.id), scopes, scopeShas };
 }
 
 export function readRecords(root) {
