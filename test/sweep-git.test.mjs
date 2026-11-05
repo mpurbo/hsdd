@@ -1,7 +1,9 @@
 import { test } from "node:test";
+import { readFileSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
 import assert from "node:assert/strict";
 import { runGit, resolveCommit, isAncestor, rangeCommits, showAt } from "../skills/hsdd-intake/scripts/lib/git.mjs";
-import { readTree } from "../skills/hsdd-intake/scripts/lib/tree.mjs";
+import { readTree, droppedIn } from "../skills/hsdd-intake/scripts/lib/tree.mjs";
 import { sweepRepo, sweepProfileRepo } from "./helpers/sweep-fixture.mjs";
 
 const fx = sweepRepo();
@@ -61,4 +63,24 @@ test("the profile fixture reads the same tree and its pointer commit has no proj
   const p = sweepProfileRepo();
   assert.deepEqual(readTree(p.root).scopes.map((s) => s.node).sort(), ["acme.reports", "acme.web"]);
   assert.deepEqual(rangeCommits(p.root, p.base, p.shas.log).map((c) => c.sha), [p.shas.pointer, p.shas.log]);
+});
+
+test("readTree: phases know their node, and a dropped line is read per phase", () => {
+  const t = readTree(fx.root);
+  assert.deepEqual(t.phases.get("acme.web.2"), { id: "acme.web.2", node: "acme.web", dropped: false });
+  const text = "### acme.web.1: A\n\n- **Scope:** x\n- **Status:** dropped (2026-11-01, not built)\n\n### acme.web.2: B\n\n- **Scope:** y\n";
+  assert.deepEqual(droppedIn(text, ["acme.web.1", "acme.web.2"]), ["acme.web.1"]);
+});
+
+test("readTree reads a dropped phase from its record in the tree", () => {
+  const f = sweepRepo();
+  const file = join(f.root, "hsdd/spec/acme.web.md");
+  const text = readFileSync(file, "utf8");
+  const at = text.indexOf("### acme.web.2:");
+  const line = text.indexOf("- **Review tier:**", at);
+  const end = text.indexOf("\n", line) + 1;
+  writeFileSync(file, `${text.slice(0, end)}- **Status:** dropped (2026-11-01, not built)\n${text.slice(end)}`);
+  const t = readTree(f.root);
+  assert.equal(t.phases.get("acme.web.2").dropped, true);
+  assert.equal(t.phases.get("acme.web.1").dropped, false);
 });

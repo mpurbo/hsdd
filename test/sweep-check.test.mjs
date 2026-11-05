@@ -156,3 +156,64 @@ test("the {to} commit on a retro row with its handoff dropped is refused", () =>
   const noRetro = { ...r, routing: r.routing.slice(r.routing.findIndex((l, i) => i > 0 && l.startsWith("**H") && l.includes("intake"))) };
   assert.match(problems(noRetro, rows).join("\n"), new RegExp(`${s7("copy")}.*no handoff`));
 });
+
+// v0.13.1: a `phase` row attributes a commit to the phase it delivers (spec 4.3, 7.4).
+const recount = (r) => {
+  const n = (c) => r.rows.filter((x) => x.cls === c).length;
+  const counts = `${r.rows.length} candidates: ${n("log")} log, ${n("retro")} retro, ${n("intake")} intake, ${n("unplaced")} unplaced, ${n("phase")} phase`;
+  return { ...r, changeLog: [r.changeLog[0].replace(/created; .*$/, `created; ${counts}`), ...r.changeLog.slice(1)] };
+};
+const asPhase = (r, k, patch = {}) => recount(set(r, k, { cls: "phase", reason: "acme.web.2", ...patch }));
+const noHandoff = (r, k) => ({ ...r, routing: without(r.routing, s7(k)) });
+
+test("a phase row naming a phase of its node passes", () => assert.deepEqual(problems(asPhase(good(), "log")), []));
+
+test("a phase row replaces a script-set intake with no lowered line", () => {
+  assert.deepEqual(problems(asPhase(noHandoff(good(), "routeAdd"), "routeAdd")), []);
+});
+
+test("a spans row is never a phase row", () => {
+  const r = asPhase(noHandoff(good(), "spans"), "spans", { node: "acme.web" });
+  assert.match(problems(r).join("\n"), new RegExp(`row ${s7("spans")}: .*spans`));
+});
+
+const PHASE_REFUSALS = [
+  ["a reason that is no phase id", (r) => asPhase(r, "log", { reason: "acme.web.99" }), new RegExp(`row ${s7("log")}: reason acme\\.web\\.99 is not a phase`)],
+  ["a reason of none", (r) => asPhase(r, "log", { reason: "none" }), new RegExp(`row ${s7("log")}: reason none is not a phase`)],
+  ["a phase of another node", (r) => asPhase(r, "asBuilt"), new RegExp(`row ${s7("asBuilt")}: phase acme\\.web\\.2 is not on node acme\\.reports`)],
+  ["node none", (r) => asPhase(r, "log", { node: "none" }), new RegExp(`row ${s7("log")}: node none`)],
+  ["a retired node", (r) => asPhase(r, "log", { node: "acme.legacy" }), new RegExp(`row ${s7("log")}: phase row on retired node`)],
+  ["its sha in a handoff", (r) => addToPrompt(asPhase(r, "log"), s7("log")), new RegExp(`row ${s7("log")}: a phase row's sha appears in a handoff`)],
+];
+for (const [name, edit, re] of PHASE_REFUSALS) test(`check refuses a phase row with ${name}`, () => assert.match(problems(edit(good())).join("\n"), re));
+
+test("check refuses a phase row naming a dropped phase", () => {
+  const phases = new Map([...tree.phases, ["acme.web.2", { ...tree.phases.get("acme.web.2"), dropped: true }]]);
+  assert.match(checkRecord(asPhase(good(), "log"), fresh.rows, { ...tree, phases }).join("\n"), new RegExp(`row ${s7("log")}: phase acme\\.web\\.2 is dropped`));
+});
+
+test("a record of only log and phase rows must be closed", () => {
+  const only = (status) => {
+    const rows = [{ sha: "aaaaaaa", node: "acme.web", cls: "log", reason: "none", subject: "x" }, { sha: "bbbbbbb", node: "acme.web", cls: "phase", reason: "acme.web.2", subject: "y" }];
+    return recount({ ...good(), rows, routing: ["none"], status });
+  };
+  const fresh2 = [{ sha: "aaaaaaa", cls: "?" }, { sha: "bbbbbbb", cls: "?" }];
+  assert.deepEqual(checkRecord(only("closed (2026-11-05)"), fresh2, tree), []);
+  assert.match(checkRecord(only("open"), fresh2, tree).join("\n"), /Status is open/);
+});
+
+test("the change-log line may omit the phase count only when there is no phase row", () => {
+  const r = good();
+  const old = { ...r, changeLog: [r.changeLog[0].replace(/, \d+ phase$/, ""), ...r.changeLog.slice(1)] };
+  assert.deepEqual(problems(old), [], "a line written by 0.13.0 stays good");
+  const p = asPhase(r, "log");
+  const stale = { ...p, changeLog: [p.changeLog[0].replace(/, \d+ phase$/, ""), ...p.changeLog.slice(1)] };
+  assert.match(problems(stale).join("\n"), /counts/);
+});
+
+test("a commit that moved the surface and spans two nodes is never a phase row", () => {
+  // rowFor writes the move as the reason, so only the node `none` says the commit spans.
+  const rows = fresh.rows.map((x) => (x.sha === s7("routeAdd") ? { ...x, node: "none" } : x));
+  const r = asPhase(noHandoff(good(), "routeAdd"), "routeAdd");
+  assert.match(checkRecord(r, rows, tree).join("\n"), new RegExp(`row ${s7("routeAdd")}: .*spans two nodes`));
+});

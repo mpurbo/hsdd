@@ -29,10 +29,10 @@ it never defines.
 
 ## Two modes
 
-One door for a change in either tense. The first word of your arguments
-selects the mode:
+One door for a change, before the code exists or after it shipped. The first
+word of your arguments selects the mode:
 
-| Mode | Tense | Selected by | Answer |
+| Mode | When | Selected by | Answer |
 |------|-------|-------------|--------|
 | Request mode | Before the code exists | `route`, a path, a URL, or a described request | One change request routed into the tree, record first; a request below the line is class `manual`, a node and a trailer and no record. Runs no script. |
 | Sweep mode | After the code shipped | `sweep` | One sweep record over a range of commits on an implementation repository's main line. Runs `sweep.mjs`. |
@@ -93,7 +93,7 @@ read `sweep.md`.
    | `structural` | the tree's shape is wrong for this change | **stop**: a human decision, the expensive one; the record states why and what the options are |
    | `manual` | after launch, a request that, as described, moves no route, schema, topic or table, stales no claim of the owning node's closure, and lands inside one node | **no skill, no record**: the answer names the node and the commit trailer; the change ships on the implementation repository's main line and the sweep attributes it |
 
-   **A `manual` answer writes nothing.** The two tests are the sweep's,
+   **A `manual` answer writes nothing.** The two tests are the sweep's surface and claim tests,
    applied to the request as described instead of to a diff: it moves no
    route, schema, topic or table, and it stales no claim, a claim being a
    sentence of the owning node's closure that the code can make false (a

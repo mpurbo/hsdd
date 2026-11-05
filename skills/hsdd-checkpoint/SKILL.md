@@ -182,8 +182,13 @@ be standing in produces a progress report that undercounts the project.
      reachable from the head of the repository's own main branch, as the
      record's `**Repository:**` line names it, side branches included, a
      commit that is a merge, is governance-only, names a phase id, is cited
-     by a phase's Scope, or is a row in a sweep record is attributed; a
-     `log` row needs nothing further, and a commit trailer attributes
+     by a phase's Scope, is phase work by the phase test (spec v0.13 §4.3:
+     the diff lies within the
+     Scope of a phase of its owning node, not dropped; the commit's author
+     date is no later than that phase's sign-off; and the phase's Scope or
+     Produces accounts for any surface move), or is a row in a sweep record
+     is attributed; a `log` or `phase` row needs
+     nothing further, and a commit trailer attributes
      nothing on its own. Every
      other commit since the newest record's `{to}`, or since launch when
      there is none, is one **backfill** finding per repository naming the

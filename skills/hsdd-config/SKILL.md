@@ -152,6 +152,8 @@ replaced by the plan's default gate command in backticks}
   the code that makes it pass. A test of behavior that a merged dependency
   phase already delivered fails first against the tree before that phase,
   or against a named mutant; the verification doc's Observed says which.
+- Commits: every commit of this phase names {phase-id} in its message, so
+  the checkpoint and a sweep can attribute it.
 - Governance freeze: change nothing under hsdd/ except this phase's
   verification doc; contracts, ADRs, specs and conventions change only
   through hsdd-contract, hsdd-adr and hsdd-reconcile.

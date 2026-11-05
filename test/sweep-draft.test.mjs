@@ -97,6 +97,6 @@ test("recordOf", () => {
   const intake = d.rows.filter((x) => x.cls === "intake").length;
   assert.deepEqual([r.runBy, r.status, r.routing, r.produced, r.date], ["?", "open", ["none"], ["none"], "2026-11-05"]);
   assert.deepEqual([r.commits, r.candidates], [d.commits.length, d.rows.length]);
-  assert.deepEqual(r.changeLog, [`- 2026-11-05: created; ${d.rows.length} candidates: ? log, ? retro, ${intake} intake, ? unplaced`]);
+  assert.deepEqual(r.changeLog, [`- 2026-11-05: created; ${d.rows.length} candidates: ? log, ? retro, ${intake} intake, ? unplaced, ? phase`]);
   assert.equal(recordOf({ repo: "a", from: "b", to: "c" }, "2026-11-05", "Purbo", d).runBy, "Purbo");
 });

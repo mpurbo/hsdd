@@ -210,12 +210,13 @@ timer. See the [v0.11 specification](spec/hsdd-spec-v0_11.md).
 ## Small changes after launch
 
 After launch most changes are small, and a phase costs the same for a font
-size as for a feature. `hsdd-intake` takes them in either tense. Ask first,
-and a request that moves no route, schema, topic or table and stales no
-claim of its node is class `manual`: a node and an `HSDD-Node:` trailer, no
-record. Already merged, `/hsdd-intake sweep` reads the main line from the end
-of the previous sweep to the head and writes one dated sweep record, one row
-per commit: a `log` row costs that row, `retro` rows cost one phase per node
+size as for a feature. `hsdd-intake` handles them before the code exists and
+after it shipped. Ask first, and a request that moves no route, schema, topic
+or table and makes no claim of its node false is class `manual`: a node and an
+`HSDD-Node:` trailer, no record. Already merged, `/hsdd-intake sweep` reads the
+main line from the end of the previous sweep to the head and writes one dated
+sweep record, one row per commit: a `log` row costs that row, a `phase` row
+names the phase that delivers the commit, `retro` rows cost one phase per node
 per record, an `intake` row goes back through request mode, and an `unplaced`
 row goes to the owner. See the [v0.13 specification](spec/hsdd-spec-v0_13.md).
 

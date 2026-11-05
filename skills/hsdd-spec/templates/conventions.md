@@ -163,6 +163,9 @@ contract change.
   re-plan or copy a plan onto a diverged sibling lineage. `hsdd-reconcile`
   runs once, at the root lineage, after the node plans are merged there; its
   commit exists only on the root.
+- **Commit messages.** Every commit of a phase names its phase id in its
+  message (`acme.backend.auth.3: token refresh`), so the checkpoint and a
+  sweep can attribute it.
 - **Textual contention serializes.** Phases whose plan sections carry
   `Collides with` entries naming each other execute serially on the node's
   integration branch. Spawn parallel worktrees only for phases with no

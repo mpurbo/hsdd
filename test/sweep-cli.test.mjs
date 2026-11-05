@@ -25,7 +25,7 @@ test("an unknown command prints usage and exits 2", () => {
 
 import { existsSync, readFileSync, writeFileSync, readdirSync, mkdirSync } from "node:fs";
 import { renderRecord, parseRecord } from "../skills/hsdd-intake/scripts/lib/record.mjs";
-import { sweepRepo, sweepProfileRepo } from "./helpers/sweep-fixture.mjs";
+import { sweepRepo, sweepProfileRepo, fillRecord } from "./helpers/sweep-fixture.mjs";
 import { gitIn, write } from "./helpers/seal-fixture.mjs";
 
 const draftArgs = (fx, ...more) => ["draft", "--repo", "acme", "--today", "2026-11-05", ...more];
@@ -408,3 +408,17 @@ for (const end of ["from", "to"]) {
     assert.equal(gitIn(fx.root, "rev-parse", "HEAD"), head);
   });
 }
+
+test("a phase row goes through check and commit with no handoff", () => {
+  const fx = sweepRepo();
+  const { rel } = filled(fx, fx.base, fx.shas.contract);
+  const file = join(fx.root, rel);
+  const sha = fx.shas.log.slice(0, 7);
+  writeFileSync(file, fillRecord(readFileSync(file, "utf8"), { rows: { [sha]: { cls: "phase", reason: "acme.web.2" } } }));
+  const o = collector();
+  assert.equal(main(["check", rel], fx.root, o), 0, o.lines.join("\n"));
+  assert.equal(main(["commit", rel], fx.root, collector()), 0);
+  const r = parseRecord(readFileSync(file, "utf8"));
+  assert.deepEqual(r.rows.filter((x) => x.cls === "phase").map((x) => [x.sha, x.reason]), [[sha, "acme.web.2"]]);
+  assert.match(r.changeLog[0], /, 1 phase$/);
+});
