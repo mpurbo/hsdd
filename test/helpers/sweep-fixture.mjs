@@ -243,7 +243,7 @@ export function fillRecord(text, { rows = {}, runBy, routing, status, lowered = 
   const r = parseRecord(text);
   const filled = r.rows.map((x) => ({ ...x, ...(rows[x.sha] ?? {}) }));
   const n = (c) => filled.filter((x) => x.cls === c).length;
-  const counts = `${filled.length} candidates: ${n("log")} log, ${n("retro")} retro, ${n("intake")} intake, ${n("unplaced")} unplaced`;
+  const counts = `${filled.length} candidates: ${n("log")} log, ${n("retro")} retro, ${n("intake")} intake, ${n("unplaced")} unplaced, ${n("phase")} phase`;
   const [first, ...rest] = r.changeLog;
   return renderRecord({
     ...r,
@@ -289,6 +289,6 @@ export function completeDraft(text, shas, { runBy = "Purbo" } = {}) {
       `/hsdd-intake route ${r.repo}@${x.sha} (commit): ${x.subject}. Shipped ${r.date} on the`,
       `main line; the sweep found ${x.reason}; per hsdd/management/${file}.`, "```");
   }
-  const open = final.some((x) => x.cls !== "log");
+  const open = final.some((x) => x.cls !== "log" && x.cls !== "phase");
   return fillRecord(text, { rows, runBy, routing: lines.length ? lines : undefined, status: open ? "open" : `closed (${r.date})` });
 }

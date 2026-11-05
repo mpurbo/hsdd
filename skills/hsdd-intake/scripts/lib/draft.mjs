@@ -60,7 +60,7 @@ export function recordOf(range, today, runBy, draft) {
     runBy: runBy ?? "?", status: "open", rows: draft.rows,
     notCandidates: asideLines(draft.aside),
     routing: ["none"], produced: ["none"],
-    changeLog: [`- ${today}: created; ${draft.rows.length} candidates: ? log, ? retro, ${intake} intake, ? unplaced`],
+    changeLog: [`- ${today}: created; ${draft.rows.length} candidates: ? log, ? retro, ${intake} intake, ? unplaced, ? phase`],
   };
 }
 
