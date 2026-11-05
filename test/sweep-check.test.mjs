@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { handoffsOf, checkRecord } from "../skills/hsdd-intake/scripts/lib/check.mjs";
+import { handoffsOf, checkRecord, promptShas } from "../skills/hsdd-intake/scripts/lib/check.mjs";
 import { parseRecord, renderRecord } from "../skills/hsdd-intake/scripts/lib/record.mjs";
 import { readTree } from "../skills/hsdd-intake/scripts/lib/tree.mjs";
 import { draftFor, recordOf } from "../skills/hsdd-intake/scripts/lib/draft.mjs";
@@ -19,7 +19,7 @@ const problems = (r, rows = fresh.rows) => checkRecord(r, rows, tree);
 const set = (r, k, patch) => ({ ...r, rows: r.rows.map((x) => (x.sha === s7(k) ? { ...x, ...patch } : x)) });
 const dropRow = (r, k) => ({ ...r, rows: r.rows.filter((x) => x.sha !== s7(k)) });
 const addRow = (r, sha) => ({ ...r, rows: [...r.rows, { sha, node: "acme.web", cls: "log", reason: "none", subject: "x" }] });
-const addToPrompt = (r, sha) => ({ ...r, routing: [...r.routing, "```text", `mentions ${sha}`, "```"] });
+const addToPrompt = (r, sha) => ({ ...r, routing: [...r.routing, "**H9** (retro, acme.web):", "```text", `add one retro phase for commits ${sha},`, "```"] });
 const dropHandoffs = (r) => ({ ...r, routing: ["none"] });
 const miscount = (r) => ({ ...r, changeLog: [r.changeLog[0].replace(/\d+ log/, "99 log"), ...r.changeLog.slice(1)] });
 
@@ -31,7 +31,7 @@ test("handoffsOf reads a retro handoff's three prompts and an intake handoff's o
   assert.deepEqual([retro[0].id, retro[0].target, retro[0].prompts.length], ["H1", "acme.web", 3]);
   assert.match(retro[0].prompts[0], new RegExp(s7("copy")));
   assert.ok(intake.length >= 1);
-  assert.ok(intake.every((h) => h.prompts.length === 1 && h.prompts[0].includes(h.target)));
+  assert.ok(intake.every((h) => h.prompts.length === 1 && promptShas(h.prompts[0]).includes(h.target)));
   assert.deepEqual(handoffsOf(["none"]), []);
 });
 
@@ -80,7 +80,8 @@ test("an all-log record must be closed", () => {
 
 const without = (lines, sha) => {
   const i = lines.findIndex((l) => l.startsWith("**H") && l.includes(sha));
-  return [...lines.slice(0, i), ...lines.slice(i + 4)];
+  const end = lines.indexOf("```", i + 2);
+  return [...lines.slice(0, i), ...lines.slice(end + 1)];
 };
 test("a script-set intake lowered with its line passes", () => {
   const sha = s7("routeAdd");
@@ -94,4 +95,32 @@ test("a script-set intake lowered with its line passes", () => {
   // a line for another class or another sha does not count
   const wrong = { ...r, changeLog: r.changeLog.map((l) => l.replace("to log", "to retro")) };
   assert.match(problems(wrong).join("\n"), /lowered/);
+});
+
+test("promptShas reads chapter 6's sha positions only", () => {
+  assert.deepEqual(promptShas("add one retro phase\nfor commits a1b2c3d,\nb2c3d4e. Scope"), ["a1b2c3d", "b2c3d4e"]);
+  assert.deepEqual(promptShas("add one retro phase\nfor commits a1b2c3d, b2c3d4e. Scope"), ["a1b2c3d", "b2c3d4e"]);
+  assert.deepEqual(promptShas("written after commits a1b2c3d, b2c3d4e, c3d4e5f shipped"), ["a1b2c3d", "b2c3d4e", "c3d4e5f"]);
+  assert.deepEqual(promptShas("/hsdd-intake route acme@c3d4e5f (commit): payouts. Shipped"), ["c3d4e5f"]);
+  assert.deepEqual(promptShas("per hsdd/management/2026-11-05-sweep-acme-c3d4e5f.md."), []);
+  assert.deepEqual(promptShas("/hsdd-intake route acme@c3d4e5f (commit): revert deadbee. per x"), ["c3d4e5f"]);
+});
+
+test("the {to} commit on a log row with another row's handoff passes", () => {
+  const to = s7("log");
+  const rng = { ...range, to: fx.shas.log };
+  const rows = draftFor(fx.root, rng, tree, new Map()).rows;
+  const r = parseRecord(completeDraft(renderRecord(recordOf(rng, "2026-11-05", undefined, { ...fresh, rows, commits: fresh.commits })), fx.shas));
+  assert.ok(r.rows.some((x) => x.sha === to && x.cls === "log"));
+  assert.ok(handoffsOf(r.routing).length > 0);
+  assert.deepEqual(problems(r, rows), []);
+});
+
+test("the {to} commit on a retro row with its handoff dropped is refused", () => {
+  const rng = { ...range, to: fx.shas.copy };
+  const rows = draftFor(fx.root, rng, tree, new Map()).rows;
+  const r = parseRecord(completeDraft(renderRecord(recordOf(rng, "2026-11-05", undefined, { ...fresh, rows, commits: fresh.commits })), fx.shas));
+  assert.deepEqual(problems(r, rows), []);
+  const noRetro = { ...r, routing: r.routing.slice(r.routing.findIndex((l, i) => i > 0 && l.startsWith("**H") && l.includes("intake"))) };
+  assert.match(problems(noRetro, rows).join("\n"), new RegExp(`${s7("copy")}.*no handoff`));
 });

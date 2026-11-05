@@ -256,14 +256,24 @@ export function completeDraft(text, shas, { runBy = "Purbo" } = {}) {
   }
   const final = r.rows.map((x) => ({ ...x, ...rows[x.sha] }));
   const retro = final.filter((x) => x.cls === "retro");
+  const file = `${r.date}-sweep-${r.repo}-${r.to.slice(0, 7)}.md`;
   const lines = [];
   let h = 0;
   for (const node of new Set(retro.map((x) => x.node))) {
-    const own = retro.filter((x) => x.node === node).map((x) => x.sha);
+    const own = retro.filter((x) => x.node === node);
+    const shaList = own.map((x) => x.sha).join(", ");
     lines.push(`**H${++h}** (retro, ${node}):`);
-    for (const p of [`/hsdd-phase-plan ${node} per the record: add one retro phase for commits ${own.join(", ")}.`, `/hsdd-reconcile ${node}`, `Write the verification doc for commits ${own.join(", ")}.`]) lines.push("```text", p, "```");
+    for (const p of [
+      `/hsdd-phase-plan ${node} per hsdd/management/${file}: add one retro phase\nfor commits ${shaList}. Scope lists each commit with the claim it staled\n(the record's Reason cells); Verification states the behavior as the code\nnow has it; review tier gate-only; gate the node default. Plan nothing the\ncommits did not do. If a commit moved a route, schema, topic or table, stop\nand say so: that is an intake, not a retro phase.`,
+      `/hsdd-reconcile ${node}`,
+      `Write hsdd/verify/${node}.1.verification.md from\nhsdd/templates/verification.md for the retro phase. Commands to run: the\nnode's gate. Observed: run it now, dated, and open with "Retroactive:\nwritten after commits ${shaList} shipped". Outstanding and Learnings per\nthe template. Sign-off: agent for ${runBy} (delegated), tier gate-only.\nRun the commands; do not invent an observation.`,
+    ]) lines.push("```text", ...p.split("\n"), "```");
   }
-  for (const x of final.filter((y) => y.cls === "intake")) lines.push(`**H${++h}** (intake, ${x.sha}):`, "```text", `/hsdd-intake per the record: commit ${x.sha}.`, "```");
+  for (const x of final.filter((y) => y.cls === "intake")) {
+    lines.push(`**H${++h}** (intake, ${x.sha}):`, "```text",
+      `/hsdd-intake route ${r.repo}@${x.sha} (commit): ${x.subject}. Shipped ${r.date} on the`,
+      `main line; the sweep found ${x.reason}; per hsdd/management/${file}.`, "```");
+  }
   const open = final.some((x) => x.cls !== "log");
   return fillRecord(text, { rows, runBy, routing: lines.length ? lines : undefined, status: open ? "open" : `closed (${r.date})` });
 }

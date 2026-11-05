@@ -29,6 +29,17 @@ export function handoffsOf(routing) {
   return out;
 }
 
+// A prompt names a sha only at chapter 6's sha positions: `commits {sha}, {sha}`
+// and `{repo}@{sha} (commit)`. The record's own filename ends in {to7} and a
+// subject may quote any sha, so neither counts. Prompts wrap, so whitespace
+// collapses first.
+export function promptShas(prompt) {
+  const text = prompt.replace(/\s+/g, " ");
+  const listed = [...text.matchAll(/\bcommits ([0-9a-f]{7}(?:, [0-9a-f]{7})*)/g)].flatMap((m) => m[1].split(", "));
+  const single = [...text.matchAll(/@([0-9a-f]{7}) \(commit\)/g)].map((m) => m[1]);
+  return [...listed, ...single];
+}
+
 const loweredLine = (sha) => new RegExp(`^- \\d{4}-\\d{2}-\\d{2}: lowered ${sha} from intake to (log|retro) by .+: .+$`);
 
 function rowProblems(x, fresh, tree, record) {
@@ -69,8 +80,8 @@ export function checkRecord(record, freshRows, tree) {
 
   const handoffs = handoffsOf(record.routing);
   for (const x of record.rows) {
-    if (x.cls === "log" && handoffs.some((h) => h.prompts.some((p) => p.includes(x.sha)))) out.push(`row ${x.sha}: a log row's sha appears in a handoff`);
-    if ((x.cls === "retro" || x.cls === "intake") && !handoffs.some((h) => h.prompts[0]?.includes(x.sha))) out.push(`row ${x.sha}: ${x.cls} row has no handoff whose first prompt names it`);
+    if (x.cls === "log" && handoffs.some((h) => h.prompts.some((p) => promptShas(p).includes(x.sha)))) out.push(`row ${x.sha}: a log row's sha appears in a handoff`);
+    if ((x.cls === "retro" || x.cls === "intake") && !handoffs.some((h) => promptShas(h.prompts[0] ?? "").includes(x.sha))) out.push(`row ${x.sha}: ${x.cls} row has no handoff whose first prompt names it`);
   }
 
   if (!record.runBy || record.runBy === "?" || /[{}]/.test(record.runBy)) out.push("Run by is empty or a placeholder");
