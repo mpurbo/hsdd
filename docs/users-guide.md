@@ -1644,7 +1644,7 @@ What each class costs:
 | `log` | no surface move, no claim staled | one row, the whole record of the commit |
 | `retro` | no surface move, the diff stales the claim the reason names | one phase per node per record, however many commits it lists, with its reconcile and a retroactive verification doc signed by delegation |
 | `intake` | a surface move, or paths that span two nodes | one run of request mode per row, authority `commit`; the phases it produces are retro phases, and the contract bump it orders is the one the code already made |
-| `unplaced` | no node owns the paths and nobody placed the commit | no handoff: the report names it, the next checkpoint files it as a finding, and the record stays open until a person places the row or `hsdd-adopt` takes the paths |
+| `unplaced` | no node owns the paths and nobody placed the commit | no handoff: the report names it, the next checkpoint files it as a finding whose step is `hsdd-adopt` on the paths, and the record stays open until a person places the row, which `hsdd-adopt` alone does not do |
 
 The record's `## Routing` section carries the filled prompts for the `retro`
 and `intake` rows, which the agent runs in order or hands to whoever will.

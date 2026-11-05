@@ -670,3 +670,14 @@ test("no em dash and no banned phrase in the documentation this release adds", (
     assert.ok(!banned.test(text), `${name}: banned phrase`);
   }
 });
+
+// Task 11 fix round 1: only a person edits an unplaced row (spec 5.3), so
+// hsdd-adopt, the finding's plan step (6.3), closes nothing by itself.
+test("an unplaced row stays open until a person places it, and hsdd-adopt alone does not do that", () => {
+  const row = tableRows(ALREADY_MADE).find((l) => l.startsWith("| `unplaced` |")) ?? "";
+  assert.ok(row.includes("a finding whose step is `hsdd-adopt` on the paths"), row);
+  assert.ok(row.includes("the record stays open until a person places the row, which `hsdd-adopt` alone does not do"), row);
+  for (const [name, text] of Object.entries({ GUIDE, README, ENTRY })) {
+    assert.ok(!norm(text).includes("`hsdd-adopt` takes the paths"), name);
+  }
+});
