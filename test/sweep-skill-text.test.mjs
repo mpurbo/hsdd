@@ -723,3 +723,32 @@ test("append mode names the sweep handoff, and the limit a retro phase is exempt
   assert.ok(n.includes("the limit of one Phase Equivalent does not apply"));
   assert.ok(!n.includes("sizing ceiling"));
 });
+
+// Final review: what users read about the same fixes.
+test("a commit a retro phase cites by sha is attributed, and a finding id alone is not, in both upgrade notes", () => {
+  const upgrading = norm(ENTRY.slice(ENTRY.indexOf("\n### Upgrading from 0.12.0\n"), ENTRY.indexOf("\n### Added\n")));
+  for (const t of [norm(UPGRADE), upgrading]) {
+    assert.ok(t.includes("A commit whose retro phase cites it by sha is attributed."));
+    assert.ok(t.includes("A retro phase that cites only a finding id attributes nothing, so start the first sweep after such commits."));
+  }
+  assert.ok(norm(ALREADY_MADE).includes("commits a phase's Scope cites"));
+});
+
+test("the guide's Already made passage says what to push first, as section 7.4 does", () => {
+  assert.ok(norm(ALREADY_MADE).includes("Under the profile, push inside `hsdd/` before pushing the implementation repository, as every governance edit is pushed, or the pointer names a commit no clone has."));
+});
+
+test("a change below the line is described by what it moves, since a retro row costs more than a row", () => {
+  assert.ok(norm(SMALL_FIXES).includes("A change that moves no surface and stales no claim costs one table row."));
+  assert.ok(!norm(SMALL_FIXES).includes("Below the line a change costs one table row"));
+});
+
+test("the interactive guide tells the v0.13 path: the finding's step is a sweep, and a retro row earns a retro phase", () => {
+  const line = (start) => GUIDE_JS.split("\n").find((l) => l.includes(start)) ?? "";
+  for (const [name, text] of Object.entries({ glossary: line('["backfill", "Backfill"'), faq: line("What about hotfixes that skip the process?"), diagram: line('class="col-title">The legal bypass') })) {
+    assert.match(text, /sweep/i, name);
+    assert.match(text, /retro row/, name);
+    assert.ok(!text.includes("\u2014"), `${name}: em dash`);
+  }
+  for (const s of ["It becomes a retro phase", "a retro phase with a retroactive verification doc closes it", "the hotfix became retro phase"]) assert.ok(!GUIDE_JS.includes(s), s);
+});

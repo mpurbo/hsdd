@@ -1499,9 +1499,9 @@ is what the rule already says.
 After launch most changes are small, and the planning chain costs the same
 for a twenty-line fix as for a feature. `hsdd-intake` takes a change in
 either tense: ask it before the code exists, or sweep the commits after they
-shipped. Below the line a change costs one table row. Both tenses apply only
-after launch. Before it, a fix belongs to the phase it fixes, on that phase's
-branch, and backfill does not exist yet.
+shipped. A change that moves no surface and stales no claim costs one table
+row. Both tenses apply only after launch. Before it, a fix belongs to the
+phase it fixes, on that phase's branch, and backfill does not exist yet.
 
 The dividing line is the contract surface, not the diff size. A change that
 moves no route, schema, topic or table is invisible to every other node by
@@ -1622,7 +1622,8 @@ holds `hsdd/`:
 
 The first sweep copies the script to `hsdd/scripts/sweep/`, which needs Node
 20 or later. The script sets aside merges, governance-only commits, commits
-whose message names a phase id, and commits an earlier record classified.
+whose message names a phase id, commits a phase's Scope cites, and commits an
+earlier record classified.
 Every other commit is a candidate and gets a row. The script applies the
 surface test to the diff and proposes a node, from the `HSDD-Node:` trailer
 or the one `modules:` line that covers every path. The agent applies the
@@ -1653,8 +1654,10 @@ before the record is committed, with a change-log line that names you; after
 publication nobody lowers a class. `check` and `commit` gate first
 publication: `check` reads the record back against a fresh draft of its range
 and refuses with the row named, and `commit` commits the record alone and
-never pushes. A later edit, such as placing an `unplaced` row, is committed
-with git directly. The next checkpoint closes the record once every `retro`
+never pushes. Under the profile, push inside `hsdd/` before pushing the
+implementation repository, as every governance edit is pushed, or the pointer
+names a commit no clone has. A later edit, such as placing an `unplaced` row,
+is committed with git directly. The next checkpoint closes the record once every `retro`
 and `intake` row has its product in `## Produced` and no `unplaced` row
 remains; a record of only `log` rows is written closed by the sweep itself.
 
@@ -1861,8 +1864,10 @@ names a sweep. The sweep record is a new management document outside the
 chain rules, and the reading aids ignore it by its slug. The `commit`
 authority is a new value of an existing field, so existing records are
 unchanged. A retro phase over several commits is forward-only: retro phases
-already planned stand. The amended scripts rule changes nothing on a
-project: request mode runs no script.
+already planned stand. A commit whose retro phase cites it by sha is
+attributed. A retro phase that cites only a finding id attributes nothing, so
+start the first sweep after such commits. The amended scripts rule changes
+nothing on a project: request mode runs no script.
 
 A project that adopted the manual lane from the 0.12 guide is conformant: its
 trailers are read as hints, its same-day retro phases stand, and its first

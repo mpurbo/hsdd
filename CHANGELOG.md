@@ -31,6 +31,9 @@ Specification: `spec/hsdd-spec-v0_13.md`.
   records are unchanged.
 - A retro phase over several commits is forward-only: retro phases already
   planned stand.
+- A commit whose retro phase cites it by sha is attributed. A retro phase
+  that cites only a finding id attributes nothing, so start the first sweep
+  after such commits.
 - The amended scripts rule changes nothing on a project: request mode runs
   no script.
 - A project that adopted the manual lane from the 0.12 user's guide is
