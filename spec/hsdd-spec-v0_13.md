@@ -499,9 +499,11 @@ absorb is named there: a person may edit the `Node` and `Class` cells of an
 `unplaced` row, and its `Reason` with them, with a change-log line naming
 the person and the new class, and with the handoff the new class needs
 appended to `## Routing`. Nothing else is edited in place; a wrong class on
-any other row is corrected by a change-log line and, when the correction
-raises the class, by the handoff it now needs, appended to `## Routing`. No
-class is lowered after publication, by anyone: lowering happens before the
+any other row is corrected by a change-log line, `- YYYY-MM-DD: raised {sha7}
+from {class} to {class} by {person}: {reason}`, and by the handoff it now
+needs, appended to `## Routing`. The row's class is then the last such line's,
+over its cell, and a raise on a closed record sets `Status` back to `open` in
+the same edit, so the checkpoint walks it again. No class is lowered after publication, by anyone: lowering happens before the
 commit (§4.3), and a published `intake` row's commit went to request mode,
 whose record says what it found. `check` and `commit` gate the first publication only:
 a published edit is committed with git directly, since the first change-log
@@ -509,10 +511,11 @@ line keeps the counts of the day it was written.
 
 ### 5.4 Closure
 
-A record **closes** when every `retro` and `intake` row's handoff has its
-product named in `## Produced` (a phase id whose Scope cites the record; an
-intake record whose `**Request:**` names the sha) and no `unplaced` row
-remains. Closure means the commits are attributed, not that the retro
+A record **closes** when every `retro` and `intake` row, its class read as
+§5.3 says, has its product named in `## Produced` (a phase id whose Scope
+cites the record and lists the sha; an intake record whose `**Request:**`
+names the sha) and no `unplaced` row remains. Products are listed one per
+line, `- H{n}: {product}`, replacing `none`. Closure means the commits are attributed, not that the retro
 phases are done: a retro phase's done-ness is its node's ledger's business
 and its intake's, and the sweep record does not track it twice. A record
 with only `log` rows is written `closed` by the sweep itself, on the day it
@@ -732,18 +735,21 @@ Each is a change to the skill's text only. `hsdd-intake`'s own changes are
 chapters 3 and 7.
 
 - **`hsdd-checkpoint`.** The code-vs-plan pass reads every sweep record of
-  each implementation repository. After launch, a commit on the main line
-  that is a merge, is governance-only, names a phase id, or is a row in a
-  sweep record is attributed; a `log` row needs nothing further, and a
+  each implementation repository. After launch, among the commits reachable
+from the head of the repository's own main branch, as the record's
+`**Repository:**` line names it, side branches included, a commit that is
+a merge, is governance-only, names a phase id, or is a row in a sweep record
+is attributed; a `log` row needs nothing further, and a
   commit trailer attributes nothing on its own. Every other commit since
   the newest record's `{to}`, or since launch when there is none, is one
   backfill finding per repository naming the unswept range, whose plan step
-  is `/hsdd-intake sweep --from {sha}`, never a retro phase per commit; the
-  two-checkpoint escalation of v0.10.0 §11.8 stands. The intake-record pass
+is `/hsdd-intake sweep --from {sha}`, never a retro phase per commit. `{sha}`
+is the newest record's `{to}`, or with no record the last commit of the
+launch, which the step's owner names, since `{from}` itself is not swept. The
+two-checkpoint escalation of v0.10.0 §11.8 stands. The intake-record pass
   gains the sweep records: for each open record, append to `## Produced`
   the phase ids whose Scope cites it and the intake records whose
-  `**Request:**` names one of its `intake` shas, tick `closed (date)` when
-  §5.4 holds, and file as findings an `unplaced` row (plan step:
+`**Request:**` names one of its shas, tick `closed (date)` when §5.4 holds, and file as findings an `unplaced` row (plan step:
   `hsdd-adopt` on the paths, or a person placing it), a record still open
   two checkpoints after its date with a handoff not landed, a sha two
   records both classify, and two consecutive records of one repository
