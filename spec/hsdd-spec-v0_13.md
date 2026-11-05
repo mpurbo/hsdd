@@ -704,8 +704,8 @@ anything else and no change-log line names its sha as lowered by a person
 (§4.3); a `log` row's sha appears in a handoff; a `retro` or `intake` row
 has no handoff whose first prompt names its sha; a `retro` row's node is
 as-built, or internal, or the root, where append mode has no plan to write
-into; a node named is not in the tree, or is `none` on a `log` or `retro`
-row; `Run by` is empty or a template placeholder; the first change-log
+into; a node named is not in the tree, is retired on a `log` or `retro` row,
+or is `none` on a `log` or `retro` row; `Run by` is empty or a template placeholder; the first change-log
 line's counts disagree with the table; `Status` is `closed` on a record
 with a `retro`, `intake` or `unplaced` row, or `open` on a record with only
 `log` rows. A prompt names a sha only at chapter 6's sha positions, `commits {sha}, {sha}`
