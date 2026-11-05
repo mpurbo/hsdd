@@ -23,8 +23,8 @@ run the lane yet; chapter 11 marks every decision accordingly. This
 document, v0.10.2, v0.11.0 and v0.12.0 are the whole input for implementing
 the release.
 **Supersedes (in part):** v0.10.0 §1.5's skill table (the `hsdd-intake` row
-and the chain diagram's intake line), §2.6's and §11.2's authority list (one
-value added), §11.2's class table (one row added), §7.2's sizing ceiling
+and the chain diagram's intake line), §11.2's authority list (one value
+added), §11.2's class table (one row added), §7.2's sizing ceiling
 (retro phases exempted), §11.8's bypass path (steps 2 to 4), §12.7's
 code-vs-plan and intake-record passes (sweep records read and closed),
 §14.1's layout tree (one directory and one file pattern added), §15.1's
@@ -244,12 +244,15 @@ commit never gets swept is caught by the checkpoint as an unswept range
 
 ### 3.4 Under `hsdd-auto`
 
-v0.11.0 §12.1's unattended table for `hsdd-intake` gains one row: class
-`manual`, disposition `return`, stop class `judgement`. A run that was
-asked to route a request into the tree does not decide on its own to leave
-the request out of the tree; the owner answers the stop, and a predecided
-answer may say "make it by hand" for the run's requests (v0.11.0 §8.4).
-Automating the sweep under `hsdd-auto` is deferred (§11.2).
+`manual` is not an unattended class. An `hsdd-auto` intake segment is done
+only when the record exists with its handoff block (v0.11.0 §9.2), and a
+`judgement` is never a stop (v0.11.0 §8.2), so an unattended run cannot
+leave a request out of the tree. v0.11.0 §12.1's unattended table for
+`hsdd-intake` gains one row: a request that would be class `manual`,
+disposition `decide`: route it `local` and record the decision, class
+`judgement`. The owner sees in the segment's review that the run paid for a
+phase the interactive answer would not have, and nothing in `hsdd-auto`'s
+scripts changes. Automating the sweep under `hsdd-auto` is deferred (§11.2).
 
 ### 3.5 Before launch
 
@@ -276,13 +279,15 @@ line.
 ### 4.2 The range and the candidates
 
 The sweep reads one implementation repository's main line from `{from}` to
-`{to}`. `{to}` defaults to the main line's head. `{from}` defaults to the
+`{to}`: every commit reachable from `{to}` and not from `{from}`, side
+branches included, since a merge commit is set aside and the commits it
+brought in are where the change is. `{to}` defaults to the main line's head. `{from}` defaults to the
 `{to}` of the newest sweep record for that repository (§5.1); the first
 sweep of a repository must name it, and the record says it did. A `--from`
-that descends from the previous record's `{to}` is refused: it would leave
-commits between the two records that no sweep reads and no default ever
-reaches. A `--from` earlier than it is accepted, and the overlap is set
-aside as classified. The records of one repository are therefore
+that is neither the previous record's `{to}` nor an ancestor of it is
+refused: it would leave commits between the two records that no sweep reads
+and no default ever reaches. An ancestor is accepted, and the overlap is
+set aside as classified. The records of one repository are therefore
 contiguous by construction, and "the commits after the newest record's
 `{to}`" is the whole unswept set. Under the standalone-spec-repo profile
 each implementation repository is swept on its own, from that repository,
@@ -308,12 +313,17 @@ next sweep's default `{from}` is unchanged.
 A candidate's class comes from two tests applied in order. The first is the
 script's, the second the agent's.
 
-**The surface test** (script). For each changed path, the script extracts
-routes, topics and migration tables from the file's content before and
-after the commit with the seam classifiers of `hsdd-adopt`'s extractor,
-copied verbatim; a difference in any of the three is a surface move. So is
-a schema file (proto, OpenAPI, GraphQL, Avro, JSON Schema) added, changed
-or removed, and so is any changed path under `hsdd/contract/`. A candidate
+**The surface test** (script). Over the commit's changed paths taken
+together, the script extracts routes, topics and migration tables from the
+content before and after the commit with the seam classifiers of
+`hsdd-adopt`'s extractor, copied verbatim; a difference in any of the three
+is a surface move. A route or topic is compared by its method and path, or
+its direction and name, never by its file or line, so moving a handler
+between files or reformatting one is no move. A migration file added,
+changed or removed is a move whatever it says, since the classifier sees
+only `CREATE TABLE` and an `ALTER TABLE` changes a table too. So is a schema
+file (proto, OpenAPI, GraphQL, Avro, JSON Schema) added, changed or
+removed, and so is any changed path under `hsdd/contract/`. A candidate
 with a surface move is class **`intake`**, with the move as its reason
 (`route added POST /payouts/preview`, `schema changed api/openapi.yaml`).
 The classifiers are regex candidates, as `hsdd-adopt` says of them: a move
@@ -348,7 +358,8 @@ The agent may raise a class: `log` to `retro`, and either to `intake` when
 it reads a move the classifiers missed or when the paths span two nodes
 (§4.4). It never lowers one. A person who runs the sweep may lower any
 class before the record is committed, the agent's or the script's, with a
-change-log line naming the person, the sha and the reason; a script-set
+change-log line `- YYYY-MM-DD: lowered {sha7} from {class} to {class} by
+{person}: {reason}`; a script-set
 `intake` lowered this way records a false positive of the classifiers (a
 route-like string in a comment, a `.schema.json` fixture), and the record's
 `Run by` line is who answers for it. After publication no class is lowered
@@ -358,8 +369,9 @@ route-like string in a comment, a `.schema.json` fixture), and the record's
 
 Every candidate names the node it happened in, by this order of evidence:
 
-1. an `HSDD-Node:` trailer in the message naming a node the tree defines,
-   which is where a `manual` answer (§3.2) arrives;
+1. an `HSDD-Node:` trailer in the message naming an active node the tree
+   defines, which is where a `manual` answer (§3.2) arrives; it is a hint
+   and does not override `spans`;
 2. the script's proposal: exactly one node whose `## Observed surface`
    `modules:` line (v0.10.0 §6.2) covers every changed path; when the
    `modules:` lines of two nodes each cover some of the paths, the script
@@ -402,9 +414,13 @@ header's `Repository` line says which. The name is lower-cased with every
 character that is not a letter or digit replaced by `-`. It is the key
 under which records chain (§4.2) and the checkpoint matches them (chapter
 8), so it must not vary by clone. A name that contains `progress`,
-`execution-plan`, `milestones` or `atlas` is refused with a request for
-`--repo`, so the slug never carries a word the reading aids read as a
-dated report. Like intake records (v0.10.0 §11.5) the record is dated,
+`execution-plan`, `milestones`, `atlas` or `intake` is refused with a
+request for `--repo`: the first four are words the reading aids read as a
+dated report, and `intake` would match the `*-intake-*` pattern request
+mode and the checkpoint read open intake records by. A sweep record is
+found by `YYYY-MM-DD-sweep-` at the start of its name, never by `-sweep-`
+anywhere, so an intake record whose slug contains the word stays an intake
+record. Like intake records (v0.10.0 §11.5) the record is dated,
 never superseded and outside the supersedes chain; records accumulate, one
 per repository per run. The newest record for a repository is the one with
 the latest date and, among records of one date, the one whose `{to}`
@@ -559,7 +575,10 @@ record and hands off; the phases it produces are retro phases, since the
 code shipped, and the contract bump it orders is the one the surface move
 already made in the code. The intake record's `**Request:**` line names
 `{repo}@{sha}`, which is how the checkpoint ties it back to the sweep
-record (§5.4).
+record (§5.4), and joins the `Sources` of the nodes it governs like any
+request's path. `commit` is an authority of request mode only: `hsdd-spec`'s
+root `## Sources` list and `hsdd-auto`'s `authority` enum are unchanged, since
+a sweep's handoffs run interactively (§11.2).
 
 ### 6.3 `unplaced`: listed for the owner
 
@@ -632,12 +651,16 @@ under `hsdd-auto` is deferred (§11.2).
 **`draft`** reads the range (§4.2), sets aside what §4.2 names, runs the
 surface test (§4.3) and the script's placement (§4.4 steps 1 and 2), and
 writes the record of §5.2 with every candidate row present: `intake` rows
-complete, with their reason; other rows with `Node` filled where the
-evidence gave one and `?` where it did not, and `Class` and `Reason` as
-`?`. The header, the `## Not candidates` section and the first change-log
-line are complete; `## Routing` and `## Produced` read `none`. Without
+with their class and reason; other rows with `Class` and `Reason` as `?`;
+every row with `Node` filled where the evidence gave one, `none` on a
+`spans` row, and `?` otherwise. The header and the `## Not candidates`
+section are complete, `Run by` is `?` without `--run-by`, the first
+change-log line carries `?` for the counts only the agent can know, and
+`## Routing` and `## Produced` read `none`. Without
 `--write` the draft is printed and nothing is written; an existing record
-for the same repository and `{to}` is never overwritten. A `--from` earlier
+for the same repository and `{to}` is never overwritten, and a record of
+the repository with a `?` cell left refuses the draft until it is finished
+or deleted, since its rows would otherwise read as classified. A `--from` earlier
 than the previous record's `{to}` is accepted and the overlap lands under
 `classified by`; one later than it is refused (§4.2). A `--to` that is not
 on the main line, or a `--from` that is not an ancestor of `--to`, is
@@ -650,8 +673,9 @@ candidates writes nothing (§4.2).
 
 **The agent** then fills every `?`: the node by §4.4 step 3, asking the
 runner (step 4) for what the tree does not answer; the class and reason by
-the claim test. It raises classes as §4.3 allows and lowers none. It writes
-`## Routing` from the rows, one handoff per node with `retro` rows and one
+the claim test. It raises classes as §4.3 allows and lowers none. It fills
+the change-log line's counts and `Run by`, from the invocation or by asking
+the runner once. It writes `## Routing` from the rows, one handoff per node with `retro` rows and one
 per `intake` row, with the prompts of chapter 6 verbatim, in table order,
 numbered `H{n}`, each headed `**H{n}** ({class}, {node or sha}):`, a
 `retro` handoff carrying the three prompts of §6.1. For a record whose
@@ -666,9 +690,12 @@ or `intake` row's reason is `none`; a row the draft set `intake` is
 anything else and no change-log line names its sha as lowered by a person
 (§4.3); a `log` row's sha appears in a handoff; a `retro` or `intake` row
 has no handoff whose first prompt names its sha; a `retro` row's node is
-as-built; a node named is not in the tree; `Run by` is empty or a template
-placeholder; `Status` is `closed` on a record with a `retro`, `intake` or
-`unplaced` row, or `open` on a record with only `log` rows. `check` exits
+as-built, or internal, or the root, where append mode has no plan to write
+into; a node named is not in the tree, or is `none` on a `log` or `retro`
+row; `Run by` is empty or a template placeholder; the first change-log
+line's counts disagree with the table; `Status` is `closed` on a record
+with a `retro`, `intake` or `unplaced` row, or `open` on a record with only
+`log` rows. `check` exits
 non-zero and writes nothing; the agent fixes the record and runs it again.
 
 **`commit`** runs `check`, then commits the record alone with the message
@@ -722,8 +749,8 @@ chapters 3 and 7.
   commits from one sweep record: its Scope cites the record and lists each
   sha with the claim it staled; one retro phase per node per record, never
   one per commit; review tier gate-only unless the prompt says otherwise.
-  The checklist item on retro phases admits the record where it named the
-  finding id, either being admissible.
+  Append Mode's retro-phase rule admits a sweep record or an intake record
+  of authority `commit` where it names the finding id.
 - **`hsdd-spec`'s `conventions.md` template.** The layout gains
   `hsdd/scripts/sweep/`; `hsdd/management/` names `hsdd-intake` as the
   writer of sweep records beside intake records; the profile section's
@@ -775,8 +802,8 @@ record is unchanged; `manual` and `commit` are values, not fields.
   launch (chapter 11, and v0.13.0)"; the chain diagram's intake line reads
   `hsdd-intake      (every change after) -> routes a request into the tree, or sweeps shipped commits`.
   The skill count stays thirteen.
-- v0.10.0 §2.6 and §11.2: the authority list gains `commit`; §11.2's class
-  table gains the `manual` row of §3.1.
+- v0.10.0 §11.2: the authority list gains `commit`; the class table gains
+  the `manual` row of §3.1.
 - v0.10.0 §7.2: the ceiling does not apply to a retro phase, which records
   work already done (§6.1).
 - v0.10.0 §11.8: steps 2 to 4 read: the checkpoint's code-vs-plan pass
@@ -903,7 +930,7 @@ Provenance as v0.10.0 chapter 18 defines it.
 | The script's and the agent's edit surfaces | The script owns the record's structure and the `intake` rows; the agent fills `?` cells and writes `## Routing`; a person's lowering is logged; `check` refuses anything else (§7.4). | reasoned-only |
 | How the script reads the tree | Through copies of the extractor's and the summary engine's parsers, byte-identical to their sources (§7.1). | reasoned-only |
 | Who answers for a classification | The `Run by` person; a delegated run is listed for ratification like a delegated sign-off (§4.5). | reasoned-only |
-| `manual` under `hsdd-auto` | A `return` stop of class `judgement`; a predecided answer may allow it (§3.4). | reasoned-only |
+| `manual` under `hsdd-auto` | Not an unattended class: the step routes the request `local` and records a `judgement` decision; `hsdd-auto`'s scripts do not change (§3.4). | reasoned-only |
 | The checkpoint's backfill step | A sweep over the unswept range, not a retro phase per commit (chapter 8). | reasoned-only |
 | Commit trailers | `HSDD-Node:` is read as a placement hint and carries a `manual` answer; nothing is required; `HSDD-Kind:` is not read (§3.2, §4.4, chapter 8). | reasoned-only |
 
@@ -1013,9 +1040,8 @@ carrying `HSDD-Node:`. At least:
   the directory's, normalized as §5.1 says; a name carrying a reserved word
   is refused.
 - the eight copies of §7.1 are byte-identical to their sources.
-- `hsdd-auto`'s skill-text test, which checks that every script command a
-  skill text names is one its scripts accept, covers `sweep.md` and the
-  intake `SKILL.md` for `sweep.mjs`.
+- a skill-text test of the shape of `hsdd-auto`'s: every `sweep.mjs` command
+  `sweep.md` and the intake `SKILL.md` name is one the script accepts.
 
 ### 12.2 Documentation and skill texts
 
