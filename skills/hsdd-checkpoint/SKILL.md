@@ -64,6 +64,10 @@ Point-in-time documents are dated and chained; the atlas is living:
   them (spec v0.12 §4.3); outside the chain rules below, like intake
   records; this skill reads the `.md`'s `## Result` after a seal and edits
   neither
+- `hsdd/management/YYYY-MM-DD-sweep-{repo}-{to7}.md`: `hsdd-intake`'s
+  sweep mode writes it (spec v0.13 chapter 5); outside the chain rules
+  below, like intake records; this skill only appends to its `## Produced`,
+  ticks its `**Status:**` and appends to its change log
 
 Chain rules (enforced here, checked every pass):
 
@@ -173,10 +177,15 @@ be standing in produces a progress report that undercounts the project.
      actually completes versus what plans and the prior progress report
      claim; contract-surface drift in both directions (code behavior the
      contract does not promise, contract promises the code abandoned);
-     scope creep (code with no phase), which post-launch files a **backfill**
-     finding: its plan step appends a retro phase to the owning node's plan
-     (`hsdd-phase-plan` append mode), with a verification doc written after
-     the fact and marked retroactive. A backfill unclosed across two
+     scope creep (code with no phase). Read every sweep record of
+     each implementation repository. After launch, a commit on the main
+     line that is a merge, is governance-only, names a phase id, or is a
+     row in a sweep record is attributed; a `log` row needs nothing
+     further, and a commit trailer attributes nothing on its own. Every
+     other commit since the newest record's `{to}`, or since launch when
+     there is none, is one **backfill** finding per repository naming the
+     unswept range, whose plan step is `/hsdd-intake sweep --from {sha}`,
+     never a retro phase per commit. A backfill unclosed across two
      consecutive checkpoints escalates in the register, the same shape as
      two consecutive reds on a milestone gate. Also audit the profile's history
      rules: a branch pair spanning this repo and the spec repo that landed
@@ -223,6 +232,21 @@ be standing in produces a progress report that undercounts the project.
      the counts of open and closed intakes; an open intake whose
      `## Produced` is still empty two checkpoints after its date is a
      finding (the handoff never landed).
+   - *Sweep records:* read every `hsdd/management/*-sweep-*.md` found by
+     `YYYY-MM-DD-sweep-` at the start of the name. For each open record,
+     append to `## Produced` the phase ids whose Scope cites it and the
+     intake records whose `**Request:**` names one of its `intake` shas,
+     and tick it `closed (date)` when spec v0.13 §5.4 holds (set
+     `**Status:** closed (YYYY-MM-DD)` and append to the record's change
+     log). File as findings an `unplaced` row (plan step: `hsdd-adopt` on
+     the paths, or a person placing it), a record still open two
+     checkpoints after its date with a handoff not landed, a sha two
+     records both classify, and two consecutive records of one repository
+     whose ranges leave a gap. Sweep records run by delegation since the
+     last checkpoint join the delegated sign-offs' finding. Where
+     `conventions.md` still carries the user's guide's `## Manual lane
+     (project convention)` paragraph, this rule takes precedence over it,
+     and the paragraph is filed as a finding whose step removes it.
 3. **Emit the progress report** (shape below). The only admissible "done"
    is: implemented, gate command green, verification doc merged to the spec
    repo's main branch, its Reviewer naming a person or an agent signing for
@@ -578,8 +602,9 @@ writes live under `hsdd/management/`, plus `hsdd/summary/` through
       without the key are routed to `hsdd-contract`; a grandfathered
       contract whose artifact now exists is a discharge finding routed to
       reconcile; the remaining count reported with the previous count.
-- [ ] Post-launch code with no phase is a backfill finding with a plan step
-      that appends a retro phase; a backfill carried two reports escalates.
+- [ ] Post-launch code with no phase and no sweep row is one backfill
+      finding per repository whose plan step is a sweep over the unswept
+      range; a backfill carried two reports escalates.
 - [ ] Retired nodes excluded from the atlas's active view and listed under
       Retired; retired versions with live consumers reported.
 - [ ] Sealing performed only when this run's tick turned the last gate

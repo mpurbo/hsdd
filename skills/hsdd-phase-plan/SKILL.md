@@ -328,8 +328,14 @@ appends phases to an existing plan. Rules:
   phase. This skill never writes the Status line; `hsdd-seal` or a person
   at the root does.
 - A **retro phase** (a backfill for code that shipped with no phase) is
-  marked `(retro)` in its name, cites the finding id in its Scope, and its
-  verification doc is written after the fact and marked retroactive.
+  marked `(retro)` in its name, cites in its Scope the finding id, the
+  sweep record, or the intake record of authority `commit` it came from,
+  and its verification doc is written after the fact and marked
+  retroactive. From a sweep record it lists each commit's sha with the
+  claim it staled: one retro phase per node per record, never one per
+  commit, review tier gate-only unless the prompt says otherwise, and the
+  sizing ceiling does not apply, since it records work already done (spec
+  v0.13 §6.1). Never plan one on an as-built node.
 - A phase appended for a change request follows Change Requests above.
 - Append mode appends summary-table rows, phase sections, graph nodes, a
   pending-governance block and `- **Sources:**` entries. It does not edit

@@ -336,3 +336,70 @@ test("no em dash and no banned phrase in sweep.md or the new text of SKILL.md", 
     assert.ok(!banned.test(text), `${name}: banned phrase`);
   }
 });
+
+// Task 10: the checkpoint, phase planning and the conventions template.
+const CHECKPOINT = read("skills/hsdd-checkpoint/SKILL.md");
+const PHASE_PLAN = read("skills/hsdd-phase-plan/SKILL.md");
+const CONVENTIONS = read("skills/hsdd-spec/templates/conventions.md");
+
+test("the checkpoint lists the sweep record among the management files", () => {
+  assert.ok(norm(CHECKPOINT).includes(norm(
+    "- `hsdd/management/YYYY-MM-DD-sweep-{repo}-{to7}.md`: `hsdd-intake`'s sweep mode writes it (spec v0.13 chapter 5); outside the chain rules below, like intake records; this skill only appends to its `## Produced`, ticks its `**Status:**` and appends to its change log")));
+});
+
+test("code vs plan carries chapter 8's attribution rule and drops the retro phase step", () => {
+  const t = norm(CHECKPOINT);
+  assert.ok(t.includes("a commit trailer attributes nothing on its own"));
+  assert.ok(t.includes("`/hsdd-intake sweep --from {sha}`, never a retro phase per commit"));
+  assert.ok(!t.includes("its plan step appends a retro phase to the owning node's plan"));
+  assert.ok(t.includes("A backfill unclosed across two consecutive checkpoints escalates"));
+  assert.ok(t.includes("Also audit the profile's history rules"));
+});
+
+test("a sweep records bullet follows the intake records bullet", () => {
+  const i = CHECKPOINT.indexOf("*Intake records:*");
+  const s = CHECKPOINT.indexOf("*Sweep records:*");
+  assert.ok(i > 0 && s > i, "order");
+  const body = norm(CHECKPOINT.slice(s, CHECKPOINT.indexOf("3. **Emit the progress report**")));
+  for (const need of [
+    "`## Produced`", "§5.4", "`unplaced` row", "two checkpoints",
+    "a sha two records both classify", "gap", "delegated sign-offs' finding",
+    "`## Manual lane (project convention)`", "whose step removes it",
+  ]) assert.ok(body.includes(need), need);
+});
+
+test("the backfill quality gate names the sweep", () => {
+  assert.ok(norm(CHECKPOINT).includes(norm(
+    "- [ ] Post-launch code with no phase and no sweep row is one backfill finding per repository whose plan step is a sweep over the unswept range; a backfill carried two reports escalates.")));
+  assert.ok(!norm(CHECKPOINT).includes("with a plan step that appends a retro phase"));
+});
+
+test("phase planning's retro phase may cover several commits of one sweep record", () => {
+  assert.ok(norm(PHASE_PLAN).includes(norm(
+    "A **retro phase** (a backfill for code that shipped with no phase) is marked `(retro)` in its name, cites in its Scope the finding id, the sweep record, or the intake record of authority `commit` it came from, and its verification doc is written after the fact and marked retroactive. From a sweep record it lists each commit's sha with the claim it staled: one retro phase per node per record, never one per commit, review tier gate-only unless the prompt says otherwise, and the sizing ceiling does not apply, since it records work already done (spec v0.13 §6.1). Never plan one on an as-built node.")));
+});
+
+test("the conventions template names the sweep script, record and repository names", () => {
+  const t = norm(CONVENTIONS);
+  assert.ok(t.includes("- `hsdd/scripts/seal/` sweep") === false);
+  const seal = CONVENTIONS.indexOf("- `hsdd/scripts/seal/`");
+  const sweep = CONVENTIONS.indexOf("- `hsdd/scripts/sweep/`");
+  assert.ok(seal > 0 && sweep > seal);
+  assert.ok(t.includes("sweep script (copied verbatim from hsdd-intake; present only in swept trees)"));
+  assert.ok(t.includes("hsdd-intake (intake and sweep records)"));
+  assert.ok(t.includes("Name each by the last path segment of its `origin` remote, the name sweep records use."));
+  assert.ok(t.includes("and `hsdd-auto`'s report step, for an intake record's `## Produced`"));
+});
+
+test("no em dash and no banned phrase in the added text", () => {
+  const banned = new RegExp(["load", "bearing"].join("-"), "i");
+  const sweepBullet = CHECKPOINT.slice(CHECKPOINT.indexOf("*Sweep records:*"), CHECKPOINT.indexOf("3. **Emit the progress report**"));
+  const codeVsPlan = CHECKPOINT.slice(CHECKPOINT.indexOf("scope creep (code with no phase)"), CHECKPOINT.indexOf("Also audit the profile's history"));
+  const retro = PHASE_PLAN.slice(PHASE_PLAN.indexOf("- A **retro phase**"), PHASE_PLAN.indexOf("- A phase appended for a change request"));
+  const conv = CONVENTIONS.split("\n").filter((l) => /sweep/.test(l)).join("\n");
+  for (const [n, t] of Object.entries({ sweepBullet, codeVsPlan, retro, conv })) {
+    assert.ok(t.length > 0, n);
+    assert.ok(!t.includes("\u2014"), `${n}: em dash`);
+    assert.ok(!banned.test(t), `${n}: banned phrase`);
+  }
+});
