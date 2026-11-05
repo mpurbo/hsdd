@@ -277,3 +277,63 @@ test("the overlap of an earlier --from lands under classified by", () => {
   assert.match(r.notCandidates.join("\n"), new RegExp(`classified by ${first.name.replace(/\./g, "\\.")}: `));
   assert.ok(!r.rows.some((x) => x.sha === s7(fx.shas.routeAdd)));
 });
+
+// commit, fix round 1
+test("a main line named trunk gives no note", () => {
+  const fx = sweepRepo();
+  gitIn(fx.root, "branch", "-m", "main", "trunk");
+  assert.equal(main(draftArgs(fx, "--main", "trunk", "--from", fx.base, "--to", fx.shas.contract, "--write"), fx.root, collector()), 0);
+  const name = managed(fx.root)[0];
+  const path = join(fx.root, "hsdd/management", name);
+  writeFileSync(path, completeDraft(readFileSync(path, "utf8"), fx.shas));
+  const o = collector();
+  assert.equal(main(["commit", `hsdd/management/${name}`], fx.root, o), 0, o.lines.join("\n"));
+  assert.deepEqual(o.lines.slice(1), ["committed on trunk"]);
+});
+
+test("under the profile the root on work gives the note and the pointer line", () => {
+  const p = sweepProfileRepo();
+  const rel = profileFilled(p);
+  gitIn(p.root, "checkout", "-q", "-b", "work");
+  const o = collector();
+  assert.equal(main(["commit", rel], p.root, o), 0, o.lines.join("\n"));
+  assert.deepEqual(o.lines.slice(1), ["committed on main in hsdd; pointer on work", "note: work is not main; the next sweep reads records from wherever this lands"]);
+});
+
+test("under the profile the root and the submodule both on main give no note", () => {
+  const p = sweepProfileRepo();
+  const rel = profileFilled(p);
+  const o = collector();
+  assert.equal(main(["commit", rel], p.root, o), 0, o.lines.join("\n"));
+  assert.deepEqual(o.lines.slice(1), ["committed on main in hsdd; pointer on main"]);
+});
+
+test("the retry after a rejected pointer commit bumps the pointer and exits 0", () => {
+  const p = sweepProfileRepo();
+  const rel = profileFilled(p);
+  const hooks = mkdtempSync(join(tmpdir(), "hsdd-hooks-"));
+  writeFileSync(join(hooks, "pre-commit"), "#!/bin/sh\nexit 1\n", { mode: 0o755 });
+  gitIn(p.root, "config", "core.hooksPath", hooks);
+  assert.throws(() => main(["commit", rel], p.root, collector()));
+  const subHead = gitIn(join(p.root, "hsdd"), "rev-parse", "HEAD");
+  assert.notEqual(gitIn(p.root, "ls-tree", "HEAD", "hsdd").split(/\s+/)[2], subHead);
+  gitIn(p.root, "config", "core.hooksPath", mkdtempSync(join(tmpdir(), "hsdd-nohooks-")));
+  const o = collector();
+  assert.equal(main(["commit", rel], p.root, o), 0, o.lines.join("\n"));
+  assert.equal(gitIn(p.root, "ls-tree", "HEAD", "hsdd").split(/\s+/)[2], subHead);
+  assert.match(gitIn(p.root, "log", "-1", "--format=%s"), /^sweep: acme [0-9a-f]{7}\.\.[0-9a-f]{7} \(pointer\)$/);
+  assert.match(o.lines.join("\n"), /bumped the pointer on main/);
+  const again = collector();
+  assert.equal(main(["commit", rel], p.root, again), 0);
+  assert.match(again.lines.join("\n"), /nothing to commit/);
+});
+
+test("commit takes no flags", () => {
+  const fx = sweepRepo();
+  const { rel } = filled(fx, fx.base, fx.shas.contract);
+  const head = gitIn(fx.root, "rev-parse", "HEAD");
+  const o = collector();
+  assert.equal(main(["commit", rel, "--write"], fx.root, o), 1);
+  assert.match(o.lines.join("\n"), /unexpected argument --write/);
+  assert.equal(gitIn(fx.root, "rev-parse", "HEAD"), head);
+});

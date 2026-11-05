@@ -41,3 +41,25 @@ test("every import under the scripts is relative or node:", () => {
     }
   }
 });
+
+// The write helpers in lib/git.mjs are copies of hsdd-seal's. Compare each
+// definition's source text; `export ` is stripped, and the one parameter
+// difference (`git = runGit`) is the same text on both sides.
+function definition(text, name) {
+  const start = text.search(new RegExp(`^(?:export )?(?:function ${name}\\b|const ${name} =)`, "m"));
+  assert.ok(start >= 0, `${name} not found`);
+  const rest = text.slice(start);
+  const end = rest.search(/^[}\]];?\s*$/m);
+  const closing = rest.indexOf("\n", end);
+  return rest.slice(0, closing < 0 ? rest.length : closing).replace(/^export /, "");
+}
+
+test("the write helpers copied from hsdd-seal have not drifted", () => {
+  const mine = readFileSync(`${SCRIPTS}/lib/git.mjs`, "utf8");
+  const seal = readFileSync(`${repo}skills/hsdd-seal/scripts/seal.mjs`, "utf8");
+  const scan = readFileSync(`${repo}skills/hsdd-seal/scripts/lib/scan.mjs`, "utf8");
+  const sources = { gitCwdFor: scan, groupByCwd: seal, detachedCwds: seal, hasStaged: seal, commitPaths: seal };
+  for (const [name, src] of Object.entries(sources)) {
+    assert.equal(definition(mine, name), definition(src, name), `${name} drifted from hsdd-seal`);
+  }
+});
