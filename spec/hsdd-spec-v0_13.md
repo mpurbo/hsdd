@@ -695,7 +695,9 @@ into; a node named is not in the tree, or is `none` on a `log` or `retro`
 row; `Run by` is empty or a template placeholder; the first change-log
 line's counts disagree with the table; `Status` is `closed` on a record
 with a `retro`, `intake` or `unplaced` row, or `open` on a record with only
-`log` rows. `check` exits
+`log` rows. A prompt names a sha only at chapter 6's sha positions, `commits {sha}, {sha}`
+and `{repo}@{sha}`, read across line breaks: the record's own filename ends in
+`{to7}`, and a subject may quote any sha, so neither counts. `check` exits
 non-zero and writes nothing; the agent fixes the record and runs it again.
 
 **`commit`** runs `check`, then commits the record alone with the message
