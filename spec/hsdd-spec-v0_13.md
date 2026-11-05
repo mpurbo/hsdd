@@ -278,9 +278,15 @@ line.
 The sweep reads one implementation repository's main line from `{from}` to
 `{to}`. `{to}` defaults to the main line's head. `{from}` defaults to the
 `{to}` of the newest sweep record for that repository (§5.1); the first
-sweep of a repository must name it, and the record says it did. Under the
-standalone-spec-repo profile each implementation repository is swept on its
-own, from that repository, and the records land in the submodule.
+sweep of a repository must name it, and the record says it did. A `--from`
+that descends from the previous record's `{to}` is refused: it would leave
+commits between the two records that no sweep reads and no default ever
+reaches. A `--from` earlier than it is accepted, and the overlap is set
+aside as classified. The records of one repository are therefore
+contiguous by construction, and "the commits after the newest record's
+`{to}`" is the whole unswept set. Under the standalone-spec-repo profile
+each implementation repository is swept on its own, from that repository,
+and the records land in the submodule.
 
 Of the commits in the range, the script sets aside, with a one-line listing
 each in the record:
@@ -633,8 +639,9 @@ line are complete; `## Routing` and `## Produced` read `none`. Without
 `--write` the draft is printed and nothing is written; an existing record
 for the same repository and `{to}` is never overwritten. A `--from` earlier
 than the previous record's `{to}` is accepted and the overlap lands under
-`classified by`. A `--to` that is not on the main line, or a `--from` that
-is not an ancestor of `--to`, is refused before anything is read. The
+`classified by`; one later than it is refused (§4.2). A `--to` that is not
+on the main line, or a `--from` that is not an ancestor of `--to`, is
+refused before anything is read. The
 script reads the repository through git only; it never checks out, stashes
 or writes to the working tree: the before and after contents the
 classifiers read are materialized from `git show` into a temporary
@@ -702,8 +709,9 @@ chapters 3 and 7.
   `**Request:**` names one of its `intake` shas, tick `closed (date)` when
   §5.4 holds, and file as findings an `unplaced` row (plan step:
   `hsdd-adopt` on the paths, or a person placing it), a record still open
-  two checkpoints after its date with a handoff not landed, and a sha two
-  records both classify. Sweep records run by delegation since the last
+  two checkpoints after its date with a handoff not landed, a sha two
+  records both classify, and two consecutive records of one repository
+  whose ranges leave a gap (§4.2). Sweep records run by delegation since the last
   checkpoint join the delegated sign-offs' finding. Sweep records are
   outside the chain rules, like intake records and the seal plan. Where a
   project's `conventions.md` still carries the user's guide's `## Manual
@@ -974,9 +982,10 @@ carrying `HSDD-Node:`. At least:
 
 - the range: default `--from` from the newest record of the repository, and
   the overlap under `classified by`; a first sweep with no record and no
-  `--from` is refused; a `--to` off the main line and a non-ancestor
-  `--from` are refused before anything is read; a range of only set-aside
-  commits writes nothing and exits 0 with the counts.
+  `--from` is refused; a `--from` after the previous record's `{to}` is
+  refused as a gap; a `--to` off the main line and a non-ancestor `--from`
+  are refused before anything is read; a range of only set-aside commits
+  writes nothing and exits 0 with the counts.
 - the set-aside: merges, governance-only commits (the gitlink included),
   attributed commits with the boundary rule, unknown ids noted.
 - the surface test: each of the four moves is `intake` with the stated
