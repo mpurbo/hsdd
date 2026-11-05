@@ -1,7 +1,8 @@
 // Reads of the repository through git only. Nothing here writes, checks out
 // or stashes.
 import { execFileSync } from "node:child_process";
-import { basename } from "node:path";
+import { existsSync } from "node:fs";
+import { basename, join, relative } from "node:path";
 import { normalizeRepo, reservedIn } from "./record.mjs";
 
 const MAX_BLOB = 2 * 1024 * 1024;
@@ -82,4 +83,70 @@ export function repoName(root, given, git = runGit) {
   const word = reservedIn(name);
   if (word) throw new Refusal(`the repository name "${name}" contains "${word}", which hsdd reads as a report or an intake record; pass --repo with another name`);
   return { name, named };
+}
+
+// Writes. The next three copy the behavior of gitCwdFor (hsdd-seal's
+// lib/scan.mjs) and detachedCwds, commitPaths and their helpers (hsdd-seal's
+// seal.mjs). The copy is deliberate: each skill's scripts install on their own.
+
+// The working copy a project path belongs to: the submodule at hsdd/ under the
+// standalone-spec-repo profile, else the project root.
+export function gitCwdFor(root, relPath) {
+  const sub = join(root, "hsdd");
+  if (/^hsdd\//.test(relPath) && existsSync(join(sub, ".git"))) return sub;
+  return root;
+}
+
+function groupByCwd(root, paths) {
+  const byCwd = new Map();
+  for (const p of paths) {
+    const cwd = gitCwdFor(root, p);
+    if (!byCwd.has(cwd)) byCwd.set(cwd, []);
+    byCwd.get(cwd).push(relative(cwd, join(root, p)));
+  }
+  return byCwd;
+}
+
+// Working copies other than the root whose HEAD is detached: a commit there
+// would sit on no branch, one `git submodule update` from being orphaned.
+export function detachedCwds(root, paths, git = runGit) {
+  const out = [];
+  for (const cwd of groupByCwd(root, paths).keys()) {
+    if (cwd === root) continue;
+    try {
+      git(cwd, ["symbolic-ref", "-q", "HEAD"]);
+    } catch {
+      out.push(cwd);
+    }
+  }
+  return out;
+}
+
+const hasStaged = (git, cwd, rels) => {
+  try {
+    git(cwd, ["diff", "--cached", "--quiet", "--", ...rels]);
+    return false;
+  } catch {
+    return true;
+  }
+};
+
+// Stage and commit only `paths`, in each git working copy they belong to;
+// anything else the owner had staged stays staged. A submodule commit is
+// followed by a pointer commit in the root.
+export function commitPaths(root, paths, message, git = runGit) {
+  const committed = [];
+  for (const [cwd, rels] of groupByCwd(root, paths)) {
+    git(cwd, ["add", "-A", "--", ...rels]);
+    if (!hasStaged(git, cwd, rels)) continue;
+    git(cwd, ["commit", "-q", "-m", message, "--", ...rels]);
+    committed.push(cwd);
+  }
+  for (const cwd of committed) {
+    if (cwd === root) continue;
+    const sub = relative(root, cwd);
+    git(root, ["add", "--", sub]);
+    if (hasStaged(git, root, [sub])) git(root, ["commit", "-q", "-m", `${message} (pointer)`, "--", sub]);
+  }
+  return committed;
 }

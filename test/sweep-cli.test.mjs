@@ -25,7 +25,7 @@ test("an unknown command prints usage and exits 2", () => {
 import { existsSync, readFileSync, writeFileSync, readdirSync, mkdirSync } from "node:fs";
 import { renderRecord, parseRecord } from "../skills/hsdd-intake/scripts/lib/record.mjs";
 import { sweepRepo, sweepProfileRepo } from "./helpers/sweep-fixture.mjs";
-import { gitIn } from "./helpers/seal-fixture.mjs";
+import { gitIn, write } from "./helpers/seal-fixture.mjs";
 
 const draftArgs = (fx, ...more) => ["draft", "--repo", "acme", "--today", "2026-11-05", ...more];
 const managed = (root) => (existsSync(join(root, "hsdd/management")) ? readdirSync(join(root, "hsdd/management")).filter((f) => f.includes("-sweep-")) : []);
@@ -170,4 +170,110 @@ test("check refuses a path that is not a sweep record or is absent", () => {
     assert.ok(o.lines.length > 0);
   }
   assert.equal(main(["check"], fx.root, collector()), 1);
+});
+
+// commit
+const s7 = (s) => s.slice(0, 7);
+const filled = (fx, from, to, opts) => {
+  assert.equal(main(draftArgs(fx, "--from", from, "--to", to, "--write"), fx.root, collector()), 0);
+  const name = managed(fx.root).find((n) => n.endsWith(`-${s7(to)}.md`));
+  const path = join(fx.root, "hsdd/management", name);
+  writeFileSync(path, completeDraft(readFileSync(path, "utf8"), fx.shas, opts));
+  return { name, rel: `hsdd/management/${name}`, path };
+};
+
+test("commit: the record alone, with the message, unrelated staged files left staged", () => {
+  const fx = sweepRepo();
+  const { rel } = filled(fx, fx.base, fx.shas.contract);
+  writeFileSync(join(fx.root, "unrelated.txt"), "keep\n");
+  gitIn(fx.root, "add", "unrelated.txt");
+  const o = collector();
+  assert.equal(main(["commit", rel], fx.root, o), 0, o.lines.join("\n"));
+  assert.equal(gitIn(fx.root, "log", "-1", "--format=%s"), `sweep: acme ${s7(fx.base)}..${s7(fx.shas.contract)}`);
+  assert.equal(gitIn(fx.root, "show", "--name-only", "--format=", "HEAD"), rel);
+  assert.equal(gitIn(fx.root, "diff", "--cached", "--name-only"), "unrelated.txt");
+  assert.deepEqual(o.lines, [`ok: ${rel}`, "committed on main"]);
+});
+
+test("commit prints a note when the branch is not the main line", () => {
+  const fx = sweepRepo();
+  const { rel } = filled(fx, fx.base, fx.shas.contract);
+  gitIn(fx.root, "checkout", "-q", "-b", "work");
+  const o = collector();
+  assert.equal(main(["commit", rel], fx.root, o), 0, o.lines.join("\n"));
+  assert.deepEqual(o.lines.slice(1), ["committed on work", "note: work is not main; the next sweep reads records from wherever this lands"]);
+});
+
+test("commit refuses a record check refuses", () => {
+  const fx = sweepRepo();
+  const { name } = drafted(fx);
+  const head = gitIn(fx.root, "rev-parse", "HEAD");
+  const o = collector();
+  assert.equal(main(["commit", `hsdd/management/${name}`], fx.root, o), 1);
+  assert.match(o.lines.join("\n"), /\?/);
+  assert.equal(gitIn(fx.root, "rev-parse", "HEAD"), head);
+});
+
+const profileFilled = (p) => {
+  assert.equal(main(draftArgs(p, "--from", p.base, "--write"), p.root, collector()), 0);
+  const name = readdirSync(join(p.root, "hsdd/management"))[0];
+  const rel = `hsdd/management/${name}`;
+  writeFileSync(join(p.root, rel), completeDraft(readFileSync(join(p.root, rel), "utf8"), { ...p.shas, copy: "" }));
+  return rel;
+};
+
+test("under the profile it commits inside the submodule and bumps the pointer", () => {
+  const p = sweepProfileRepo();
+  const rel = profileFilled(p);
+  const o = collector();
+  assert.equal(main(["commit", rel], p.root, o), 0, o.lines.join("\n"));
+  const msg = `sweep: acme ${s7(p.base)}..${s7(p.shas.log)}`;
+  assert.equal(gitIn(join(p.root, "hsdd"), "log", "-1", "--format=%s"), msg);
+  assert.equal(gitIn(p.root, "log", "-1", "--format=%s"), `${msg} (pointer)`);
+  assert.equal(gitIn(join(p.root, "hsdd"), "show", "--name-only", "--format=", "HEAD"), rel.replace(/^hsdd\//, ""));
+});
+
+test("a detached submodule is refused and nothing is committed", () => {
+  const p = sweepProfileRepo();
+  const rel = profileFilled(p);
+  gitIn(join(p.root, "hsdd"), "checkout", "-q", "--detach");
+  const subHead = gitIn(join(p.root, "hsdd"), "rev-parse", "HEAD");
+  const rootHead = gitIn(p.root, "rev-parse", "HEAD");
+  const o = collector();
+  assert.equal(main(["commit", rel], p.root, o), 1);
+  assert.match(o.lines.join("\n"), /detached/);
+  assert.match(o.lines.join("\n"), /hsdd/);
+  assert.equal(gitIn(join(p.root, "hsdd"), "rev-parse", "HEAD"), subHead);
+  assert.equal(gitIn(p.root, "rev-parse", "HEAD"), rootHead);
+});
+
+test("the whole run: draft, fill, check, commit, then the next draft starts where this one ended", () => {
+  const fx = sweepRepo();
+  const { name, rel } = filled(fx, fx.base, fx.shas.contract);
+  assert.equal(main(["check", rel], fx.root, collector()), 0);
+  assert.equal(main(["commit", rel], fx.root, collector()), 0);
+  const none = collector();
+  assert.equal(main(draftArgs(fx), fx.root, none), 0);
+  assert.match(none.lines.join("\n"), /^no candidates/);
+  write(fx.root, "src/web/app.js", gitIn(fx.root, "show", "HEAD:src/web/app.js") + "\n// after the sweep\n");
+  gitIn(fx.root, "add", "-A");
+  gitIn(fx.root, "commit", "-q", "-m", "web: after the sweep");
+  const o = collector();
+  assert.equal(main(draftArgs(fx, "--write"), fx.root, o), 0, o.lines.join("\n"));
+  const next = managed(fx.root).find((n) => n !== name);
+  const r = parseRecord(readFileSync(join(fx.root, "hsdd/management", next), "utf8"));
+  assert.equal(r.from, fx.shas.contract);
+  assert.equal(r.rows.length, 1);
+  assert.match(readFileSync(join(fx.root, "hsdd/management", next), "utf8"), new RegExp(`from ${name}\\)`));
+});
+
+test("the overlap of an earlier --from lands under classified by", () => {
+  const fx = sweepRepo();
+  const first = filled(fx, fx.base, fx.shas.routeAdd);
+  assert.equal(main(["commit", first.rel], fx.root, collector()), 0);
+  assert.equal(main(draftArgs(fx, "--from", fx.base, "--to", fx.shas.contract, "--write"), fx.root, collector()), 0);
+  const second = managed(fx.root).find((n) => n !== first.name);
+  const r = parseRecord(readFileSync(join(fx.root, "hsdd/management", second), "utf8"));
+  assert.match(r.notCandidates.join("\n"), new RegExp(`classified by ${first.name.replace(/\./g, "\\.")}: `));
+  assert.ok(!r.rows.some((x) => x.sha === s7(fx.shas.routeAdd)));
 });
