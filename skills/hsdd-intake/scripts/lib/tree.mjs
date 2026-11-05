@@ -1,0 +1,15 @@
+// The spec tree as sweep needs it: nodes, phase ids, and the path prefixes
+// each live node's Observed surface claims.
+import { existsSync, readFileSync } from "node:fs";
+import { join } from "node:path";
+import { extractPlan } from "../extract-plan.mjs";
+import { parseObservedSurface } from "../diff.mjs";
+
+export function readTree(root) {
+  const plan = extractPlan(root);
+  const nodes = new Map(plan.nodes.map((n) => [n.id, { id: n.id, kind: n.kind, status: n.status, adopted: n.adopted }]));
+  const scopes = plan.nodes
+    .filter((n) => n.observedSurface && n.status !== "retired" && existsSync(join(root, n.sourceFile)))
+    .map((n) => ({ node: n.id, prefixes: parseObservedSurface(readFileSync(join(root, n.sourceFile), "utf8"))?.modules ?? [] }));
+  return { nodes, nodeIds: plan.nodes.map((n) => n.id), phaseIds: plan.phases.map((p) => p.id), scopes };
+}
