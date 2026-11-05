@@ -133,3 +133,41 @@ test("under the profile the pointer commit is governance-only and the record lan
   assert.deepEqual(r.rows.map((x) => x.sha), [p.shas.log.slice(0, 7)]);
   assert.match(r.notCandidates.join("\n"), new RegExp(`governance-only: 1 \\(${p.shas.pointer.slice(0, 7)}\\)`));
 });
+
+// check
+import { completeDraft } from "./helpers/sweep-fixture.mjs";
+const drafted = (fx) => {
+  assert.equal(main(draftArgs(fx, "--from", fx.base, "--to", fx.shas.contract, "--write"), fx.root, collector()), 0);
+  const name = managed(fx.root)[0];
+  return { name, path: join(fx.root, "hsdd/management", name) };
+};
+
+test("check on a written record does not count it against itself", () => {
+  const fx = sweepRepo();
+  const { name, path } = drafted(fx);
+  writeFileSync(path, completeDraft(readFileSync(path, "utf8"), fx.shas));
+  const o = collector();
+  assert.equal(main(["check", `hsdd/management/${name}`], fx.root, o), 0, o.lines.join("\n"));
+  assert.equal(o.lines.join("\n"), `ok: hsdd/management/${name}`);
+});
+
+test("check prints problems, exits 1 and writes nothing", () => {
+  const fx = sweepRepo();
+  const { name, path } = drafted(fx);
+  const before = readFileSync(path, "utf8");
+  const o = collector();
+  assert.equal(main(["check", `hsdd/management/${name}`], fx.root, o), 1);
+  assert.match(o.lines.join("\n"), /\?/);
+  assert.equal(readFileSync(path, "utf8"), before);
+  assert.deepEqual(managed(fx.root), [name]);
+});
+
+test("check refuses a path that is not a sweep record or is absent", () => {
+  const fx = sweepRepo();
+  for (const p of ["hsdd/conventions.md", "hsdd/management/2026-11-05-sweep-acme-abcdef0.md"]) {
+    const o = collector();
+    assert.equal(main(["check", p], fx.root, o), 1);
+    assert.ok(o.lines.length > 0);
+  }
+  assert.equal(main(["check"], fx.root, collector()), 1);
+});

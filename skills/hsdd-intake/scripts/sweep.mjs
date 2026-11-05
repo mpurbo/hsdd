@@ -5,6 +5,7 @@ import { fileURLToPath } from "node:url";
 import { resolve } from "node:path";
 import { Refusal } from "./lib/git.mjs";
 import { draft } from "./lib/draft.mjs";
+import { check } from "./lib/check.mjs";
 
 export const USAGE = "usage: sweep.mjs draft | check | commit\n" +
   "  draft  [--from SHA] [--to REF] [--main BRANCH] [--repo NAME] [--run-by NAME] [--today YYYY-MM-DD] [--write]\n" +
@@ -26,12 +27,12 @@ export function parseArgs(argv) {
 }
 
 export function main(argv, root = process.cwd(), out = { log: console.log, error: console.error }) {
-  if (argv[0] !== "draft") {
+  if (argv[0] !== "draft" && argv[0] !== "check") {
     out.log(USAGE);
     return 2;
   }
   try {
-    return draft(root, parseArgs(argv), out);
+    return argv[0] === "check" ? check(root, argv[1], out) : draft(root, parseArgs(argv), out);
   } catch (e) {
     if (!(e instanceof Refusal)) throw e;
     out.error(e.message);

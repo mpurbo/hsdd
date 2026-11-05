@@ -4,6 +4,7 @@ import { mkdirSync, mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { gitIn, write, initRepo } from "./seal-fixture.mjs";
+import { parseRecord, renderRecord } from "../../skills/hsdd-intake/scripts/lib/record.mjs";
 
 const spec = (id, name, kind, fields, body) => `# ${id}: ${name}
 
@@ -218,4 +219,51 @@ export function sweepProfileRepo() {
   gitIn(root, "add", "-A");
   gitIn(root, "commit", "-q", "-m", "web: log the retry");
   return { root, spec: specDir, base, shas: { pointer, log: sha(root) } };
+}
+
+// Stands in for the agent: replaces `?` cells, fills the change-log counts
+// from the final table and appends `lowered` lines. `rows[sha7]` overrides
+// any of node, cls, reason on that row.
+export function fillRecord(text, { rows = {}, runBy, routing, status, lowered = [] } = {}) {
+  const r = parseRecord(text);
+  const filled = r.rows.map((x) => ({ ...x, ...(rows[x.sha] ?? {}) }));
+  const n = (c) => filled.filter((x) => x.cls === c).length;
+  const counts = `${filled.length} candidates: ${n("log")} log, ${n("retro")} retro, ${n("intake")} intake, ${n("unplaced")} unplaced`;
+  const [first, ...rest] = r.changeLog;
+  return renderRecord({
+    ...r,
+    rows: filled,
+    runBy: runBy ?? r.runBy,
+    routing: routing ?? r.routing,
+    status: status ?? r.status,
+    changeLog: [first.replace(/created; .*$/, `created; ${counts}`), ...rest, ...lowered],
+  });
+}
+
+// The agent's usual completion of a draft: unplaceable rows unplaced, `copy`
+// retro on acme.web, the rest log, one handoff per retro node and intake row.
+export function completeDraft(text, shas, { runBy = "Purbo" } = {}) {
+  const r = parseRecord(text);
+  const rows = {};
+  for (const x of r.rows) {
+    const o = {};
+    if (x.cls === "?") {
+      if (x.node === "?") Object.assign(o, { node: "none", cls: "unplaced", reason: "src/unowned" });
+      else if (x.sha === shas.copy.slice(0, 7)) Object.assign(o, { cls: "retro", reason: 'acme.web.2 Verification: "the preview shows the fee line"' });
+      else Object.assign(o, { cls: "log", reason: "none" });
+    } else if (x.node === "?") o.node = "acme.web";
+    rows[x.sha] = o;
+  }
+  const final = r.rows.map((x) => ({ ...x, ...rows[x.sha] }));
+  const retro = final.filter((x) => x.cls === "retro");
+  const lines = [];
+  let h = 0;
+  for (const node of new Set(retro.map((x) => x.node))) {
+    const own = retro.filter((x) => x.node === node).map((x) => x.sha);
+    lines.push(`**H${++h}** (retro, ${node}):`);
+    for (const p of [`/hsdd-phase-plan ${node} per the record: add one retro phase for commits ${own.join(", ")}.`, `/hsdd-reconcile ${node}`, `Write the verification doc for commits ${own.join(", ")}.`]) lines.push("```text", p, "```");
+  }
+  for (const x of final.filter((y) => y.cls === "intake")) lines.push(`**H${++h}** (intake, ${x.sha}):`, "```text", `/hsdd-intake per the record: commit ${x.sha}.`, "```");
+  const open = final.some((x) => x.cls !== "log");
+  return fillRecord(text, { rows, runBy, routing: lines.length ? lines : undefined, status: open ? "open" : `closed (${r.date})` });
 }
