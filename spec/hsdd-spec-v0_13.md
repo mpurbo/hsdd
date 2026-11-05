@@ -171,8 +171,8 @@ text, "v0.11.0 §n" reads v0.11.0, and "v0.12.0 §n" reads v0.12.0.
   the governance paths: `hsdd/` (the submodule pointer included, under the
   profile), `hsdd-context/` and `openspec/`.
 - **Attributed commit.** A commit that is governance-only, a merge, one
-  whose message names a phase id of the tree, or one that a sweep record
-  has classified. After launch a commit that is none of these is scope
+  whose message names a phase id of the tree, one whose sha a phase's Scope
+  cites, or one that a sweep record has classified. After launch a commit that is none of these is scope
   creep (v0.10.0 §12.7).
 - **Surface move.** A diff that adds, removes or changes a route, a table,
   a topic or a schema file as the seam classifiers see them, or that
@@ -306,6 +306,7 @@ each in the record:
 | merge commits | more than one parent |
 | governance-only commits | every changed path is under `hsdd/`, `hsdd-context/` or `openspec/` |
 | attributed commits | the message's subject, body or a trailer names a phase id the tree's plan files define, as a whole token (not preceded or followed by a letter, a digit, `_` or `-`, and not followed by `.` and a digit); a message naming an id no plan defines is not attributed, and the record notes the unknown id |
+| commits a phase records | a phase's Scope line cites the sha, at least seven characters, as a whole token: the retro phases of the legal bypass predate the commit's message, and their commits are recorded already; listed under `attributed` |
 | classified commits | a sweep record of this repository already lists the sha |
 
 Everything else is a candidate, and every candidate gets a row. The script
@@ -390,7 +391,9 @@ Every candidate names the node it happened in, by this order of evidence:
 Paths that span two nodes make the commit `intake` with the reason `spans
 {node}, {node}`: two nodes is the first sign the change is not small, and
 the collision rules of v0.10.0 §11.7 belong to request mode. A commit whose
-paths are partly unowned is placed by the runner or not at all. A commit no
+paths are partly unowned is placed by the runner or not at all. A `retro` placed on an internal
+node or the root goes to the leaf-parent the runner names, and the claim test
+runs again there; when the runner names none, the row is `unplaced`. A commit no
 node owns and nobody places is **`unplaced`**, with the paths as its
 reason; it is listed for the owner (§6.3) and is never guessed onto a node.
 
@@ -577,7 +580,7 @@ For each `intake` row, one handoff to request mode, with the prompt:
 main line; the sweep found {reason}; per hsdd/management/{record}.
 ```
 
-`commit` is a new authority value (chapter 8): the request is the diff,
+`{date}` is the commit's date. `commit` is a new authority value (chapter 8): the request is the diff,
 already in production. Request mode classifies it as any other request,
 `local`, `cross-node`, `new-capability` or `structural`, never `manual`
 (the surface moved), reads the open intakes for collisions, writes its
@@ -714,7 +717,10 @@ non-zero and writes nothing; the agent fixes the record and runs it again.
 `sweep: {repo} {from7}..{to7}`; anything else staged stays staged. Under
 the profile the commit lands inside the submodule and the pointer is bumped
 in the implementation repository; the step refuses while the submodule's
-HEAD is detached (v0.10.0 §14.4 rule 1, as the seal does). It never pushes.
+HEAD is detached (v0.10.0 §14.4 rule 1, as the seal does). It never pushes. Under the
+profile the runner pushes inside `hsdd/` before pushing the implementation
+repository, as every governance edit is pushed, or the pointer names a commit
+no clone has.
 The agent then runs the handoffs of `## Routing` in order, or hands the
 prompts to the person who will.
 
@@ -738,8 +744,8 @@ chapters 3 and 7.
   each implementation repository. After launch, among the commits reachable
 from the head of the repository's own main branch, as the record's
 `**Repository:**` line names it, side branches included, a commit that is
-a merge, is governance-only, names a phase id, or is a row in a sweep record
-is attributed; a `log` row needs nothing further, and a
+a merge, is governance-only, names a phase id, is cited by a phase's Scope,
+or is a row in a sweep record is attributed; a `log` row needs nothing further, and a
   commit trailer attributes nothing on its own. Every other commit since
   the newest record's `{to}`, or since launch when there is none, is one
   backfill finding per repository naming the unswept range, whose plan step
@@ -1021,7 +1027,7 @@ topic producer, each in a file whose other lines also change; a copy change
 in a routes file that moves no route; a log line; a commit under the
 as-built node's prefix that would stale a header sentence; a commit
 spanning both nodes' prefixes; a commit under a path no node owns; a commit
-carrying `HSDD-Node:`. At least:
+carrying `HSDD-Node:`; a commit a later retro phase's Scope cites by sha. At least:
 
 - the range: default `--from` from the newest record of the repository, and
   the overlap under `classified by`; a first sweep with no record and no
@@ -1030,7 +1036,8 @@ carrying `HSDD-Node:`. At least:
   are refused before anything is read; a range of only set-aside commits
   writes nothing and exits 0 with the counts.
 - the set-aside: merges, governance-only commits (the gitlink included),
-  attributed commits with the boundary rule, unknown ids noted.
+  attributed commits with the boundary rule, unknown ids noted, a commit a
+  phase's Scope cites by sha under `attributed`.
 - the surface test: each of the four moves is `intake` with the stated
   reason; the copy change in the routes file is not; a path under
   `hsdd/contract/` is; the working tree is untouched and no temporary
@@ -1070,8 +1077,8 @@ worth judgment; the slash command's description names both modes and stays
 one line; the two skill texts and the template of chapter 8 carry their
 edits; the user's guide's small-fixes section is rewritten over the two
 tenses, and the third situation in "Outside the loop" names them; the
-README's `hsdd-intake` row and chain line read as §9.3 says, and its skill
-count stays thirteen; the interactive guide's skill map describes intake's
+README's `hsdd-intake` row names both modes, its fenced chain block gains the
+sweep line, and its skill count stays thirteen; the interactive guide's skill map describes intake's
 two modes; the changelog entry names the upgrade effects of §9.1.
 
 ### 12.3 Live acceptance
