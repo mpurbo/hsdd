@@ -50,7 +50,7 @@ test("the manual row carries the spec's words", () => {
 });
 
 test("the manual row closes the class table of step 4, and no step is renumbered", () => {
-  const steps = ["1. **Read every open intake first.**", "2. **Locate the landing.**", "3. **Promote first when the landing is as-built.**", "4. **Classify**", "5. **Write the record before the handoff**", "6. **Hand off**", "7. **Report:**"];
+  const steps = ["1. **Read every open intake first.**", "2. **Locate the landing.**", "3. Unless the request is class `manual` (step 4):", "4. **Classify**", "5. **Write the record before the handoff**", "6. **Hand off**", "7. **Report:**"];
   const at = steps.map((s) => SKILL.indexOf(`\n${s}`));
   assert.ok(at.every((p) => p >= 0), `steps at ${at}`);
   assert.deepEqual(at, [...at].sort((a, b) => a - b));
@@ -73,6 +73,29 @@ test("the manual paragraph states the tests, the limits and the four things the 
     "by the developer or by a lead before the next checkpoint",
     "comes back through request mode before it merges",
   ]) assert.ok(p.includes(s), s);
+});
+
+test("step 3 opens by excepting a manual request and keeps the rest of its text", () => {
+  assert.ok(SKILL.includes("\n3. Unless the request is class `manual` (step 4): **Promote first when the"));
+  assert.ok(norm(SKILL).includes("(step 4): **Promote first when the landing is as-built.** A node marked `- **Adopted:** as-built` is not a fifth routing class: name it in this intake's `**Promotes:**` line, classify the change against the node as it will be once promoted, and make promotion the first handoff (step 6): `hsdd-spec` promotion mode, with its human confirmation stop, the node's `## Observed surface` a primary source alongside the request. The other handoffs follow only after that confirmation."));
+});
+
+test("on an as-built landing only the surface decides, and launched means what the spec says", () => {
+  const spec = norm(SPEC);
+  const p = norm(manualParagraph());
+  assert.ok(spec.includes("On that landing the second test is not applied, as §4.3 says of the sweep: only the surface decides."));
+  assert.ok(p.includes("On an as-built landing the second test is not applied, and only the surface decides."));
+  const launched = "an adopted tree from adoption, a greenfield tree from the sealing of the campaign whose gate includes launch";
+  assert.ok(spec.includes(launched));
+  assert.ok(p.includes(launched));
+});
+
+test("an open intake leaves a manual answer standing, and the record's gates are n/a for it", () => {
+  const spec = norm(SPEC);
+  const p = norm(manualParagraph());
+  assert.ok(spec.includes("An open intake on the node does not change the answer: a `manual` change touches no plan and no contract, so request mode's collision rules have nothing to serialize and nothing to record, and the report names the open record"));
+  assert.ok(p.includes("An open intake on the node does not change the answer: a `manual` change touches no plan and no contract, so step 1's collision rules have nothing to serialize and nothing to record, and the report names the open record"));
+  assert.ok(p.includes("The quality gates on the record, collisions and promotion are `n/a` for a `manual` answer."));
 });
 
 test("the mode section is at most 40 lines, names sweep.md and selects by the first argument", () => {
@@ -165,6 +188,24 @@ test("the claim test and the as-built rule are stated as spec 4.3 states them", 
     assert.ok(spec.includes(s), `the spec: ${s}`);
     assert.ok(sweep.includes(s), `sweep.md: ${s}`);
   }
+});
+
+test("a refused retro row has one answer per node kind, and the agent moves no filled Node cell", () => {
+  const n = norm(section(SWEEP, "## The claim test"));
+  for (const s of [
+    "A `retro` on an as-built node is `log`.",
+    "On an internal node or the root the agent asks the runner which leaf-parent owns the paths, then applies the claim test against that node",
+    "when the runner names none, the row is `unplaced`",
+    "The agent never moves a filled Node cell on its own.",
+  ]) assert.ok(n.includes(s), s);
+  assert.ok(!n.includes("either of those"));
+});
+
+test("check and commit gate the first publication only", () => {
+  const s = "`check` and `commit` gate the first publication only: a published edit is committed with git directly, since the first change-log line keeps the counts of the day it was written.";
+  assert.ok(norm(SPEC).includes(s));
+  const p = section(SWEEP, "## Procedure");
+  assert.ok(norm(p.slice(p.indexOf("A published record accepts"))).includes(s));
 });
 
 test("sweep.md carries chapter 6's prompts verbatim", () => {

@@ -2,10 +2,10 @@
 
 **Core principle: the script owns the record's structure, the agent answers
 one bounded question per commit.** The script reads the range, sets aside
-what is attributed, runs the surface test and writes a row for every
-candidate. The agent fills only the cells the script left, and the question
-it answers is whether the diff makes a claim of the owning node's closure
-false or stale. Nothing a sweep writes counts as done.
+what is attributed, runs the surface test and writes every row. The agent
+fills only the cells it left, and its question is whether the diff makes a
+claim of the owning node's closure false or stale. Nothing a sweep writes
+counts as done.
 
 ## When it applies
 
@@ -13,9 +13,8 @@ A launched system whose tree is current enough that the next change will
 read it: after adoption, after the launch campaign sealed, or after a seal.
 Whoever merged the small changes runs it (the runner), a developer at the
 end of the day or a lead before a checkpoint. It does not apply before
-launch, and it is not the way to deliver a request: a ticket, a PRD or an
-incident goes through request mode before the code is written. The sweep
-looks only backwards, at commits that exist on the main line.
+launch, and it delivers no request: a ticket, a PRD or an incident goes
+through request mode before the code is written.
 
 ## Setup
 
@@ -23,12 +22,9 @@ Copy this skill's `scripts/` directory **verbatim** to
 `hsdd/scripts/sweep/`; never retype a file. Node 20 or later. Every command
 runs from the implementation repository's root, the directory that holds
 `hsdd/`. Under the standalone-spec-repo profile each implementation
-repository is swept on its own, from that repository, and its records land
-in the submodule.
+repository is swept on its own and its records land in the submodule.
 
 ## Procedure
-
-The invocation's arguments after `sweep` are `draft`'s:
 
 ```bash
 node hsdd/scripts/sweep/sweep.mjs draft [--from SHA] [--to REF] [--main BRANCH] [--repo NAME] [--run-by NAME] [--today YYYY-MM-DD] --write
@@ -36,11 +32,10 @@ node hsdd/scripts/sweep/sweep.mjs check hsdd/management/DATE-sweep-REPO-SHA7.md
 node hsdd/scripts/sweep/sweep.mjs commit hsdd/management/DATE-sweep-REPO-SHA7.md
 ```
 
-1. **`draft --write`.** `--to` defaults to the head of the main line, `main`
-   unless `--main` names another. `--from` defaults to the `{to}` of the
-   repository's newest sweep record, and a first sweep must name it. A
-   `--from` that is neither that `{to}` nor an ancestor of it is refused,
-   since it leaves commits no sweep reads. `draft` refuses an unfinished
+1. **`draft --write`,** with the invocation's arguments after `sweep`. `--to`
+   defaults to the head of the main line, `main` unless `--main` names
+   another. `--from` defaults to the `{to}` of the repository's newest sweep
+   record, and a first sweep must name it. `draft` refuses an unfinished
    record of the same repository (a `?` left) and an unreadable record,
    until each is fixed or deleted. A range with no candidates writes no
    record: report the counts and stop.
@@ -59,8 +54,7 @@ node hsdd/scripts/sweep/sweep.mjs commit hsdd/management/DATE-sweep-REPO-SHA7.md
      at all. An `intake` row nobody places stays `intake`, node `none`.
    - **Class and Reason**, by the claim test, on every row left at `?`.
      `Reason` is `none` for `log`, the claim's location for `retro`, the
-     paths for `unplaced`. It says where a claim lives, not what the code
-     now does.
+     paths for `unplaced`, and never what the code now does.
    - **`Run by`**, unless `--run-by` filled it: a person, or
      `{agent} for {person} (delegated)`, asking the runner once. That
      person answers for the classification.
@@ -79,8 +73,7 @@ node hsdd/scripts/sweep/sweep.mjs commit hsdd/management/DATE-sweep-REPO-SHA7.md
    staged stays staged. Under the profile it commits inside the submodule,
    bumps the pointer, and refuses while the submodule's HEAD is detached;
    after a rejected pointer commit, run it again. It never pushes.
-6. **Run the handoffs** of `## Routing` in order, or hand the prompts to the
-   person who will.
+6. **Run the handoffs** in order, or hand the prompts over.
 7. **Report** the record's path, the counts, what is `unplaced`, and the
    handoffs not run.
 
@@ -92,6 +85,9 @@ to `## Routing`. Nothing else is edited in place: a wrong class on any other
 row is corrected by a change-log line and, when the correction raises the
 class, by the handoff it now needs. `hsdd-checkpoint` appends `## Produced`
 and ticks `Status`; the sweep closes nothing it did not create closed.
+`check` and `commit` gate the first publication only: a published edit is
+committed with git directly, since the first change-log line keeps the
+counts of the day it was written.
 
 ## The claim test
 
@@ -116,8 +112,11 @@ has no phases whose lines a diff could stale. A candidate placed on an
 as-built node is `log` unless the surface moved; a retro phase is never
 planned on an as-built node, and promotion waits for the first change
 request that needs a phase. `check` refuses a `retro` row there, and on an
-internal node or the root, where append mode has no plan to write into;
-move a row on either of those to the leaf-parent that owns its paths.
+internal node or the root, where append mode has no plan to write into. A
+`retro` on an as-built node is `log`. On an internal node or the root the
+agent asks the runner which leaf-parent owns the paths, then applies the
+claim test against that node; when the runner names none, the row is
+`unplaced`. The agent never moves a filled Node cell on its own.
 
 **Raising.** The agent may raise a class: `log` to `retro`, and either to
 `intake` when it reads a move the classifiers missed or when the paths span

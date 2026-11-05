@@ -75,13 +75,14 @@ read `sweep.md`.
 2. **Locate the landing.** From the atlas (or the tree), name every node
    whose surface the request touches, and every contract on those seams.
    Read the request's sources, not the atlas's summary of them.
-3. **Promote first when the landing is as-built.** A node marked
-   `- **Adopted:** as-built` is not a fifth routing class: name it in this
-   intake's `**Promotes:**` line, classify the change against the node as
-   it will be once promoted, and make promotion the first handoff (step 6):
-   `hsdd-spec` promotion mode, with its human confirmation stop, the node's
-   `## Observed surface` a primary source alongside the request. The other
-   handoffs follow only after that confirmation.
+3. Unless the request is class `manual` (step 4): **Promote first when the
+   landing is as-built.** A node marked `- **Adopted:** as-built` is not a
+   fifth routing class: name it in this intake's `**Promotes:**` line,
+   classify the change against the node as it will be once promoted, and
+   make promotion the first handoff (step 6): `hsdd-spec` promotion mode,
+   with its human confirmation stop, the node's `## Observed surface` a
+   primary source alongside the request. The other handoffs follow only
+   after that confirmation.
 4. **Classify**, one class per intake:
 
    | Class | Means | Routes to |
@@ -103,20 +104,28 @@ read `sweep.md`.
    those sentences say: `manual`. "Rename the fee line to charge" stales a
    Verification line that says "shows the fee line": `local`, a phase. "Add
    a preview endpoint" moves a route: `local` or `cross-node` with a
-   contract bump.
+   contract bump. On an as-built landing the second test is not applied,
+   and only the surface decides.
 
    Doubt is not `manual`: when the description does not let you tell, the
    class is another one, because the phase is the safe answer and the sweep
    can still find later that the diff stayed below the line. A request of
    authority `commit` is never `manual`. `manual` does not exist before
-   launch: on an unlaunched system a request too small for its own phase is
-   routed `local` and appended to the phase it fixes, or folded into an
-   unshipped phase's Scope by the owner. An as-built landing is not
-   promoted for a `manual` request: step 3 does not run, and promotion
-   waits for the first change request that needs a phase.
+   launch. A system is launched when it runs in production: an adopted tree
+   from adoption, a greenfield tree from the sealing of the campaign whose
+   gate includes launch. On an unlaunched system a request too small for
+   its own phase is routed `local` and appended to the phase it fixes, or
+   folded into an unshipped phase's Scope by the owner. An as-built landing
+   is not promoted for a `manual` request: step 3 does not run, and
+   promotion waits for the first change request that needs a phase. An open
+   intake on the node does not change the answer: a `manual` change touches
+   no plan and no contract, so step 1's collision rules have nothing to
+   serialize and nothing to record, and the report names the open record so
+   the developer expects the overlap.
 
    Steps 5 and 6 do not apply: nothing is written under `hsdd/` and nothing
-   is handed off. In place of step 7's report, name:
+   is handed off. The quality gates on the record, collisions and promotion
+   are `n/a` for a `manual` answer. In place of step 7's report, name:
 
    - the node, found as step 2 finds a landing;
    - the trailer the commit must carry, `HSDD-Node: {node-id}`, which is how
