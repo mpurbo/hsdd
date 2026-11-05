@@ -81,13 +81,14 @@ A published record accepts ticking `Status`, appending to the change log,
 and one more edit: a person may edit the `Node` and `Class` cells of an
 `unplaced` row, and its `Reason` with them, with a change-log line naming
 the person and the new class, and the handoff the new class needs appended
-to `## Routing`. Nothing else is edited in place: a wrong class on any other
-row is corrected by a change-log line and, when the correction raises the
-class, by the handoff it now needs. `hsdd-checkpoint` appends `## Produced`
-and ticks `Status`; the sweep closes nothing it did not create closed.
-`check` and `commit` gate the first publication only: a published edit is
-committed with git directly, since the first change-log line keeps the
-counts of the day it was written.
+to `## Routing`. Nothing else is edited in place. A wrong class on any other
+row is corrected by the change-log line
+`- YYYY-MM-DD: raised {sha7} from {class} to {class} by {person}: {reason}`
+and the handoff it now needs. The row's class follows the last such line,
+over its cell, and a raise on a closed record sets `Status` back to `open`
+in the same edit. `check` and `commit` gate the first publication only: a
+published edit is committed with git directly, since the first change-log
+line keeps the counts of the day it was written.
 
 ## The claim test
 

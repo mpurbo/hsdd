@@ -403,3 +403,42 @@ test("no em dash and no banned phrase in the added text", () => {
     assert.ok(!banned.test(t), `${n}: banned phrase`);
   }
 });
+
+// Task 10 fix round 1: closure, {sha}, the head, the raised line, the glob.
+const sweepBullet = () => norm(CHECKPOINT.slice(CHECKPOINT.indexOf("*Sweep records:*"), CHECKPOINT.indexOf("3. **Emit the progress report**")));
+
+test("A: the sweep bullet inlines the closure rule and the Produced line shape", () => {
+  const b = sweepBullet();
+  assert.ok(b.includes("§5.4"));
+  assert.ok(b.includes("the record closes when every `retro` and `intake` row, its class read as above, has its product named in `## Produced` (a phase id whose Scope cites the record and lists the sha; an intake record whose `**Request:**` names the sha) and no `unplaced` row remains"));
+  assert.ok(b.includes("Closure means the commits are attributed, not that the retro phases are done"));
+  assert.ok(b.includes("`- H{n}: {product}` replacing `none`"));
+  assert.ok(!b.includes("every listed phase is done"));
+});
+
+test("B: {sha} is defined", () => {
+  assert.ok(norm(CHECKPOINT).includes("`{sha}` is the newest record's `{to}`, or with no record the last commit of the launch, which the step's owner names, since `{from}` itself is not swept"));
+});
+
+test("C: attribution runs over the head of the repository's own main branch", () => {
+  const t = norm(CHECKPOINT);
+  assert.ok(t.includes("among the commits reachable from the head of the repository's own main branch, as the record's `**Repository:**` line names it, side branches included"));
+  assert.ok(!t.includes("a commit on the main line that is a merge"));
+});
+
+test("D: the raised line decides a row's class, in the checkpoint and in sweep.md", () => {
+  const b = sweepBullet();
+  assert.ok(b.includes("A row's class is the last `- YYYY-MM-DD: raised {sha7} from {class} to {class} by {person}: {reason}` change-log line's, over its cell"));
+  assert.ok(b.includes("any of its shas"));
+  const s = norm(SWEEP);
+  assert.ok(s.includes("`- YYYY-MM-DD: raised {sha7} from {class} to {class} by {person}: {reason}`"));
+  assert.ok(s.includes("The row's class follows the last such line, over its cell"));
+  assert.ok(s.includes("a raise on a closed record sets `Status` back to `open` in the same edit"));
+  assert.ok(SWEEP.trimEnd().split("\n").length < 200);
+});
+
+test("E: the glob is anchored on the date and the old one is gone", () => {
+  assert.ok(CHECKPOINT.includes("`hsdd/management/YYYY-MM-DD-sweep-*.md`"));
+  assert.ok(!CHECKPOINT.includes("*-sweep-*"));
+  assert.ok(!norm(CHECKPOINT).includes("found by `YYYY-MM-DD-sweep-` at the start of the name"));
+});

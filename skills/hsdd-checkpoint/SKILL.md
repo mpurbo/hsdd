@@ -178,14 +178,18 @@ be standing in produces a progress report that undercounts the project.
      claim; contract-surface drift in both directions (code behavior the
      contract does not promise, contract promises the code abandoned);
      scope creep (code with no phase). Read every sweep record of
-     each implementation repository. After launch, a commit on the main
-     line that is a merge, is governance-only, names a phase id, or is a
+     each implementation repository. After launch, among the commits
+     reachable from the head of the repository's own main branch, as the
+     record's `**Repository:**` line names it, side branches included, a
+     commit that is a merge, is governance-only, names a phase id, or is a
      row in a sweep record is attributed; a `log` row needs nothing
      further, and a commit trailer attributes nothing on its own. Every
      other commit since the newest record's `{to}`, or since launch when
      there is none, is one **backfill** finding per repository naming the
      unswept range, whose plan step is `/hsdd-intake sweep --from {sha}`,
-     never a retro phase per commit. A backfill unclosed across two
+     never a retro phase per commit. `{sha}` is the newest record's `{to}`,
+     or with no record the last commit of the launch, which the step's
+     owner names, since `{from}` itself is not swept. A backfill unclosed across two
      consecutive checkpoints escalates in the register, the same shape as
      two consecutive reds on a milestone gate. Also audit the profile's history
      rules: a branch pair spanning this repo and the spec repo that landed
@@ -232,21 +236,28 @@ be standing in produces a progress report that undercounts the project.
      the counts of open and closed intakes; an open intake whose
      `## Produced` is still empty two checkpoints after its date is a
      finding (the handoff never landed).
-   - *Sweep records:* read every `hsdd/management/*-sweep-*.md` found by
-     `YYYY-MM-DD-sweep-` at the start of the name. For each open record,
-     append to `## Produced` the phase ids whose Scope cites it and the
-     intake records whose `**Request:**` names one of its `intake` shas,
-     and tick it `closed (date)` when spec v0.13 §5.4 holds (set
-     `**Status:** closed (YYYY-MM-DD)` and append to the record's change
-     log). File as findings an `unplaced` row (plan step: `hsdd-adopt` on
-     the paths, or a person placing it), a record still open two
-     checkpoints after its date with a handoff not landed, a sha two
-     records both classify, and two consecutive records of one repository
-     whose ranges leave a gap. Sweep records run by delegation since the
-     last checkpoint join the delegated sign-offs' finding. Where
-     `conventions.md` still carries the user's guide's `## Manual lane
-     (project convention)` paragraph, this rule takes precedence over it,
-     and the paragraph is filed as a finding whose step removes it.
+   - *Sweep records:* read every `hsdd/management/YYYY-MM-DD-sweep-*.md`.
+     A row's class is the last `- YYYY-MM-DD: raised {sha7} from {class} to
+     {class} by {person}: {reason}` change-log line's, over its cell. For
+     each open record, append to `## Produced`, one per line as
+     `- H{n}: {product}` replacing `none`, the phase ids whose Scope cites
+     the record and the intake records whose `**Request:**` names any of
+     its shas. By spec v0.13 §5.4 the record closes when every `retro` and
+     `intake` row, its class read as above, has its product named in
+     `## Produced` (a phase id whose Scope cites the record and lists the
+     sha; an intake record whose `**Request:**` names the sha) and no
+     `unplaced` row remains. Closure means the commits are attributed, not
+     that the retro phases are done. Tick it by setting `**Status:**
+     closed (YYYY-MM-DD)` and appending to the record's change log. File as
+     findings an `unplaced` row (plan step: `hsdd-adopt` on the paths, or a
+     person placing it), a record still open two checkpoints after its date
+     with a handoff not landed, a sha two records both classify, and two
+     consecutive records of one repository whose ranges leave a gap. Sweep
+     records run by delegation since the last checkpoint join the
+     delegated sign-offs' finding. Where `conventions.md` still carries the
+     user's guide's `## Manual lane (project convention)` paragraph, this
+     rule takes precedence over it, and the paragraph is filed as a finding
+     whose step removes it.
 3. **Emit the progress report** (shape below). The only admissible "done"
    is: implemented, gate command green, verification doc merged to the spec
    repo's main branch, its Reviewer naming a person or an agent signing for
