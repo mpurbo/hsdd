@@ -139,7 +139,7 @@ re-implementing them; `hsdd-config` wires them into each phase's coding session,
 | `hsdd-reconcile` | Drain the pending governance updates emitted by phase planning: finalize contract phase ids, resolve contract-gap requests with you, and regenerate the registries. Runs on the root lineage after parallel plan branches merge. |
 | `hsdd-config` | Before each phase, write one self-contained phase context (the phase, the text of the contracts it touches, its decisions, pinned links) and wrap it for the project's coding method: OpenSpec's `config.yaml`, or a spec for superpowers' `writing-plans`. |
 | `hsdd-adopt` | Bring an existing codebase into the tree: script-extracted seams, as-built node specs with an `## Observed surface` section, and `v0` contracts describing current behavior. Brownfield's entry point. |
-| `hsdd-intake` | Route an incoming change request (PRD, RFC, ticket, incident) into the existing tree: classify it, detect collisions with open intakes, write the routing record, and hand off. A PRD is never a root. |
+| `hsdd-intake` | Request mode: classify an incoming change request (PRD, RFC, ticket, incident), detect collisions with open intakes, route it into the existing tree, write the routing record and hand off; answer a request below the line with a node and a trailer. Sweep mode: sweep the shipped commits after launch into a dated record, one row per commit. A PRD is never a root. |
 | `hsdd-checkpoint` | Run the weekly (or context-triggered) evidence pass across the spec repo and every implementation repo, emitting a progress report, a revised execution plan, a regenerated atlas, and ticked milestone gates. One pass, four views; every finding becomes a plan step or an explicit waiver. |
 | `hsdd-milestone` | Generate a campaign's stakeholder milestone document once every leaf-parent in its scope is phase-planned. Each checkpoint is a demo and a gate; externally-gated work sits in a contingent tail outside the launch gate. Re-baseline the document when the dates move. |
 | `hsdd-summary` | Render offline HTML reading aids: the plan page (root to phase cards, for a reviewer, a stakeholder or an implementer) and the checkpoint page (the newest progress report and execution plan, for the lead running the sync, each lane's executor, and stakeholders). |
@@ -176,6 +176,7 @@ not complete, phases complete.
 ```text
 hsdd-auto (unattended) -> runs the chain above, records every decision
 hsdd-seal (after release) -> closes the ledger of a stale tree by script
+hsdd-intake sweep (after launch) -> attributes shipped commits, one row each
 ```
 
 Run `openspec init` once, at the repo root (the directory that holds `hsdd/`,
@@ -205,6 +206,18 @@ segment) and `hsdd/judgement/` (the decision ledger, the run log, your
 sitting over the ledger: the report's "Decisions to look at first" section
 lists every answer the run gave on your behalf. Nothing starts a run on a
 timer. See the [v0.11 specification](spec/hsdd-spec-v0_11.md).
+
+## Small changes after launch
+
+After launch most changes are small, and a phase costs the same for a font
+size as for a feature. `hsdd-intake` takes them in either tense. Ask first,
+and a request that moves no route, schema, topic or table and stales no
+claim of its node is class `manual`: a node and an `HSDD-Node:` trailer, no
+record. Already merged, `/hsdd-intake sweep` reads the main line from the end
+of the previous sweep to the head and writes one dated sweep record, one row
+per commit: a `log` row costs that row, `retro` rows cost one phase per node
+per record, an `intake` row goes back through request mode, and an `unplaced`
+row goes to the owner. See the [v0.13 specification](spec/hsdd-spec-v0_13.md).
 
 ## Sealing a released tree
 
@@ -249,6 +262,9 @@ do. Every write is a dry run until `--write`. See the
   `hsdd-auto`; read it with v0.10.
 - [v0.12 specification](spec/hsdd-spec-v0_12.md): the delta that adds
   `hsdd-seal` and the dropped phase status; read it with v0.10 and v0.11.
+- [v0.13 specification](spec/hsdd-spec-v0_13.md): the delta that gives
+  `hsdd-intake` the `manual` class and sweep mode; read it with v0.10, v0.11
+  and v0.12.
 - [User's guide](docs/users-guide.md): three worked examples (single-level,
   multi-level and brownfield), then running the project week to week,
   unattended runs, and what to do when a project drifts outside the method.

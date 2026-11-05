@@ -17,7 +17,7 @@ full checkout of this repository.
 | 4 | Plan phases | The phase plan, Phase Equivalent sizing, review tiers, the governance freeze and reconcile. |
 | 5 | Execute a phase | The phase context switch, OpenSpec or superpowers, the verification doc and learnings, mid-phase renegotiation. |
 | 6 | Adopt a codebase | Seam extraction, the confirmation stop, as-built specs, `v0` contracts, why adoption stays shallow. |
-| 7 | Route every change | A PRD is never a root: intake classes, promotion, collisions, the mixed tree, the legal bypass. |
+| 7 | Route every change | A PRD is never a root: intake classes, promotion, collisions, the mixed tree, the legal bypass, small changes after launch. |
 | 8 | Evidence and milestones | Roles, the weekly checkpoint, evidence up and work down, milestones. |
 | 9 | Get started | The skill map, install and first prompts, what HSDD claims and does not. |
 | 10 | Run unattended | `hsdd-auto`: who does what in a run, the two modes, the decision record, the stop policy, and reviewing a segment in one sitting. |

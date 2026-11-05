@@ -7,6 +7,114 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.13.0] - Unreleased
+
+Small changes after launch. `hsdd-intake` takes a change in either tense: a
+request below the line gets a node and a commit trailer and no record, and a
+sweep attributes shipped commits in a dated record, one row per commit,
+handing off only what earned a phase or an intake. The skill count stays
+thirteen.
+
+Specification: `spec/hsdd-spec-v0_13.md`.
+
+### Upgrading from 0.12.0
+
+- Reinstall the thirteen skills. No existing artifact is rewritten.
+- The `manual` class applies from the next request forward. No record is
+  written for it, so nothing existing changes.
+- Sweep mode and `hsdd/scripts/sweep/` are opt-in. A project that never
+  sweeps is unaffected: its post-launch commits with no phase are backfill
+  findings as before, and the finding's step now names a sweep.
+- The sweep record is a new management document outside the chain rules, and
+  the reading aids ignore it by its slug.
+- The `commit` authority is a new value of an existing field; existing
+  records are unchanged.
+- A retro phase over several commits is forward-only: retro phases already
+  planned stand.
+- A commit whose retro phase cites it by sha is attributed. A retro phase
+  that cites only a finding id attributes nothing, so start the first sweep
+  after such commits.
+- The amended scripts rule changes nothing on a project: request mode runs
+  no script.
+- A project that adopted the manual lane from the 0.12 user's guide is
+  conformant: its trailers are read as hints, its same-day retro phases
+  stand, and its first sweep names its own `--from`. Remove the
+  `## Manual lane` paragraph from `hsdd/conventions.md` if you added it. It
+  conflicts with the checkpoint's attribution rule, and the first checkpoint
+  after the upgrade files it as a finding whose step removes it.
+
+### Added
+
+- **The `manual` class** of `hsdd-intake` (spec v0.13 chapter 3): after
+  launch, a request that, as described, moves no route, schema, topic or
+  table, stales no claim of the owning node's closure, and lands inside one
+  node. The answer is the node and the commit trailer
+  `HSDD-Node: {node-id}`, no record; the change ships on the implementation
+  repository's main line and the sweep attributes it. When the description
+  does not let the skill tell, the class is another one. `manual` is not an
+  unattended class: under `hsdd-auto` such a request is routed `local` and
+  the decision recorded.
+- **Sweep mode** of `hsdd-intake` (chapters 4, 6 and 7): `/hsdd-intake sweep`
+  reads one contiguous range of an implementation repository's main line,
+  from the end of the previous sweep to the head. `sweep.mjs` sets aside
+  merges, governance-only commits and attributed commits, applies the
+  surface test to the rest and proposes a node for each. The agent applies
+  the claim test, whether the diff makes a claim of the owning node's
+  closure false or stale. A row's class is `log`, `retro`, `intake` or
+  `unplaced`. `draft` writes the record, `check` reads it back against a
+  fresh draft, and `commit` commits it alone and never pushes; `check` and
+  `commit` gate first publication. The procedure is
+  `skills/hsdd-intake/sweep.md`, read in sweep mode only. The scripts are
+  copied verbatim to `hsdd/scripts/sweep/`; eight of them are copies of
+  `hsdd-adopt`'s and `hsdd-summary`'s, kept identical by a test.
+- **The sweep record** (chapter 5):
+  `hsdd/management/YYYY-MM-DD-sweep-{repo}-{to7}.md`, one per repository per
+  run, one row per candidate. A `log` row is the whole record of its commit.
+  The `retro` rows hand off one phase per node per record, with its
+  reconcile and a retroactive verification doc signed by delegation; each
+  `intake` row hands off one run of request mode; `unplaced` rows are listed
+  for the owner. The record closes when its handoffs have landed and no
+  `unplaced` row remains.
+- **The `commit` authority** (§6.2): a shipped commit given to request mode
+  as `{repo}@{sha}`, one commit per request, never `manual`; the phases it
+  produces are retro phases. It is an authority of request mode only:
+  `hsdd-spec`'s root `## Sources` list and `hsdd-auto`'s `authority` enum
+  are unchanged.
+- README: a "Small changes after launch" section; the interactive guide's
+  class table gains `manual` and its skill map describes both modes.
+
+### Changed
+
+- `hsdd-checkpoint`: the backfill step. The code-vs-plan pass reads every
+  sweep record; a row in one attributes a commit, and a commit trailer
+  attributes nothing on its own. Every other commit since the newest
+  record's `{to}`, or since launch when there is none, is one backfill
+  finding per repository naming the unswept range, whose plan step is
+  `/hsdd-intake sweep --from {sha}`, never a retro phase per commit. The
+  intake-record pass closes sweep records and files as findings an
+  `unplaced` row, a record open two checkpoints after its date with a
+  handoff not landed, a sha two records both classify, and two consecutive
+  records whose ranges leave a gap. Sweep records run by delegation join the
+  delegated sign-offs' finding, and a `## Manual lane` paragraph in
+  `conventions.md` is filed as a finding whose step removes it.
+- `hsdd-phase-plan`: append mode's retro phase may record several commits
+  from one sweep record, one retro phase per node per record and never one
+  per commit, review tier gate-only unless the prompt says otherwise. The
+  phase sizing ceiling does not apply to a retro phase.
+- The scripts rule (spec v0.10 §16.3, §18.1): "bundled with a new skill
+  only; no script changes an existing skill's behavior" becomes "bundled
+  with a new skill or a new mode of an existing skill; no script changes an
+  existing mode's behavior".
+- `hsdd-spec`'s conventions template: the layout names
+  `hsdd/scripts/sweep/`, `hsdd/management/` names `hsdd-intake` as the writer
+  of sweep records, and the profile section's repository list uses the names
+  sweep records use.
+- The user's guide: the small-fixes section is rewritten over the two
+  tenses, its retro-phase prompts and the `## Manual lane` block are gone,
+  and "Outside the loop" names `manual` and the sweep. `HSDD-Kind:` is read
+  by nothing and the guide stops recommending it; a project that writes it
+  loses nothing.
+
 ## [0.12.0] - Unreleased
 
 Sealing a released tree. A system that shipped and that QA verified can

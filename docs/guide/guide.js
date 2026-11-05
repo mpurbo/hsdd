@@ -96,7 +96,7 @@ const GLOSSARY = [
   ["v0", "v0", "The version of an adopted contract: observed behavior, warts included. It is permanent. A contract moves to v1 only when its interface is genuinely redesigned."],
   ["completeness", "Observed completeness", "The required section of a v0 contract that names what its fixtures do not reach."],
   ["intake", "Intake record", "The dated record hsdd-intake writes for each change request before any handoff: class, landing nodes, contracts, promotions, collisions, routing. Never superseded; records accumulate, one per request."],
-  ["backfill", "Backfill", "The finding filed when code ships with no phase, such as a hotfix. It becomes a retro phase with a verification doc marked retroactive."],
+  ["backfill", "Backfill", "The finding filed when commits ship with no phase and no sweep row, such as a hotfix. Its step is a sweep over the unswept range, and a retro row in that sweep is what earns a retro phase, with a verification doc marked retroactive."],
   ["checkpoint", "Checkpoint", "hsdd-checkpoint: one evidence pass over the spec repo and every implementation repo, usually weekly, producing a progress report, an execution plan, the atlas, and ticked milestone gates."],
   ["atlas", "Atlas", "hsdd/management/atlas.md: a regenerated bird's-eye view of the tree with phase status, the contract graph, and ADR coverage. Derived only; if it disagrees with the artifacts, the atlas is wrong."],
   ["milestone", "Milestone", "A stakeholder checkpoint: a demo someone can watch work, plus a gate of yes/no checkboxes. Work that waits on outside parties goes to a contingent tail outside the launch gate."],
@@ -119,7 +119,7 @@ const FAQ = [
   ["What if a contract turns out wrong in the middle of a phase?", "Pause at a task boundary and write the gap into the verification doc's Outstanding section. Renegotiate it at the root through hsdd-contract, bring the change into the phase's branch, re-run the phase switch, and resume. The agent never improvises around the contract."],
   ["Can I use HSDD on an existing codebase?", "Yes. hsdd-adopt extracts the seams by script, proposes a shallow tree for you to confirm, writes as-built node specs and v0 contracts, and stops. Every change then enters through hsdd-intake, and a node is decomposed further only when a change lands on it."],
   ["Why not reverse-engineer the whole codebase into specs?", "Cost and trust. Shallow adoption reads structure, not code, so its cost scales with the number of seams rather than lines of code. And nobody reads 500 generated specs, yet every later agent session would treat them as authoritative. HSDD writes a node's spec when someone is about to work on that node and confirms it."],
-  ["What about hotfixes that skip the process?", "Ship the fix. The next checkpoint finds code that no phase covers and files a backfill finding; a retro phase with a retroactive verification doc closes it. A backfill left open for two checkpoints in a row escalates. A recorded bypass beats a hidden one."],
+  ["What about hotfixes that skip the process?", "Ship the fix, then sweep it. A commit with no phase and no sweep row is a backfill finding at the next checkpoint, and the finding's step is a sweep over the unswept range. The sweep gives each commit a row, and only a retro row earns a retro phase with a retroactive verification doc. A backfill left open for two checkpoints in a row escalates. A recorded bypass beats a hidden one."],
   ["What does done mean?", "A phase is done when its verification doc, signed by a human, is merged to the spec repo's main branch. Progress reports list anything else as a claim, not as done."],
   ["Our backend and frontend live in separate repos.", "Use the standalone-spec-repo profile. The tree lives in its own repo, mounted as a git submodule at hsdd/ in each implementation repo, so every path stays the same. Skills run from an implementation repo, where the code they reason about is present."],
   ["Is there a CLI or a server to run?", "No. HSDD is a set of agent skills with optional slash commands. Scripts exist only where a skill bundles them: the registry generator, the seam extractor, the reading-aid renderer, and hsdd-auto's run scripts. Nothing starts a run on a timer."],
@@ -212,6 +212,7 @@ const CLASSES = [
   ["cross-node", "touches several nodes' surfaces", "hsdd-contract bump and/or hsdd-adr, then phase-plan each node"],
   ["new-capability", "needs a node that does not exist", "hsdd-spec graft mode on the existing parent, then phase-plan the new child"],
   ["structural", "the tree's shape is wrong for this change", "stop: a human decision, with the options written down"],
+  ["manual", "after launch, moves no surface and stales no claim", "no record: a node and a trailer; the sweep attributes the commit"],
 ];
 
 const SKILLS = [
@@ -229,7 +230,7 @@ const SKILLS = [
     ["hsdd-config", "Before each phase, write its self-contained context and wrap it for OpenSpec or superpowers. Its command is /hsdd-phase.", "/hsdd-phase acme.backend.auth.2"],
   ]],
   ["Change", [
-    ["hsdd-intake", "Route a change request into the existing tree: classify it, detect collisions, write the record, hand off.", "Here's the payout-scheduling PRD, docs/prd-payout-scheduling.md. Where does it go?"],
+    ["hsdd-intake", "Two modes. Request mode routes a change request into the existing tree: classify it, detect collisions, write the record, hand off; a request below the line gets a node and a commit trailer, no record. Sweep mode attributes shipped commits after launch in a dated record, one row per commit.", "Here's the payout-scheduling PRD, docs/prd-payout-scheduling.md. Where does it go?"],
     ["hsdd-seal", "Seal a released tree whose artifacts went stale, by script: a plan with a default class per phase, your edit of that one field, then retroactive sign-offs, dropped phases, closed records and the archived campaign. No model reads the tree.", "node hsdd/scripts/seal/seal.mjs plan --release 2.4.0 --date 2026-09-15 --owner \"Dewi\" --evidence \"QA regression 2.4.0\""],
   ]],
   ["Run", [
@@ -952,7 +953,7 @@ function mixedView() {
   return `${svg("0 0 760 156", "A mixed tree: as-built, promoted and grafted nodes side by side", out)}
     <div class="cols">
       <div><p class="col-title">Drift, at every checkpoint</p>${flow([["k-obs", "Re-extract per node", "the scope in its modules line"], ["k-gate", "billing: routes 2 → 3", "a finding, not an error"], ["k-done", "Plan step", "a reviewed re-render; on a promoted node, code that no phase covers is a backfill"]])}</div>
-      <div><p class="col-title">The legal bypass</p>${flow([["k-bad", "Hotfix ships", "no phase"], ["k-gate", "Checkpoint finds it", "code with no phase: backfill"], ["k-done", "Retro phase", "verification doc marked retroactive"]])}<p class="caveat">A backfill left open for two checkpoints in a row escalates. Here phases .1-.3 came from the scheduling intake, .4-.5 from the payout hold, and the hotfix became retro phase .6.</p></div>
+      <div><p class="col-title">The legal bypass</p>${flow([["k-bad", "Hotfix ships", "no phase"], ["k-gate", "Checkpoint finds it", "no phase, no sweep row: backfill"], ["k-process", "Sweep", "the finding's step: one row per commit"], ["k-done", "Retro phase", "for a retro row; verification doc marked retroactive"]])}<p class="caveat">A backfill left open for two checkpoints in a row escalates. Here phases .1-.3 came from the scheduling intake, .4-.5 from the payout hold, and the hotfix's retro row earned retro phase .6.</p></div>
     </div>`;
 }
 
