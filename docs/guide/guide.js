@@ -212,6 +212,7 @@ const CLASSES = [
   ["cross-node", "touches several nodes' surfaces", "hsdd-contract bump and/or hsdd-adr, then phase-plan each node"],
   ["new-capability", "needs a node that does not exist", "hsdd-spec graft mode on the existing parent, then phase-plan the new child"],
   ["structural", "the tree's shape is wrong for this change", "stop: a human decision, with the options written down"],
+  ["manual", "after launch, moves no surface and stales no claim", "no record: a node and a trailer; the sweep attributes the commit"],
 ];
 
 const SKILLS = [
@@ -229,7 +230,7 @@ const SKILLS = [
     ["hsdd-config", "Before each phase, write its self-contained context and wrap it for OpenSpec or superpowers. Its command is /hsdd-phase.", "/hsdd-phase acme.backend.auth.2"],
   ]],
   ["Change", [
-    ["hsdd-intake", "Route a change request into the existing tree: classify it, detect collisions, write the record, hand off.", "Here's the payout-scheduling PRD, docs/prd-payout-scheduling.md. Where does it go?"],
+    ["hsdd-intake", "Two modes. Request mode routes a change request into the existing tree: classify it, detect collisions, write the record, hand off; a request below the line gets a node and a commit trailer, no record. Sweep mode attributes shipped commits after launch in a dated record, one row per commit.", "Here's the payout-scheduling PRD, docs/prd-payout-scheduling.md. Where does it go?"],
     ["hsdd-seal", "Seal a released tree whose artifacts went stale, by script: a plan with a default class per phase, your edit of that one field, then retroactive sign-offs, dropped phases, closed records and the archived campaign. No model reads the tree.", "node hsdd/scripts/seal/seal.mjs plan --release 2.4.0 --date 2026-09-15 --owner \"Dewi\" --evidence \"QA regression 2.4.0\""],
   ]],
   ["Run", [

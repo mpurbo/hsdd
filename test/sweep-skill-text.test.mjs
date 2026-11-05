@@ -442,3 +442,231 @@ test("E: the glob is anchored on the date and the old one is gone", () => {
   assert.ok(!CHECKPOINT.includes("*-sweep-*"));
   assert.ok(!norm(CHECKPOINT).includes("found by `YYYY-MM-DD-sweep-` at the start of the name"));
 });
+
+// Task 11: what users read. The guide, the README, the changelog and the
+// interactive guide tell the two tenses, and the worked example is the tool's.
+const GUIDE = read("docs/users-guide.md");
+const README = read("README.md");
+const CHANGELOG = read("CHANGELOG.md");
+const GUIDE_JS = read("docs/guide/guide.js");
+const GUIDE_README = read("docs/guide/README.md");
+
+// From `from` up to the next `to`, or "" when either is absent.
+const between = (text, from, to) => {
+  const i = text.indexOf(from);
+  const j = i < 0 ? -1 : text.indexOf(to, i + from.length);
+  return j < 0 ? "" : text.slice(i, j);
+};
+const OUTSIDE = between(GUIDE, "\n## Outside the loop\n", "\n### Estimating in PE before the first spec\n");
+const SMALL_FIXES = between(GUIDE, "\n### Small fixes and small requests on a launched system\n", "\n### Sealing a released tree\n");
+const ASK_FIRST = between(SMALL_FIXES, "\n**Ask first.**", "\n**A request above the line**");
+const ABOVE_THE_LINE = between(SMALL_FIXES, "\n**A request above the line**", "\n**Already made.**");
+const ALREADY_MADE = between(SMALL_FIXES, "\n**Already made.**", "\n**Who runs it.**");
+const WHO_RUNS_IT = between(`${SMALL_FIXES}\0`, "\n**Who runs it.**", "\0");
+const UPGRADE = between(GUIDE, "\n### From 0.12.0 to 0.13.0\n", "\n### From 0.11.0 to 0.12.0\n");
+const ENTRY = between(CHANGELOG, "\n## [0.13.0] - Unreleased\n", "\n## [0.12.0]");
+const README_SMALL = section(README, "## Small changes after launch");
+const README_ROW = README.split("\n").find((l) => l.startsWith("| `hsdd-intake` |")) ?? "";
+const README_SPEC = README.split("\n").find((l) => l.startsWith("- [v0.13 specification](spec/hsdd-spec-v0_13.md):")) ?? "";
+const CLASSES_JS = between(GUIDE_JS, "const CLASSES = [", "\n];");
+const SKILL_MAP_ROW = GUIDE_JS.split("\n").find((l) => l.trim().startsWith('["hsdd-intake", ')) ?? "";
+const CHAPTER_7_ROW = GUIDE_README.split("\n").find((l) => l.startsWith("| 7 |")) ?? "";
+
+// v0.13 §9.1, each row's effect on a project.
+const UPGRADE_EFFECTS = [
+  "thirteen skills",
+  "`manual` class",
+  "opt-in",
+  "backfill findings as before",
+  "names a sweep",
+  "the reading aids ignore it",
+  "`commit`",
+  "retro phases already planned stand",
+  "request mode runs no script",
+  "read as hints",
+  "same-day retro phases stand",
+  "first sweep names its own `--from`",
+  "`## Manual lane` paragraph",
+  "the first checkpoint after the upgrade files it as a finding whose step removes it",
+];
+
+test("the README's hsdd-intake row names both modes and the count stays thirteen", () => {
+  for (const s of ["Request mode", "Sweep mode", "answer a request below the line with a node and a trailer", "sweep the shipped commits after launch", "A PRD is never a root."]) {
+    assert.ok(README_ROW.includes(s), s);
+  }
+  assert.ok(README.includes("All thirteen HSDD skills"));
+  assert.ok(!/fourteen/i.test(README));
+  assert.equal(tableRows(section(README, "## The skill set")).length, 14, "the header and thirteen skills");
+});
+
+test("the README's workflow block, small-changes section and documents list", () => {
+  const block = between(README, "hsdd-auto (unattended) ->", "\n```");
+  assert.ok(block.split("\n").includes("hsdd-intake sweep (after launch) -> attributes shipped commits, one row each"), block);
+  assert.ok(README.includes(`${README_SMALL}\n## Sealing a released tree\n`), "the section comes right before the seal's");
+  assert.equal(README_SMALL.trim().split(/\n\s*\n/).length, 2, "a heading and one paragraph");
+  const t = norm(README_SMALL);
+  for (const s of ["`manual`", "`HSDD-Node:`", "`/hsdd-intake sweep`", "`log`", "`retro`", "`intake`", "`unplaced`", "(spec/hsdd-spec-v0_13.md)"]) assert.ok(t.includes(s), s);
+  assert.ok(README.indexOf("- [v0.12 specification]") < README.indexOf(README_SPEC) && README_SPEC.length > 0);
+});
+
+test("Outside the loop sorts its four situations", () => {
+  const t = norm(OUTSIDE);
+  assert.ok(t.includes("Two of them run on the skills as they are"));
+  assert.ok(t.includes("The third is `hsdd-intake`'s `manual` class and sweep mode"));
+  assert.ok(t.includes("The fourth has a skill of its own, `hsdd-seal`"));
+  assert.ok(t.includes("in one case a section you add to `hsdd/conventions.md`"));
+  assert.ok(!t.includes("Three of them"));
+});
+
+test("the small-fixes section keeps the dividing line and the Which node? prompt, then its parts in order", () => {
+  assert.ok(SMALL_FIXES.includes("The dividing line is the contract surface, not the diff size. A change that\nmoves no route, schema, topic or table is invisible to every other node by\nconstruction, so the tree needs one thing from it: which node it happened\nin. A change that moves one is not small whatever its line count; it goes\nthrough `hsdd-intake` and a contract bump."));
+  assert.ok(SMALL_FIXES.includes("**Which node?** When you do not know:\n\n```text\nRead hsdd/management/atlas.md (hsdd/spec/ if there is no atlas). Which node\nowns these paths: src/payouts/schedule.ts,\nsrc/payouts/__tests__/schedule.test.ts? Use each node's Isolation strategy,\nits phases' Scope lines, and any `modules:` line under an Observed surface.\nAnswer with one node id and the phases whose Scope names these files, or\nsay the paths span two nodes and name both. Write nothing.\n```\n\nTwo nodes is the first sign the change is not small."));
+  const at = ["**Which node?**", "\n**Ask first.**", "\n**A request above the line**", "\n**Already made.**", "\n**Who runs it.**"].map((s) => SMALL_FIXES.indexOf(s));
+  assert.ok(at.every((p) => p >= 0), `parts at ${at}`);
+  assert.deepEqual(at, [...at].sort((a, b) => a - b));
+});
+
+test("the opening states both tenses, the second test and the as-built rule", () => {
+  const t = norm(between(SMALL_FIXES, "\n### Small", "\n**Which node?**"));
+  assert.ok(t.includes("either tense"));
+  assert.ok(t.includes("Before it, a fix belongs to the phase it fixes, on that phase's branch, and backfill does not exist yet."));
+  assert.ok(t.includes("The second test is the claim"));
+  assert.ok(t.includes("On an as-built node the second test is not applied: only the surface decides"));
+});
+
+test("Ask first: a route answered manual, with the trailer", () => {
+  const t = norm(ASK_FIRST);
+  assert.ok(ASK_FIRST.includes("```text\n/hsdd-intake route docs/tickets/PAY-431.md (ticket):"));
+  assert.ok(t.includes("class `manual`"));
+  assert.ok(t.includes("writes nothing under `hsdd/`"));
+  assert.ok(ASK_FIRST.includes("\nNode: acme.backend.payouts\n"), "the report names the node");
+  assert.ok(ASK_FIRST.includes("\nTrailer: HSDD-Node: acme.backend.payouts\n"), "and the trailer");
+  assert.ok(ASK_FIRST.includes("\n\nHSDD-Node: acme.backend.payouts\n```"), "the commit carries it as a trailer");
+  assert.ok(t.includes("attributed by /hsdd-intake sweep after it merges"), "and how it is attributed");
+  assert.ok(t.includes("moves a route, schema, topic or table"), "and the condition that voids it");
+  assert.ok(t.includes("attributes nothing on its own"));
+  assert.ok(t.includes("the phase is the safe answer"));
+  assert.ok(t.includes("`/hsdd-auto intake` routes the same request `local`"));
+});
+
+test("A request above the line is the PAY-412 flow, unchanged", () => {
+  for (const s of [
+    "**A request above the line** (a ticket, a product ask) goes through intake\nas always; the saving is in what you ask the next skills for. Route it:",
+    "> `/hsdd-intake` route `docs/tickets/PAY-412.md` (ticket): merchants want\n> the payout preview to show the fee line. Small, inside payouts.",
+    "/hsdd-phase-plan acme.backend.payouts per\nhsdd/management/2026-11-02-intake-pay-412.md: append the phases this ticket\nneeds.",
+    "Write hsdd/verify/acme.backend.payouts.9.verification.md from\nhsdd/templates/verification.md for the fix in commit 8c1e4f2:",
+    "The next checkpoint appends the phase to the record's `## Produced`, ticks\nthe record closed, and lists the delegated sign-off for the owner to\nratify.",
+    "> `/hsdd-auto intake docs/tickets/PAY-412.md --authority ticket --stop-policy decide-and-record`",
+  ]) assert.ok(ABOVE_THE_LINE.includes(s), s);
+});
+
+test("the worked record's table has the record's shape, one row per class", () => {
+  assert.ok(ALREADY_MADE.includes("| Commit | Node | Class | Reason | Subject |"));
+  const rows = tableRows(ALREADY_MADE).filter((l) => /^\| [0-9a-f]{7} \|/.test(l)).map((l) => l.split("|").slice(1, -1).map((c) => c.trim()));
+  assert.deepEqual(rows.map((r) => r[2]), ["log", "retro", "intake", "unplaced"]);
+  for (const r of rows) assert.equal(r.length, 5, r.join(" | "));
+  const [log, retro, intake, unplaced] = rows;
+  assert.deepEqual([log[1], log[3]], ["acme.backend.payouts", "none"]);
+  assert.match(retro[3], /^acme\.backend\.payouts\.9 Verification: ".+"$/);
+  assert.match(intake[3], /^route added [A-Z]+ \/\S+$/, "surface.mjs's reason");
+  assert.deepEqual([unplaced[1], unplaced[2]], ["none", "unplaced"]);
+  assert.match(unplaced[3], /^src\/\S+$/, "the paths");
+  assert.ok(ASK_FIRST.includes(`\n${log[4]}\n\nHSDD-Node:`), "the log row is the commit Ask first made");
+  assert.equal(new Set(rows.map((r) => r[0])).size, 4);
+});
+
+test("Already made: what each class costs, one range, and what gates publication", () => {
+  const t = norm(ALREADY_MADE);
+  const cost = (cls) => tableRows(ALREADY_MADE).find((l) => l.startsWith(`| \`${cls}\` |`)) ?? "";
+  assert.ok(cost("log").includes("one row"));
+  for (const s of ["one phase per node per record", "reconcile", "retroactive verification doc signed by delegation"]) assert.ok(cost("retro").includes(s), s);
+  for (const s of ["request mode", "authority `commit`"]) assert.ok(cost("intake").includes(s), s);
+  for (const s of ["no handoff", "finding"]) assert.ok(cost("unplaced").includes(s), s);
+  assert.ok(t.includes("legal bypass"));
+  assert.ok(t.includes("one contiguous range, from the end of the previous sweep to the head, not one range per problem"));
+  assert.ok(t.includes("name the start with `--from`, which is itself not swept"));
+  assert.ok(t.includes("A `--from` later than the previous record's end is refused"));
+  assert.ok(t.includes("`check` and `commit` gate first publication"));
+  assert.ok(t.includes("hsdd/management/2026-11-12-sweep-acme-be-e91b2d4.md"));
+});
+
+test("Who runs it: a developer, a lead, delegation, and the checkpoint's cadence", () => {
+  const t = norm(WHO_RUNS_IT);
+  assert.ok(t.includes("a developer after merging"));
+  assert.ok(t.includes("a lead before a checkpoint"));
+  assert.ok(t.includes('--run-by "Claude for {person} (delegated)"'));
+  assert.ok(t.includes("When nobody reads the record"));
+  assert.ok(t.includes("`/hsdd-intake sweep --from {sha}`"));
+  assert.ok(t.includes("run `/hsdd-checkpoint` scoped after a batch of fixes, naming the commits, and full only before a release. The spec's own cadence rule allows it: weekly is a convention, not a mechanism."));
+  assert.ok(!t.includes("With the trailer in place"), "a trailer attributes nothing on its own");
+});
+
+test("every /hsdd-intake sweep command the guide and the README name is one the script accepts", () => {
+  const named = (text) => {
+    const { prose, fenced } = split(text);
+    const spans = prose.flatMap((l) => [...l.matchAll(/`([^`]+)`/g)].map((m) => m[1].trim()));
+    return [...spans, ...fenced.map((l) => l.trim())]
+      .map((s) => /^\/hsdd-intake sweep(?=\s|$)(.*)$/.exec(s))
+      .filter(Boolean)
+      .map((m) => ({ args: `draft ${m[1].trim()}`, text: m[0] }));
+  };
+  const wrapped = split(SMALL_FIXES).prose.filter((l) => (l.match(/`/g) ?? []).length % 2 === 1);
+  assert.deepEqual(wrapped, [], "every inline code span opens and closes on one line");
+  const commands = [...named(SMALL_FIXES), ...named(README_SMALL)];
+  assert.ok(commands.length >= 4, `${commands.length} commands`);
+  assert.deepEqual(commands.flatMap(problemsOf), []);
+  const flags = commands.flatMap((c) => tokens(c.args));
+  for (const f of ["--run-by", "--from"]) assert.ok(flags.includes(f), f);
+});
+
+test("the removed text is gone from the guide", () => {
+  assert.ok(!/^## Manual lane/m.test(GUIDE), "the convention block");
+  assert.ok(!GUIDE.includes("(project convention)"));
+  assert.ok(!GUIDE.includes("HSDD-Kind"));
+  for (const s of ["**Make attribution cheap.**", "**A fix already made**", "add a retro phase for the hotfix", "written after the fix shipped in 5d2b9a0", "add a retro phase for commit {sha}", "Two lanes keep the tree honest"]) {
+    assert.ok(!GUIDE.includes(s), s);
+  }
+});
+
+test("the guide's upgrade note carries spec 9.1", () => {
+  assert.ok(GUIDE.includes("\n## Upgrading\n"));
+  assert.ok(UPGRADE.length > 0);
+  assert.ok(GUIDE.indexOf("\n## Upgrading\n") < GUIDE.indexOf(UPGRADE));
+  const t = norm(UPGRADE);
+  for (const s of UPGRADE_EFFECTS) assert.ok(t.includes(s), s);
+  assert.ok(t.includes("Remove the `## Manual lane` paragraph from `hsdd/conventions.md` if you added it"));
+});
+
+test("the changelog carries 0.13.0 in the house shape", () => {
+  const at = ["\n## [Unreleased]\n", "\n## [0.13.0] - Unreleased\n", "\n## [0.12.0] - Unreleased\n"].map((s) => CHANGELOG.indexOf(s));
+  assert.ok(at.every((p) => p >= 0), `headings at ${at}`);
+  assert.deepEqual(at, [...at].sort((a, b) => a - b));
+  assert.ok(ENTRY.includes("Specification: `spec/hsdd-spec-v0_13.md`."));
+  const parts = ["\n### Upgrading from 0.12.0\n", "\n### Added\n", "\n### Changed\n"].map((s) => ENTRY.indexOf(s));
+  assert.ok(parts.every((p) => p >= 0), `parts at ${parts}`);
+  assert.deepEqual(parts, [...parts].sort((a, b) => a - b));
+  const upgrading = norm(ENTRY.slice(parts[0], parts[1]));
+  for (const s of UPGRADE_EFFECTS) assert.ok(upgrading.includes(s), s);
+  const added = norm(ENTRY.slice(parts[1], parts[2]));
+  for (const s of ["**The `manual` class**", "**Sweep mode**", "**The sweep record**", "**The `commit` authority**"]) assert.ok(added.includes(s), s);
+  const changed = norm(ENTRY.slice(parts[2]));
+  for (const s of ["`hsdd-checkpoint`", "`/hsdd-intake sweep --from {sha}`", "`hsdd-phase-plan`", "several commits", "bundled with a new skill or a new mode of an existing skill; no script changes an existing mode's behavior"]) {
+    assert.ok(changed.includes(s), s);
+  }
+});
+
+test("the interactive guide has the manual class and both modes", () => {
+  assert.ok(CLASSES_JS.includes('["manual", "after launch, moves no surface and stales no claim", "no record: a node and a trailer; the sweep attributes the commit"]'));
+  for (const s of ["Request mode", "Sweep mode", "one row per commit"]) assert.ok(SKILL_MAP_ROW.includes(s), s);
+  assert.ok(CHAPTER_7_ROW.includes("small changes"), CHAPTER_7_ROW);
+});
+
+test("no em dash and no banned phrase in the documentation this release adds", () => {
+  const banned = new RegExp(["load", "bearing"].join("-"), "i");
+  const added = { OUTSIDE, SMALL_FIXES, UPGRADE, ENTRY, README_SMALL, README_ROW, README_SPEC, CLASSES_JS, SKILL_MAP_ROW, CHAPTER_7_ROW };
+  for (const [name, text] of Object.entries(added)) {
+    assert.ok(text.length > 0, `${name} is empty`);
+    assert.ok(!text.includes("\u2014"), `${name}: em dash`);
+    assert.ok(!banned.test(text), `${name}: banned phrase`);
+  }
+});
