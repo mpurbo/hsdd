@@ -3,25 +3,25 @@
 **Core principle: the script owns the record's structure, the agent answers
 one bounded question per commit.** The script reads the range, sets aside
 what is attributed, runs the surface test and writes every row. The agent
-fills only the cells it left, and its question is whether the diff makes a
-claim of the owning node's closure false or stale. Nothing a sweep writes
-counts as done.
+fills the cells it left, asking whether the diff makes a claim of the owning
+node's closure false or stale. Nothing a sweep writes counts as done.
 
 ## When it applies
 
 A launched system whose tree is current enough that the next change will
 read it: after adoption, after the launch campaign sealed, or after a seal.
-Whoever merged the small changes runs it (the runner), a developer at the
-end of the day or a lead before a checkpoint. It does not apply before
-launch, and it delivers no request: a ticket, a PRD or an incident goes
-through request mode before the code is written.
+Whoever merged the small changes runs it (the runner), a developer or a lead.
+It does not apply before launch, and it delivers no request: a ticket, a PRD
+or an incident goes through request mode before the code is written.
 
 ## Setup
 
-Copy this skill's `scripts/` directory **verbatim** to
-`hsdd/scripts/sweep/`; never retype a file. Node 20 or later. Every command
-runs from the implementation repository's root, the directory that holds
-`hsdd/`. Under the standalone-spec-repo profile each implementation
+The first sweep in a project copies this skill's `scripts/` directory
+**verbatim** to `hsdd/scripts/sweep/`, never retyping a file, and commits the
+copy itself, since `commit` commits the record alone. A later copy replaces
+the directory: a second `cp -R` nests inside it. Node 20 or later. Every
+command runs from the implementation repository's root, the directory that
+holds `hsdd/`. Under the standalone-spec-repo profile each implementation
 repository is swept on its own and its records land in the submodule.
 
 ## Procedure
@@ -63,8 +63,7 @@ node hsdd/scripts/sweep/sweep.mjs commit hsdd/management/DATE-sweep-REPO-SHA7.md
    one handoff per node with `retro` rows and one per `intake` row, each
    headed `**H{n}** ({class}, {node or sha}):`, every prompt in its own
    `text` fence below it. When every row is `log`, leave `## Routing` at
-   `none` and tick `Status` to `closed (YYYY-MM-DD)` with the record's date;
-   every other record stays `open`.
+   `none` and tick `Status` to `closed (YYYY-MM-DD)` with the record's date.
 4. **`check`, until it passes.** It reads the record back against a fresh
    draft of its range, exits non-zero naming the row, and writes nothing.
    Fix the record and run it again; never commit a record `check` refused.
@@ -72,10 +71,12 @@ node hsdd/scripts/sweep/sweep.mjs commit hsdd/management/DATE-sweep-REPO-SHA7.md
    commits the record alone as `sweep: {repo} {from7}..{to7}`; anything else
    staged stays staged. Under the profile it commits inside the submodule,
    bumps the pointer, and refuses while the submodule's HEAD is detached;
-   after a rejected pointer commit, run it again. It never pushes.
+   after a rejected pointer commit, run it again. It never pushes. Under the
+   profile the runner pushes inside `hsdd/` before pushing the implementation
+   repository, as every governance edit is pushed, or the pointer names a
+   commit no clone has.
 6. **Run the handoffs** in order, or hand the prompts over.
-7. **Report** the record's path, the counts, what is `unplaced`, and the
-   handoffs not run.
+7. **Report** the path, the counts, what is `unplaced`, the handoffs not run.
 
 A published record accepts ticking `Status`, appending to the change log,
 and one more edit: a person may edit the `Node` and `Class` cells of an
@@ -103,8 +104,7 @@ class is **`log`**, and the row is the whole record of the commit. A copy
 change that renames what a Verification line names is `retro`; a font size
 is `log`; a log line is `log` unless a Guarantee speaks of logging. The
 agent writes the claim it found, never a judgment of worth: "not worth
-recording" is not a class, and the question the agent answers is the
-bounded one.
+recording" is not a class.
 
 **On an as-built node** (`- **Adopted:** as-built`) the claim test is not
 applied. Its header is an unvalidated claim about intent, its
@@ -131,8 +131,8 @@ the agent's or the script's, with this change-log line:
 A script-set `intake` lowered this way records a false positive of the
 classifiers (a route-like string in a comment, a `.schema.json` fixture),
 and the `Run by` line is who answers for it. `check` refuses a lowered
-`intake` without that line, and one lowered to `unplaced`. After publication
-no class is lowered, by anyone.
+`intake` without that line, and an `intake` is never lowered to `unplaced`.
+After publication no class is lowered, by anyone.
 
 ## Handoff prompts
 

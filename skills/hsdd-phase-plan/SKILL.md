@@ -312,8 +312,8 @@ an entry).
 
 ## Append Mode (a plan that already has phases)
 
-A change routed to this node, or a backfill finding from `hsdd-checkpoint`,
-appends phases to an existing plan. Rules:
+A change routed to this node, or a sweep's `retro` handoff, appends phases
+to an existing plan. Rules:
 
 - Continue numbering from the highest existing phase id. **Never renumber.
   Never rewrite a shipped phase.** A shipped phase is one whose verification
@@ -334,8 +334,8 @@ appends phases to an existing plan. Rules:
   retroactive. From a sweep record it lists each commit's sha with the
   claim it staled: one retro phase per node per record, never one per
   commit, review tier gate-only unless the prompt says otherwise, and the
-  sizing ceiling does not apply, since it records work already done (spec
-  v0.13 §6.1). Never plan one on an as-built node.
+  limit of one Phase Equivalent does not apply, since it records work
+  already done (spec v0.13 §6.1). Never plan one on an as-built node.
 - A phase appended for a change request follows Change Requests above.
 - Append mode appends summary-table rows, phase sections, graph nodes, a
   pending-governance block and `- **Sources:**` entries. It does not edit
@@ -429,7 +429,8 @@ When your arguments contain `--unattended {step}`, you run as step
 
 - [ ] Phase 1 defines all shared types and contract-bounded interfaces.
 - [ ] Phases 2..N-1 are maximally independent (parallelizable where possible).
-- [ ] Each phase has <= 8 OpenSpec tasks (split if more).
+- [ ] Each phase has <= 8 OpenSpec tasks (split if more; a retro phase is
+      exempt, since it records work already done).
 - [ ] Adjacent same-tier phases were checked against the sizing floor; every
       merge candidate kept separate names its reason (tier boundary,
       parallel lane, isolated risk).

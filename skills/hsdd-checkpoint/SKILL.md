@@ -181,9 +181,10 @@ be standing in produces a progress report that undercounts the project.
      each implementation repository. After launch, among the commits
      reachable from the head of the repository's own main branch, as the
      record's `**Repository:**` line names it, side branches included, a
-     commit that is a merge, is governance-only, names a phase id, or is a
-     row in a sweep record is attributed; a `log` row needs nothing
-     further, and a commit trailer attributes nothing on its own. Every
+     commit that is a merge, is governance-only, names a phase id, is cited
+     by a phase's Scope, or is a row in a sweep record is attributed; a
+     `log` row needs nothing further, and a commit trailer attributes
+     nothing on its own. Every
      other commit since the newest record's `{to}`, or since launch when
      there is none, is one **backfill** finding per repository naming the
      unswept range, whose plan step is `/hsdd-intake sweep --from {sha}`,
@@ -255,9 +256,9 @@ be standing in produces a progress report that undercounts the project.
      consecutive records of one repository whose ranges leave a gap. Sweep
      records run by delegation since the last checkpoint join the
      delegated sign-offs' finding. Where `conventions.md` still carries the
-     user's guide's `## Manual lane (project convention)` paragraph, this
-     rule takes precedence over it, and the paragraph is filed as a finding
-     whose step removes it.
+     user's guide's `## Manual lane (project convention)` paragraph, the
+     attribution rule of *Code vs plan* takes precedence over it, and the
+     paragraph is filed as a finding whose step removes it.
 3. **Emit the progress report** (shape below). The only admissible "done"
    is: implemented, gate command green, verification doc merged to the spec
    repo's main branch, its Reviewer naming a person or an agent signing for

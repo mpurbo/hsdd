@@ -167,7 +167,7 @@ replaces "wipe `hsdd/` and rebuild".
 # Intake: {Change request title}
 
 - **Date:** YYYY-MM-DD
-- **Request:** {path or URL} ({authority})
+- **Request:** {path or URL} ({authority}) | {repo}@{sha} (commit)
 - **Class:** local | cross-node | new-capability | structural
 - **Lands on:** [node ids] · **Contracts:** [contract ids or none]
 - **Promotes:** [as-built node ids promoted first, or none]

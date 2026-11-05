@@ -376,7 +376,7 @@ test("the backfill quality gate names the sweep", () => {
 
 test("phase planning's retro phase may cover several commits of one sweep record", () => {
   assert.ok(norm(PHASE_PLAN).includes(norm(
-    "A **retro phase** (a backfill for code that shipped with no phase) is marked `(retro)` in its name, cites in its Scope the finding id, the sweep record, or the intake record of authority `commit` it came from, and its verification doc is written after the fact and marked retroactive. From a sweep record it lists each commit's sha with the claim it staled: one retro phase per node per record, never one per commit, review tier gate-only unless the prompt says otherwise, and the sizing ceiling does not apply, since it records work already done (spec v0.13 §6.1). Never plan one on an as-built node.")));
+    "A **retro phase** (a backfill for code that shipped with no phase) is marked `(retro)` in its name, cites in its Scope the finding id, the sweep record, or the intake record of authority `commit` it came from, and its verification doc is written after the fact and marked retroactive. From a sweep record it lists each commit's sha with the claim it staled: one retro phase per node per record, never one per commit, review tier gate-only unless the prompt says otherwise, and the limit of one Phase Equivalent does not apply, since it records work already done (spec v0.13 §6.1). Never plan one on an as-built node.")));
 });
 
 test("the conventions template names the sweep script, record and repository names", () => {
@@ -679,4 +679,47 @@ test("an unplaced row stays open until a person places it, and hsdd-adopt alone 
   for (const [name, text] of Object.entries({ GUIDE, README, ENTRY })) {
     assert.ok(!norm(text).includes("`hsdd-adopt` takes the paths"), name);
   }
+});
+
+// Final review: the skill texts the script's fixes and the rulings touch.
+test("the checkpoint's attribution list carries chapter 8's Scope clause", () => {
+  const list = "a commit that is a merge, is governance-only, names a phase id, is cited by a phase's Scope, or is a row in a sweep record is attributed";
+  assert.ok(norm(SPEC).includes(list), "the spec");
+  assert.ok(norm(CHECKPOINT).includes(list), "the checkpoint");
+});
+
+test("the Manual lane sentence names the rule it means", () => {
+  const n = norm(CHECKPOINT);
+  assert.ok(n.includes("`## Manual lane (project convention)` paragraph, the attribution rule of *Code vs plan* takes precedence over it"));
+  assert.ok(!n.includes("paragraph, this rule takes precedence"));
+});
+
+test("sweep.md's commit step says what the runner pushes first, in section 7.4's words", () => {
+  const s = "Under the profile the runner pushes inside `hsdd/` before pushing the implementation repository, as every governance edit is pushed, or the pointer names a commit no clone has.";
+  assert.ok(norm(SPEC).includes(s), "the spec");
+  const step = section(SWEEP, "## Procedure");
+  assert.ok(norm(step.slice(step.indexOf("5. **`commit`.**"), step.indexOf("6. **Run the handoffs**"))).includes(s), "step 5");
+});
+
+test("sweep.md's setup: the first sweep commits the copy, and a later copy replaces the directory", () => {
+  const n = norm(section(SWEEP, "## Setup"));
+  for (const s of ["The first sweep in a project", "commits the copy itself, since `commit` commits the record alone", "A later copy replaces the directory: a second `cp -R` nests inside it."]) assert.ok(n.includes(s), s);
+});
+
+test("sweep.md and check agree that an intake is never lowered to unplaced", () => {
+  assert.ok(norm(section(SWEEP, "## The claim test")).includes("an `intake` is never lowered to `unplaced`"));
+  assert.ok(norm(section(SWEEP, "## Procedure")).includes("An `intake` row nobody places stays `intake`, node `none`."));
+});
+
+test("the intake record's Request line shows both forms", () => {
+  assert.ok(SKILL.includes("\n- **Request:** {path or URL} ({authority}) | {repo}@{sha} (commit)\n"));
+});
+
+test("append mode names the sweep handoff, and the limit a retro phase is exempt from in this skill's words", () => {
+  const n = norm(PHASE_PLAN);
+  assert.ok(n.includes("A change routed to this node, or a sweep's `retro` handoff, appends phases to an existing plan."));
+  assert.ok(!n.includes("or a backfill finding from `hsdd-checkpoint`, appends"));
+  assert.ok(n.includes("- [ ] Each phase has <= 8 OpenSpec tasks (split if more; a retro phase is exempt, since it records work already done)."));
+  assert.ok(n.includes("the limit of one Phase Equivalent does not apply"));
+  assert.ok(!n.includes("sizing ceiling"));
 });
