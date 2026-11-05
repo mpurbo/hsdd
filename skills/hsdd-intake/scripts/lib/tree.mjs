@@ -1,9 +1,10 @@
 // The spec tree as sweep needs it: nodes, phase ids, and the path prefixes
 // each live node's Observed surface claims.
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { extractPlan } from "../extract-plan.mjs";
 import { parseObservedSurface } from "../diff.mjs";
+import { isRecordFile, parseRecord } from "./record.mjs";
 
 export function readTree(root) {
   const plan = extractPlan(root);
@@ -12,4 +13,13 @@ export function readTree(root) {
     .filter((n) => n.observedSurface && n.status !== "retired" && existsSync(join(root, n.sourceFile)))
     .map((n) => ({ node: n.id, prefixes: parseObservedSurface(readFileSync(join(root, n.sourceFile), "utf8"))?.modules ?? [] }));
   return { nodes, nodeIds: plan.nodes.map((n) => n.id), phaseIds: plan.phases.map((p) => p.id), scopes };
+}
+
+export function readRecords(root) {
+  const dir = join(root, "hsdd", "management");
+  if (!existsSync(dir)) return [];
+  return readdirSync(dir)
+    .filter(isRecordFile)
+    .sort()
+    .map((filename) => ({ ...parseRecord(readFileSync(join(dir, filename), "utf8")), filename }));
 }

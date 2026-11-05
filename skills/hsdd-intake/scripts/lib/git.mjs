@@ -1,6 +1,8 @@
 // Reads of the repository through git only. Nothing here writes, checks out
 // or stashes.
 import { execFileSync } from "node:child_process";
+import { basename } from "node:path";
+import { normalizeRepo, reservedIn } from "./record.mjs";
 
 const MAX_BLOB = 2 * 1024 * 1024;
 
@@ -53,4 +55,31 @@ export function showAt(root, sha, path) {
   } catch {
     return null;
   }
+}
+
+// A refusal the CLI prints as a message and exits 1 on, not a crash.
+export class Refusal extends Error {}
+
+const lastSegment = (url) => url.trim().replace(/\/+$/, "").replace(/\.git$/, "").split(/[/:]/).filter(Boolean).at(-1) ?? "";
+
+// --repo, else origin's last path segment (the same on every clone), else the
+// top-level directory's name.
+export function repoName(root, given, git = runGit) {
+  const fromOrigin = () => {
+    try {
+      return lastSegment(git(root, ["remote", "get-url", "origin"])) || null;
+    } catch {
+      return null;
+    }
+  };
+  const [raw, named] = given
+    ? [given, "--repo"]
+    : (() => {
+        const o = fromOrigin();
+        return o ? [o, "origin"] : [basename(git(root, ["rev-parse", "--show-toplevel"])), "directory"];
+      })();
+  const name = normalizeRepo(raw);
+  const word = reservedIn(name);
+  if (word) throw new Refusal(`the repository name "${name}" contains "${word}", which hsdd reads as a report or an intake record; pass --repo with another name`);
+  return { name, named };
 }
