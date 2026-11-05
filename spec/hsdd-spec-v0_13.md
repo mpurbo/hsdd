@@ -228,7 +228,12 @@ names:
   request comes back through request mode before it merges.
 
 An as-built landing is not promoted for a `manual` request: promotion waits
-for the first change request that needs a phase (v0.10.0 §6.4, §4.3 here).
+for the first change request that needs a phase (v0.10.0 §6.4, §4.3 here). On
+that landing the second test is not applied, as §4.3 says of the sweep: only
+the surface decides. An open intake on the node does not change the answer:
+a `manual` change touches no plan and no contract, so request mode's
+collision rules have nothing to serialize and nothing to record, and the
+report names the open record so the developer expects the overlap.
 
 ### 3.3 Why no record
 
@@ -498,7 +503,9 @@ any other row is corrected by a change-log line and, when the correction
 raises the class, by the handoff it now needs, appended to `## Routing`. No
 class is lowered after publication, by anyone: lowering happens before the
 commit (§4.3), and a published `intake` row's commit went to request mode,
-whose record says what it found.
+whose record says what it found. `check` and `commit` gate the first publication only:
+a published edit is committed with git directly, since the first change-log
+line keeps the counts of the day it was written.
 
 ### 5.4 Closure
 
@@ -916,6 +923,7 @@ Provenance as v0.10.0 chapter 18 defines it.
 | Who applies which test | The script applies the surface test and proposes placement from `modules:` lines; the agent applies the claim test over the owning node's closure and places from the tree; the runner places what the tree does not answer (§4.3, §4.4). | reasoned-only |
 | Lowering a class | Never by an agent; a person may before the record is committed, the script's `intake` included, with a change-log line that `check` reads; never after publication (§4.3, §5.3, §7.4). | reasoned-only |
 | A small fix on an as-built node | `log` unless the surface moved: no claim test, no retro phase, no promotion for a shipped fix or a `manual` request (§3.2, §4.3). | reasoned-only |
+| A `manual` request on a node with an open intake | Stays `manual`: it touches no plan and no contract, so there is nothing to serialize; the report names the open record (§3.2). | reasoned-only |
 | A commit two nodes own | `intake`: collisions belong to request mode (§4.4). | reasoned-only |
 | A commit no node owns | `unplaced`, listed for the owner, never guessed onto a node; a person may place it in the record after publication (§4.4, §5.3, §6.3). | reasoned-only |
 | The record's grain | One per repository per run, dated, never superseded, named by repository and `{to}` (§5.1). | reasoned-only |
