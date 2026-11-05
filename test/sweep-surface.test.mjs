@@ -32,7 +32,7 @@ test("surfaceMoves: an unchanged migration or schema in both sides is no move", 
   assert.deepEqual(surfaceMoves(s, s, ["src/x.js"]), []);
 });
 test("surfaceOf keys carry no file or line", () => {
-  const s = surfaceOf(join(fx.root), ["src/web/routes.js"]);
+  const s = surfaceOf(join(fx.root), ["src/web/list.js"]);
   assert.ok(s.routes.has("GET /payouts"));
 });
 
